@@ -87,14 +87,6 @@
 #define IFNAME0 't'
 #define IFNAME1 'i'
 
-#define ENETLWIPAPP_POLL_PERIOD      500
-
-#define OS_TASKPRIHIGH               7
-
-#define LWIP_RX_PACKET_TASK_STACK    (4096)
-
-#define LWIP_POLL_TASK_PRI           (OS_TASKPRIHIGH)
-
 //TODO this should come from stack
 /* Maximum Ethernet Payload Size. */
 #ifdef _INCLUDE_JUMBOFRAME_SUPPORT
@@ -301,9 +293,16 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
                          struct pbuf *p)
 {
     Lwip2Enet_Handle hLwip2Enet;
+    Lwip2Enet_TxHandle hTxHandle;
+    Enet_MacPort macPort;
 
     /* Get the pointer to the private data */
     hLwip2Enet = (Lwip2Enet_Handle)netif->state;
+    hTxHandle  = hLwip2Enet->mapNeitf2Tx[netif->num];
+    macPort    = hLwip2Enet->mapNetif2TxPortNum[netif->num];
+
+    Lwip2Enet_assert(hLwip2Enet != NULL);
+    Lwip2Enet_assert(hTxHandle != NULL);
 
     /*
      * When transmitting a packet, the buffer may be deleted before transmission by the
@@ -316,23 +315,11 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
     pbuf_ref(p);
 
     /* Enqueue the packet */
-    pbufQ_enQ(&hLwip2Enet->tx.readyPbufQ, p);
-    LWIP2ENETSTATS_ADDONE(&hLwip2Enet->tx.stats.readyPbufPktEnq);
-
-    /* Updating the txPortNum for enabling directed packets */
-#if ((ENET_CFG_NETIF_MAX == 2U) && (ENET_ENABLE_PER_CPSW == 1U))
-    if(netif->num == 0U)
-    {
-        hLwip2Enet->tx.portNum = hLwip2Enet->netifObj[0U].macPort;
-    }
-    else
-    {
-       hLwip2Enet->tx.portNum = hLwip2Enet->netifObj[1U].macPort;
-    }
-#endif
+    pbufQ_enQ(&hTxHandle->readyPbufQ, p);
+    LWIP2ENETSTATS_ADDONE(&hTxHandle->stats.readyPbufPktEnq);
 
     /* Pass the packet to the translation layer */
-    Lwip2Enet_sendTxPackets(&hLwip2Enet->tx);
+    Lwip2Enet_sendTxPackets(hTxHandle, macPort);
 
     /* Packet has been successfully transmitted or enqueued to be sent when link comes up */
     return ERR_OK;
@@ -351,13 +338,21 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
  *  \retval
  *      void
  */
-void LWIPIF_LWIP_input(struct netif *netif,
-                       Lwip2Enet_RxObj *rx,
-                       struct pbuf *hPbufPacket,
-                       uint32_t rxChNum)
+void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
+                       Enet_MacPort rxPortNum,
+                       struct pbuf *hPbufPacket)
 {
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
+    Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
+    struct netif *netif;
     uint32_t bufSize;
+
+#if (ENET_ENABLE_PER_CPSW == 1)
+    netif = hLwip2Enet->mapRx2Netif[ENET_MACPORT_NORM(rxPortNum)];
+#else
+    /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the rx->flowIdx to map to netif*/
+    netif = hLwip2Enet->mapRx2Netif[LWIP_RXFLOW_2_PORTIDX(rx->flowIdx)];
+#endif
+    Lwip2Enet_assert(netif != NULL);
 
     /* Pass the packet to the LwIP stack */
     if (netif->input(hPbufPacket, netif) != ERR_OK)
@@ -379,13 +374,13 @@ void LWIPIF_LWIP_input(struct netif *netif,
             /* Ensures that the ethernet frame is always on a fresh cacheline */
             Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
             /* Put the new packet on the free queue */
-            pbufQ_enQ(&rx->freePbufQ[rxChNum], hPbufPacket);
+            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
         }
         else
         {
             LWIP2ENETSTATS_ADDONE(&rx->stats.pbufAllocFailCnt);
-            rx->rxReclaimCount[rxChNum]++;
+            rx->rxReclaimCount++;
         }
         LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
         LWIP2ENETSTATS_ADDONE(&rx->stats.rxLwipInputFail);
@@ -405,75 +400,14 @@ void LWIPIF_LWIP_input(struct netif *netif,
             /* Ensures that the ethernet frame is always on a fresh cacheline */
             Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
             /* Put the new packet on the free queue */
-            pbufQ_enQ(&rx->freePbufQ[rxChNum], hPbufPacket);
+            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
         }
         else
         {
             LWIP2ENETSTATS_ADDONE(&rx->stats.pbufAllocFailCnt);
-            rx->rxReclaimCount[rxChNum]++;
+            rx->rxReclaimCount++;
         }
-    }
-}
-
-/*
- * Periodically polls for changes in the link status and updates both the abstraction layer
- * as well as the stack
- * arg : netif
- * arg1 : Semaphore
- */
-static void LWIPIF_LWIP_poll(void *arg)
-{
-    /* Call the driver's periodic polling function */
-    volatile bool flag = 1;
-    Lwip2Enet_NetifObj* netifObj = (Lwip2Enet_NetifObj*) arg;
-    struct netif* netif = (struct netif*) netifObj[0U].netif;
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-
-    while (flag)
-    {
-        SemaphoreP_Object *hpollSem = (SemaphoreP_Object *)&hLwip2Enet->pollLinkSemObj;
-        SemaphoreP_pend(hpollSem, SystemP_WAIT_FOREVER);
-
-        if(arg != NULL)
-        {
-            for(int i=0U; i<hLwip2Enet->appInfo.numNetif;i++)
-            {
-                struct netif* netif = (struct netif*) netifObj[i].netif;
-
-                /* Get the pointer to the private data */
-                Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-
-                /* Periodic Function to update Link status */
-                Lwip2Enet_periodicFxn(hLwip2Enet);
-
-                if(!(hLwip2Enet->linkIsUp == (netif->flags & 0x04U)>>2))
-                {
-                    if(hLwip2Enet->linkIsUp)
-                    {
-                        sys_lock_tcpip_core();
-                        netif_set_link_up(netif);
-                        sys_unlock_tcpip_core();
-                    }
-
-                    else
-                    {
-                        sys_lock_tcpip_core();
-                        netif_set_link_down(netif);
-                        sys_unlock_tcpip_core();
-                    }
-                }
-            }
-        }
-    }
-}
-
-static void LWIPIF_LWIP_postPollLink(ClockP_Object *clkObj, void *arg)
-{
-    if(arg != NULL)
-    {
-        SemaphoreP_Object *hpollSem = (SemaphoreP_Object *) arg;
-        SemaphoreP_post(hpollSem);
     }
 }
 
@@ -511,66 +445,6 @@ static int LWIPIF_LWIP_start(struct netif *netif)
     }
 
     return retVal;
-}
-
-err_t LWIPIF_LWIP_cfg(struct netif *netif)
-{
-    Lwip2Enet_Handle hLwip2Enet;
-    TaskP_Params params;
-    int32_t status;
-    ClockP_Params clkPrms;
-
-    hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-
-    if (NULL != hLwip2Enet)
-    {
-        /*Initialize semaphore to call synchronize the poll function with a timer*/
-        status = SemaphoreP_constructBinary(&hLwip2Enet->pollLinkSemObj, 0U);
-        Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-        /* Initialize the poll function as a thread */
-        TaskP_Params_init(&params);
-        params.name = "Lwipif_Lwip_poll";
-        params.priority       = LWIP_POLL_TASK_PRI;
-        params.stack          = &hLwip2Enet->pollTaskStack[0U];
-        params.stackSize      = sizeof(hLwip2Enet->pollTaskStack);
-        params.args           = &hLwip2Enet->netifObj[0U];
-        params.taskMain       = &LWIPIF_LWIP_poll;
-
-        status = TaskP_construct(&hLwip2Enet->lWIPIF2LWIPpollObj, &params);
-        Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-        ClockP_Params_init(&clkPrms);
-        clkPrms.start     = 0;
-        clkPrms.period    = ENETLWIPAPP_POLL_PERIOD;
-        clkPrms.args      = &hLwip2Enet->pollLinkSemObj;
-        clkPrms.callback  = &LWIPIF_LWIP_postPollLink;
-        clkPrms.timeout   = ENETLWIPAPP_POLL_PERIOD;
-
-        /* Creating timer and setting timer callback function*/
-        status = ClockP_construct(&hLwip2Enet->pollLinkClkObj,
-                                  &clkPrms);
-        if (status == SystemP_SUCCESS)
-        {
-        /* Set timer expiry time in OS ticks */
-        ClockP_setTimeout(&hLwip2Enet->pollLinkClkObj, ENETLWIPAPP_POLL_PERIOD);
-        ClockP_start(&hLwip2Enet->pollLinkClkObj);
-        }
-        else
-        {
-        Lwip2Enet_assert (status == SystemP_SUCCESS);
-        }
-
-        /* Filter not defined */
-        /* Inform the world that we are operational. */
-        hLwip2Enet->print("[LWIPIF_LWIP] Enet has been started successfully\r\n");
-
-        return ERR_OK;
-    }
-    else
-    {
-        return ERR_BUF;
-    }
 }
 
 /*!

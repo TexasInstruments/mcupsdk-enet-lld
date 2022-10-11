@@ -66,20 +66,6 @@ extern "C" {
 /* ========================================================================== */
 /*                                 Macros                                     */
 /* ========================================================================== */
-
-/*! \brief RX packet task stack size */
-#define LWIPIF_RX_PACKET_TASK_STACK    (1024)
-
-/*! \brief TX packet task stack size */
-#define LWIPIF_TX_PACKET_TASK_STACK    (1024)
-
-/*! \brief Links status poll task stack size */
-#if (_DEBUG_ == 1)
-#define LWIPIF_POLL_TASK_STACK         (3072)
-#else
-#define LWIPIF_POLL_TASK_STACK         (1024)
-#endif
-
 /*
  * Pre-Pad Packet Data Offset
  *
@@ -106,6 +92,8 @@ extern "C" {
 /* Multicast Address List Size */
 #define     PKT_MAX_MCAST                   ((uint32_t)31U)
 
+#define LWIP_RXFLOW_2_PORTIDX(num) (num - 1U)
+
 /*
  * Split the number of pbufs for TX channel and as many enabled RX channels/flows:
  * - TX channel requires LWIP2ENET_TX_PACKETS pbufs
@@ -119,7 +107,7 @@ extern "C" {
  *   tx = rx = total / (1 + 2 * n)
  */
 #define LWIP2ENET_TX_PACKETS             (16U)
-#define LWIP2ENET_RX_PACKETS             (PBUF_POOL_SIZE)
+#define LWIP2ENET_RX_PACKETS             (PBUF_POOL_SIZE/2U)
 
 #if (ENET_CFG_IS_OFF(CPSW_CSUM_OFFLOAD_SUPPORT))
 #if (!(CHECKSUM_CHECK_UDP || CHECKSUM_CHECK_TCP || CHECKSUM_GEN_UDP || CHECKSUM_GEN_TCP))
@@ -144,7 +132,7 @@ enum LWIP2ENET_IOCTL_
 
 #define HISTORY_CNT ((uint32_t)2U)
 
-typedef LwipifEnetAppIf_GetHandleOutArgs Lwip2Enet_AppInfo;
+typedef LwipifEnetAppIf_GetEnetLwipIfInstInfo Lwip2Enet_AppInfo;
 
 typedef struct Lwip2Enet_PktTaskStats_s
 {
@@ -207,61 +195,48 @@ typedef struct Lwip2Enet_RxObj_s
     /*! Pointer to parent Lwip2Enet object */
     struct Lwip2Enet_Obj_s *hLwip2Enet;
 
+    /*! Enet DMA receive channel (flow) */
+    EnetDma_RxChHandle hFlow;
+
     /*! Whether this RX object is being used or not */
     bool enabled;
 
-    /*! Enet DMA receive channel (flow) */
-    EnetDma_RxChHandle hFlow[LWIPIF_MAX_RX_CHANNELS];
+    /*! Reference count for RX flow */
+    uint32_t refCount;
 
     /*! Start index for RX flow */
-    uint32_t flowStartIdx[LWIPIF_MAX_RX_CHANNELS];
-
-    uint32_t numRxChannels;
+    uint32_t flowStartIdx;
 
     /*! Flow index for RX flow */
-    uint32_t flowIdx[LWIPIF_MAX_RX_CHANNELS];
-
-	/*! Number of DMA packets allocated for this RX flow */
-    uint32_t numPkts;
-
-    /* Packet info memory */
-    EnetDma_Pkt pktInfoMem[LWIP2ENET_RX_PACKETS];
+    uint32_t flowIdx;
 
     /*! Queue that holds packets ready to be given to the hardware */
-    pbufQ freePbufQ[LWIPIF_MAX_RX_CHANNELS];
+    pbufQ freePbufQ;
 
     /*! DMA Rx free packet info queue (holds packets returned from the hardware) */
-    EnetDma_PktQ freePktInfoQ[LWIPIF_MAX_RX_CHANNELS];
+    EnetDma_PktQ freePktInfoQ;
 
-    /*!
-     * Handle to Rx task, whose job it is to receive packets used by the hardware
-     * and give them to the stack, and return freed packets back to the hardware.
-     */
-    TaskP_Object rxPacketTaskObj;
+    /*! Number of packets*/
+    uint32_t numPackets;
 
-    /*!
-     * Handle to Rx semaphore, on which the rxPacketTaskObj awaits for notification
-     * of used packets available.
-     */
-    SemaphoreP_Object rxPacketSemObj;
+    /*! Rx buffer count allocated via pbuf_alloc .*/
+    uint32_t rxAllocCount;
+
+	/** Rx buffer count to be allocated via pbuf_alloc .*/
+    uint32_t rxReclaimCount;
+
+    /** Rx buffer count last allocated in periodic reclain rx buffers function .*/
+    uint32_t lastRxReclaimCount;
+
+    EnetDma_Pkt pktInfoMem[LWIP2ENET_RX_PACKETS];//ToDo: this should be removed
 
     /*! lwIP interface statistics */
     Lwip2Enet_RxStats stats;
 
-    /*! RX packet task stack */
-    uint8_t pktTaskStack[LWIPIF_RX_PACKET_TASK_STACK] __attribute__ ((aligned(sizeof(long long))));
-
     /*! Whether RX event should be disabled or not. When disabled, it relies on pacing timer
      *  to retrieve packets from RX channel/flow */
     bool disableEvent;
-
-	/** Rx buffer count to be allocated via pbuf_alloc .*/
-    uint32_t rxReclaimCount[LWIPIF_MAX_RX_CHANNELS];
-    /** Rx buffer count last allocated in periodic reclain rx buffers function .*/
-    uint32_t lastRxReclaimCount[LWIPIF_MAX_RX_CHANNELS];
-    /** Rx buffer count allocated via pbuf_alloc .*/
-    uint32_t rxAllocCount;
-} Lwip2Enet_RxObj;
+} Lwip2Enet_RxObj, *Lwip2Enet_RxHandle;
 
 /*!
  * \brief TX object which groups variables related to a particular RX channel/flow.
@@ -277,14 +252,14 @@ typedef struct Lwip2Enet_TxObj_s
     /*! TX channel peer id */
     uint32_t chNum;
 
-	/*! Directed port number. Set to \ref ENET_MAC_PORT_INV for non-directed packets */
-    Enet_MacPort portNum;
+    /*! Whether this TX object is being used or not */
+    bool enabled;
 
-	/*! Number of DMA packets allocated for this TX channel */
-    uint32_t numPkts;
+    /*! Reference count for TX object */
+    uint32_t refCount;
 
-    /* Packet info memory */
-    EnetDma_Pkt pktInfoMem[LWIP2ENET_TX_PACKETS];
+    /*! Number of packets*/
+    uint32_t numPackets;
 
     /*! DMA free queue (holds free hardware packets awaiting) */
     EnetDma_PktQ freePktInfoQ;
@@ -294,6 +269,47 @@ typedef struct Lwip2Enet_TxObj_s
 
     /*! Queue that holds packets that were not sent to the hardware in previous submit */
     pbufQ unusedPbufQ;
+
+    /*! lwIP interface statistics */
+    Lwip2Enet_TxStats stats;
+
+    /*! Whether TX event should be disabled or not. When disabled, "lazy" descriptor recycle
+     *  is used instead, which defers retrieval till none is available */
+    bool disableEvent;
+} Lwip2Enet_TxObj, *Lwip2Enet_TxHandle;
+
+/**
+ * \brief
+ *  Packet device information
+ *
+ * \details
+ *  This structure caches the device info.
+ */
+typedef struct Lwip2Enet_Obj_s
+{
+    /*! RX object */
+    Lwip2Enet_RxObj rx[LWIPIF_MAX_RX_CHANNELS];
+
+    /*! Number of RX channels allocated by Application */
+    uint32_t numRxChannels;
+
+    /*!
+     * Handle to Rx task, whose job it is to receive packets used by the hardware
+     * and give them to the stack, and return freed packets back to the hardware.
+     */
+    TaskP_Object rxPacketTaskObj;
+
+    /*!
+     * Handle to Rx semaphore, on which the rxPacketTaskObj awaits for notification
+     * of used packets available.
+     */
+    SemaphoreP_Object rxPacketSemObj;
+
+	/*! TX object */
+    Lwip2Enet_TxObj tx[LWIPIF_MAX_TX_CHANNELS];
+
+    /*! Number of TX channels allocated by Application */
+    uint32_t numTxChannels;
 
     /*! Handle to Tx task whose job is to retrieve packets consumed by the hardware and
      *  give them to the stack */
@@ -305,49 +321,8 @@ typedef struct Lwip2Enet_TxObj_s
      */
     SemaphoreP_Object txPacketSemObj;
 
-    /*! lwIP interface statistics */
-    Lwip2Enet_TxStats stats;
-
-    /*! TX packet task stack */
-    uint8_t pktTaskStack[LWIPIF_TX_PACKET_TASK_STACK] __attribute__ ((aligned(sizeof(long long))));
-
-    /*! Whether TX event should be disabled or not. When disabled, "lazy" descriptor recycle
-     *  is used instead, which defers retrieval till none is available */
-    bool disableEvent;
-} Lwip2Enet_TxObj;
-
-typedef struct Lwip2Enet_NetifObj_s
-{
     /*! lwIP network interface */
-    struct netif *netif;
-
-    /*! Whether this Netif object is being used or not */
-    bool inUse;
-
-    /*! MAC port associated to a specific netif */
-    Enet_MacPort macPort;
-
-    /*! MAC address allocated for the flow */
-    uint8_t macAddr[ENET_MAC_ADDR_LEN];
-} Lwip2Enet_NetifObj;
-
-/**
- * \brief
- *  Packet device information
- *
- * \details
- *  This structure caches the device info.
- */
-typedef struct Lwip2Enet_Obj_s
-{
-    /*! lwIP network interface object */
-    Lwip2Enet_NetifObj netifObj[ENET_CFG_NETIF_MAX];
-
-    /*! RX object */
-    Lwip2Enet_RxObj rx;
-
-	/*! TX object */
-    Lwip2Enet_TxObj tx;
+    struct netif *netif[ENET_CFG_NETIF_MAX];
 
 	/*! Total number of allocated PktInfo elements */
     uint32_t allocPktInfo;
@@ -391,7 +366,6 @@ typedef struct Lwip2Enet_Obj_s
      */
     SemaphoreP_Object shutDownSemObj;
 
-
     /*
      * Handle to input task that sends polls the link status
      */
@@ -414,8 +388,13 @@ typedef struct Lwip2Enet_Obj_s
     /*! CPU load stats */
     Lwip2Enet_Stats stats;
 
-    /*! Link status poll task stack */
-    uint8_t pollTaskStack[LWIPIF_POLL_TASK_STACK] __attribute__ ((aligned(sizeof(long long))));
+    Lwip2Enet_RxHandle mapNeitf2Rx[ENET_CFG_NETIF_MAX];
+
+    Lwip2Enet_TxHandle mapNeitf2Tx[ENET_CFG_NETIF_MAX];
+
+    struct netif *mapRx2Netif[ENET_CFG_NETIF_MAX];
+
+    Enet_MacPort mapNetif2TxPortNum[ENET_CFG_NETIF_MAX];
 }
 Lwip2Enet_Obj, *Lwip2Enet_Handle;
 
@@ -437,7 +416,8 @@ extern void Lwip2Enet_close(Lwip2Enet_Handle hlwip2enet);
 
 extern void Lwip2Enet_setRx(Lwip2Enet_Handle hlwip2enet);
 
-extern void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx);
+extern void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx,
+                                    Enet_MacPort macPort);
 
 extern int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hlwip2enet,
                               uint32_t cmd,
@@ -447,7 +427,7 @@ extern int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hlwip2enet,
 extern void Lwip2Enet_poll(Lwip2Enet_Handle hlwip2enet,
                           uint32_t fTimerTick);
 
-extern void Lwip2Enet_periodicFxn(Lwip2Enet_Handle hLwip2Enet);
+extern void Lwip2Enet_periodicFxn(struct netif *netif);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

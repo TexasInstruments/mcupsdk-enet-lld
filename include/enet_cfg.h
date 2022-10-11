@@ -126,8 +126,14 @@ extern "C" {
 #define ENET_CFG_TRACE_DISABLE_INFOSTRING           (ENET_ON)
 #endif
 
-/*Max number of netif Supported by driver */
-#define ENET_CFG_NETIF_MAX                   (1U)
+/*Max number of netif enabled. */
+#define ENET_CFG_NETIF_MAX                   (2U)
+
+/*Max number of RX channels supported by lwipif*/
+#define LWIPIF_MAX_RX_CHANNELS               (2U)
+
+/*Max number of TX channels supported by lwipif */
+#define LWIPIF_MAX_TX_CHANNELS               (2U)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */

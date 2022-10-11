@@ -86,9 +86,6 @@
 
 #define LWIP2ENET_DIVIDER_US_TO_MS  (1000U)
 
-#if ENET_CFG_NETIF_MAX > 1U
-#error "Multiple netif is not support in the version"
-#endif
 /*---------------------------------------------------------------------------*\
  |                         Local Function Declarations                         |
  \*---------------------------------------------------------------------------*/

@@ -46,6 +46,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <enet.h>
+#include <lwip2lwipif.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,12 +55,6 @@ extern "C" {
 /* ========================================================================== */
 /*                                 Macros                                     */
 /* ========================================================================== */
-
-#if (ENET_ENABLE_PER_ICSSG == 1)
-#define LWIPIF_MAX_RX_CHANNELS                 (2U)
-#else
-#define LWIPIF_MAX_RX_CHANNELS                 (1U)
-#endif
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -71,30 +66,46 @@ typedef void (*LwipifEnetAppIf_TxFreePktCbFxn)(void *cbArg,
 
 typedef void (*LwipifEnetAppIf_RxFreePktCbFxn)(void *cbArg,
                                            EnetDma_PktQ *fqPktInfoQ,
-                                           EnetDma_PktQ *cqPktInfoQ,
-                                           uint32_t rxChNum);
+                                           EnetDma_PktQ *cqPktInfoQ);
+
 
 typedef bool (*LwipifEnetAppIf_IsPhyLinkedCbFxn)(Enet_Handle hEnet);
 
-typedef struct LwipifEnetAppIf_RxConfig_s
+typedef struct LwipifEnetAppIf_GetTxHandleInArgs_s
 {
     void *cbArg;
     EnetDma_PktNotifyCb notifyCb;
-    uint32_t numPackets;
-} LwipifEnetAppIf_RxConfig;
+    uint32_t chId;
+    EnetDma_PktQ *pktInfoQ;
+} LwipifEnetAppIf_GetTxHandleInArgs;
 
-typedef struct LwipifEnetAppIf_TxConfig_s
+typedef struct LwipifEnetAppIf_GetRxHandleInArgs_s
 {
     void *cbArg;
     EnetDma_PktNotifyCb notifyCb;
-    uint32_t numPackets;
-} LwipifEnetAppIf_TxConfig;
+    uint32_t chId;
+    EnetDma_PktQ *pktInfoQ;
+} LwipifEnetAppIf_GetRxHandleInArgs;
 
-typedef struct LwipifEnetAppIf_GetHandleInArgs_s
+
+typedef struct LwipifEnetAppIf_TxHandleInfo_s
 {
-    LwipifEnetAppIf_TxConfig txCfg;
-    LwipifEnetAppIf_RxConfig rxCfg;
-} LwipifEnetAppIf_GetHandleInArgs;
+    /** DMA transmit channel */
+    EnetDma_TxChHandle hTxChannel;
+
+    /*! Tx Channel Peer Id */
+    uint32_t txChNum;
+
+    /*! Whether to use TX event or not. When disabled, it uses "lazy" recycle mechanism
+     *  to defer packet desc retrieval */
+    bool disableEvent;
+
+    /** Number of packets*/
+    uint32_t numPackets;
+
+    EnetDma_PktQ *pktInfoQ;
+} LwipifEnetAppIf_TxHandleInfo;
+
 
 typedef struct LwipifEnetAppIf_RxHandleInfo_s
 {
@@ -104,75 +115,68 @@ typedef struct LwipifEnetAppIf_RxHandleInfo_s
     uint32_t rxFlowStartIdx;
     /** Flow index for flow used  */
     uint32_t rxFlowIdx;
-} LwipifEnetAppIf_RxHandleInfo;
-
-typedef struct LwipifEnetAppIf_RxInfo_s
-{
-    uint32_t numRxChannels;
-    /** Mac Address allocated for the flow */
-    uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
-
+    /** Number of packets*/
+    uint32_t numPackets;
     /*! Whether to use RX event or not. When disabled, it uses pacing timer to
      * retrieve packets periodically from driver */
     bool disableEvent;
+        /** Mac Address allocated for the flow */
+    uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
 
-    LwipifEnetAppIf_RxHandleInfo rxHandle[LWIPIF_MAX_RX_CHANNELS];
-} LwipifEnetAppIf_RxInfo;
+    EnetDma_PktQ *pktInfoQ;
+} LwipifEnetAppIf_RxHandleInfo;
 
-typedef struct LwipifEnetAppIf_TxHandleInfo_s
+typedef struct LwipifEnetAppIf_GetHandleNetifInfo_s
 {
-    /** DMA transmit channel */
-    EnetDma_TxChHandle hTxChannel;
-    /** Tx Channel Peer Id */
-    uint32_t txChNum;
+    uint32_t numRxChannels;
+    uint32_t numTxChannels;
+    uint32_t rxChMask;
+    uint32_t txChMask;
+    bool isDirected;
+} LwipifEnetAppIf_GetHandleNetifInfo;
 
-    /*! Whether to use TX event or not. When disabled, it uses "lazy" recycle mechanism
-     *  to defer packet desc retrieval */
-    bool disableEvent;
-
-    /*! Directed port number. Set to \ref ENET_MAC_PORT_INV for non-directed packets. */
-    Enet_MacPort txPortNum;
-} LwipifEnetAppIf_TxHandleInfo;
-
-typedef struct LwipifEnetAppIf_GetHandleOutArgs_s
+typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
 {
     Enet_Handle hEnet;
-#if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
-    Udma_DrvHandle hUdmaDrv;
-#endif
-    uint32_t coreId;
-    uint32_t coreKey;
-    Enet_Print print;
-    /** Max Tx packet size per priority */
     uint32_t txMtu[ENET_PRI_NUM];
-    /** Max Rx packet size */
     uint32_t hostPortRxMtu;
 
-	/*! Number of netifs allocated by application */
-    uint32_t numNetif;
-   LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;
-   LwipifEnetAppIf_TxHandleInfo txInfo;
-   LwipifEnetAppIf_RxInfo rxInfo;
+    uint8_t *rxTaskStack;
+    uint32_t rxTaskStackSize;
+    uint32_t rxtaskPriority;
+
+    uint8_t *txTaskStack;
+    uint32_t txTaskStackSize;
+    uint32_t txtaskPriority;
+
+    uint8_t *pollTaskStack;
+    uint32_t pollTaskStackSize;
+    uint32_t pollTaskPriority;
+    uint32_t pollTasktimerPeriodUs;
+
+    /*! Number of netifs allocated by application */
+    uint32_t maxNumNetif;
+    uint32_t numRxChannels;
+    uint32_t numTxChannels;
+	LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;
 
     /** Timer interval for timer based RX pacing */
     uint32_t timerPeriodUs;
-} LwipifEnetAppIf_GetHandleOutArgs;
+} LwipifEnetAppIf_GetEnetLwipIfInstInfo;
 
-typedef struct LwipifEnetAppIf_ReleaseHandleInfo_s
+typedef struct LwipifEnetAppIf_ReleaseTxHandleInfo_s
 {
-    Enet_Handle hEnet;
-#if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
-    Udma_DrvHandle hUdmaDrv;
-#endif
-    uint32_t coreId;
-    uint32_t coreKey;
-    LwipifEnetAppIf_TxHandleInfo txInfo;
-    LwipifEnetAppIf_RxInfo rxInfo;
+    uint32_t txChNum;
     LwipifEnetAppIf_TxFreePktCbFxn txFreePktCb;
 	void *txFreePktCbArg;
+} LwipifEnetAppIf_ReleaseTxHandleInfo;
+
+typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
+{
+    uint32_t rxChNum;
     LwipifEnetAppIf_RxFreePktCbFxn rxFreePktCb;
     void *rxFreePktCbArg;
-} LwipifEnetAppIf_ReleaseHandleInfo;
+} LwipifEnetAppIf_ReleaseRxHandleInfo;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
@@ -184,10 +188,22 @@ typedef struct LwipifEnetAppIf_ReleaseHandleInfo_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-extern void LwipifEnetAppCb_getHandle(LwipifEnetAppIf_GetHandleInArgs *inArgs,
-                                    LwipifEnetAppIf_GetHandleOutArgs *outArgs);
+extern void LwipifEnetAppCb_getEnetLwipIfInstInfo(LwipifEnetAppIf_GetEnetLwipIfInstInfo *outArgs);
 
-extern void LwipifEnetAppCb_releaseHandle(LwipifEnetAppIf_ReleaseHandleInfo *releaseInfo);
+extern void LwipifEnetAppCb_getNetifInfo(struct netif *netif,
+                                         LwipifEnetAppIf_GetHandleNetifInfo *outArgs);
+
+extern void LwipifEnetAppCb_getTxHandleInfo(LwipifEnetAppIf_GetTxHandleInArgs *inArgs,
+                                            LwipifEnetAppIf_TxHandleInfo *outArgs);
+
+extern void LwipifEnetAppCb_getRxHandleInfo(LwipifEnetAppIf_GetRxHandleInArgs *inArgs,
+                                            LwipifEnetAppIf_RxHandleInfo *outArgs);
+
+
+
+extern void LwipifEnetAppCb_releaseTxHandle(LwipifEnetAppIf_ReleaseTxHandleInfo *releaseInfo);
+
+extern void LwipifEnetAppCb_releaseRxHandle(LwipifEnetAppIf_ReleaseRxHandleInfo *releaseInfo);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

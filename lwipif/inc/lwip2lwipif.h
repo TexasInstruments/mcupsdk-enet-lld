@@ -74,8 +74,6 @@ extern "C" {
 /* Forward declaration */
 struct netif;
 err_t LWIPIF_LWIP_init(struct netif *netif);
-
-err_t LWIPIF_LWIP_cfg(struct netif *netif);
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

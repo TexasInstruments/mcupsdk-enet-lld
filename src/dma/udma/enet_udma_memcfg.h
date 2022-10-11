@@ -191,7 +191,6 @@ typedef struct EnetUdma_MemCfg_s
 /*! Application implemented function to get the Udma memory configuration */
 const EnetUdma_MemCfg * EnetUdmaMem_getCfg(void);
 
-
 #ifdef __cplusplus
 }
 #endif
