@@ -603,7 +603,7 @@ int32_t Icssg_R30SendSyncIoctl(Icssg_Handle hIcssg,
         cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         while (!cmdDone && (retry != 0U))
         {
-            EnetUtils_delay(100);
+            EnetUtils_delayTicks(100);
             cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
             if (!cmdDone)
             {

@@ -1165,7 +1165,7 @@ static void CpswMacPort_resetSgmiiPort(CSL_CpsgmiiRegs *sgmiiRegs,
      * to happen immediately */
     while (CSL_SGMII_getRxTxSoftResetStatus(sgmiiRegs, portNum) != 0U)
     {
-         EnetUtils_delay(0U);
+         EnetUtils_delayTicks(0U);
     }
 }
 

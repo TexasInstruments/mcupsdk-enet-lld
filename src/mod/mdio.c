@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2022
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -280,6 +280,7 @@ int32_t Mdio_open(EnetMod_Handle hMod,
                 case MDIO_MODE_MANUAL:
                 {
                     ENETTRACE_INFO("MDIO Manual_Mode enabled\n");
+                    hMdio->mdcHalfCycleNs = (ENET_NUM_NANOSECS_PER_SEC >> 1) / mdioCfg->mdioBusFreqHz; /* HalfTime = 1/(2*Freq). Division by 2, as it is halfCycle */;
                     Mdio_setupManualMode(mdioRegs);
                 }
                 break;

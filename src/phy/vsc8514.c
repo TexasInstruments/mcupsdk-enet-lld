@@ -306,7 +306,7 @@ static int32_t Vsc8514_writeMicroCmd(EnetPhy_Handle hPhy)
             {
                 break;
             }
-            EnetUtils_delay(100U);
+            EnetUtils_delayTicks(100U);
         }
     }
 
@@ -323,7 +323,7 @@ static int32_t Vsc8514_writeMicroCmd(EnetPhy_Handle hPhy)
         {
             /* Commands may take up to 25 ms to complete before command complete bit
              * (bit 15) changes to 0 */
-            EnetUtils_delay(2500U);
+            EnetUtils_delayTicks(2500U);
             status = EnetPhy_readReg(hPhy, VSC8514_GPIO_COMMAND, &regVal);
 
             /* Wait until not busy */

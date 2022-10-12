@@ -769,7 +769,8 @@ static int32_t EnetTxSG_waitForLinkUp(void)
 
         if (!linked)
         {
-            EnetUtils_delay(10U);
+            /* wait for 50 ms and poll again*/
+            ClockP_usleep(50000);
         }
     }
 

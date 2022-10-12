@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2022
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -48,12 +48,26 @@
 #include <include/core/enet_utils.h>
 #include <include/core/enet_osal.h>
 #include <kernel/nortos/dpl/common/printf.h>
-
+#include <kernel/dpl/CycleCounterP.h>
+#ifdef __ARM_ACLE
+#include <arm_acle.h>
+#endif
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* None */
+#define __NOP  __nop()
+
+#define NOP5   do { __NOP; __NOP; __NOP; __NOP; __NOP; } while (0)
+
+#define NOP10  NOP5; \
+               NOP5
+
+#define NOP50  NOP10; \
+               NOP10; \
+               NOP10; \
+               NOP10; \
+               NOP10
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -78,6 +92,7 @@ typedef struct EnetUtils_Obj_s
 
     /*! Print buffer */
     char printBuf[ENET_CFG_PRINT_BUF_LEN];
+
 } EnetUtils_Obj;
 
 /* ========================================================================== */
@@ -97,7 +112,6 @@ EnetUtils_Obj gEnetUtilsObj;
 void EnetUtils_init(const EnetUtils_Cfg *cfg)
 {
     memset(&gEnetUtilsObj, 0, sizeof(gEnetUtilsObj));
-
     gEnetUtilsObj.printLock = EnetOsal_createMutex();
 
     gEnetUtilsObj.print = cfg->print;
@@ -112,7 +126,6 @@ void EnetUtils_init(const EnetUtils_Cfg *cfg)
         gEnetUtilsObj.virtToPhys = cfg->virtToPhys;
         gEnetUtilsObj.physToVirt = cfg->physToVirt;
     }
-
 }
 
 void EnetUtils_deinit(void)
@@ -176,14 +189,30 @@ uint32_t EnetUtils_max(uint32_t num1,
     return ((num1 > num2) ? num1 : num2);
 }
 
-void EnetUtils_delay(uint32_t delayVal)
+void EnetUtils_delayTicks(const uint32_t delayTicks)
 {
-    uint32_t i = 0U;
+    uint64_t currentTick   = (uint64_t)CycleCounterP_getCount32();
+    const uint64_t endTick = currentTick + (uint64_t)delayTicks;
 
-    while (i++ < delayVal)
+    while (currentTick < endTick)
     {
-        /* Do nothing */
+        NOP50;
+        currentTick = (uint64_t)CycleCounterP_getCount32();
     }
+    return;
+}
+
+void EnetUtils_delayNs(const uint32_t delayNs)
+{
+    uint64_t currentTick   = (uint64_t)CycleCounterP_getCount32();
+    const uint64_t endTick = currentTick + (uint64_t)CycleCounterP_nsToTicks(delayNs);
+
+    while (currentTick < endTick)
+    {
+        NOP50;
+        currentTick = (uint64_t)CycleCounterP_getCount32();
+    }
+    return;
 }
 
 uint64_t EnetUtils_virtToPhys(const void *virtAddr,
@@ -243,3 +272,4 @@ EnetPhy_Mii EnetUtils_macToPhyMii(const EnetMacPort_Interface *macMii)
 
     return phyMii;
 }
+

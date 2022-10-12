@@ -169,6 +169,10 @@ typedef struct Mdio_Obj_s
     
     /*! MDIO module operating mode */
     Mdio_OpMode mode;
+
+    /*! MDIO bit banging delay in terms of CPU Clock ticks. No that this value shall
+     * be set to 'half' of required MDIO CLK period. Applicable only when MDIO mode is set to manual mode */
+    uint32_t mdcHalfCycleNs;
 } Mdio_Obj;
 
 /*!

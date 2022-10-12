@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2022
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -152,6 +152,8 @@ extern "C" {
         a[0U] = a[0U];                                      \
     } while (0)
 
+
+#define ENET_NUM_NANOSECS_PER_SEC   (1000000000ULL)
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -280,11 +282,20 @@ uint32_t EnetUtils_max(uint32_t num1,
                        uint32_t num2);
 
 /*!
- * \brief Busy loop for a given amount of cycles.
+ * \brief Busy loop for a given amount of delay in CPU clock ticks
  *
- * \param delayVal  Delay time
+ * \param delayTicks  Delay time in CPU clock ticks
+ *
  */
-void EnetUtils_delay(uint32_t delayVal);
+void EnetUtils_delayTicks(const uint32_t delayTicks);
+
+/*!
+ * \brief Busy loop for a given amount of delay in nano seconds
+ *
+ * \param delayNs  Delay time in nano seconds
+ *
+ */
+void EnetUtils_delayNs(const uint32_t delayNs);
 
 /*!
  * \brief Convert a virtual address to physical address.

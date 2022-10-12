@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2022
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -139,7 +139,7 @@ typedef struct Mdio_Cfg_s
      *  machine on open. The MDIO state machine can be enabled at 
      *  a later point of time via IOCTL. This option allows
      *  Synchronizing externally managed PHY with the MDIO 
-     *  whereby external PHY initalization is done and then
+     *  whereby external PHY initialization is done and then
      *  MDIO state machine can be enabled so that any linkup
      *  interrupts are not missed
      */

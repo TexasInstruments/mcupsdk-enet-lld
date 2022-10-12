@@ -2694,7 +2694,7 @@ static void Icssg_UCastFloodingCtrl(Icssg_Handle hIcssg,
         cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         while (!cmdDone)
         {
-            EnetUtils_delay(100);
+            EnetUtils_delayTicks(100);
             cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         }
     }
@@ -2724,7 +2724,7 @@ static void Icssg_MCastFloodingCtrl(Icssg_Handle hIcssg,
         cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         while (!cmdDone)
         {
-            EnetUtils_delay(100);
+            EnetUtils_delayTicks(100);
             cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         }
     }
@@ -2916,7 +2916,7 @@ static int32_t Icssg_setAcceptableFrameCheckSync(Icssg_Handle hIcssg,
         cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         while (!cmdDone)
         {
-            EnetUtils_delay(100);
+            EnetUtils_delayTicks(100);
             cmdDone = IcssgUtils_isR30CmdDone(hIcssg, macPort);
         }
 
