@@ -53,6 +53,7 @@
 #include "lwip/opt.h"
 #include "lwip/pbuf.h"
 #include "lwip2enet.h"
+#include "lwip/prot/ip.h"
 
 #include <lwip/netif.h>
 
@@ -681,7 +682,11 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx)
                 pCurrDmaPacket->userBufLen = hPbufPkt->len;
                 pCurrDmaPacket->txPortNum  = tx->portNum;
                 pCurrDmaPacket->node.next  = NULL;
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
+                pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
+#else
                 pCurrDmaPacket->chkSumInfo = 0;
+#endif
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0);
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
 
@@ -919,7 +924,11 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
             pCurrDmaPacket->orgBufLen  = PBUF_POOL_BUFSIZE;
             pCurrDmaPacket->userBufLen = hPbufPkt->len;
             pCurrDmaPacket->node.next = NULL;
-            pCurrDmaPacket->chkSumInfo = 0;
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
+                pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
+#else
+                pCurrDmaPacket->chkSumInfo = 0;
+#endif
             ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0);
             EnetQueue_enq(pDmaPktInfoQ, &(pCurrDmaPacket->node));
 
@@ -1268,13 +1277,13 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
     Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
     uint32_t packetCount = 0;
     EnetDma_Pkt *pCurrDmaPacket;
-    bool chkSumErr = false;
 
     pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(pPktQ);
     while (pCurrDmaPacket)
     {
         /* Get the full PBUF packet that needs to be returned to the LwIP stack */
         struct pbuf* hPbufPacket = (struct pbuf *)pCurrDmaPacket->appPriv;
+        bool isChksumError = false;
         if (hPbufPacket)
         {
             uint32_t validLen = pCurrDmaPacket->userBufLen;
@@ -1284,7 +1293,28 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
             hPbufPacket->tot_len = validLen;
             Lwip2Enet_assert(hPbufPacket->payload != NULL);
 
-            if (!chkSumErr)
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
+            {
+                struct ip_hdr* pIpPkt = (struct ip_hdr* ) LWIPIF_LWIP_getIpPktStart((uint8_t*) hPbufPacket->payload);
+                if (IPH_PROTO(pIpPkt) == IP_PROTO_UDPLITE)
+                {
+                    isChksumError = LWIPIF_LWIP_UdpLiteValidateChkSum(hPbufPacket);
+                }
+                else
+                {
+                    /* We don't check if HW checksum offload is enabled while checking for checksum error
+                     * as default value of this field when offload not enabled is false */
+                    const uint32_t csumInfo =  pCurrDmaPacket->chkSumInfo;
+
+                    if ( ENETDMA_RXCSUMINFO_GET_IPV4_FLAG(csumInfo) ||
+                            ENETDMA_RXCSUMINFO_GET_IPV6_FLAG(csumInfo))
+                    {
+                        isChksumError = ENETDMA_RXCSUMINFO_GET_CHKSUM_ERR_FLAG(csumInfo);
+                    }
+                }
+            }
+#endif
+            if (!isChksumError)
             {
                 /* Pass the received packet to the LwIP stack */
 #if ((ENET_CFG_NETIF_MAX == 2U) && (ENET_ENABLE_PER_CPSW == 1U))

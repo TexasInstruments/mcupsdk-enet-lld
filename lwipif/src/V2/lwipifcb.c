@@ -101,11 +101,10 @@ void LwipifEnetAppCb_getHandle(LwipifEnetAppIf_GetHandleInArgs *inArgs,
     EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
     EnetApp_coreAttach(enetType,instId, coreId, &attachInfo);
 
-#if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
-    int32_t status;
-    /* Confirm HW checksum offload is enabled when LWIP chksum offload is enabled */
-    if (Enet_isCpswFamily(enetType))
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
     {
+        /* Confirm HW checksum offload is enabled when LWIP chksum offload is enabled */
+        int32_t status;
         Enet_IoctlPrms prms;
         bool csumOffloadFlg;
         ENET_IOCTL_SET_OUT_ARGS(&prms, &csumOffloadFlg);

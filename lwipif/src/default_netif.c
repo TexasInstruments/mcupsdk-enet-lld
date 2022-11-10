@@ -38,14 +38,14 @@ static struct netif netif;
 
 void init_default_netif(const ip4_addr_t *ipaddr, const ip4_addr_t *netmask, const ip4_addr_t *gw)
 {
-#if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
     const uint32_t checksum_offload_flags = (NETIF_CHECKSUM_GEN_UDP | NETIF_CHECKSUM_GEN_TCP | NETIF_CHECKSUM_CHECK_TCP | NETIF_CHECKSUM_CHECK_UDP);
     const uint32_t checksum_flags = (NETIF_CHECKSUM_ENABLE_ALL & ~checksum_offload_flags);
 #endif
     netif_add(&netif, ipaddr, netmask, gw, NULL, LWIPIF_LWIP_init, tcpip_input);
     LWIPIF_LWIP_cfg(&netif);
     netif_set_default(&netif);
-#if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
     NETIF_SET_CHECKSUM_CTRL(&netif, checksum_flags);
 #endif
 }
