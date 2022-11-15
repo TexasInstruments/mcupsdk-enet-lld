@@ -298,7 +298,7 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
 
     /* Get the pointer to the private data */
     hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-    hTxHandle  = hLwip2Enet->mapNeitf2Tx[netif->num];
+    hTxHandle  = hLwip2Enet->mapNetif2Tx[netif->num];
     macPort    = hLwip2Enet->mapNetif2TxPortNum[netif->num];
 
     Lwip2Enet_assert(hLwip2Enet != NULL);
@@ -344,7 +344,6 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
 {
     Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
     struct netif *netif;
-    uint32_t bufSize;
 
 #if (ENET_ENABLE_PER_CPSW == 1)
     netif = hLwip2Enet->mapRx2Netif[ENET_MACPORT_NORM(rxPortNum)];
@@ -364,50 +363,13 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
         }
         /* Put the new packet on the free queue */
         pbuf_free(hPbufPacket);
-        /* Allocate a new Pbuf packet to be used */
-        bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
-        hPbufPacket = pbuf_alloc(PBUF_RAW, bufSize, PBUF_POOL);
-        if (hPbufPacket != NULL)
-        {
-            Lwip2Enet_assert(hPbufPacket->payload != NULL);
 
-            /* Ensures that the ethernet frame is always on a fresh cacheline */
-            Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
-            /* Put the new packet on the free queue */
-            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
-        }
-        else
-        {
-            LWIP2ENETSTATS_ADDONE(&rx->stats.pbufAllocFailCnt);
-            rx->rxReclaimCount++;
-        }
         LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
         LWIP2ENETSTATS_ADDONE(&rx->stats.rxLwipInputFail);
     }
     else
     {
         LWIP2ENETSTATS_ADDONE(&rx->stats.stackNotifyCnt);
-
-        /* Allocate a new Pbuf packet to be used */
-        bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
-
-        hPbufPacket = pbuf_alloc(PBUF_RAW, bufSize, PBUF_POOL);
-        if (hPbufPacket != NULL)
-        {
-            Lwip2Enet_assert(hPbufPacket->payload != NULL);
-
-            /* Ensures that the ethernet frame is always on a fresh cacheline */
-            Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
-            /* Put the new packet on the free queue */
-            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
-        }
-        else
-        {
-            LWIP2ENETSTATS_ADDONE(&rx->stats.pbufAllocFailCnt);
-            rx->rxReclaimCount++;
-        }
     }
 }
 

@@ -94,21 +94,6 @@ extern "C" {
 
 #define LWIP_RXFLOW_2_PORTIDX(num) (num - 1U)
 
-/*
- * Split the number of pbufs for TX channel and as many enabled RX channels/flows:
- * - TX channel requires LWIP2ENET_TX_PACKETS pbufs
- * - Each RX channel/flows requires (2 x LWIP2ENET_RX_PACKETS) to avoid running out of
- *   free pbufs to new packets
- *
- * Total pbufs (PBUF_POOL_SIZE) should be:
- *   total = tx + ((2 * rx) * n)
- *
- * If we assume number of buffers per channel to be same, then:
- *   tx = rx = total / (1 + 2 * n)
- */
-#define LWIP2ENET_TX_PACKETS             (16U)
-#define LWIP2ENET_RX_PACKETS             (PBUF_POOL_SIZE/2U)
-
 #if (ENET_CFG_IS_OFF(CPSW_CSUM_OFFLOAD_SUPPORT))
 #if (!(CHECKSUM_CHECK_UDP || CHECKSUM_CHECK_TCP || CHECKSUM_GEN_UDP || CHECKSUM_GEN_TCP))
 #error "Hardware csum offload disabled and lwipopts disables sw csum also.Fix lwiptops.h"
@@ -210,25 +195,11 @@ typedef struct Lwip2Enet_RxObj_s
     /*! Flow index for RX flow */
     uint32_t flowIdx;
 
-    /*! Queue that holds packets ready to be given to the hardware */
-    pbufQ freePbufQ;
-
     /*! DMA Rx free packet info queue (holds packets returned from the hardware) */
     EnetDma_PktQ freePktInfoQ;
 
     /*! Number of packets*/
     uint32_t numPackets;
-
-    /*! Rx buffer count allocated via pbuf_alloc .*/
-    uint32_t rxAllocCount;
-
-	/** Rx buffer count to be allocated via pbuf_alloc .*/
-    uint32_t rxReclaimCount;
-
-    /** Rx buffer count last allocated in periodic reclain rx buffers function .*/
-    uint32_t lastRxReclaimCount;
-
-    EnetDma_Pkt pktInfoMem[LWIP2ENET_RX_PACKETS];//ToDo: this should be removed
 
     /*! lwIP interface statistics */
     Lwip2Enet_RxStats stats;
@@ -324,6 +295,7 @@ typedef struct Lwip2Enet_Obj_s
     /*! lwIP network interface */
     struct netif *netif[ENET_CFG_NETIF_MAX];
 
+    uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
 	/*! Total number of allocated PktInfo elements */
     uint32_t allocPktInfo;
 
@@ -388,9 +360,9 @@ typedef struct Lwip2Enet_Obj_s
     /*! CPU load stats */
     Lwip2Enet_Stats stats;
 
-    Lwip2Enet_RxHandle mapNeitf2Rx[ENET_CFG_NETIF_MAX];
+    Lwip2Enet_RxHandle mapNetif2Rx[ENET_CFG_NETIF_MAX];
 
-    Lwip2Enet_TxHandle mapNeitf2Tx[ENET_CFG_NETIF_MAX];
+    Lwip2Enet_TxHandle mapNetif2Tx[ENET_CFG_NETIF_MAX];
 
     struct netif *mapRx2Netif[ENET_CFG_NETIF_MAX];
 

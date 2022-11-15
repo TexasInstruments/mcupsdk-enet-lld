@@ -1,7 +1,7 @@
 /*
  * lwIP does not natively support buffer queues. This file implements a custom
- * queue. Each member (called a buffer pointer) of the queue is a pointer 
- * pointing to a next member as well as to a packet buffer. Every time a packet 
+ * queue. Each member (called a buffer pointer) of the queue is a pointer
+ * pointing to a next member as well as to a packet buffer. Every time a packet
  * buffer is passed to the enQ, a buffer pointer is allocated and associated to
  * the packet passed. The buffer pointer is then enqueued. When dequeuing, the
  * buffer pointer is freed. In this way the lwipstack is not modified while still
@@ -14,10 +14,9 @@
 
 #include "lwip/pbuf.h"
 #include "lwipopts.h"
-
-/* 
+/*
  * This number is the total number of free buffer pointers available (for all
- * queues. Make sure this number is sufficiently high to accommodate all the 
+ * queues. Make sure this number is sufficiently high to accommodate all the
  * buffers that could potentially be made by the stack in worst scenario.
  */
 #define MAXFREE (PBUF_POOL_SIZE * 2)

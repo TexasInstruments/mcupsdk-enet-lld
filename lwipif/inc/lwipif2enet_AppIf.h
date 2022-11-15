@@ -102,8 +102,6 @@ typedef struct LwipifEnetAppIf_TxHandleInfo_s
 
     /** Number of packets*/
     uint32_t numPackets;
-
-    EnetDma_PktQ *pktInfoQ;
 } LwipifEnetAppIf_TxHandleInfo;
 
 
@@ -122,8 +120,6 @@ typedef struct LwipifEnetAppIf_RxHandleInfo_s
     bool disableEvent;
         /** Mac Address allocated for the flow */
     uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
-
-    EnetDma_PktQ *pktInfoQ;
 } LwipifEnetAppIf_RxHandleInfo;
 
 typedef struct LwipifEnetAppIf_GetHandleNetifInfo_s
@@ -178,6 +174,14 @@ typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
     void *rxFreePktCbArg;
 } LwipifEnetAppIf_ReleaseRxHandleInfo;
 
+
+typedef struct lwip2enet_custom_pbuf_t
+{
+   struct pbuf_custom p;
+   EnetDma_Pkt *pktInfoMem;
+   EnetDma_PktQ *freePktInfoQ;
+} lwip2enet_custom_pbuf;
+
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
 /* ========================================================================== */
@@ -205,6 +209,7 @@ extern void LwipifEnetAppCb_releaseTxHandle(LwipifEnetAppIf_ReleaseTxHandleInfo 
 
 extern void LwipifEnetAppCb_releaseRxHandle(LwipifEnetAppIf_ReleaseRxHandleInfo *releaseInfo);
 
+extern void lwipif_pbuf_free_custom(struct pbuf *p);
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

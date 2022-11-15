@@ -64,14 +64,14 @@ void pbufQ_init_freeQ()
             pfree[fQ_iter].next = &pfree[fQ_iter+1];
             pfree[fQ_iter].hPbufPkt = NULL;
         }
-	    
+
         pfree[fQ_iter].next = NULL;
         pfree[fQ_iter].hPbufPkt = NULL;
-	    
+
         pfreeQ.head = &pfree[0];
         pfreeQ.tail = &pfree[MAXFREE - 1];
         pfreeQ.count = MAXFREE;
-	    
+
         gPbufQ_initialized = true;
     }
 }

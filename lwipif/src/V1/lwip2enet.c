@@ -109,8 +109,6 @@ static void mapNetif2Rx(struct netif *netif,
                         Lwip2Enet_RxHandle hRxLwip2Enet,
                         Lwip2Enet_Handle hLwip2Enet);
 
-static void Lwip2Enet_prepTxRxQs(Lwip2Enet_Handle hLwip2Enet);
-
 static void Lwip2Enet_notifyRxPackets(void *cbArg);
 
 static void Lwip2Enet_notifyTxPackets(void *cbArg);
@@ -123,8 +121,6 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
 
 static void Lwip2Enet_pktInfoQ2PbufQ(EnetDma_PktQ *pDmaPktInfoQ,
                                      pbufQ *pbufPktQ);
-
-static void Lwip2Enet_allocRxPackets(Lwip2Enet_RxObj *rx);
 
 static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                                     EnetDma_PktQ *pPktQ);
@@ -268,20 +264,10 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
         /* Init internal bookkeeping fields */
         hLwip2Enet->oldMCastCnt = 0U;
 
-		/* For every pbuf sent to LWIP from netif->input we alloc a pbuf to queue to driver.
-        * If pbuf alloc fails at that point increment this counted so that buffers can be reclaimed and
-        * queued to driver in the periodic timer cb
-        */
-        for (i = 0U; i < LWIPIF_MAX_RX_CHANNELS; i++)
-        {
-            hLwip2Enet->rx[i].rxReclaimCount = 0U;
-            hLwip2Enet->rx[i].lastRxReclaimCount = 0U;
-    	    hLwip2Enet->rx[i].rxAllocCount = 0U;
-        }
         for (i = 0U; i < ENET_CFG_NETIF_MAX; i++)
         {
-            hLwip2Enet->mapNeitf2Rx[i] = NULL;
-            hLwip2Enet->mapNeitf2Tx[i] = NULL;
+            hLwip2Enet->mapNetif2Rx[i] = NULL;
+            hLwip2Enet->mapNetif2Tx[i] = NULL;
             hLwip2Enet->mapRx2Netif[i] = NULL;
             hLwip2Enet->mapNetif2TxPortNum[i] = ENET_MAC_PORT_INV;
         }
@@ -315,10 +301,6 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
 
     /* Process netif related parameters*/
     LwipifEnetAppCb_getNetifInfo(netif, &netifInfo);
-    /* Updating the netif params */
-    netif->hwaddr_len = 6U;
-    netif->state = (void *)hLwip2Enet;
-    hLwip2Enet->netif[netif->num] = netif;
 
     for(i=0U; i < netifInfo.numTxChannels; i++)
     {
@@ -331,6 +313,11 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
         hRxLwip2Enet = Lwip2Enet_initRxObj(i, hLwip2Enet);
         mapNetif2Rx(netif, netifInfo.isDirected, hRxLwip2Enet, hLwip2Enet);
     }
+    /* Updating the netif params */
+    EnetUtils_copyMacAddr(netif->hwaddr ,&hLwip2Enet->macAddr[netif->num][0U]);
+    netif->hwaddr_len = 6U;
+    netif->state = (void *)hLwip2Enet;
+    hLwip2Enet->netif[netif->num] = netif;
 
     /* DMA handles are availablw now, so starting the tasks and completing the initialization of lwipif*/
     if(hLwip2Enet->initDone == false)
@@ -380,7 +367,7 @@ static void mapNetif2Tx(struct netif *netif,
                         Lwip2Enet_TxHandle hTxLwip2Enet,
                         Lwip2Enet_Handle hLwip2Enet)
 {
-    hLwip2Enet->mapNeitf2Tx[netif->num] = hTxLwip2Enet;
+    hLwip2Enet->mapNetif2Tx[netif->num] = hTxLwip2Enet;
 
     if(isDirected)
     {
@@ -394,7 +381,7 @@ static void mapNetif2Rx(struct netif *netif,
                         Lwip2Enet_Handle hLwip2Enet)
 {
 
-    hLwip2Enet->mapNeitf2Rx[netif->num] = hRxLwip2Enet;
+    hLwip2Enet->mapNetif2Rx[netif->num] = hRxLwip2Enet;
     hLwip2Enet->mapRx2Netif[netif->num] = netif;
 #if (ENET_ENABLE_PER_ICSSG == 1)
     /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the hRxLwip2Enet->flowIdx to map to netif*/
@@ -478,8 +465,11 @@ static Lwip2Enet_RxHandle Lwip2Enet_initRxObj(uint32_t rxCh,
 
         for (uint32_t i = 0U; i < hLwip2Enet->appInfo.maxNumNetif; i++)
         {
-            EnetUtils_copyMacAddr(hLwip2Enet->netif[i]->hwaddr, &outArgs.macAddr[i][0U]);
+            EnetUtils_copyMacAddr(&hLwip2Enet->macAddr[i][0U], &outArgs.macAddr[i][0U]);
         }
+
+        hLwip2Enet->rx[rxCh].stats.freeAppPktEnq = outArgs.numPackets;
+        hLwip2Enet->allocPktInfo += outArgs.numPackets;
 
         hLwip2Enet->rx[rxCh].refCount = 1U;
         hLwip2Enet->rx[rxCh].enabled = true;
@@ -619,6 +609,13 @@ static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
 
         hLwip2Enet->tx[txCh].disableEvent = outArgs.disableEvent;
 
+        hLwip2Enet->tx[txCh].stats.freeAppPktEnq = outArgs.numPackets;
+        hLwip2Enet->allocPktInfo += outArgs.numPackets;
+
+        /* Initialize the TX pbuf queues */
+        pbufQ_init(&hLwip2Enet->tx[txCh].readyPbufQ);
+        pbufQ_init(&hLwip2Enet->tx[txCh].unusedPbufQ);
+
         hLwip2Enet->tx[txCh].refCount = 1U;
         hLwip2Enet->tx[txCh].enabled = true;
         hLwip2Enet->tx[txCh].hLwip2Enet = hLwip2Enet;
@@ -628,67 +625,6 @@ static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
     return hTxHandle;
 }
 
-static void Lwip2Enet_prepTxRxQs(Lwip2Enet_Handle hLwip2Enet)
-{
-    EnetDma_Pkt *pPktInfo;
-    uint32_t i,j;
-
-    for (i = 0U; i < hLwip2Enet->numTxChannels; i++)
-    {
-        /* Initialize the DMA free queue */
-        EnetQueue_initQ(&hLwip2Enet->tx[i].freePktInfoQ);
-    }
-
-    /* Initialize queue of RX packet info */
-    for (i = 0U; i <  hLwip2Enet->numRxChannels; i++)
-    {
-        EnetQueue_initQ(&hLwip2Enet->rx[i].freePktInfoQ);
-    }
-
-    /* Allocate the free pkt info Q. This is used to exchange buffer info from
-     * DMA basically for submitting free packets and retrieving ready packets */
-    for (i = 0U; i <  hLwip2Enet->numTxChannels; i++)
-    {
-        for (j = 0U; j < 16U;/*hLwip2Enet->appInfo.txInfo.numPackets;*/ j++)
-        {
-            /* Initialize Pkt info Q from allocated memory */
-            pPktInfo = EnetMem_allocEthPktInfoMem(hLwip2Enet,
-                                                  ENETDMA_CACHELINE_ALIGNMENT);
-
-            Lwip2Enet_assert(pPktInfo != NULL);
-            ENET_UTILS_SET_PKT_APP_STATE(&pPktInfo->pktState, ENET_PKTSTATE_APP_WITH_FREEQ);
-            EnetQueue_enq(&hLwip2Enet->tx[i].freePktInfoQ, &pPktInfo->node);
-
-            Lwip2EnetStats_addOne(&hLwip2Enet->tx[i].stats.freeAppPktEnq);
-            hLwip2Enet->allocPktInfo++;
-        }
-
-        /* Initialize the TX pbuf queues */
-        pbufQ_init(&hLwip2Enet->tx[i].readyPbufQ);
-        pbufQ_init(&hLwip2Enet->tx[i].unusedPbufQ);
-    }
-
-    /* Allocate the free pkt info Q. This is used to exchange buffer info from
-     * DMA basically for submitting free packets and retrieving ready packets */
-    for (i = 0U; i <  hLwip2Enet->numRxChannels; i++)
-    {
-        for (j = 0U; j < 32U; /*(hLwip2Enet->appInfo.rxInfo.rxHandle[i].numPackets);*/ j++)
-        {
-            pPktInfo = &hLwip2Enet->rx[i].pktInfoMem[j];
-
-            EnetDma_initPktInfo(pPktInfo);
-            EnetQueue_enq(&hLwip2Enet->rx[i].freePktInfoQ, &pPktInfo->node);
-
-            Lwip2EnetStats_addOne(&hLwip2Enet->rx[i].stats.freeAppPktEnq);
-            hLwip2Enet->allocPktInfo++;
-        }
-        /* Initialize the RX pbuf queue */
-        pbufQ_init(&hLwip2Enet->rx[i].freePbufQ);
-
-        /* Allocate the pbufs for the RX channel, primes freePbufQ */
-        Lwip2Enet_allocRxPackets(&hLwip2Enet->rx[i]);
-    }
-}
 
 /*!
  *  @b Lwip2Enet_setRx
@@ -891,7 +827,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
      */
     for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
     {
-        if (pbufQ_count(&hLwip2Enet->rx[i].freePbufQ) != 0U)
+        if (EnetQueue_getQCount(&hLwip2Enet->rx[i].freePktInfoQ) != 0U)
         {
             Lwip2Enet_submitRxPktQ(&hLwip2Enet->rx[i]);
         }
@@ -935,7 +871,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
             Lwip2Enet_TxHandle hTxHandle;
             Enet_MacPort macPort;
 
-            hTxHandle  = hLwip2Enet->mapNeitf2Tx[netif->num];
+            hTxHandle  = hLwip2Enet->mapNetif2Tx[netif->num];
             macPort    = hLwip2Enet->mapNetif2TxPortNum[netif->num];
             Lwip2Enet_sendTxPackets(hTxHandle, macPort);
         }
@@ -951,13 +887,10 @@ static void Lwip2Enet_processRxUnusedQ(Lwip2Enet_RxObj *rx,
     pDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(unUsedQ);
     while (pDmaPacket != NULL)
     {
-        /* Get the full PBUF packet that needs to be returned to the rx.freePbufQ */
+        /* Get the full PBUF packet that needs to be returned to the rx.freePktInfoQ */
         struct pbuf* hPbufPacket = (struct pbuf *)pDmaPacket->appPriv;
         if (hPbufPacket)
         {
-            /* Enqueue the received packet to rx.freePbufQ*/
-            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
-
             /* Put packet info into free Q as we have removed the Pbuf buffers
              * from the it */
             EnetQueue_enq(&rx->freePktInfoQ, &pDmaPacket->node);
@@ -981,9 +914,9 @@ static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
     retVal = EnetDma_submitRxPktQ(rx->hFlow, pSubmitQ);
     if (ENET_SOK != retVal)
     {
-		// Lwip2Enet_print(rx->hLwip2Enet,
-        //                 "EnetDma_submitRxPktQ: failed to submit pkts: %d\n",
-        //                 retVal);
+		Lwip2Enet_print(rx->hLwip2Enet,
+                        "EnetDma_submitRxPktQ: failed to submit pkts: %d\n",
+                        retVal);
     }
 
     if (EnetQueue_getQCount(pSubmitQ))
@@ -1072,9 +1005,9 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
     retVal = EnetDma_submitTxPktQ(tx->hCh, pSubmitQ);
     if (ENET_SOK != retVal)
     {
-        // Lwip2Enet_print(tx->hLwip2Enet,
-        //                 "EnetDma_submitTxPktQ: failed to submit pkts: %d\n",
-        //                 retVal);
+        Lwip2Enet_print(tx->hLwip2Enet,
+                        "EnetDma_submitTxPktQ: failed to submit pkts: %d\n",
+                        retVal);
     }
 
     if (EnetQueue_getQCount(pSubmitQ))
@@ -1230,47 +1163,6 @@ static void Lwip2Enet_txPacketTask(void *arg0)
     SemaphoreP_post(&hLwip2Enet->shutDownSemObj);
 }
 
-static void Lwip2Enet_allocRxPackets(Lwip2Enet_RxObj *rx)
-{
-	Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
-    struct pbuf* hPbufPacket;
-    uint32_t bufSize;
-    uint32_t j;
-
-    Lwip2Enet_assert(hLwip2Enet->appInfo.hostPortRxMtu != 0U);
-
-    /*
-     * Pre-allocate twice as many lwIP stack packets as we plan to give to/get from the hardware.
-     * The idea here is that even if we fill up all the DMA descriptors submit queue,
-     * we will have another complete set to swap in right away.
-     */
-    // Make sure this is defined as twice what is required from the hardware
-    /* Creates just as many Rx pbufs as the driver free packets*/
-
-    for (j = 0U; j < 32U;/*(hLwip2Enet->appInfo.rxInfo.rxHandle[i].numPackets);*/ j++)
-    {
-        bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
-
-        hPbufPacket = pbuf_alloc(PBUF_RAW, bufSize, PBUF_POOL);
-        if (hPbufPacket != NULL)
-        {
-            Lwip2Enet_assert(hPbufPacket->payload != NULL);
-            Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
-
-            /* Enqueue to the free queue */
-            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
-
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
-        }
-        else
-        {
-            Lwip2Enet_print(hLwip2Enet, "ERROR: Pbuf_alloc() failure...exiting!\n");
-            Lwip2Enet_assert(FALSE);
-        }
-    }
-
-}
-
 /*
  * Enqueue a new packet and make sure that buffer descriptors are properly linked.
  * NOTE: Not thread safe
@@ -1280,6 +1172,8 @@ static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx)
     EnetDma_PktQ resubmitPktQ;
     struct pbuf* hPbufPacket;
     EnetDma_Pkt *pCurrDmaPacket;
+    uint32_t bufSize;
+    Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
 
     EnetQueue_initQ(&resubmitPktQ);
 
@@ -1291,21 +1185,28 @@ static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx)
 
     while (NULL != pCurrDmaPacket)
     {
-        hPbufPacket = pbufQ_deQ(&rx->freePbufQ);
+        hPbufPacket = (struct pbuf*)pCurrDmaPacket->appPriv;
         if (hPbufPacket)
         {
+
+            lwip2enet_custom_pbuf* my_pbuf  = (lwip2enet_custom_pbuf*)hPbufPacket;
+
+            my_pbuf->p.custom_free_function = lwipif_pbuf_free_custom;
+            my_pbuf->pktInfoMem         = pCurrDmaPacket;
+            my_pbuf->freePktInfoQ         = &rx->freePktInfoQ;
+            my_pbuf->p.pbuf.flags |= PBUF_FLAG_IS_CUSTOM;
+
+            bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
+
+            hPbufPacket = pbuf_alloced_custom(PBUF_RAW, bufSize, PBUF_POOL, &my_pbuf->p, pCurrDmaPacket->bufPtr, pCurrDmaPacket->orgBufLen);
+
             LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktDeq);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktDeq);
 
-<<<<<<< HEAD
-                EnetDma_initPktInfo(pCurrDmaPacket);
-                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPacket, true);
-=======
             EnetDma_initPktInfo(pCurrDmaPacket);
             pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPacket->payload;
             pCurrDmaPacket->orgBufLen = hPbufPacket->len;
             pCurrDmaPacket->userBufLen = hPbufPacket->len;
->>>>>>> 89e8d31c ([all socs]:Enabling CPSW  dual mac and ICSSG support on applicable platforms with updated design and custom pbuf support)
 
             /* Save off the PBM packet handle so it can be handled by this layer later */
             pCurrDmaPacket->appPriv = (void *)hPbufPacket; //TODO:pktinfo linked to pbuf
@@ -1381,15 +1282,13 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
             else
             {
                 /* Put PBUF buffer in free Q as we are not passing to stack */
-                pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
+                EnetQueue_enq(&rx->freePktInfoQ, &pCurrDmaPacket->node);
+                LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
                 LWIP2ENETSTATS_ADDONE(&rx->stats.chkSumErr);
             }
 
             /* Put packet info into free Q as we have removed the PBUF buffers
              * from the it */
-            EnetQueue_enq(&rx->freePktInfoQ, &pCurrDmaPacket->node);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
-
             pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(pPktQ);
         }
         else
@@ -1540,9 +1439,6 @@ static int32_t Lwip2Enet_startRxTx(Lwip2Enet_Handle hLwip2Enet)
         Lwip2Enet_assert(NULL != hLwip2Enet->tx[i].hCh);
         status = EnetDma_enableTxEvent(hLwip2Enet->tx[i].hCh);
     }
-
-    /* Initialize free DMA packet queues */
-    Lwip2Enet_prepTxRxQs(hLwip2Enet);//ToDo: most of the code inside this should now be auto generated.
 
     for(i = 0U; i< hLwip2Enet->numRxChannels; i++)
     {
@@ -1714,9 +1610,9 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
     Lwip2Enet_freePbufPackets(cqPktInfoQ);
 
     /* Flush out our pending receive queues */
-    while (pbufQ_count(&rx->freePbufQ) != 0U)
+    while (EnetQueue_getQCount(&rx->freePktInfoQ) != 0U)
     {
-        pbuf_free(pbufQ_deQ(&rx->freePbufQ));
+        EnetQueue_deq(&rx->freePktInfoQ);
         LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktDeq);
     }
 }
@@ -1764,39 +1660,39 @@ static void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
 
 static void Lwip2Enet_enqueueFreedPbufRxPackets(Lwip2Enet_RxObj *rx)
 {
-    uint32_t bufSize;
-    struct pbuf *hPbufPacket;
-    uint32_t rxReclaimCount = 0U;
-    uint32_t pbufAllocCount = 0U;
-    uint32_t i;
-    Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
+    // uint32_t bufSize;
+    // struct pbuf *hPbufPacket;
+    // uint32_t rxReclaimCount = 0U;
+    // uint32_t pbufAllocCount = 0U;
+    // uint32_t i;
+    // Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
 
-    /* Allocate a new Pbuf packet to be used */
-    bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
+    // /* Allocate a new Pbuf packet to be used */
+    // bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
 
-    rxReclaimCount = rx->rxReclaimCount - rx->lastRxReclaimCount;
-    for (i = 0U; i < rxReclaimCount;i++)
-    {
-        hPbufPacket = pbuf_alloc(PBUF_RAW, bufSize, PBUF_POOL);
-        if (hPbufPacket != NULL)
-        {
-            Lwip2Enet_assert(hPbufPacket->payload != NULL);
-            /* Ensures that the ethernet frame is always on a fresh cacheline */
-            Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
-            /* Put the new packet on the free queue */
-            pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
-            pbufAllocCount++;
-        }
-        else
-        {
-            break;
-        }
-    }
+    // rxReclaimCount = rx->rxReclaimCount - rx->lastRxReclaimCount;
+    // for (i = 0U; i < rxReclaimCount;i++)
+    // {
+    //     hPbufPacket = pbuf_alloc(PBUF_RAW, bufSize, PBUF_POOL);
+    //     if (hPbufPacket != NULL)
+    //     {
+    //         Lwip2Enet_assert(hPbufPacket->payload != NULL);
+    //         /* Ensures that the ethernet frame is always on a fresh cacheline */
+    //         Lwip2Enet_assert(ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT));
+    //         /* Put the new packet on the free queue */
+    //         pbufQ_enQ(&rx->freePbufQ, hPbufPacket);
+    //         LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
+    //         pbufAllocCount++;
+    //     }
+    //     else
+    //     {
+    //         break;
+    //     }
+    // }
 
-    Lwip2Enet_submitRxPktQ(rx);
-    rx->rxAllocCount += pbufAllocCount;
-    rx->lastRxReclaimCount  += pbufAllocCount;
+    // Lwip2Enet_submitRxPktQ(rx);
+    // rx->rxAllocCount += pbufAllocCount;
+    // rx->lastRxReclaimCount  += pbufAllocCount;
 
 }
 
@@ -1814,11 +1710,12 @@ static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg)
                 Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[i]);
             }
         }
+
         for (uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
         {
             if (hLwip2Enet->rx[i].enabled)
             {
-                Lwip2Enet_enqueueFreedPbufRxPackets(&hLwip2Enet->rx[i]);
+                //Lwip2Enet_enqueueFreedPbufRxPackets(&hLwip2Enet->rx[i]);
                 SemaphoreP_post(&hLwip2Enet->rxPacketSemObj);
             }
         }
