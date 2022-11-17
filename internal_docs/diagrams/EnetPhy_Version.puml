@@ -1,0 +1,7 @@
+@startuml
+
+CpswPhy_Version : oui
+CpswPhy_Version : model
+CpswPhy_Version : revision
+
+@enduml

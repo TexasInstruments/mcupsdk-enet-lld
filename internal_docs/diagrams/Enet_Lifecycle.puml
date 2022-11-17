@@ -1,0 +1,108 @@
+ @startuml
+'Enet life-cycle sequence
+
+skinparam sequence {
+    BoxBorderColor black
+    'GroupBorderThickness .8
+    GroupBodyBackgroundColor transparent
+}
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+box "Application" #LightBlue
+participant App1   as "Primary\nClient"  order 1
+participant App2   as "Local\nClient"    order 2
+participant App3   as "Remote\nClient"   order 3
+participant Timer  as "PHY\nTimer"       order 4
+end box
+box "Driver"
+participant Enet   as "Enet"             order 5
+participant Soc    as "Enet SoC"         order 6
+end box
+
+App1  -> Enet           : <b>Enet_init()</b>
+note left               : One-time initialization\ndone by main client
+activate Enet
+Enet --> App1
+deactivate Enet
+
+group Peripheral
+App1  -> Enet           : <b>Enet_open(</b>enetType, instId, cfg<b>)</b>
+note left               : Main client\nalso opens driver
+activate Enet
+Enet  -> Soc            : EnetSoc_getEnetHandle(enetType, instId)
+activate Soc
+Soc  --> Enet           : hEnet
+deactivate Soc
+Enet --> App1           : hEnet
+deactivate Enet
+
+group Local and remote operations
+App1  -> Enet           : <b>Enet_registerEventCb(</b>hEnet, evt, evtNum, evtCb, args<b>)</b>
+note left               : Register callbacks\nfor desired events
+activate Enet
+Enet --> App1
+deactivate Enet
+
+App1  -> Enet           : <b>Enet_ioctl(</b>hEnet, coreId, cmd, prms<b>)</b>
+note left               : Local core cmds
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+App2  -> Enet           : <b>Enet_ioctl(</b>hEnet, coreId, cmd, prms<b>)</b>
+note left               : Local core cmds
+activate Enet
+Enet --> App2           : status
+deactivate Enet
+
+App3  -> Enet           : <b>Enet_ioctl(</b>hEnet, remCoreId1, cmd, prms<b>)</b>
+note left               : Cmds originated\nin remote core
+activate Enet
+Enet --> App3           : status
+deactivate Enet
+
+group PHY tick
+Timer -> Enet          : <b>Enet_periodicTick(</b>hEnet<b>)</b>
+note left               : Longer period\n(i.e. 100ms)
+activate Enet
+Enet  --> Timer
+deactivate Enet
+end
+
+group loop
+App1   -> Enet          : <b>Enet_poll(</b>hEnet, evtMask<b>)</b>
+note left               : Poll until\nevent occurs
+activate Enet
+Enet   -> App1          : evtCb(evt, args)
+activate App1
+App1  --> Enet
+deactivate App1
+Enet  --> App1
+deactivate Enet
+end
+
+App1  -> Enet           : <b>Enet_unregisterEventCb(</b>hEnet, evt, evtNum<b>)</b>
+note left               : Unregister all callbacks
+activate Enet
+Enet --> App1
+deactivate Enet
+end
+
+App1  -> Enet           : <b>Enet_close(</b>hEnet<b>)</b>
+note left               : Main client\ncloses driver
+activate Enet
+Enet --> App1
+deactivate Enet
+
+App1  -> Enet           : <b>Enet_deinit()</b>
+note left               : One-time de-initialization\ndone by main client
+activate Enet
+Enet --> App1
+deactivate Enet
+
+@enduml

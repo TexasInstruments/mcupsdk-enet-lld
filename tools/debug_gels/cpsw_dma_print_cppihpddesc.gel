@@ -1,0 +1,293 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#define	uint32_t                unsigned int
+#define TRUE                    1
+#define FALSE                   0
+
+#define	WR_MEM_32(addr, data)   *(uint32_t*)(addr) = (uint32_t)(data)
+#define	RD_MEM_32(addr)         *(uint32_t*)(addr)
+
+menuitem "CPSW CPPI Descs"
+
+showPacketDesc(uint32_t addr)
+{
+	uint32_t w0  = RD_MEM_32(addr + 0x00);
+	uint32_t w1  = RD_MEM_32(addr + 0x04);
+	uint32_t w2  = RD_MEM_32(addr + 0x08);
+	uint32_t w3  = RD_MEM_32(addr + 0x0c);
+	uint32_t w4  = RD_MEM_32(addr + 0x10);
+	uint32_t w5  = RD_MEM_32(addr + 0x14);
+	uint32_t w6  = RD_MEM_32(addr + 0x18);
+	uint32_t w7  = RD_MEM_32(addr + 0x1c);
+	uint32_t w8  = RD_MEM_32(addr + 0x20);
+	uint32_t w9  = RD_MEM_32(addr + 0x24);
+	uint32_t w10 = RD_MEM_32(addr + 0x28);
+	uint32_t w11 = RD_MEM_32(addr + 0x2c);
+
+	GEL_TextOut("--------------------------------------------\n");
+	GEL_TextOut(" HPD address: %x\n",,,,, addr);
+	GEL_TextOut("--------------------------------------------\n");
+
+	GEL_TextOut("Packet Information Word 0 (PD Word 0)\n");
+	GEL_TextOut("    HPD Type Identifier      = %d\n",,,,,  (w0 >> 30) & 0x3);
+	GEL_TextOut("    EPIB Present             = %s\n",,,,, ((w0 >> 29) & 0x1)?"Yes":"No");
+	GEL_TextOut("    Prot Specific Region Loc = %s\n",,,,, ((w0 >> 28) & 0x1)?"SOP buffer":"In desc");
+	GEL_TextOut("    Prot Specific Word Count = %d\n",,,,,  (w0 >> 22) & 0x3F);
+	GEL_TextOut("    Packet Length            = %d\n",,,,,  (w0 >>  0) & 0x3FFFFF);
+
+ 	GEL_TextOut("Packet Information Word 1 (PD Word 1)\n");
+	GEL_TextOut("    Error Flags              = %d\n",,,,,  (w1 >> 28) & 0xF);
+	GEL_TextOut("    Prot Specific Flags      = %d\n",,,,,  (w1 >> 24) & 0xF);
+	GEL_TextOut("    Packet ID                = %d\n",,,,,  (w1 >> 14) & 0x3FF);
+	GEL_TextOut("    Flow ID                  = %d\n",,,,,  (w1 >>  0) & 0x3FFF);
+
+ 	GEL_TextOut("Packet Information Word 2 (PD Word 2)\n");
+	GEL_TextOut("    Packet Type              = %d\n",,,,,  (w2 >> 27) & 0x1F);
+	GEL_TextOut("    Return Policy            = %s\n",,,,, ((w2 >> 18) & 0x1)?"Separate buffers":"Entire packet");
+	GEL_TextOut("    Early Return             = %s\n",,,,, ((w2 >> 17) & 0x1)?"Upon fetching":"After read");
+	GEL_TextOut("    Return Push Policy       = %s\n",,,,, ((w2 >> 16) & 0x1)?"Head of queue":"Tail of queue");
+	GEL_TextOut("    Return Queue/Ring #      = %d\n",,,,,  (w2 >>  0) & 0xFFFF);
+
+ 	GEL_TextOut("Packet Information Word 3 (PD Word 3)\n");
+	GEL_TextOut("    Source Tag - Hi          = %d\n",,,,, (w3 >> 24) & 0xFF);
+	GEL_TextOut("    Source Tag - Lo          = %d\n",,,,, (w3 >> 16) & 0xFF);
+	GEL_TextOut("    Dest Tag - Hi            = %d\n",,,,, (w3 >>  8) & 0xFF);
+	GEL_TextOut("    Dest Tag - Lo            = %d\n",,,,, (w3 >>  0) & 0xFF);
+
+ 	GEL_TextOut("Linking Word 0 (PD Word 4)\n");
+	GEL_TextOut("    Next Desc LSB            = %x\n",,,,, w4);
+
+ 	GEL_TextOut("Linking Word 1 (PD Word 5)\n");
+	GEL_TextOut("    Next Desc MSB            = %x\n",,,,, (w5 >>  0) & 0xFFFF);
+	GEL_TextOut("    Next Desc Addr Space     = %x\n",,,,, (w5 >> 16) & 0xF);
+
+ 	GEL_TextOut("Buffer 0 Info Word 0 (PD Word 6)\n");
+	GEL_TextOut("    Buffer 0 LSB             = %x\n",,,,, w6);
+
+ 	GEL_TextOut("Buffer 0 Info Word 1 (PD Word 7)\n");
+	GEL_TextOut("    Buffer 0 MSB             = %x\n",,,,, (w7 >>  0) & 0xFFFF);
+	GEL_TextOut("    Buffer 0 Addr Space      = %x\n",,,,, (w7 >> 16) & 0xF);
+
+ 	GEL_TextOut("Buffer 0 Info Word 2 (PD Word 8)\n");
+	GEL_TextOut("    Buffer 0 Length          = %d\n",,,,, (w8 >>  0) & 0x3FFFFF);
+
+ 	GEL_TextOut("Original Buffer Info Word 0 (PD Word 9)\n");
+	GEL_TextOut("    Orig Buffer 0 Length     = %d\n",,,,, (w9 >>  0) & 0x3FFFFF);
+
+ 	GEL_TextOut("Original Buffer Info Word 1 (PD Word 10)\n");
+	GEL_TextOut("    Orig Buffer 0 LSB        = %x\n",,,,, w10);
+
+ 	GEL_TextOut("Original Buffer Info Word 2 (PD Word 11)\n");
+	GEL_TextOut("    Orig Buffer 0 MSB        = %x\n",,,,, (w11 >>  0) & 0xFFFF);
+	GEL_TextOut("    Orig Buffer 0 Addr Space = %x\n",,,,, (w11 >> 16) & 0xF);
+
+ 	GEL_TextOut("Data Buffer:\n");
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x00), RD_MEM_32(w6 + 0x04),
+				RD_MEM_32(w6 + 0x08), RD_MEM_32(w6 + 0x0c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x10), RD_MEM_32(w6 + 0x14),
+				RD_MEM_32(w6 + 0x18), RD_MEM_32(w6 + 0x1c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x20), RD_MEM_32(w6 + 0x24),
+				RD_MEM_32(w6 + 0x28), RD_MEM_32(w6 + 0x2c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x30), RD_MEM_32(w6 + 0x34),
+				RD_MEM_32(w6 + 0x38), RD_MEM_32(w6 + 0x3c));
+ 	GEL_TextOut("    ...\n");
+}
+
+parseCpswPacketDesc(uint32_t addr)
+{
+	uint32_t w0  = RD_MEM_32(addr + 0x00);
+	uint32_t w1  = RD_MEM_32(addr + 0x04);
+	uint32_t w2  = RD_MEM_32(addr + 0x08);
+	uint32_t w3  = RD_MEM_32(addr + 0x0c);
+	uint32_t w4  = RD_MEM_32(addr + 0x10);
+	uint32_t w5  = RD_MEM_32(addr + 0x14);
+	uint32_t w6  = RD_MEM_32(addr + 0x18);
+	uint32_t w7  = RD_MEM_32(addr + 0x1c);
+	uint32_t w8  = RD_MEM_32(addr + 0x20);
+	uint32_t w9  = RD_MEM_32(addr + 0x24);
+	uint32_t w10 = RD_MEM_32(addr + 0x28);
+	uint32_t w11 = RD_MEM_32(addr + 0x2c);
+	uint32_t nextDescError = FALSE;
+	uint32_t pktSizeError = FALSE;
+
+	if (w4 != 0)
+	{
+		nextDescError = TRUE;
+	}
+	if (((w9 >>  0) & 0x3FFFFF) != 1526)
+	{
+		pktSizeError = TRUE;
+	}
+
+	GEL_TextOut("--------------------------------------------\n");
+	GEL_TextOut(" HPD address: %x\n",,,,, addr);
+	GEL_TextOut("--------------------------------------------\n");
+	GEL_TextOut("Packet Length            = %d\n",,,,, (w0 >>  0) & 0x3FFFFF);
+	GEL_TextOut("Error Flags              = %d\n",,,,, (w1 >> 28) & 0xF);
+	GEL_TextOut("Flow ID                  = %d\n",,,,, (w1 >>  0) & 0x3FFF);
+	GEL_TextOut("Return Queue/Ring #      = %d\n",,,,, (w2 >>  0) & 0xFFFF);
+	GEL_TextOut("Next Desc                = %x\n",,,,, w4);
+	GEL_TextOut("Buffer 0                 = %x\n",,,,, w6);
+	GEL_TextOut("Buffer 0 Length          = %d\n",,,,, (w8 >>  0) & 0x3FFFFF);
+	GEL_TextOut("Orig Buffer 0            = %x\n",,,,, w10);
+	GEL_TextOut("Orig Buffer 0 Length     = %d\n",,,,, (w9 >>  0) & 0x3FFFFF);
+ 	GEL_TextOut("Data Buffer:\n");
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x00), RD_MEM_32(w6 + 0x04),
+				RD_MEM_32(w6 + 0x08), RD_MEM_32(w6 + 0x0c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x10), RD_MEM_32(w6 + 0x14),
+				RD_MEM_32(w6 + 0x18), RD_MEM_32(w6 + 0x1c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x20), RD_MEM_32(w6 + 0x24),
+				RD_MEM_32(w6 + 0x28), RD_MEM_32(w6 + 0x2c));
+	GEL_TextOut("    %x %x %x %x\n",,,,,
+				RD_MEM_32(w6 + 0x30), RD_MEM_32(w6 + 0x34),
+				RD_MEM_32(w6 + 0x38), RD_MEM_32(w6 + 0x3c));
+ 	GEL_TextOut("    ...\n");
+
+	if (nextDescError || pktSizeError)
+	{
+		GEL_TextOut("Notes:\n");
+		if (nextDescError)
+		{
+			GEL_TextOut("    CPSW driver doesn't support linked descs (next desc = %x)\n",,,,, w4);
+		}
+		if (pktSizeError)
+		{
+			GEL_TextOut("    CPSW driver expects Eth packets of size 1516 bytes (got %d)\n",,,,, (w9 >>  0) & 0x3FFFFF);
+		}
+	}
+}
+
+analyzeCpswPacketDesc(uint32_t addr)
+{
+	uint32_t w1  = RD_MEM_32(addr + 0x04);
+	uint32_t w4  = RD_MEM_32(addr + 0x10);
+	uint32_t w9  = RD_MEM_32(addr + 0x24);
+	uint32_t nextDescError = FALSE;
+	uint32_t pktSizeError = FALSE;
+	uint32_t descFlagsError = FALSE;
+
+	if (((w1 >> 28) & 0xF) != 0)
+	{
+		descFlagsError = TRUE;
+	}
+
+	if (w4 != 0)
+	{
+		nextDescError = TRUE;
+	}
+
+	if (((w9 >>  0) & 0x3FFFFF) != 1526)
+	{
+		pktSizeError = TRUE;
+	}
+
+	if (descFlagsError || nextDescError || pktSizeError)
+	{
+		GEL_TextOut("\nPacket Desc %x:\n",,,,, addr);
+		if (descFlagsError)
+		{
+			GEL_TextOut("    CPPI desc contains error flags = %x\n",,,,, (w1 >> 28) & 0xF);
+		}
+		if (nextDescError)
+		{
+			GEL_TextOut("    CPSW driver doesn't support linked descs (next desc = %x)\n",,,,, w4);
+		}
+		if (pktSizeError)
+		{
+			GEL_TextOut("    CPSW driver expects Eth packets of size 1516 bytes (got %d)\n",,,,, (w9 >>  0) & 0x3FFFFF);
+		}
+	}
+}
+
+dialog cpsw_cppi_showPacketDesc(addr "HMPD Address: ")
+{
+	showPacketDesc(addr);
+}
+
+dialog cpsw_cppi_showAllPacketDesc(baseaddr "Base Address: ", num "Number of Descs", offset "Offset (in B):")
+{
+	uint32_t addr = baseaddr;
+	uint32_t i;
+
+	for (i = 0; i < num; i++)
+	{
+		showPacketDesc(addr);
+		addr = addr + offset;
+	}
+}
+
+dialog cpsw_cppi_parseCpswPacketDesc(addr "HMPD Address: ")
+{
+	parseCpswPacketDesc(addr);
+}
+
+dialog cpsw_cppi_parseAllPacketDesc(baseaddr "Base Address: ", num "Number of Descs", offset "Offset (in B):")
+{
+	uint32_t addr = baseaddr;
+	uint32_t i;
+
+	for (i = 0; i < num; i++)
+	{
+		parseCpswPacketDesc(addr);
+		addr = addr + offset;
+	}
+}
+
+dialog cpsw_cppi_analyzeCpswPacketDesc(addr "HMPD Address: ")
+{
+	GEL_TextOut("Analyzing desc at address %x\n",,,,, addr);
+	analyzeCpswPacketDesc(addr);
+	GEL_TextOut("Done\n");
+}
+
+dialog cpsw_cppi_analyzeAllPacketDesc(baseaddr "Base Address: ", num "Number of Descs", offset "Offset (in B):")
+{
+	uint32_t addr = baseaddr;
+	uint32_t i;
+
+	GEL_TextOut("Analyzing %d descs starting at address %x with offset of %d bytes\n",,,,, num, baseaddr, offset);
+
+	for (i = 0; i < num; i++)
+	{
+		analyzeCpswPacketDesc(addr);
+		addr = addr + offset;
+	}
+
+	GEL_TextOut("Done\n");
+}

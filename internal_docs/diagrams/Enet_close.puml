@@ -1,0 +1,49 @@
+ @startuml
+'Enet close sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_close(hEnet)</b>
+note left               : Close the peripheral\nwhose handle is passed
+activate Enet
+
+Enet  -> Per            : Per_close(hPer)
+note left               : Close the peripheral
+activate Per
+
+Per   -> Mod1           : hMod1->close(hMod1)
+note left               : Close module 1\n(i.e. hostport)
+activate Mod1
+Mod1 --> Per            :
+deactivate Mod1
+
+Per   -> Mod2           : hMod2->close(hMod2)
+note left               : Close module 2\n(i.e. macport)
+activate Mod2
+Mod2 --> Per            :
+deactivate Mod2
+
+...Close other modules...
+
+note over Enet          : Clear peripheral regs (i.e. SS),\nunregister interrupts, etc
+
+Per  --> Enet           :
+deactivate Per
+
+Enet --> App            :
+deactivate Enet
+
+@enduml

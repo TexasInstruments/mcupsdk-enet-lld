@@ -1,0 +1,105 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Per  as "Icssg Per"   order 3
+participant Pru  as "PRUSS Drv"   order 4
+participant Mdio as "MDIO Mod"    order 5
+participant Phy  as "PHY Mod"     order 6
+
+App   -> Enet           : <b>Enet_initCfg(</b>ENET_ICSSG_DUALMAC, n, cfg<b>)</b>
+note left               : Init ICSSG config params\nwith driver's defaults
+activate Enet
+Enet --> App
+deactivate Enet
+
+note over App           : Populate firmware addresses/sizes in cfg
+
+App   -> Enet           : <b>Enet_open(</b>ENET_ICSSG_DUALMAC, n, cfg<b>)</b>
+note left               : Open the ICSSG peripheral
+activate Enet
+
+Enet  -> Per            : Per_open(hPer, perCfg)
+note left               : Open the ICSSG peripheral
+activate Per
+
+note over Per           : Disable all classifiers
+note over Per           : R30-over-DMEM cmd init
+
+Per   -> Pru            : PRUICSS_pruDisable(PRUICSS_PRUn)
+note left               : Disable PRU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruDisable(PRUICSS_RTUn)
+note left               : Disable RTU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruDisable(PRUICSS_TPRUn)
+note left               : Disable TX PRU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+note over Per           : Initial FW configuration
+
+Per   -> Pru            : PRUICSS_pruWriteMemory(hPruss, PRU_ICSS_IRAM_PRU(n), ...)
+note left               : Download PRU core firmware
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruWriteMemory(hPruss, PRU_ICSS_IRAM_RTU(n), ...)
+note left               : Download RTU core firmware
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruWriteMemory(hPruss, PRU_ICSS_IRAM_TXPRU(n), ...)
+note left               : Download TX PRU core firmware
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruEnable(hPruss, PRUICCSS_PRUn)
+note left               : Enable PRU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruEnable(hPruss, PRUICCSS_RTUn)
+note left               : Enable RTU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Pru            : PRUICSS_pruEnable(hPruss, PRUICCSS_TPRUn)
+note left               : Enable TX PRU core
+activate Pru
+Pru  --> Per            : status
+deactivate Pru
+
+Per   -> Mdio           : EnetMod_open(hMdio, mdioCfg)
+note left               : Open MDIO driver
+activate Mdio
+Mdio --> Per            : status
+deactivate Mdio
+
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : hEnet
+deactivate Enet
+
+@enduml

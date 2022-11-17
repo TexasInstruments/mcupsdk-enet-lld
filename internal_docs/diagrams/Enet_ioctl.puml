@@ -1,0 +1,44 @@
+@startuml
+'Enet ioctl sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_ioctl(hEnet, coreId, cmd, prms)</b>
+note left               : Do ioctl the peripheral\nwhose handle is passed
+activate Enet
+
+note left of Enet       : Check core's permissions
+
+Enet  -> Per            : Per_ioctl(hPer, cmd, prms)
+note left               : Call ioctl on the peripheral
+activate Per
+
+note right of Per       : Find target module\nfrom cmd
+
+Per   -> Mod2           : hMod2->ioctl(hMod2, cmd, prms)
+note left               : Do ioctl on\nmodule 2 (i.e. macport)
+note right of Mod2      : Do ioctl operation
+activate Mod2
+Mod2 --> Per            : status
+deactivate Mod2
+
+Per  --> Enet           : status
+deactivate Per
+
+Enet --> App            : status
+deactivate Enet
+
+@enduml

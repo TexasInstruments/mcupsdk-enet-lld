@@ -1,0 +1,63 @@
+ @startuml
+'EnetMod - Ethernet Module
+
+Interface EnetMod {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    rejoin()
+    ioctl()
+    close()
+}
+
+class CpswHostPort implements EnetMod {
+}
+
+class CpswMacPort implements EnetMod {
+}
+
+class CpswAle implements EnetMod {
+}
+
+class CpswStats implements EnetMod {
+}
+
+class Mdio implements EnetMod {
+}
+
+class CpswCpts implements EnetMod {
+}
+
+class GmacHostPort implements EnetMod {
+}
+
+class GmacAle implements EnetMod {
+}
+
+class GmacStats implements EnetMod {
+}
+
+class IcssgHostPort implements EnetMod {
+}
+
+class IcssgMacPort implements EnetMod {
+}
+
+class IcssgFdb implements EnetMod {
+}
+
+class IcssgStats implements EnetMod {
+}
+
+class IcssgTimestamp implements EnetMod {
+}
+
+class NullMod implements EnetMod {
+}
+
+@enduml

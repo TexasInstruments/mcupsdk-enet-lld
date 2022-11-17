@@ -1,0 +1,121 @@
+@startuml
+
+scale 0.8
+
+hide empty description
+
+state fork_find <<fork>>
+state fork_mode <<fork>>
+state fork_nway <<fork>>
+state join_linked <<join>>
+
+state FINDING as "**FINDING**" {
+        [*] --> PHY_ALIVE
+  PHY_ALIVE --> BIND_DRV
+
+  state "Check PHY is alive" as PHY_ALIVE {
+    PHY_ALIVE: Check MDIO_ALIVE is set for this PHY addr
+  }
+  state "Bind driver" as BIND_DRV {
+    BIND_DRV: Find best matching driver based on PHY ID
+  }
+}
+
+state FOUND as "**FOUND**" {
+  FOUND: Initiate PHY specific reset
+}
+
+state RESET_WAIT as "**RESET_WAIT**" {
+  [*] --> WAIT_RESET
+
+  state "Wait for soft-reset to complete" as WAIT_RESET {
+    WAIT_RESET: Poll on BMCR[15] RESET (can be PHY specific)
+  }
+}
+
+state ENABLE as "**ENABLE**" {
+          [*] --> NORMAL_MODE
+  NORMAL_MODE --> EXT_CONFIG
+   EXT_CONFIG --> GET_LOCAL_CAPS
+
+  state "Set PHY in normal mode" as NORMAL_MODE {
+    NORMAL_MODE: Clear BMCR[11] PWRDOWN and BMCR[10] ISOLATE
+  }
+  state "PHY specific extended config" as EXT_CONFIG {
+    EXT_CONFIG: Call PHY specific extended config is available
+  }
+  state "Get SoC, MAC and local PHY capabilities" as GET_LOCAL_CAPS {
+    GET_LOCAL_CAPS: Get SoC, MAC port and local PHY device common caps
+  }
+}
+
+state LOOPBACK as "**LOOPBACK**"
+
+state NWAY_START as "**NWAY_START**" {
+           [*] --> SET_ADV_CAPS
+  SET_ADV_CAPS --> RESTART_ANEG
+
+  state "Set advertise capabilities" as SET_ADV_CAPS {
+    SET_ADV_CAPS: Set 100Mbps advertise caps in ANAR register
+    SET_ADV_CAPS: Set 1Gbps advertise caps in GIGCR register
+  }
+  state "Restart auto-negotiation" as RESTART_ANEG {
+    RESTART_ANEG: Set BMCR[12] ANEN to enable auto-negotiation
+    RESTART_ANEG: Set BMCR[9] ANRESTART to restart auto-negotiation
+  }
+}
+
+state NWAY_WAIT as "**NWAY_WAIT**" {
+       [*] --> POLL
+      POLL --> GET_CAPS
+  GET_CAPS --> SELECT_CAP
+
+  state "Wait for auto-negotiation complete" as POLL {
+    POLL: Poll on BMSR[5] ANCOMPLETE
+  }
+  state "Get 100Mbps / 1Gbps common caps" as GET_CAPS {
+    GET_CAPS: Get 100Mbps common caps from ANAR, ANLPAR
+    GET_CAPS: Get 1Gbps common caps from GIGCR, GIGSR
+  }
+  state "Select highest cap" as SELECT_CAP {
+    SELECT_CAP: Select highest performance protocol
+  }
+}
+
+state LINK_WAIT as "**LINK_WAIT**" {
+  [*] --> WAIT_LINK
+
+  state "Wait for link up" as WAIT_LINK {
+    WAIT_LINK: Poll on BMSR[2] LINKSTS
+  }
+}
+
+state LINKED as "**LINKED**" {
+  LINKED: Check MDIO_LINK is set for this PHY addr
+}
+
+' State transition
+        [*]  -->  FINDING
+    FINDING -up-> FINDING       : PHY not alive
+    FINDING  -->  fork_find
+  fork_find -down-> LINK_WAIT   : Strapped PHY
+  fork_find  -->  FOUND
+      FOUND  -->  RESET_WAIT
+ RESET_WAIT -up-> RESET_WAIT    : Reset in-progress
+ RESET_WAIT  -->  ENABLE        : Soft-reset complete
+     ENABLE  -->  fork_mode
+  fork_mode  -->  LOOPBACK      : Loopback mode
+  fork_mode  -->  NWAY_START    : Auto-negotiation mode
+  fork_mode  -->  LINK_WAIT     : Manual mode
+ NWAY_START  -->  NWAY_WAIT
+  NWAY_WAIT -up-> NWAY_WAIT     : Auto-negotiation in progress
+  NWAY_WAIT  -->  fork_nway
+  fork_nway  -->  LINK_WAIT     : Not linked yet
+  fork_nway  -->  join_linked   : Link up
+  LINK_WAIT -up-> LINK_WAIT     : Not linked yet
+  LINK_WAIT  -->  join_linked   : Link up
+join_linked  -->  LINKED
+     LINKED -up-> LINKED        : Still linked
+     LINKED -up-> FOUND         : Link lost
+
+@enduml

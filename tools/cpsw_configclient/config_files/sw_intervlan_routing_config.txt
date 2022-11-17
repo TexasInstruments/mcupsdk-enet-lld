@@ -1,0 +1,10 @@
+,{"cmd":"enable_sw_intervlan_routing",
+"src_mac_addr":"00:11:01:00:00:01",
+"src_IpAddr":"192.168.1.202",
+"ing_vlanId":100,
+"ing_portNum":3,
+"dst_mac_addr":"00:11:02:00:00:01",
+"dst_IpAddr":"192.168.1.204",
+"egr_vlanId":200,
+"egr_portNum":2
+}

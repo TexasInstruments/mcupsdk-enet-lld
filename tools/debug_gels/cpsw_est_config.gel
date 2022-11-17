@@ -1,0 +1,237 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2022
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define AM263X_CPSW_BASEADDR                0x52800000
+#define CONTROL_OFFSET                      0x00020000
+#define EST_RAM_OFFSET                      0x00032000
+#define CPTS_OFFSET                         0x0003D000
+
+#define WR_MEM_32(addr, data)               *(unsigned int*)(addr) = (unsigned int)(data)
+#define RD_MEM_32(addr)                     *(unsigned int*)(addr)
+
+#define ENET_GET_BIT(val, n)                ((val & (1 << n)) >> n)
+#define ENET_GET_FIELD(val, mask, shift)    ((val & mask) >> shift)
+
+menuitem "CPSW EST Print"
+
+cpsw_est_show_global_config(int baseAddr)
+{
+    int val;
+
+    GEL_TextOut("EST Global Config (CONTROL)\n");
+    GEL_TextOut("--------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + CONTROL_OFFSET + 0x0004);
+    GEL_TextOut("CPSW_CONTROL      =  %x\n",,,,,val);
+    GEL_TextOut("  EST_ENABLE      =  %d\n",,,,,ENET_GET_BIT(val, 18));
+    GEL_TextOut("  IET_ENABLE      =  %d\n",,,,,ENET_GET_BIT(val, 17));
+    GEL_TextOut("  P0_ENABLE       =  %d\n",,,,,ENET_GET_BIT(val, 2));
+    GEL_TextOut("  VLAN_AWARE      =  %d\n",,,,,ENET_GET_BIT(val, 1));
+    GEL_TextOut("  S_CN_SWITCH     =  %d\n",,,,,ENET_GET_BIT(val, 0));
+    GEL_TextOut("  other fields are intentionally omitted\n");
+    GEL_TextOut("\n");
+}
+
+cpsw_est_show_config(int baseAddr, int macPort)
+{
+    int val;
+
+    GEL_TextOut("MAC Port %d EST Config\n",,,,,macPort);
+    GEL_TextOut("--------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + CONTROL_OFFSET + 0x2004 + (macPort-1)*0x1000);
+    GEL_TextOut("PN_CONTROL        =  %x\n",,,,,val);
+    GEL_TextOut("  EST_PORT_EN     =  %d\n",,,,,ENET_GET_BIT(val, 17));
+    GEL_TextOut("  IET_PORT_EN     =  %d\n",,,,,ENET_GET_BIT(val, 16));
+    GEL_TextOut("  other fields are intentionally omitted\n");
+    GEL_TextOut("\n");
+
+    val = RD_MEM_32(baseAddr + CONTROL_OFFSET + 0x2330 + (macPort-1)*0x1000);
+    GEL_TextOut("PN_MAC_CONTROL    =  %x\n",,,,,val);
+    GEL_TextOut("  GIG             =  %d\n",,,,,ENET_GET_BIT(val, 7));
+    GEL_TextOut("  GMII_EN         =  %d\n",,,,,ENET_GET_BIT(val, 5));
+    GEL_TextOut("  FULLDUPLEX      =  %d\n",,,,,ENET_GET_BIT(val, 0));
+    GEL_TextOut("  other fields are intentionally omitted\n");
+    GEL_TextOut("\n");
+    
+    val = RD_MEM_32(baseAddr + CONTROL_OFFSET + 0x2050 + (macPort-1)*0x1000);
+    GEL_TextOut("PN_FIFO_STATUS    =  %x\n",,,,,val);
+    GEL_TextOut("  EST_BUFACT      =  %d\n",,,,,ENET_GET_BIT(val, 18));
+    GEL_TextOut("  EST_ADDR_ERR    =  %d\n",,,,,ENET_GET_BIT(val, 17));
+    GEL_TextOut("  EST_CNT_ERR     =  %d\n",,,,,ENET_GET_BIT(val, 16));
+    GEL_TextOut("  TX_E_MAC_ALLOW  =  %d\n",,,,,ENET_GET_FIELD(val, 0x0000FF00, 8));
+    GEL_TextOut("  TX_PRI_ACTIVE   =  %d\n",,,,,ENET_GET_FIELD(val, 0x000000FF, 0));
+    GEL_TextOut("\n");
+
+    val = RD_MEM_32(baseAddr + CONTROL_OFFSET + 0x2060 + (macPort-1)*0x1000);
+    GEL_TextOut("PN_EST_CONTROL    =  %x\n",,,,,val);
+    GEL_TextOut("  EST_FILL_MARGIN =  %d\n",,,,,ENET_GET_FIELD(val, 0x03FF0000, 16));
+    GEL_TextOut("  EST_PREMPT_COMP =  %d\n",,,,,ENET_GET_FIELD(val, 0x0000FE00, 9));
+    GEL_TextOut("  EST_FILL_EN     =  %d\n",,,,,ENET_GET_BIT(val, 8));
+    GEL_TextOut("  EST_TS_PRI      =  %d\n",,,,,ENET_GET_FIELD(val, 0x000000E0, 5));
+    GEL_TextOut("  EST_TS_ONE_PRI  =  %d\n",,,,,ENET_GET_BIT(val, 4));
+    GEL_TextOut("  EST_TS_FIRST    =  %d\n",,,,,ENET_GET_BIT(val, 3));
+    GEL_TextOut("  EST_TS_EN       =  %d\n",,,,,ENET_GET_BIT(val, 2));
+    GEL_TextOut("  EST_BUFSEL      =  %d\n",,,,,ENET_GET_BIT(val, 1));
+    GEL_TextOut("  EST_ONEBUF      =  %d\n",,,,,ENET_GET_BIT(val, 0));
+    GEL_TextOut("\n");
+}
+
+cpsw_est_dump_ram(int baseAddr, int macPort)
+{
+    int val;
+    int allow;
+    int count;
+    int i;
+
+    GEL_TextOut("MAC Port %d EST RAM\n",,,,,macPort);
+    GEL_TextOut("--------------------------------\n");
+
+    for (i = 0; i < 128; i++)
+    {
+        val = RD_MEM_32(baseAddr + EST_RAM_OFFSET + (macPort-1)*0x200 + (i*4));
+        if (val != 0)
+        {
+            allow = ENET_GET_FIELD(val, 0x003FFF00, 8);
+            count = ENET_GET_FIELD(val, 0x000000FF, 0);
+            GEL_TextOut("  LOC %d           =  %x (cnt=%d allow=%x)\n",,,,,i, val, allow, count);
+        }
+    }
+    GEL_TextOut("Done\n");
+    GEL_TextOut("\n");
+}
+
+cpsw_cpts_show_global_config(int baseAddr)
+{
+    int val;
+
+    GEL_TextOut("CPTS Global Config\n");
+    GEL_TextOut("--------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x4);
+    GEL_TextOut("CPTS_CONTROL      =  %x\n",,,,,val);
+    GEL_TextOut("  TS_SYNC_SEL     =  %d\n",,,,,ENET_GET_FIELD(val, 0xF0000000, 28));
+    GEL_TextOut("  TS_GENF_CLR_EN  =  %d\n",,,,,ENET_GET_BIT(val, 17));
+    GEL_TextOut("  TS_RX_NO_EVENT  =  %d\n",,,,,ENET_GET_BIT(val, 16));
+    GEL_TextOut("  HW8_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 15));
+    GEL_TextOut("  HW7_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 14));
+    GEL_TextOut("  HW6_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 13));
+    GEL_TextOut("  HW5_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 12));
+    GEL_TextOut("  HW4_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 11));
+    GEL_TextOut("  HW3_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 10));
+    GEL_TextOut("  HW2_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 9));
+    GEL_TextOut("  HW1_TS_PUSH_EN  =  %d\n",,,,,ENET_GET_BIT(val, 8));
+    GEL_TextOut("  TS_PPM_DIR      =  %d\n",,,,,ENET_GET_BIT(val, 7));
+    GEL_TextOut("  TS_COMP_TOG     =  %d\n",,,,,ENET_GET_BIT(val, 6));
+    GEL_TextOut("  MODE            =  %d\n",,,,,ENET_GET_BIT(val, 5));
+    GEL_TextOut("  SEQUENCE_EN     =  %d\n",,,,,ENET_GET_BIT(val, 4));
+    GEL_TextOut("  TSTAMP_EN       =  %d\n",,,,,ENET_GET_BIT(val, 3));
+    GEL_TextOut("  TS_COMP_POLARITY=  %d\n",,,,,ENET_GET_BIT(val, 2));
+    GEL_TextOut("  INT_TEST        =  %d\n",,,,,ENET_GET_BIT(val, 1));
+    GEL_TextOut("  CPTS_EN         =  %d\n",,,,,ENET_GET_BIT(val, 0));
+    GEL_TextOut("\n");
+
+    GEL_TextOut("CPTS Timestamp Add Value\n");
+    GEL_TextOut("--------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x4c);
+    GEL_TextOut("CPTS_TS_ADD_VAL   =  %x\n",,,,,val);
+    GEL_TextOut("  TS_ADD_VAL      =  %d\n",,,,,ENET_GET_FIELD(val, 0x00000007, 0));
+    GEL_TextOut("\n");
+}
+
+cpsw_cpts_estf_show_config(int baseAddr, int macPort)
+{
+    int val;
+
+    GEL_TextOut("MAC Port %d CPTS ESTF Config\n",,,,,macPort);
+    GEL_TextOut("--------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x200 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_COMP_LOW     =  %x\n",,,,,val);
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x204 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_COMP_HIGH    =  %x\n",,,,,val);
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x208 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_CONTROL      =  %x\n",,,,,val);
+    GEL_TextOut("  POLARITY_INV    =  %d\n",,,,,ENET_GET_BIT(val, 1));
+    GEL_TextOut("  PPM_DIR         =  %d\n",,,,,ENET_GET_BIT(val, 0));
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x20C + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_LENGTH       =  %d\n",,,,,val);
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x210 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_PPM_LOW      =  %d\n",,,,,val);
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x214 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_PPM_HIGH     =  %d\n",,,,,val);
+
+    val = RD_MEM_32(baseAddr + CPTS_OFFSET + 0x218 + (macPort-1)*0x20);
+    GEL_TextOut("ESTF_NUDGE        =  %d\n",,,,,val);
+    GEL_TextOut("\n");
+}
+
+hotmenu am263x_cpsw_est_show_global_config()
+{
+    cpsw_est_show_global_config(AM263X_CPSW_BASEADDR);
+}
+
+dialog am263x_cpsw_est_show_config(macPort "MAC Port 1 (1) MAC Port 2 (2)")
+{
+    cpsw_est_show_config(AM263X_CPSW_BASEADDR, macPort);
+}
+
+dialog am263x_cpsw_est_dump_ram(macPort "MAC Port 1 (1) MAC Port 2 (2)")
+{
+    cpsw_est_dump_ram(AM263X_CPSW_BASEADDR, macPort);
+}
+
+hotmenu am263x_cpsw_cpts_show_global_config()
+{
+    cpsw_cpts_show_global_config(AM263X_CPSW_BASEADDR);
+}
+
+dialog am263x_cpsw_cpts_estf_show_config(macPort "MAC Port 1 (1) MAC Port 2 (2)")
+{
+    cpsw_cpts_estf_show_config(AM263X_CPSW_BASEADDR, macPort);
+}
+
+dialog am263x_cpsw_est_show_all_config(macPort "MAC Port 1 (1) MAC Port 2 (2)")
+{
+    cpsw_est_show_global_config(AM263X_CPSW_BASEADDR);
+    cpsw_est_show_config(AM263X_CPSW_BASEADDR, macPort);
+    cpsw_est_dump_ram(AM263X_CPSW_BASEADDR, macPort);
+    cpsw_cpts_show_global_config(AM263X_CPSW_BASEADDR);
+    cpsw_cpts_estf_show_config(AM263X_CPSW_BASEADDR, macPort);
+}
+

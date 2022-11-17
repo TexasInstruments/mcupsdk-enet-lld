@@ -1,0 +1,18 @@
+ @startuml
+'EnetMod - Ethernet Module
+
+Interface EnetMod {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    rejoin()
+    ioctl()
+    close()
+}
+
+@enduml

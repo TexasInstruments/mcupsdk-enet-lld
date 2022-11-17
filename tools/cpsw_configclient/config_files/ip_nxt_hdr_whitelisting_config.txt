@@ -1,0 +1,4 @@
+,{"cmd":"ip_nxt_hdr_whitelisting",
+"vlanId":700,
+"vlanMemberMask":25
+}

@@ -1,0 +1,11 @@
+@startuml
+
+class EnetQ_Node
+EnetQ_Node : next : EnetQ_Node *
+
+class EnetQ
+EnetQ : count : uint32_t
+EnetQ : head : EnetQ_Node *
+EnetQ : tail : EnetQ_Node *
+
+@enduml

@@ -1,0 +1,74 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application"  order 1
+participant Brd  as "Board"        order 2
+participant Enet as "Enet"         order 3
+participant Per  as "Enet Per"     order 4
+participant Phy  as "EnetPhy"      order 5
+participant Mod1 as "MAC Port Mod" order 6
+participant Mod2 as "MDIO Mod"     order 7
+participant Mod3 as "FDB Mod"      order 8
+
+App   -> Enet           : <b>Enet_periodicTick()</b>
+note left               : Run PHY tick on\n all open port links
+activate Enet
+Enet  -> Per            : Per_periodicTick()
+activate Per
+
+loop each port
+Per   -> Phy            : <b>EnetPhy_tick()</b>
+note left               : Run PHY FSM
+activate Phy
+
+Phy   -> Mod2           : hMdio->readC22()
+activate Mod2
+Mod2 --> Phy
+deactivate Mod2
+
+Phy   -> Mod2           : hMdio->writeC22()
+activate Mod2
+Mod2 --> Phy
+deactivate Mod2
+
+...
+
+Phy  --> Per            : linkStatus (up/down)
+deactivate Phy
+
+Per   -> Phy            : <b>EnetPhy_getLinkCfg()</b>
+activate Phy
+Phy  --> Per            : linkCfg (negotiated speed/duplex)
+deactivate Phy
+
+alt Got link up
+Per   -> Mod1           : hMacPortMod->ioctl(MACPORT_IOCTL_ENABLE_PORT)
+note right              : Enable MAC port\nwith negotiated params
+activate Mod1
+Mod1 --> Per
+deactivate Mod1
+
+Per   -> Mod3           : hFdb->ioctl(FDB_IOCTL_SET_PORT_STATE)
+note right              : Set port to 'Forward' state
+activate Mod3
+Mod3 --> Per
+deactivate Mod3
+end
+
+end
+
+Per  --> Enet
+deactivate Per
+
+Enet --> App
+deactivate Enet
+
+@enduml

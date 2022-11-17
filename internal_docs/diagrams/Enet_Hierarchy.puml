@@ -1,0 +1,103 @@
+ @startuml
+'Enet hierarchy
+
+' --------------
+'   Interfaces
+' --------------
+
+Interface EnetPer {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    reopen()
+    ioctl()
+    close()
+}
+
+Interface EnetMod {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    reopen()
+    ioctl()
+    close()
+}
+
+
+' -----------
+'   Modules
+' -----------
+class CpswHostPort implements EnetMod {
+}
+
+class CpswMacPort implements EnetMod {
+}
+
+class CpswAle implements EnetMod {
+}
+
+class GmacHostPort implements EnetMod {
+}
+
+class GmacAle implements EnetMod {
+}
+
+class IcssgMacPort implements EnetMod {
+}
+
+class IcssgFdb implements EnetMod {
+}
+
+class NullMod implements EnetMod {
+}
+
+
+' ---------------
+'   Peripherals
+' ---------------
+
+class Cpsw9gPer implements EnetPer {
+}
+
+class GmacPer implements EnetPer {
+}
+
+class IcssgPer implements EnetPer {
+}
+
+class NullPer implements EnetPer {
+}
+
+
+CpswNgPer "1" *-- "1" CpswAle      : contains
+CpswNgPer "1" *-- "1" CpswHostPort : contains
+CpswNgPer "1" *-- "8" CpswMacPort  : contains
+CpswNgPer "1" *-- "1" Mdio         : contains
+CpswNgPer "1" *-- "1" CpswCpts     : contains
+CpswNgPer "1" *-- "1" CpswStats    : contains
+
+GmacPer "1" *-- "1" GmacAle      : contains
+GmacPer "1" *-- "1" GmacHostPort : contains
+GmacPer "1" *-- "8" CpswMacPort  : contains
+GmacPer "1" *-- "1" Mdio         : contains
+GmacPer "1" *-- "1" CpswCpts     : contains
+GmacPer "1" *-- "1" GmacStats    : contains
+
+IcssgPer "1" *-- "1" IcssgFdb       : contains
+IcssgPer "1" *-- "1" IcssgHostPort  : contains
+IcssgPer "1" *-- "4" IcssgMacPort   : contains
+IcssgPer "1" *-- "1" Mdio           : contains
+IcssgPer "1" *-- "1" IcssgTimestamp : contains
+IcssgPer "1" *-- "1" IcssgStats     : contains
+
+@enduml

@@ -1,0 +1,20 @@
+ @startuml
+'Enet hierarchy
+
+Interface EnetPer {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    rejoin()
+    ioctl()
+    poll()
+    periodicTick()
+    close()
+}
+
+@enduml

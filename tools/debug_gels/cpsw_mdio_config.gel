@@ -1,0 +1,667 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#define CPSW_2G_MDIO_BASE_ADDR      0x46000F00
+#define CPSW_9G_MDIO_BASE_ADDR      0x0C000F00
+#define CPSW_3G_MDIO_BASE_ADDR      0x08000F00
+#define ICSSG_MDIO_BASE_ADDR        0x300B2400
+
+#define CPSW_MDIO_VER               0x00
+#define CPSW_MDIO_CONTROL           0x04
+#define CPSW_MDIO_ALIVE             0x08
+#define CPSW_MDIO_LINK              0x0c
+#define CPSW_MDIO_LINKINTRAW        0x10
+#define CPSW_MDIO_LINKINTMASKED     0x14
+#define CPSW_MDIO_USERINTRAW        0x20
+#define CPSW_MDIO_USERINTMASKED     0x24
+#define CPSW_MDIO_USERINTMASKSET    0x28
+#define CPSW_MDIO_USERINTMASKCLR    0x2c
+#define CPSW_MDIO_USERACCESS0       0x80
+#define CPSW_MDIO_USERPHYSEL0       0x84
+#define CPSW_MDIO_USERACCESS1       0x88
+#define CPSW_MDIO_USERPHYSEL1       0x8c
+
+/* wait until hardware is ready for another user access */
+#define USERACCESS_GO               0x80000000
+#define USERACCESS_READ             0x00000000
+#define USERACCESS_WRITE            0x40000000
+#define USERACCESS_ACK              1
+#define USERACCESS_DATA             0x0000ffff
+
+
+//register address of PHY
+#define Control_0                   0
+#define Status_1                    1
+#define PHYID_2                     2
+#define PHYID_3                     3
+#define ANAR_4                      4
+#define ANARLPA_5                   5  //status
+//6,7,8 not needed to configure
+#define ANEXP_6                     6
+#define ANNP_7                      7
+#define BT_Control_9                9
+#define BT_Status_10                10
+//11-12 reserved
+#define Extn_Status_15              15
+//16-17 Reserved.
+#define Intr_Mask_18                18
+#define Intr_Status_19              19
+#define LED_control_24              24
+#define LBK_control_19              19
+
+#define PHY_CONF_TXCLKEN            0x0020
+#define PHY_DPLX                    0x0100 //8bit
+#define PHY_AUTON                   0x1000 //12bit
+#define PHY_100_MBPS                0x2000 //6=0,13 =1
+#define PHY_10_MBPS                 0x0000 //6=0,13 =0
+#define PHY_1000_MBPS               0x0040 //6=1,13 =0
+
+#define PHY_BMCR_RST_NEG            0x0200 //9bit
+#define PHY_1000BTCR_1000FD         0x0200
+#define PHY_1000BTCR_1000HD         0x0100
+#define PHY_BMSR_AUTN_COMP          0x0020//5bit
+#define PHY_DIG                     0x4000
+
+#define WR_MEM_32(addr, data)    *(unsigned int*)(addr) =(unsigned int)(data)
+#define RD_MEM_32(addr)          *(unsigned int*)(addr)
+
+/*! Macro to get bit at given bit position  */
+#define ENET_GET_BIT(val, n)            ((val & (1 << n)) >> n)
+
+int globalVar = 0;
+int gResetPhyFlag = 1;
+
+delay_mdio(int cnt)
+{
+    int i;
+    for(i = 0;i<cnt;i++);
+}
+
+
+//wait for go bit to 0 and ack bit to become 1
+wait_for_user_access(int baseAddr)
+{
+    int reg;
+
+    reg = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & 0x80000000;
+    while (reg != 0x0)
+    {
+        delay_mdio (20000);
+        reg = RD_MEM_32 ((baseAddr + CPSW_MDIO_USERACCESS0)) & 0x80000000;
+    }
+
+    reg = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & 0x20000000;
+    while (reg != 0x20000000)
+    {
+        delay_mdio (20000);
+        reg = RD_MEM_32 ((baseAddr + CPSW_MDIO_USERACCESS0)) & 0x20000000;
+    }
+}
+
+enet_mdio_read(unsigned char phy_reg, int phy_addr, int baseAddr)
+{
+    int reg = 0;
+    reg = (USERACCESS_GO | USERACCESS_READ | (phy_reg << 21) | (phy_addr << 16));
+    WR_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0),reg);
+    wait_for_user_access(baseAddr);
+    reg = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0));
+    reg = reg & 0x0000ffff;
+    GEL_TextOut("PHYREG READ VALUE =  %x \n",,,,,reg);
+    globalVar = reg;
+}
+
+enet_mdio_write(unsigned char phy_reg, unsigned short data, int phy_addr, int baseAddr)
+{
+    int reg = 0;
+
+    reg = (USERACCESS_GO | USERACCESS_WRITE | (phy_reg << 21) | (phy_addr << 16) | (data &
+                USERACCESS_DATA));
+    WR_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0),reg);
+    wait_for_user_access(baseAddr);
+    reg = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0));
+    reg = reg & 0x0000ffff;
+    //GEL_TextOut("PHYREG WRITE VALUE  is  = %x \n",,,,,reg);
+}
+
+menuitem "CPSW MDIO Config"
+dialog mdio_extended_reg_rdwr(Enet_type "2G (0) 5G/9G (1) 3G (2) ICCSG (3)",
+                                phy_addr "Phy Address",
+                                phy_reg "Debug Reg Address",
+                                rdwr "Read (0) Write (1)",
+                                val "write_value")
+{
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    if (rdwr == 0)
+    {
+        enet_mdio_write(0x1D, phy_reg,phy_addr, baseAddr);
+        enet_mdio_read(0x1E,phy_addr, baseAddr);
+    }
+    else
+    {
+        enet_mdio_write(0x1D, phy_reg,phy_addr, baseAddr);
+        enet_mdio_write(0x1E, val,phy_addr, baseAddr);
+        enet_mdio_read(0x1E,phy_addr, baseAddr);
+    }
+}
+
+dialog mdio_rdwr(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                      phy_addr "Phy Address",
+                      phy_reg "Phy Reg Address",
+                      rdwr "Read (0) Write (1)",
+                      val "write_value")
+{
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    if (rdwr == 0)
+    {
+        enet_mdio_read(phy_reg,phy_addr, baseAddr);
+    }
+    else
+    {
+        enet_mdio_write(phy_reg, val, phy_addr, baseAddr);
+        enet_mdio_read(phy_reg,phy_addr, baseAddr);
+    }
+}
+
+dialog mdio_print_detected_phys(Enet_type "2G (0) 5G/9G (1) 3G (2)")
+{
+    int i, baseAddr, phyAlive, phyLink;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    phyAlive = RD_MEM_32(baseAddr + CPSW_MDIO_ALIVE);
+    phyLink = RD_MEM_32(baseAddr + CPSW_MDIO_LINK);
+
+    GEL_TextOut("\n");
+    GEL_TextOut("PHY ALIVE STATUS \n");
+    for (i = 0; i < 32U; i++)
+    {
+        if (1 == ENET_GET_BIT(phyAlive, i) )
+        {
+            GEL_TextOut(" PHY %d (%x)\n",,,,,i, i);
+        }
+    }
+
+    GEL_TextOut("PHY LINK STATUS \n");
+    for (i = 0; i < 32U; i++)
+    {
+        if (1 == ENET_GET_BIT(phyLink, i) )
+        {
+            GEL_TextOut(" PHY %d (%x)\n",,,,,i, i);
+        }
+    }
+}
+
+dialog phy_mmd_rdwr(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                         phy_addr "Phy Address",
+                         mmd_number "mmd_number",
+                         rdwr "Read (0) Write (1)",
+                         val "write_value")
+{
+    /*Writing 0x8000 to register 0 of
+      MMD3
+      1.Write 0x3 to register 0xD: 0xD = 0x0003;
+      (function = address; set the device address)
+      2. Write 0x0 to register 0xE: 0xE = 0x0; (set the
+      register offset address)
+      3. Write 0x4003 to register 0xD:0xD=0x4003;
+      (function = data; keep the device address)
+      4. Read register 0xE:0xE == (data from register
+      0x0 of MMD3)
+      5. Write 0x8000 to register 0xE: 0xE = 0x8000
+      (write 0x8000 to register 0x0 of MMD3 */
+
+    /*0xd is MMD Access Control Register having field device address and function (data or address)
+     * 0xE is MMD Access Address Data Register*/
+
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    if (rdwr == 0)
+    {
+        enet_mdio_write(0x0D, 0x001F,phy_addr, baseAddr);
+        enet_mdio_write(0x0E, mmd_number,phy_addr, baseAddr);
+        enet_mdio_write(0x0D, 0x401F,phy_addr, baseAddr);
+        enet_mdio_read(0x0E, phy_addr, baseAddr);
+    }
+    else
+    {
+        enet_mdio_write(0x0D, 0x001F,phy_addr, baseAddr);
+        enet_mdio_write(0x0E, mmd_number,phy_addr, baseAddr);
+        enet_mdio_write(0x0D, 0x401F,phy_addr, baseAddr);
+        enet_mdio_write(0x0E, val,phy_addr, baseAddr);
+    }
+}
+
+/* Reference delay configuration example using extended registers of DP83867 */
+/*
+dialog configure_phy_delay(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                                 phy_addr "Phy Address")
+{
+    phy_mmd_rdwr(Enet_type, phy_addr, 1, 0x1F, 0x8000);
+    delay_mdio(1000);
+    phy_mmd_rdwr(Enet_type, phy_addr, 1, 0x86, 0x8);
+    delay_mdio(1000);
+    phy_mmd_rdwr(Enet_type, phy_addr, 1, 0x32, 0x0D1);
+    delay_mdio(1000);
+    phy_mmd_rdwr(Enet_type, phy_addr, 1, 0x170, 0x61F);
+    delay_mdio(1000);
+    phy_mmd_rdwr(Enet_type, phy_addr, 1, 0x1F, 0x4000);
+}
+
+*/
+
+hotmenu enet_enable_mdio_icssg()
+{
+    int writeValue;
+    RD_MEM_32(ICSSG_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL);
+    writeValue=0x40000059;
+    WR_MEM_32(ICSSG_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL,writeValue);
+    GEL_TextOut("**** MDIO ENABLED ****** \n");
+}
+
+hotmenu enet_enable_mdio_2g()
+{
+    int writeValue;
+    RD_MEM_32(CPSW_2G_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL);
+    writeValue=0x40000059;
+    WR_MEM_32(CPSW_2G_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL,writeValue);
+    GEL_TextOut("**** MDIO ENABLED ****** \n");
+}
+
+hotmenu enet_enable_mdio_9g()
+{
+    int writeValue;
+    RD_MEM_32(CPSW_9G_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL);
+    writeValue=0x40000059;
+    WR_MEM_32(CPSW_9G_MDIO_BASE_ADDR + CPSW_MDIO_CONTROL,writeValue);
+    GEL_TextOut("**** MDIO ENABLED ****** \n");
+}
+
+dialog  phy_alive_check(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                        phy_addr "Phy Address")
+{
+    int i,phy_read,mdio_read,val,data,cnt = 0;
+    int reset  = gResetPhyFlag;
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    delay_mdio(1000);
+    GEL_TextOut("CONFIGURE THE MDIO CLOCK\n\r");
+
+    //increase the divider value if it is not working with this
+    WR_MEM_32(baseAddr + CPSW_MDIO_CONTROL,0x41000089);
+    delay_mdio(1000);
+    mdio_read = RD_MEM_32(baseAddr + CPSW_MDIO_ALIVE);
+    GEL_TextOut(" CPSW_2G_MDIO_ALIVE=%x\n",,,,,mdio_read);
+    if(!(mdio_read & 1<<phy_addr))
+    {
+        GEL_TextOut("**********ERROR IN PHY ADDRESS ************* \n");
+        GEL_TextOut("*** CHECK THE PHY ADDRESS FROM MDIO AND RECONFIGURE*** \n\r");
+    }
+
+    if(reset == 1)
+    {
+        GEL_TextOut("**********APPLY RESET TO THE PHY ************* \n");
+        enet_mdio_read(Control_0,phy_addr, baseAddr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        data |= 0x8000;
+        enet_mdio_write(Control_0, data,phy_addr, baseAddr);
+        enet_mdio_read(Control_0,phy_addr, baseAddr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        while((data & 0x8000) != 0x0){}
+        GEL_TextOut("**********PHY IS OUT OF RESET ************* \n");
+    }
+
+    GEL_TextOut("************ PHY IS ALIVE ***********\n");
+}
+
+dialog  print_phy_reg(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                      phy_addr "Phy Address")
+{
+    int cnt;
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    for(cnt =0;cnt <31;cnt++)
+    {
+        GEL_TextOut("PHY_REG ADDRESS   = %d  \n",,,,,cnt);
+        delay_mdio(0x1000);
+        enet_mdio_read(cnt,phy_addr, baseAddr);
+        GEL_TextOut("*******************************\n",,,,,cnt);
+    }
+}
+
+dialog  mdio_phy_access(Enet_type "2G (0) 5G/9G (1) 3G (2)",
+                        phy_addr "Phy Address")
+{
+    int i,phy_read,mdio_read,val,data,cnt = 0;
+    int mode = CPSW_MODE;
+    int baseAddr;
+
+    if (Enet_type == 0)
+    {
+        baseAddr = CPSW_2G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 1)
+    {
+        baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 2)
+    {
+        baseAddr = CPSW_3G_MDIO_BASE_ADDR;
+    }
+    else if (Enet_type == 3)
+    {
+        baseAddr = ICSSG_MDIO_BASE_ADDR;
+    }
+
+    phy_alive_check(phy_addr);
+    GEL_TextOut("PHY ALIVE CHECK DONE\n");
+
+    enet_mdio_read(Control_0,phy_addr);
+    data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    data |= PHY_DPLX | PHY_AUTON|(1<<14);
+
+    GEL_TextOut("THE MODE VALUE IS =%x\n\r",mode);
+    //GIG MODE
+    if(mode ==0){
+        data =  (data & 0xdfbf ) | PHY_1000_MBPS;
+    }
+    //MII_100
+    if(mode ==1){
+        data =  (data & 0xdfbf ) | PHY_100_MBPS;
+    }
+    //MII_10
+    if(mode ==2){
+        data =  (data & 0xdfbf ) | PHY_10_MBPS;
+    }
+
+    enet_mdio_write(Control_0, data,phy_addr);
+    enet_mdio_read(Control_0,phy_addr);
+    data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    GEL_TextOut("THE CONTROL VALUE CONFIGURED is  **********\n\r");
+    if(data == 0x3100) {
+        GEL_TextOut("********** PHY is in MII_100,FULLDUPLEX,EXT LOOPBACK MODE **********\n\r");
+    }
+    if(data == 0x1140) {
+        GEL_TextOut("********** PHY is in GMII,FULLDUPLEX,EXT LOOPBACK MODE **********\n\r");
+    }
+    if(data == 0x1100) {
+        GEL_TextOut("********** PHY is in MII_10,FULLDUPLEX,EXT LOOPBACK MODE **********\n\r");
+    }
+
+    /* Setup GIG advertisement for full duplex mode of opeartion only*/
+    if(mode == 0){
+        enet_mdio_read(BT_Control_9,phy_addr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        data |= PHY_1000BTCR_1000FD;
+        //data &= ~PHY_1000BTCR_1000HD;
+        enet_mdio_write(BT_Control_9,data,phy_addr);
+        enet_mdio_read(BT_Control_9,phy_addr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        GEL_TextOut("PHY GiG Advertisement value is   ......\n");
+    }
+
+    //GMII 100
+
+    if(mode == 1){
+        enet_mdio_read(BT_Control_9,phy_addr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        data |= PHY_1000BTCR_1000FD;
+        //data &= ~PHY_1000BTCR_1000HD;
+        enet_mdio_write(BT_Control_9,data,phy_addr);
+        enet_mdio_read(BT_Control_9,phy_addr);
+        data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+        GEL_TextOut("PHY GiG Advertisement value is   ......\n");
+    }
+    //End GMII 100
+
+
+    /// Setup general advertisement PHY ADRESS 4
+    enet_mdio_read(ANAR_4,phy_addr);
+    data = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    data |= 0x01e0;
+    enet_mdio_write(ANAR_4,data,phy_addr);
+
+    // enet_mdio_write(Diag_control_30,0x0040,phy_addr);
+
+    /* Restart auto negotiation*/
+    GEL_TextOut("Restart auto negotiation  is in progres ......\n");
+    enet_mdio_read(Control_0,phy_addr);
+    val = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    val |= PHY_BMCR_RST_NEG;
+    enet_mdio_write(Control_0, val,phy_addr);
+    enet_mdio_read(Control_0,phy_addr);
+
+    GEL_TextOut("Polling for auto negotiation complete  is in progres ......\n");
+    enet_mdio_read(Status_1,phy_addr);
+    val = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    val = val & 0x0020;
+    while(val != 0x0){}
+    GEL_TextOut("Auto negotiation  is DONE ......\n");
+
+
+    delay_mdio(100);
+    enet_mdio_read(LED_control_24,phy_addr);
+    val = RD_MEM_32((baseAddr + CPSW_MDIO_USERACCESS0)) & USERACCESS_DATA;
+    val |= 0xFFFF;
+    enet_mdio_write(LED_control_24, val,phy_addr);
+    GEL_TextOut("**** PHY CONFIGURATION IS COMPLETED ****** \n");
+
+}
+
+/* Vitesse Extended Page Access Register */
+#define VSC8514_EXT_PAGE_ACCESS                         (0x1F)
+dialog mdio_vsc8514_rdwr(phy_addr "Phy Address",
+                              page "main (0) page1 (1) page2 (2) page3 (3) generalpage (4)",
+                              phy_reg "Phy Reg Address",
+                              rdwr "Read (0) Write (1)",
+                              val "write_value")
+{
+    int baseAddr;
+    int pageSelectVal = 0x0;
+    baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+
+    if (1U == page)
+    {
+        pageSelectVal = 1U;
+    }
+    else if (2U == page)
+    {
+        pageSelectVal = 2U;
+    }
+    else if (3U == page)
+    {
+        pageSelectVal = 3U;
+    }
+    else if (4U == page)
+    {
+        pageSelectVal = 0x10U;
+    }
+
+    enet_mdio_write(VSC8514_EXT_PAGE_ACCESS, pageSelectVal, phy_addr, baseAddr);
+
+    if (rdwr == 0)
+    {
+        enet_mdio_read(phy_reg,phy_addr, baseAddr);
+    }
+    else
+    {
+        enet_mdio_write(phy_reg, val, phy_addr, baseAddr);
+        enet_mdio_read(phy_reg,phy_addr, baseAddr);
+    }
+    enet_mdio_write(VSC8514_EXT_PAGE_ACCESS, 0, phy_addr, baseAddr);
+}
+
+dialog mdio_vsc8514_print_page3_reg(phy_addr "Phy Address")
+{
+    int baseAddr;
+    int reg = 0;
+    baseAddr = CPSW_9G_MDIO_BASE_ADDR;
+
+    enet_mdio_write(VSC8514_EXT_PAGE_ACCESS, 3, phy_addr, baseAddr);
+
+    GEL_TextOut("MAC SerDes PCS Control \n");
+    enet_mdio_read(16U,phy_addr, baseAddr);
+    GEL_TextOut(" MAC SerDes autoneg enable                = %d\n",,,,, ENET_GET_BIT(globalVar, 7U));
+    GEL_TextOut(" Force advertised ability                 = %d\n",,,,, ENET_GET_BIT(globalVar, 11U));
+    GEL_TextOut(" MAC interface autoneg restart            = %d\n",,,,, ENET_GET_BIT(globalVar, 12U));
+    GEL_TextOut(" MAC interface PD enable                  = %d\n",,,,, ENET_GET_BIT(globalVar, 13U));
+    GEL_TextOut(" MAC interface restart                    = %d\n",,,,, ENET_GET_BIT(globalVar, 14U));
+    GEL_TextOut(" MAC interface disable                    = %d\n",,,,, ENET_GET_BIT(globalVar, 15U));
+
+    GEL_TextOut("MAC SerDes PCS Status \n");
+    enet_mdio_read(17U,phy_addr, baseAddr);
+    GEL_TextOut(" MAC interface PCS signal detect          = %d\n",,,,, ENET_GET_BIT(globalVar, 0U));
+    GEL_TextOut(" MAC interface autonegotiation complete   = %d\n",,,,, ENET_GET_BIT(globalVar, 1U));
+    GEL_TextOut(" MAC interface link status                = %d\n",,,,, ENET_GET_BIT(globalVar, 2U));
+    GEL_TextOut(" MAC interface LP autoneg capable         = %d\n",,,,, ENET_GET_BIT(globalVar, 3U));
+    GEL_TextOut(" Half duplex advertisement                = %d\n",,,,, ENET_GET_BIT(globalVar, 4U));
+    GEL_TextOut(" Full duplex advertisement                = %d\n",,,,, ENET_GET_BIT(globalVar, 5U));
+    GEL_TextOut(" Symmetric pause advertisement            = %d\n",,,,, ENET_GET_BIT(globalVar, 6U));
+    GEL_TextOut(" Asymmetric pause advertisement           = %d\n",,,,, ENET_GET_BIT(globalVar, 7U));
+    GEL_TextOut(" MAC remote fault                         = %d\n",,,,, ((globalVar & 0x300)));
+    GEL_TextOut(" MAC interface LP autonegotiation restart = %d\n",,,,, ENET_GET_BIT(globalVar, 11U));
+
+    GEL_TextOut("MAC SerDes Clause 37 Advertised Ability \n");
+    enet_mdio_read(18U,phy_addr, baseAddr);
+    GEL_TextOut(" MAC SerDes advertised ability            = %x\n",,,,, globalVar);
+
+    GEL_TextOut("MAC SerDes Clause 37 Link Partner Ability \n");
+    enet_mdio_read(19U,phy_addr, baseAddr);
+    GEL_TextOut(" MAC SerDes LP ability                    = %x\n",,,,, globalVar);
+
+    GEL_TextOut("MAC SerDes Status \n");
+    enet_mdio_read(20U,phy_addr, baseAddr);
+    GEL_TextOut(" QSGMII sync status                       = %d\n",,,,, ENET_GET_BIT(globalVar, 13U));
+    GEL_TextOut(" SerDes signal detect                     = %d\n",,,,, ENET_GET_BIT(globalVar, 14U));
+
+    enet_mdio_write(VSC8514_EXT_PAGE_ACCESS, 0, phy_addr, baseAddr);
+}

@@ -1,0 +1,404 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define WR_MEM_32(addr, data)    *(unsigned int*)(addr) =(unsigned int)(data)
+#define RD_MEM_32(addr)          *(unsigned int*)(addr)
+#define CPSW_5G_PORT_NUM         (4U)
+#define CPSW_9G_PORT_NUM         (8U)
+#define CPSW_3G_PORT_NUM         (2U)
+
+#define MCU_CTRLMMR_ENET_CTRL          (0x40F04040)
+#define MAIN_CTRLMMR_J7X_ENET0_CTRL         (0x00104044)
+
+#define MAIN_CTRLMMR_AM64X_ENET0_CTRL         (0x43004044)
+
+#define CPSW_MAC_MODE_GMII       (0U)
+#define CPSW_MAC_MODE_RMII       (1U)
+#define CPSW_MAC_MODE_RGMII      (2U)
+#define CPSW_MAC_MODE_SGMII      (3U)
+#define CPSW_MAC_MODE_QSGMII     (4U)
+#define CPSW_MAC_MODE_QSGMII_SUB (6U)
+
+#define CPSW_RGMII_ID_ENABLED     (0U)
+#define CPSW_RGMII_ID_DISABLED    (1U)
+
+menuitem "CPSW Enet Control Config"
+
+hotmenu Cpsw_PrintEnetCtrlCfg_AM64X()
+{
+    Cpsw3g_PrintEnetCtrl();
+}
+
+hotmenu Cpsw_PrintEnetCtrlCfg_J721E()
+{
+    Cpsw2g_PrintEnetCtrl();
+    Cpsw9g_PrintEnetCtrl();
+}
+
+hotmenu Cpsw_PrintEnetCtrlCfg_J7200()
+{
+    Cpsw2g_PrintEnetCtrl();
+    Cpsw5g_PrintEnetCtrl();
+}
+
+Cpsw_getMacMod(int enetCtrl)
+{
+    return (enetCtrl & 0x7);
+}
+
+Cpsw_getRgmiiId(int enetCtrl)
+{
+    return ((enetCtrl >> 4) & 0x1);
+}
+
+Cpsw_printRgmiiIdCfg(int rgmiiIdVal)
+{
+    if (CPSW_RGMII_ID_DISABLED == rgmiiIdVal)
+    {
+        return ("RGMII-ID:Disabled");
+    }
+    else
+    {
+        return("RGMII-ID:Enabled");
+    }
+}
+
+Cpsw_printMacMode(int mode)
+{
+    if (CPSW_MAC_MODE_GMII == mode)
+    {
+        return("Mode: GMII");
+    }
+    else if (CPSW_MAC_MODE_RMII == mode)
+    {
+        return("Mode: RMII");
+    }
+    else if (CPSW_MAC_MODE_RGMII == mode)
+    {
+        return("Mode: RGMII");
+    }
+    else if (CPSW_MAC_MODE_SGMII == mode)
+    {
+        return("Mode: SGMII");
+    }
+    else if (CPSW_MAC_MODE_QSGMII == mode)
+    {
+        return("Mode: QSGMII");
+    }
+    else if (CPSW_MAC_MODE_QSGMII_SUB == mode)
+    {
+        return("Mode: QSGMII_SUB");
+    }
+    else
+    {
+        return("ERROR!");
+    }
+}
+
+Cpsw_printCfg(int portNum, int mode, int rgmiiIdVal)
+{
+    if (2U == mode)
+    {
+        GEL_TextOut("Port %d: %s, %s \n",,,,,
+                portNum, Cpsw_printMacMode(mode), Cpsw_printRgmiiIdCfg(rgmiiIdVal));
+    }
+    else
+    {
+        GEL_TextOut("Port %d: %s\n",,,,,portNum, Cpsw_printMacMode(mode));
+    }
+}
+
+Cpsw2g_PrintEnetCtrl()
+{
+    int enetCtrl;
+    int modeVal, rgmiiIdVal;
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("     CPSW2G MAC Mode Config   \n");
+    GEL_TextOut("==============================\n");
+
+    enetCtrl = RD_MEM_32(MCU_CTRLMMR_ENET_CTRL);
+    Cpsw_printCfg(0, Cpsw_getMacMod(enetCtrl), Cpsw_getRgmiiId(enetCtrl));
+}
+
+Cpsw3g_PrintEnetCtrl()
+{
+    int enetCtrl;
+    int portNum;
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("     CPSW5G MAC Mode Config   \n");
+    GEL_TextOut("==============================\n");
+
+    for (portNum = 0; portNum < CPSW_3G_PORT_NUM; portNum++)
+    {
+        enetCtrl = RD_MEM_32(MAIN_CTRLMMR_AM64X_ENET0_CTRL + (portNum * 0x04));
+        Cpsw_printCfg(portNum, Cpsw_getMacMod(enetCtrl), Cpsw_getRgmiiId(enetCtrl));
+    }
+}
+
+Cpsw5g_PrintEnetCtrl()
+{
+    int enetCtrl;
+    int portNum;
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("     CPSW5G MAC Mode Config   \n");
+    GEL_TextOut("==============================\n");
+
+    for (portNum = 0; portNum < CPSW_5G_PORT_NUM; portNum++)
+    {
+        enetCtrl = RD_MEM_32(MAIN_CTRLMMR_J7X_ENET0_CTRL + (portNum * 0x04));
+        Cpsw_printCfg(portNum, Cpsw_getMacMod(enetCtrl), Cpsw_getRgmiiId(enetCtrl));
+    }
+}
+
+Cpsw9g_PrintEnetCtrl()
+{
+    int enetCtrl;
+    int portNum;
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("     CPSW9G MAC Mode Config   \n");
+    GEL_TextOut("==============================\n");
+
+    for (portNum = 0; portNum < CPSW_9G_PORT_NUM; portNum++)
+    {
+        enetCtrl = RD_MEM_32(MAIN_CTRLMMR_J7X_ENET0_CTRL + (portNum * 0x04));
+        Cpsw_printCfg(portNum, Cpsw_getMacMod(enetCtrl), Cpsw_getRgmiiId(enetCtrl));
+    }
+}
+
+#define BOARD_CPSW2G_MAC_MODE (CPSW_MAC_MODE_RGMII)
+#define BOARD_CPSW2G_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW5G_PORT0_MAC_MODE (CPSW_MAC_MODE_QSGMII)
+#define BOARD_CPSW5G_PORT0_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW5G_PORT1_MAC_MODE (CPSW_MAC_MODE_QSGMII_SUB)
+#define BOARD_CPSW5G_PORT1_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW5G_PORT2_MAC_MODE (CPSW_MAC_MODE_QSGMII_SUB)
+#define BOARD_CPSW5G_PORT2_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW5G_PORT3_MAC_MODE (CPSW_MAC_MODE_QSGMII_SUB)
+#define BOARD_CPSW5G_PORT3_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW9G_PORT0_MAC_MODE (CPSW_MAC_MODE_RGMII)
+#define BOARD_CPSW9G_PORT0_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW9G_PORT1_MAC_MODE (CPSW_MAC_MODE_RGMII)
+#define BOARD_CPSW9G_PORT1_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW9G_PORT2_MAC_MODE (CPSW_MAC_MODE_RGMII)
+#define BOARD_CPSW9G_PORT2_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW9G_PORT3_MAC_MODE (CPSW_MAC_MODE_RGMII)
+#define BOARD_CPSW9G_PORT3_RGMII_ID (CPSW_RGMII_ID_DISABLED)
+
+#define BOARD_CPSW9G_PORT7_MAC_MODE (CPSW_MAC_MODE_RMII)
+
+hotmenu Board_VerifyEnetCtrlCfg_J721E_EVM()
+{
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("  BOARD Verify ENET CTRL  \n");
+    GEL_TextOut("==============================\n");
+    Board_Cpsw2g_VerifyEnetCtrl();
+    Board_Cpsw9g_VerifyEnetCtrl();
+}
+
+hotmenu Board_VerifyEnetCtrlCfg_J7200_EVM()
+{
+
+    GEL_TextOut("\n");
+    GEL_TextOut("==============================\n");
+    GEL_TextOut("  BOARD Verify ENET CTRL  \n");
+    GEL_TextOut("==============================\n");
+    Board_Cpsw2g_VerifyEnetCtrl();
+    Board_Cpsw5g_VerifyEnetCtrl();
+}
+
+Cpsw_matchEnetCntlCfg(int expMacMode,
+                       int currMacMode,
+                       int expRgmiiId,
+                       int currRgmiiId)
+
+{
+    if (expMacMode == currMacMode)
+    {
+        if ((expMacMode == CPSW_MAC_MODE_RGMII) && (expRgmiiId == currRgmiiId))
+        {
+            GEL_TextOut("   Config Matches\n");
+        }
+        else
+        {
+            GEL_TextOut("   Config Matches\n");
+        }
+    }
+    else
+    {
+        if (expMacMode != currMacMode)
+        {
+            GEL_TextOut("   ERROR: Expected: %s, Actual: %s \n",,,,,
+                            Cpsw_printMacMode(expMacMode), Cpsw_printMacMode(currMacMode));
+        }
+        if ((expRgmiiId != currRgmiiId) && (expMacMode == CPSW_MAC_MODE_RGMII))
+        {
+            GEL_TextOut("   ERROR: Expected: %s, Actual: %s \n",,,,,
+                          Cpsw_printRgmiiIdCfg(expRgmiiId),
+                          Cpsw_printRgmiiIdCfg(currRgmiiId));
+        }
+    }
+}
+
+Board_Cpsw5g_VerifyEnetCtrl()
+{
+    int currMacMode, currRgmiiId, enetCtrl, portNum;
+
+    for (portNum = 0; portNum < CPSW_5G_PORT_NUM; portNum++)
+    {
+        enetCtrl = RD_MEM_32(MAIN_CTRLMMR_J7X_ENET0_CTRL + (portNum * 0x04));
+        currMacMode = Cpsw_getMacMod(enetCtrl);
+        currRgmiiId = Cpsw_getRgmiiId(enetCtrl);
+
+        GEL_TextOut("CPSW9G Port %d \n",,,,,portNum);
+        if (0U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW5G_PORT0_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW5G_PORT0_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (1U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW5G_PORT1_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW5G_PORT1_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (2U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW5G_PORT2_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW5G_PORT2_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (3U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW5G_PORT3_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW5G_PORT3_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else
+        {
+            GEL_TextOut("   Not configured \n");
+        }
+    }
+    GEL_TextOut("\n");
+}
+
+Board_Cpsw9g_VerifyEnetCtrl()
+{
+    int currMacMode, currRgmiiId, enetCtrl, portNum;
+
+    for (portNum = 0; portNum < CPSW_9G_PORT_NUM; portNum++)
+    {
+        enetCtrl = RD_MEM_32(MAIN_CTRLMMR_J7X_ENET0_CTRL + (portNum * 0x04));
+        currMacMode = Cpsw_getMacMod(enetCtrl);
+        currRgmiiId = Cpsw_getRgmiiId(enetCtrl);
+
+        GEL_TextOut("CPSW9G Port %d \n",,,,,portNum);
+        if (0U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW9G_PORT0_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW9G_PORT0_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (1U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW9G_PORT1_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW9G_PORT1_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (2U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW9G_PORT2_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW9G_PORT2_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (3U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW9G_PORT3_MAC_MODE,
+                                   currMacMode,
+                                   BOARD_CPSW9G_PORT3_RGMII_ID,
+                                   currRgmiiId);
+        }
+        else if (7U == portNum)
+        {
+            Cpsw_matchEnetCntlCfg(BOARD_CPSW9G_PORT7_MAC_MODE,
+                                   currMacMode,
+                                   0U, /* don't care */
+                                   currRgmiiId);
+        }
+        else
+        {
+            GEL_TextOut("   Not configured \n");
+        }
+    }
+    GEL_TextOut("\n");
+}
+
+Board_Cpsw2g_VerifyEnetCtrl()
+{
+    int currMacMode, currRgmiiId, enetCtrl;
+
+    enetCtrl = RD_MEM_32(MCU_CTRLMMR_ENET_CTRL);
+    currMacMode = Cpsw_getMacMod(enetCtrl);
+    currRgmiiId = Cpsw_getRgmiiId(enetCtrl);
+
+    GEL_TextOut("CPSW2G Port 0 \n");
+    Cpsw_matchEnetCntlCfg(BOARD_CPSW2G_MAC_MODE,
+                           currMacMode,
+                           BOARD_CPSW2G_RGMII_ID,
+                           currRgmiiId);
+    GEL_TextOut("\n");
+}

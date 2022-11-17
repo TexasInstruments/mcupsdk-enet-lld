@@ -1,0 +1,488 @@
+find ./ -type f -exec sed -i -e 's/\bCPSW_ENOTSUPPORTED\b/ENET_ENOTSUPPORTED/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_SOK\b/ENET_SOK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_EFAIL\b/ENET_EFAIL/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bnode_t\b/EnetQ_Node/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bqueue_t\b/EnetQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_assert\b/Enet_assert/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_deQ\b/EnetQueue_deq/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_enQ\b/EnetQueue_enq/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_initQ\b/EnetQueue_initQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_copyQ\b/EnetQueue_copyQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_enqHead\b/EnetQueue_enqHead/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_appendQ\b/EnetQueue_append/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_verifyQCount\b/EnetQueue_verifyQCount/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_getQCount\b/EnetQueue_getQCount/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_UTILS_ARRAYSIZE\b/ENET_ARRAYSIZE/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpsw_Handle\b/Enet_Handle/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_OpenRxFlowPrms\b/EnetUdma_OpenRxFlowPrms/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_UdmaRingPrms\b/EnetUdma_UdmaRingPrms/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bagingConfig\b/agingCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bphyConfig\b/phyCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bmacConfig\b/macCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\blinkConfig\b/linkCfg/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\blinkConfig\b/linkCfg/g' {} \;
+
+
+find ./ -type f -exec sed -i -e 's/\bCpswDma_OpenTxChPrms\b/EnetUdma_OpenTxChPrms/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_initRxFlowParams\b/EnetDma_initRxChParams/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_openRxFlow\b/EnetDma_openRxCh/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_closeRxFlow\b/EnetDma_closeRxCh/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_retrieveTxDonePackets\b/EnetDma_retrieveTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_initTxChParams\b/EnetDma_initTxChParams/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetAppUtils_submitTxPackets\b/EnetDma_submitTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_initPktInfo\b/EnetDma_initPktInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bhCbArg\b/cbArg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_UTILS_SET_PKT_APP_STATE\b/ENET_UTILS_SET_PKT_APP_STATE/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpswDma_RxFlowHandle\b/EnetDma_RxChHandle/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_TxChHandle\b/EnetDma_TxChHandle/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_PktInfoQ\b/EnetDma_PktInfoQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_PktInfo\b/EnetDma_PktInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_disableTxEvent\b/EnetDma_disableTxEvent/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_disableRxEvent\b/EnetDma_disableRxEvent/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_enableRxEvent\b/EnetDma_enableRxEvent/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_enableTxEvent\b/EnetDma_enableTxEvent/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetAppUtils_submitRxPackets\b/EnetDma_submitRxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswDma_retrieveRxPackets\b/EnetDma_retrieveRxPktQ/g' {} \;
+
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_INOUT_ARGS\b/ENET_IOCTL_SET_INOUT_ARGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_NO_ARGS\b/ENET_IOCTL_SET_NO_ARGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_OUT_ARGS\b/ENET_IOCTL_SET_OUT_ARGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_IN_ARGS\b/ENET_IOCTL_SET_IN_ARGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_UTILS_SET_PKT_APP_STATE\b/ENET_UTILS_SET_PKT_APP_STATE/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_ENOTFOUND\b/ENET_ENOTFOUND/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpsw_checkInArgs\b/Enet_checkInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_checkInOutArgs\b/Enet_checkInOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_IoctlPrms\b/Enet_IoctlPrms/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_MAC_ADDR_LEN\b/ENET_MAC_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_TYPE_PRIVATE\b/ENET_IOCTL_TYPE_PRIVATE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_Type\b/Enet_Type/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswRm_AllocRxFlowOutArgs\b/CpswRm_AllocRxFlow/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_IS_BIT_SET\b/ENET_IS_BIT_SET/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_BIT_SET\b/ENET_BIT/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_COUNT\b/ENET_TYPE_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_2G\b/ENET_CPSW_2G/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_5G\b/ENET_CPSW_5G/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_9G\b/ENET_CPSW_9G/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpswType\b/enetType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bhCpsw\b/hEnet/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCPSWTRACE_ERROR\b/ENETTRACE_ERR/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_checkDescState\b/EnetDma_checkDescState/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswUtils_checkPktState\b/EnetDma_checkPktState/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAppUtils_assert\b/EnetAppUtils_assert/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_DESCSTATE_/ENET_DESCSTATE_/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_CFG_DEV_ERROR\b/ENET_CFG_DEV_ERROR/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bEnetAppUtils_validatePacketState\b/EnetAppUtils_validatePacketState/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_PKTSTATE/ENET_PKTSTATE/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_PKTSTATE_APP_WITH_/ENET_PKTSTATE_APP_WITH_/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_PKTSTATE_MODULE_/ENET_PKTSTATE_MODULE_/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpsw_ioctl\b/Enet_ioctl/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/EnetAppUtils_/EnetAppUtils_/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMcm_/EnetMcm_/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bnimucpsw\b/nimuenet/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bndk2enet\b/ndk2enet/g' {} \;
+find ./ -type f -exec sed -i -e 's/ndk2enet/ndk2enet/g' {} \;
+find ./ -type f -exec sed -i -e 's/ndk2enet/ndk2enet/g' {} \;
+find ./ -type f -exec sed -i -e 's/NimuEnet/NimuEnet/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/EnetDma_Handle/EnetDma_Handle/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_EALREADYOPEN/ENET_EALREADYOPEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_PktNotifyCb/EnetDma_PktNotifyCb/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_ARRAY_COPY/ENET_UTILS_ARRAY_COPY/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUtils_Cfg/EnetUtils_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/Enet_Print/Enet_Print/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_openTxCh/EnetDma_openTxCh/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_closeTxCh/EnetDma_closeTxCh/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_initCfg/EnetDma_initCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_initDataPath/EnetUdma_initDataPath/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_deInitDataPath/EnetUdma_deInitDataPath/g' {} \;
+find ./ -type f -exec sed -i -e 's/Enet_initOsalCfg/Enet_initOsalCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/Enet_init/Enet_init/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpswConfig\b/cpswCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bdmaCfg\b/dmaCfg/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_0/ENET_MAC_PORT_1/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_1/ENET_MAC_PORT_2/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_2/ENET_MAC_PORT_3/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_3/ENET_MAC_PORT_4/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_4/ENET_MAC_PORT_5/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_5/ENET_MAC_PORT_6/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_6/ENET_MAC_PORT_7/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_MAC_PORT_7/ENET_MAC_PORT_8/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/CpswAle_Cfg/CpswAle_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswCpts_Cfg/CpswCpts_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswMdio_Cfg/CpswMdio_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/aleCfg/aleCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/mdioCfg/mdioCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/cptsCfg/cptsCfg/g' {} \;
+#find ./ -type f -exec sed -i -e 's/CpswDma_Config/EnetDma_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/dmaCfg/dmaCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/vlanCfg/vlanCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswHostPort_Cfg/CpswHostPort_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/hostPortCfg/hostPortCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetRm_ResourceCfg/EnetRm_ResourceCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/resourceCfg/resourceCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/dmaCfg/dmaCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_PHY_FSM_TICK_PERIOD_MS/ENET_PHY_FSM_TICK_PERIOD_MS/g' {} \;
+find ./ -type f -exec sed -i -e 's/csumOffloadEn/csumOffloadEn/g' {} \;
+
+
+find ./ -type f -exec sed -i -e 's/policerGlobalCfg/policerGlobalCfg/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bdrv\/cpsw\/\b/drv\/enet\//g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw.h\b/enet.h/g' {} \;
+find ./ -type f -exec sed -i -e 's/include\/cpsw_cfg.h/enet_cfg.h/g' {} \;
+find ./ -type f -exec sed -i -e 's/\b\/enet_example_utils\/inc\/\b/\/utils\/include\//g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apputils_full\b/enet_example_utils_full/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apputils\b/enet_example_utils/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\benet_example_utils.h\b/cpsw_apputils.h/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_COMPILETIME_ASSERT/ENET_UTILS_COMPILETIME_ASSERT/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\CpswStats_HostPort_Ng\b/CpswStats_HostPort_Ng/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_TsEventConfig\b/CpswMacPort_TsEventCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcommonPortIpConfig\b/commonPortIpCfg/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bsrcIp\b/srcIpInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bdstIp\b/dstIpInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bsrcMacAddr\b/srcMacAddrInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bdstMacAddr\b/dstMacAddrInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bpolicerMatchEnableMask\b/policerMatchEnMask/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bpHwPushNotifyCb\b/hwPushNotifyCb/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bpHwPushNotifyCbArg\b/hwPushNotifyCbArg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\btxAnnexFEn\b/txAnnexFEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/txHostTsEn/txHostTsEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/txAnnexFEn/txAnnexFEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/rxAnnexFEn/rxAnnexFEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/txAnnexDEn/txAnnexDEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/rxAnnexEEn/rxAnnexEEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/rxAnnexDEn/rxAnnexDEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/txAnnexEEn/txAnnexEEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/ltype2En/ltype2En/g' {} \;
+find ./ -type f -exec sed -i -e 's/ttlNonzeroEn/ttlNonzeroEn/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp107En/tsIp107En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp129En/tsIp129En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp130En/tsIp130En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp131En/tsIp131En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp132En/tsIp132En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsIp132En/tsIp132En/g' {} \;
+find ./ -type f -exec sed -i -e 's/tsPort320En/tsPort320En/g' {} \;
+find ./ -type f -exec sed -i -e 's/unicastEn/unicastEn/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpsw_MacPort\b/Enet_MacPort/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_NORMALIZE_MACPORT\b/ENET_NORM_MACPORT/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_CPTS_HWPUSH_/CPSW_CPTS_HWPUSH_/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetPer_AttachCoreOutArgs/EnetPer_AttachCoreOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswCpts_Event/CpswCpts_Event/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetTimeSync_MsgType/EnetTimeSync_MsgType/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetTimeSync_TimestampAdj/EnetTimeSync_TimestampAdj/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_TIMESYNC_IOCTL_SET_TIMESTAMP/ENET_TIMESYNC_IOCTL_SET_TIMESTAMP/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_TIMESYNC_ADJDIR_/ENET_TIMESYNC_ADJDIR_/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/Enet_getMacPortMax/Enet_getMacPortMax/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_MACPORT_VLAN_TYPE/ENET_MACPORT_VLAN_TYPE/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/ENET_NORM_MACPORT/ENET_NORM_MACPORT/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_BIT/ENET_BIT/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_MAC_PORT_NUM/ENET_MAC_PORT_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/print/print/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bphyToVirtFxn\b/physToVirt/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bvirtToPhyFxn\b/virtToPhys/g' {} \;
+
+
+
+find ./ -type f -exec sed -i -e 's/EnetDma_submitRxPktQ/EnetDma_submitRxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_submitTxPktQ/EnetDma_submitTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_retrieveTxPktQ/EnetDma_retrieveTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_retrieveRxPktQ/EnetDma_retrieveRxPktQ/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/EnetUtils_min/EnetUtils_min/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_openRxCh/EnetDma_openRxCh/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_initRxChParams/EnetDma_initRxChParams/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetAppUtils_regDfltRxFlow/EnetAppUtils_regDfltRxFlow/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetAppUtils_unregDfltRxFlow/EnetAppUtils_unregDfltRxFlow/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppMemUtils_freeEthPktFxn/CpswAppMemUtils_freeEthPktFxn/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppMemUtils_allocEthPktFxn/CpswAppMemUtils_allocEthPktFxn/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppMemUtils_deInit/CpswAppMemUtils_deInit/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetDma_RxChHandle/EnetDma_RxChHandle/g' {} \;
+
+
+
+
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_PHY_ADDR_MASK\b/ENET_MDIO_PHY_ADDR_MASK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_PHY_ADDR_MASK_NONE\b/ENET_MDIO_PHY_ADDR_MASK_NONE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_PHY_ADDR_MASK_ALL\b/ENET_MDIO_PHY_ADDR_MASK_ALL/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_MAX_PHY_CNT\b/ENET_MDIO_PHY_CNT_MAX/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_GET_VERSION\b/ENET_MDIO_IOCTL_GET_VERSION/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_GET_ALIVE_STATUS\b/ENET_MDIO_IOCTL_IS_ALIVE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_GET_LINK_STATUS\b/ENET_MDIO_IOCTL_IS_LINKED/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_CLAUSE22_READ_REG\b/ENET_MDIO_IOCTL_C22_READ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_CLAUSE22_WRITE_REG\b/ENET_MDIO_IOCTL_C22_WRITE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_CLAUSE45_READ_REG\b/ENET_MDIO_IOCTL_C45_READ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_CLAUSE45_WRITE_REG\b/ENET_MDIO_IOCTL_C45_WRITE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_GET_POLL_ENABLE_MASK\b/ENET_MDIO_IOCTL_IS_POLL_ENABLED/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MDIO_IOCTL_PRINT_REGS\b/ENET_MDIO_IOCTL_PRINT_REGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_OperatingMode\b/CpswMdio_OpMode/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_UserChannel\b/EnetMdio_Group/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_FrameFormat\b/EnetMdio_FrameFmt/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Clause45Mmd\b/EnetMdio_C45Mmd/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Clause22ReadRegInArgs\b/EnetMdio_C22ReadInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Clause45ReadRegInArgs\b/EnetMdio_C45ReadInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Clause22WriteRegInArgs\b/EnetMdio_C22WriteInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Clause45WriteRegInArgs\b/EnetMdio_C45WriteInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMdio_Version\b/EnetMod_Version/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_PUBLIC_IOCTL\b/ENET_STATS_PUBLIC_IOCTL/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_GET_HOSTPORT_STATS\b/ENET_STATS_IOCTL_GET_HOSTPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_GET_MACPORT_STATS\b/ENET_STATS_IOCTL_GET_MACPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_RESET_HOSTPORT_STATS\b/ENET_STATS_IOCTL_RESET_HOSTPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_RESET_MACPORT_STATS\b/ENET_STATS_IOCTL_RESET_MACPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_RESTORE_HOSTPORT_STATS\b/ENET_STATS_IOCTL_RESTORE_HOSTPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_RESTORE_MACPORT_STATS\b/ENET_STATS_IOCTL_RESTORE_MACPORT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_STATS_IOCTL_PRINT_REGS\b/ENET_STATS_IOCTL_PRINT_REGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswStats_HostPort_2g\b/CpswStats_HostPort_2g/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswStats_MacPort_2g\b/CpswStats_MacPort_2g/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswStats_HostPort_Ng\b/CpswStats_HostPort_Ng/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswStats_MacPort_9g\b/CpswStats_MacPort_9g/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_PACKET_PRIORITY_NUM\b/ENET_PACKET_PRIORITY_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_HeaderPacketPriority\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_SwitchPriority\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_VlanConfig\b/EnetPort_VlanCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_TxPriorityType\b/EnetPort_EgressPriorityType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_TrafficShapingRates\b/EnetPort_TrafficShapingRates/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_TrafficShapingConfig\b/EnetPort_TrafficShapingCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_TxPriority\b/EnetPort_PriorityMap/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_RxPriority\b/EnetPort_PriorityMap/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswPort_DscpPriority\b/EnetPort_DscpPriorityMap/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_PUBLIC_IOCTL\b/ENET_MACPORT_PUBLIC_IOCTL/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_SET_TX_PRIORITY\b/ENET_MACPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_GET_TX_PRIORITY\b/ENET_MACPORT_IOCTL_GET_EGRESS_QOS_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_SET_RX_PRIORITY\b/ENET_MACPORT_IOCTL_SET_PRIORITY_REGEN_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_GET_RX_PRIORITY\b/ENET_MACPORT_IOCTL_GET_PRIORITY_REGEN_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_SET_RX_DSCP_PRIORITY\b/ENET_MACPORT_IOCTL_SET_INGRESS_DSCP_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_GET_RX_DSCP_PRIORITY\b/ENET_MACPORT_IOCTL_GET_INGRESS_DSCP_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_GET_TRAFFIC_SHAPING\b/ENET_MACPORT_IOCTL_GET_EGRESS_TRAFFIC_SHAPING/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_PRINT_REGS\b/ENET_MACPORT_IOCTL_PRINT_REGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MACPORT_IOCTL_GET_RX_MTU\b/ENET_MACPORT_IOCTL_GET_MAXLEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMac_LayerType\b/EnetMac_LayerType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMac_SublayerType\b/EnetMac_SublayerType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMac_VariantType\b/EnetMac_VariantType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_InterVLANRouteId\b/CpswMacPort_InterVlanRouteId/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_VlanType\b/EnetMacPort_VlanType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_Interface\b/EnetMacPort_Interface/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMac_SgmiiModeType\b/EnetMac_SgmiiMode/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_Config\b/CpswMacPort_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_GenericInArgs\b/EnetMacPort_GenericInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_LinkConfig\b/EnetMacPort_LinkCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_SetTxPriorityInArgs\b/EnetMacPort_SetEgressPriorityMapInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_SetRxPriorityInArgs\b/EnetMacPort_SetRetaggingMapInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_SetRxDscpPriorityInArgs\b/EnetMacPort_SetIngressDscpPriorityMapInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_SetTrafficShapingInArgs\b/EnetMacPort_EnableEgressTrafficShapingInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_InterVlanRoutingParams\b/CpswMacPort_InterVlanRoutingCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_TxShortGapConfig\b/CpswMacPort_TxShortIpgCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_PortTxShortGapConfig\b/CpswMacPort_PortTxShortIpgCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_IpTsConfig\b/CpswMacPort_IpTsCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswMacPort_TsEventConfig\b/CpswMacPort_TsEventCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_PUBLIC_IOCTL\b/ENET_HOSTPORT_PUBLIC_IOCTL/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_ENABLE\b/ENET_HOSTPORT_IOCTL_ENABLE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_DISABLE\b/ENET_HOSTPORT_IOCTL_DISABLE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_SET_TX_PRIORITY\b/ENET_HOSTPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_GET_TX_PRIORITY\b/ENET_HOSTPORT_IOCTL_GET_EGRESS_QOS_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_SET_RX_PRIORITY\b/ENET_HOSTPORT_IOCTL_SET_PRIORITY_REGEN_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_GET_RX_PRIORITY\b/ENET_HOSTPORT_IOCTL_GET_PRIORITY_REGEN_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_SET_RX_DSCP_PRIORITY\b/ENET_HOSTPORT_IOCTL_SET_INGRESS_DSCP_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_GET_RX_DSCP_PRIORITY\b/ENET_HOSTPORT_IOCTL_GET_INGRESS_DSCP_PRI_MAP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_GET_TRAFFIC_SHAPING\b/ENET_HOSTPORT_IOCTL_GET_INGRESS_TRAFFIC_SHAPING/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_PRINT_REGS\b/ENET_HOSTPORT_IOCTL_PRINT_REGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IOCTL_GET_RX_MTU\b/ENET_HOSTPORT_IOCTL_GET_MAXLEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_HOSTPORT_IS_CSUM_OFFLOAD_ENABLE\b/ENET_HOSTPORT_IOCTL_IS_CSUM_OFFLOAD_ENABLED/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswHostPort_RxPriorityType\b/EnetHostPort_IngressPriorityType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_HWPUSH_NORMALIZE\b/CPSW_CPTS_HWPUSH_NORM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_GET_VERSION\b/ENET_TIMESYNC_IOCTL_GET_VERSION/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_REGISTER_HW_PUSH_CALLBACK\b/CPSW_CPTS_IOCTL_REGISTER_HWPUSH_CALLBACK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_UNREGISTER_HW_PUSH_CALLBACK\b/CPSW_CPTS_IOCTL_UNREGISTER_HWPUSH_CALLBACK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_PUSH_TIMESTAMP_EVENT\b/ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bENET_TIMESYNC_IOCTL_SET_TIMESTAMP\b/ENET_TIMESYNC_IOCTL_SET_TIMESTAMP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_SET_TS_PPM\b/ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_CLEAR_ALL_EVENTS\b/ENET_TIMESYNC_IOCTL_RESET/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_PRINT_REGS\b/ENET_TIMESYNC_IOCTL_PRINT_REGS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_IOCTL_PRINT_STATS\b/ENET_TIMESYNC_IOCTL_PRINT_STATS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetTimeSync_MsgType\b/EnetTimeSync_MsgType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswCpts_PpmMode\b/EnetTimeSync_AdjMode/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswCpts_PpmDir\b/EnetTimeSync_AdjDir/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_CPTS_HWPUSH_COUNT_MAX\b/CPSW_CPTS_HWPUSH_COUNT_MAX/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswCpts_Event\b/CpswCpts_Event/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetTimeSync_TimestampAdj\b/EnetTimeSync_TimestampAdj/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCptsSetFxnGenNudgeInArgs\b/CpswCpsw_SetFxnGenNudgeInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_MACADDR_NUM_OCTETS\b/ENET_MAC_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_OUIADDR_NUM_OCTETS\b/ENET_OUI_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IPV4ADDR_NUM_OCTETS\b/ENET_IPv4_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IPV6ADDR_NUM_OCTETS\b/ENET_IPv6_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_ADD_UNICAST\b/CPSW_ALE_IOCTL_ADD_UCAST/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_ADD_MULTICAST\b/CPSW_ALE_IOCTL_ADD_MCAST/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_LOOKUP_UNICAST\b/CPSW_ALE_IOCTL_LOOKUP_UCAST/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_LOOKUP_MULTICAST\b/CPSW_ALE_IOCTL_LOOKUP_MCAST/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_DEL_ALL_ENTRIES\b/CPSW_ALE_IOCTL_REMOVE_ALL_ENTRIES/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_AGE_ALE_ENTRIES\b/CPSW_ALE_IOCTL_AGE_ALL_ENTRIES/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IOCTL_DEL_LEARNT_ENTRIES\b/CPSW_ALE_IOCTL_REMOVE_LEARNED_ENTRIES/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_FWDSTLVL_E\b/CpswAle_FwdStateLevel/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_POLICER_YELLOWTHRESH_E\b/CpswAle_PolicerYellowThresh/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_POLICER_NOMATCH_MODE_E\b/CpswAle_PolicerNoMatchMode/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_PORTSTATE_E\b/CpswAle_PortState/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_IPADDR_CLASSIFIER_E\b/CpswAle_IpAddrClassifierType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_TBLENTRYTYPE_E\b/CpswAle_TableEntryType/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_CONFIG_MASK_ALE_MODULE_ENABLE\b/CPSW_ALE_CFG_MODULE_EN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_CONFIG_MASK_ALE_BYPASS_ENABLE\b/CPSW_ALE_CFG_BYPASS_EN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_CONFIG_MASK_UNKNOWN_UNICAST_FLOOD2HOST\b/CPSW_ALE_CFG_UNKNOWN_UCAST_FLOOD2HOST/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ALE_RXFILTER_E\b/CpswAle_RxFilter/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_Ipv4EntryInfo\b/CpswAle_IPv4EntryInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_Ipv6EntryInfo\b/CpswAle_IPv6EntryInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bsuperFlag\b/super/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_EtherTypeEntryInfo\b/uint16_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_MacSrcAddrClassifierInfo\b/CpswAle_MacAddrClassifierInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_MacDstAddrClassifierInfo\b/CpswAle_MacAddrClassifierInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_AddEntryOutArgs\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_GetPolicerEntryOutArgs\b/CpswAle_PolicerEntryOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetOAMLoopbackInArgs\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_GetPortStateInArgs\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_GetPortStateOutArgs\b/CpswAle_PortState/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetPortMirroringConfigInArgs\b/CpswAle_PortMirroringCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetTrunkConfigInArgs\b/CpswAle_TrunkCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetDefaultThreadConfigInArgs\b/CpswAle_DfltThreadCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_GetDefaultThreadConfigOutArgs\b/CpswAle_DfltThreadCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetInterVLANConfigInArgs\b/CpswAle_SetInterVlanCfgInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetInterVLANConfigOutArgs\b/CpswAle_PolicerMatchParams/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_BlockClassifierHostPortOutArgs\b/CpswAle_PolicerEntryOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_DelLearntEntriesInArgs\b/uint32_t/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetPolicerThreadConfigOutArgs\b/CpswAle_PolicerEntryOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_SetPolicerGlobalConfigInArgs\b/CpswAle_PolicerGlobalCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAle_GetPolicerGlobalConfigOutArgs\b/CpswAle_PolicerGlobalCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_GET_VERSION\b/ENET_PER_IOCTL_GET_VERSION/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_OPEN_PORT_LINK\b/ENET_PER_IOCTL_OPEN_PORT_LINK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_CLOSE_PORT_LINK\b/ENET_PER_IOCTL_CLOSE_PORT_LINK/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_IS_PORT_LINK_UP\b/ENET_PER_IOCTL_IS_PORT_LINK_UP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_GET_PORT_LINK_CONFIG\b/ENET_PER_IOCTL_GET_PORT_LINK_CONFIG/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_INTERVLAN_ROUTE_UNI_EGRESS\b/CPSW_PER_IOCTL_SET_INTERVLAN_ROUTE_UNI_EGRESS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_CLEAR_INTERVLAN_ROUTE_UNI_EGRESS\b/CPSW_PER_IOCTL_CLEAR_INTERVLAN_ROUTE_UNI_EGRESS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_INTERVLAN_ROUTE_MULTI_EGRESS\b/CPSW_PER_IOCTL_SET_INTERVLAN_ROUTE_MULTI_EGRESS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_CLEAR_INTERVLAN_ROUTE_MULTI_EGRESS\b/CPSW_PER_IOCTL_CLEAR_INTERVLAN_ROUTE_MULTI_EGRESS/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_SET_SHORT_IPG_CONFIG\b/CPSW_PER_IOCTL_SET_SHORT_IPG_CFG/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_GET_SHORT_IPG_CONFIG\b/CPSW_PER_IOCTL_GET_SHORT_IPG_CFG/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_ATTACH_CORE\b/ENET_PER_IOCTL_ATTACH_CORE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IOCTL_DETACH_CORE\b/ENET_PER_IOCTL_DETACH_CORE/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_GetVersionsOutArgs\b/Enet_Version/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_OpenPortLinkInArgs\b/EnetPer_PortLinkCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_GenericPortLinkInArgs\b/Enet_MacPort/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_ClearInterVlanRouteMultiEgressOutArgs\b/CpswMacPort_InterVlanRouteId/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetPer_AttachCoreOutArgs\b/EnetPer_AttachCoreOutArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_DefaultFlowInfo\b/Cpsw_DfltFlowInfo/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_SetShortTxIPGConfigInArgs\b/Cpsw_SetTxShortIpgCfgInArgs/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_GetShortTxIPGConfigOutArgs\b/Cpsw_TxShortIpgCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_VlanConfig\b/Cpsw_VlanCfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswOsal_Prms\b/EnetOsal_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_Config\b/Cpsw_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_SET_BIT\b/ENET_BIT/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_GET_BIT\b/ENET_GET_BIT/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_IS_BIT_SET\b/ENET_IS_BIT_SET/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MAC_ADDR_LEN\b/ENET_MAC_ADDR_LEN/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_PRIORITY_NUM\b/ENET_PRIORITY_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_TOS_PRIORITY_NUM\b/ENET_TOS_PRIORITY_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_VLAN_ID_MAX\b/ENET_VLAN_ID_MAX/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_ETHERTYPE_PTP\b/ENET_ETHERTYPE_PTP/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_Type\b/Enet_Type/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_COUNT\b/ENET_TYPE_NUM/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_MacPort\b/Enet_MacPort/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_NORMALIZE_MACPORT\b/ENET_NORM_MACPORT/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_DENORMALIZE_MACPORT\b/ENET_DENORM_MACPORT/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCPSW_MAC_PORT_INV\b/ENET_MAC_PORT_INV/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_Speed\b/Enet_Speed/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_Duplexity\b/Enet_Duplexity/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpsw_GetVersionOutArgs\b/Enet_Version/g' {} \;
+
+
+
+find ./ -type f -exec sed -i -e 's/EnetUdma_DmaDesc/EnetUdma_DmaDesc/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_CbStats/EnetDma_CbStats/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_RxChStats/EnetDma_RxChStats/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_TxChStats/EnetDma_TxChStats/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_submitRxPktQ/EnetDma_submitRxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_submitTxPktQ/EnetDma_submitTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_resetRxChStats/EnetDma_resetRxChStats/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_getTxChStats/EnetDma_getTxChStats/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetUdma_resetTxChStats/EnetDma_resetTxChStats/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/EnetPhy_Cfg/EnetPhy_Cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENETPHY_INVALID_PHYADDR/ENETPHY_INVALID_PHYADDR/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/ENET_UDMA_RING_MEM_SIZE/ENET_UDMA_RING_MEM_SIZE/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_IS_ALIGNED/ENET_UTILS_IS_ALIGNED/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_RM_RXFLOWIDX_INVALID/ENET_RM_RXFLOWIDX_INVALID/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_ALE_FWDSTLVL_FWD/CPSW_ALE_FWDSTLVL_FWD/g' {} \;
+find ./ -type f -exec sed -i -e 's/tagType/tagType/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bcpsw_testcases\b/enet_testcases/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_test_utils_mem\b/enet_test_utils_mem/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_test\b/enet_test/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_testconfig\b/enet_testconfig/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_appboardutils\b/enet_appboardutils/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpswapp_ethpatterns\b/enet_ethpatterns/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpswapp_ethutils\b/enet_ethutils/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_appmemutils_cfg\b/enet_appmemutils_cfg/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_appmemutils\b/enet_appmemutils/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apprm\b/enet_apprm/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_appsoc\b/enet_appsoc/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apputils_baremetal\b/enet_apputils_baremetal/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apputils\b/enet_apputils/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_apputils_rtos\b/enet_apputils_rtos/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_mcm\b/enet_mcm/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bcpsw_networkutils\b/enet_networkutils/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_PktInfoQ\b/EnetDma_PktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_PktInfo\b/EnetDma_Pkt/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_retrieveTxDonePktQ\b/EnetDma_retrieveTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_retrieveTxDonePkt\b/EnetDma_retrieveTxPkt/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_submitTxReadyPktQ\b/EnetDma_submitTxPktQ/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bEnetDma_submitTxReadyPkt\b/EnetDma_submitTxPkt/g' {} \;
+
+find ./ -type f -exec sed -i -e 's/\bCpswAppSoc_getCoreId\b/EnetSoc_getCoreId/g' {} \;
+find ./ -type f -exec sed -i -e 's/\bCpswAppSoc_getMacAddrList\b/EnetAppSoc_getMacAddrList/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppMemUtils_/EnetMem_/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_allocRingMemFxn/EnetMem_allocRingMem/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_freeRingMemFxn/EnetMem_freeRingMem/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_allocDmaDescFxn/EnetMem_allocDmaDesc/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_freeDmaDescFxn/EnetMem_freeDmaDesc/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_allocEthPktFxn/EnetMem_allocEthPkt/g' {} \;
+find ./ -type f -exec sed -i -e 's/EnetMem_freeEthPktFxn/EnetMem_freeEthPkt/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSWAPP_/ENETAPP_/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_APPMEMUTILS_/ENET_MEM_/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_NORM_MACPORT/ENET_MACPORT_NORM/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_DENORM_MACPORT/ENET_MACPORT_DENORM/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_MEMUTILS_/ENET_DMA_MEMMGR_/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_PKTSTATE_MODULE_MEMUTILS/ENET_PKTSTATE_MODULE_MEMMGR/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_SET_DESC_MEMUTILS/ENET_UTILS_SET_DESC_MEMMGR/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_GET_DESC_MEMUTILS/ENET_UTILS_GET_DESC_MEMMGR/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_SET_PKT_MEMUTILS/ENET_UTILS_SET_PKT_MEMMGR/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENET_UTILS_GET_PKT_MEMUTILS/ENET_UTILS_GET_PKT_MEMMGR/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppBoardUtils_/EnetBoard_/g' {} \;
+find ./ -type f -exec sed -i -e 's/CpswAppRm_/EnetAppRm_/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSWAPPUTILS/ENETAPPUTILS/g' {} \;
+find ./ -type f -exec sed -i -e 's/Cpsw_AppDataPattern/Enet_DataPattern/g' {} \;
+find ./ -type f -exec sed -i -e 's/CPSW_NETWORKUTILS/ENET_NETWORKUTILS/g' {} \;
+find ./ -type f -exec sed -i -e 's/ENETAPPUTILS_ARRAY_SIZE/ENET_ARRAYSIZE/g' {} \;
+
+

@@ -1,0 +1,81 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding 20
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App   as "Application"       order 1
+participant Enet  as "Enet"              order 2
+
+note over App #white    : Board initialization
+
+App   -> Enet           : <b>Enet_open(</b>enetType, instId, cfg<b>)</b>
+note left #white        : Open the CPSW peripheral
+activate Enet
+Enet --> App            : hEnet
+deactivate Enet
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, ENET_PER_IOCTL_OPEN_PORT_LINK, prms<b>)</b>
+note left #white        : Open MAC port + Ethernet PHY
+activate Enet
+Enet --> App            : status
+deactivate Enet
+
+group #F0F7F2 Enable EST and set initial Schedule
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_STATE</b>, prms<b>)</b>
+note left #white        : Set EST/TAS state to <b>RESET</b>
+activate Enet
+Enet --> App            : status
+deactivate Enet
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_ADMIN_LIST</b>, prms<b>)</b>
+note left #white        : Pass the admin list (cycle time,\ntime intervals and gate masks)
+activate Enet
+Enet --> App            : status
+deactivate Enet
+
+group #F0F7F2 retry [while <b>ENET_TAS_OPER_LIST_NOT_YET_UPDATED</b>]
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_GET_OPER_LIST_STATUS</b>, prms<b>)</b>
+note left #white        : Poll until oper list is updated\nwith new admin list
+activate Enet
+Enet --> App            : status
+deactivate Enet
+end
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_STATE</b>, prms<b>)</b>
+note left #white        : Set EST/TAS state to <b>ENABLE</b>
+activate Enet
+Enet --> App            : status
+deactivate Enet
+
+note over App           : EST schedule is active now
+end
+
+...  ...
+
+group #D3D3D3 Optional: Program new EST schedule
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_ADMIN_LIST</b>, prms<b>)</b>
+note left #white        : Pass the new admin list\n(time intervals and gate masks),\nbut same cycle time
+activate Enet
+Enet --> App            : status
+deactivate Enet
+
+group #D3D3D3 retry [while <b>ENET_TAS_OPER_LIST_NOT_YET_UPDATED</b>]
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_GET_OPER_LIST_STATUS</b>, prms<b>)</b>
+note left #white        : Poll until oper list is updated\nwith new admin list
+activate Enet
+Enet --> App            : status
+deactivate Enet
+end
+
+note over App           : New EST schedule is active now
+end
+
+...  ...
+
+@enduml

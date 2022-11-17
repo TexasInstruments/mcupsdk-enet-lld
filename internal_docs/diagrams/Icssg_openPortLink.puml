@@ -1,0 +1,35 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Per  as "Iccsg Per"   order 3
+participant Pru  as "PRUSS Drv"   order 4
+participant Mdio as "MDIO Mod"    order 5
+participant Phy  as "PHY Mod"     order 6
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, ENET_PER_OPEN_PORT_LINK, prms<b>)</b>
+note left               : Open MAC port with PHY
+activate Enet
+Enet  -> Per            : Per_ioctl(hPer, ENET_PORT_OPEN_PORT_LINK, prms)
+note left               : Open PHY module\nand start auto-neg
+activate Per
+Per   -> Phy            : EnetPhy_open()
+note left               : Open PHY driver,\nstart FSM
+activate Phy
+Phy  --> Per            : hPhy
+deactivate Phy
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : status
+deactivate Enet
+
+@enduml

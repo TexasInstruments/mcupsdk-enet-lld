@@ -1,0 +1,55 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_open(enetType, instId, cfg)</b>
+note left               : Open the peripheral identified by\na type and instance id
+activate Enet
+
+Enet  -> Soc            : EnetSoc_getEnetHandle(enetType, instId)
+note left               : SoC layer owns\nall Enet/Per objects,\nask for the handle
+activate Soc
+Soc  --> Enet           : hEnet, hPer
+deactivate Soc
+
+note over Enet          : Setup periperal regs (i.e. SS),\nregister interrupts, etc
+
+Enet  -> Per            : Per_open(hPer, perCfg)
+note left               : Open the peripheral
+activate Per
+
+Per   -> Mod1           : hMod1->open(hMod1, mod1Cfg)
+note left               : Open module 1 (i.e. hostport)
+activate Mod1
+Mod1 --> Per            : status
+deactivate Mod1
+
+Per   -> Mod2           : hMod2->open(hMod2, mod2Cfg)
+note left               : Open module 2 (i.e. macport)
+activate Mod2
+Mod2 --> Per            : status
+deactivate Mod2
+
+...Open other modules...
+
+Per  --> Enet           : status
+deactivate Per
+
+Enet --> App            : hEnet
+deactivate Enet
+
+@enduml

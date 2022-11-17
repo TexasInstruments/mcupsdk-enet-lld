@@ -1,0 +1,24 @@
+@startuml
+
+hide empty description
+
+' State transition
+        [*]  -->  FINDING
+    FINDING -up-> FINDING
+    FINDING  -->  FOUND
+    FINDING  -->  LINK_WAIT     : Strapped
+      FOUND  -->  RESET_WAIT
+      FOUND  -->  ENABLE
+ RESET_WAIT -up-> RESET_WAIT
+ RESET_WAIT  -->  ENABLE
+    ENABLE  -->   LOOPBACK
+    ENABLE  -->   NWAY_START    : Auto-negotiation
+    ENABLE  -->   LINK_WAIT     : Manual mode
+ NWAY_START  -->  NWAY_WAIT
+  NWAY_WAIT -up-> NWAY_WAIT
+  NWAY_WAIT  -->  LINK_WAIT
+  LINK_WAIT  -->  LINKED
+     LINKED -up-> LINKED
+     LINKED -up-> FOUND         : Link lost
+
+@enduml

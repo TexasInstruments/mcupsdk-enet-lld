@@ -1,0 +1,77 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application"  order 1
+participant Brd  as "Board"        order 2
+participant Enet as "Enet"         order 3
+participant Per  as "Enet Per"     order 4
+participant Phy  as "EnetPhy"      order 5
+participant Mac  as "MAC Port Mod" order 6
+participant Mdio as "MDIO Mod"     order 7
+
+App   -> Brd            : Board_init()
+note left               : Setup MDIO pinmux\nSetup MII pinmux\nSetup MII clocks (internal/external)
+activate Brd
+Brd  --> App
+deactivate Brd
+
+App   -> Enet           : <b>Enet_open()</b>
+note left               : Open Ethernet peripheral
+activate Enet
+Enet  -> Per            : Per_open()
+activate Per
+
+Per   -> Mdio           : EnetMod_open(hMdio, mdioCfg)
+activate Mdio
+Mdio --> Per            : status
+deactivate Mdio
+
+Per  --> Enet           : status
+deactivate Per
+
+Enet --> App            : hEnet
+deactivate Enet
+
+loop each port
+App   -> Enet           : <b>Enet_ioctl(</b>ENET_PER_OPEN_PORT_LINK<b>)</b>
+note left               : Open port link\n(MAC-PHY link)
+activate Enet
+Enet  -> Per            : Per_ioctl()
+activate Per
+
+Per   -> Mac            : EnetMod_open(hMacPort, macCfg)
+activate Mac
+Mac  --> Per            : status
+deactivate Mac
+
+Per   -> Phy            : <b>EnetPhy_open()</b>
+note left               : Open PHY driver\nfor given PHY addr
+activate Phy
+
+Phy   -> Mdio           : hMdio->readC22()
+note left               : Get PHY ID from\nPHYIDR1 and\nPHYIDR2 regs
+activate Mdio
+Mdio --> Phy
+deactivate Mdio
+
+note over Phy           : Bind PHY to a\nregister driver\nusing PHY ID
+
+Phy  --> Per            : hPhy
+deactivate Phy
+
+Per  --> Enet           : status
+deactivate Per
+
+Enet --> App            : status
+deactivate Enet
+end
+
+@enduml

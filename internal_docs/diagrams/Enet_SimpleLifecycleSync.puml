@@ -1,0 +1,66 @@
+ @startuml
+'Enet life-cycle sequence
+
+skinparam sequence {
+    BoxBorderColor black
+    'GroupBorderThickness .8
+    GroupBodyBackgroundColor transparent
+}
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App1   as "App\nTask"        order 1
+participant Timer1 as "PHY\nTimer"       order 2
+participant Enet   as "Enet"             order 3
+
+App1  -> Enet           : <b>Enet_init()</b>
+note left               : One-time initialization
+activate Enet
+Enet --> App1
+deactivate Enet
+
+App1  -> Enet           : <b>Enet_initCfg(</b>enetType, instId, cfg<b>)</b>
+note left               : Initialize config params\nwith driver defaults
+activate Enet
+Enet --> App1           :
+deactivate Enet
+
+note over App1          : Set own config params
+
+App1  -> Enet           : <b>Enet_open(</b>enetType, instId, cfg<b>)</b>
+note left               : Open driver for\na given peripheral
+activate Enet
+Enet --> App1           : hEnet
+deactivate Enet
+
+App1  -> Enet           : <b>Enet_ioctl(</b>hEnet, coreId, cmd, prms<b>)</b>
+note left               : Control cmds
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+group PHY tick
+Timer1 -> Enet          : <b>Enet_periodicTick(</b>hEnet<b>)</b>
+note left               : Longer period\n(i.e. 100ms)
+activate Enet
+Enet  --> Timer1
+deactivate Enet
+end
+
+App1  -> Enet           : <b>Enet_close(</b>hEnet<b>)</b>
+note left               : Close driver
+activate Enet
+Enet --> App1
+deactivate Enet
+
+App1  -> Enet           : <b>Enet_deinit()</b>
+note left               : One-time de-initialization
+activate Enet
+Enet --> App1
+deactivate Enet
+
+@enduml

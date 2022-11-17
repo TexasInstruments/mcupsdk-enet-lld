@@ -1,0 +1,63 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding 20
+skinparam defaultFontSize 11
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App   as "Application"       order 1
+participant Enet  as "Enet"              order 2
+participant Cpsw  as "CPSW Per"          order 3
+participant Mac   as "MAC Port Mod"      order 4
+participant Cpts  as "CPTS Mod"          order 5
+
+...  ...
+
+note right App #white   : Pass the admin list (cycle time,\ntime intervals and gate masks)
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_ADMIN_LIST</b>, prms<b>)</b>
+activate Enet
+Enet  -> Cpsw           : <b>EnetPer_ioctl(</b>hCpsw, <b>ENET_TAS_IOCTL_SET_ADMIN_LIST</b>, prms<b>)</b>
+activate Cpsw
+Cpsw  -> Mac            : <b>EnetMod_ioctl(</b>hPort, <b>ENET_TAS_IOCTL_SET_ADMIN_LIST</b>, prms<b>)</b>
+activate Mac
+note left Mac #white    : - Convert time intervals to wireside clocks\n- Write allow cmds to EST RAM\n- Toggle active EST buffer
+Mac  --> Cpsw           : status
+deactivate Mac
+note right Cpsw #white  : Save cycle time and base time\nas they get programmed in ESTF
+Cpsw --> Enet           : status
+deactivate Cpsw
+Enet --> App            : status
+deactivate Enet
+
+...  ...
+
+note right App #white   : Set EST/TAS state to <b>ENABLE</b>
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, <b>ENET_TAS_IOCTL_SET_STATE</b>, prms<b>)</b>
+activate Enet
+Enet  -> Cpsw           : <b>EnetPer_ioctl(</b>hCpsw, <b>ENET_TAS_IOCTL_SET_STATE</b>, prms<b>)</b>
+activate Cpsw
+Cpsw  -> Mac            : <b>EnetMod_ioctl(</b>hPort, <b>ENET_TAS_IOCTL_SET_STATE</b>, prms<b>)</b>
+activate Mac
+note left Mac #white    : Enable EST in MAC port control reg\n(remains inactive until ESTF is enabled)
+Mac  --> Cpsw           : status
+deactivate Mac
+note right Cpsw #white  : Pass the saved cycle time and base time\nas prms to the CPTS ESTF cmd
+Cpsw  -> Cpts           : <b>EnetMod_ioctl(</b>hCpts, <b>CPSW_CPTS_IOCTL_SET_ESTF</b>, prms<b>)</b>
+activate Cpts
+note left Cpts #white   : - ESTF length is programmed with cycle time\n- ESTF compare timestamp is programmed with base time
+Cpts --> Cpsw           : status
+deactivate Cpts
+note right Cpsw #white  : ESTF becomes active when compare timestamp is reached
+Cpsw --> Enet           : status
+deactivate Cpsw
+Enet --> App            : status
+deactivate Enet
+
+...  ...
+
+@enduml

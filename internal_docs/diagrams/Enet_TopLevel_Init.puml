@@ -1,0 +1,76 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding 20
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App   as "Application"  order 1
+participant Timer as "Timer"        order 2
+participant Brd   as "Board"        order 3
+participant Enet  as "Enet"         order 4
+
+group 1. System level initialization
+App   -> Brd            : Board_init()
+note left               : Setup MDIO pinmux\nSetup MII pinmux\nSetup MII clocks\n(internal/external)
+activate Brd
+Brd  --> App
+deactivate Brd
+end
+
+group 2. Enet OSAL/Utils initialization
+App   -> App            : Initialize OSAL and utils cfg
+
+App   -> Enet           : <b>Enet_init(</b>osalCfg, utilsCfg<b>)</b>
+note left               : Set OSAL and\nutils params
+activate Enet
+Enet --> App
+deactivate Enet
+end
+
+group 3. Peripheral initialization
+App   -> Enet           : <b>Enet_initCfg(</b>enetType, instId, cfg<b>)</b>
+note left               : Initialize peripheral config\nwith driver's defaults
+activate Enet
+Enet --> App
+deactivate Enet
+
+App   -> App            : Overwrite default config params\nwith app's values
+
+App   -> Enet           : <b>Enet_open(</b>enetType, instId, cfg<b>)</b>
+note left               : Open Ethernet peripheral
+activate Enet
+Enet --> App            : hEnet
+deactivate Enet
+
+App   -> Timer          : Start timer
+Timer --> App
+
+Timer -> Enet           : <b>Enet_periodicTick(</b>hEnet<b>)</b>
+note left               : PHY periodic tick
+activate Enet
+Enet --> App
+deactivate Enet
+end
+
+...
+
+group 4. Port link initialization
+note over App           : Open port link <b>N</b>:\nMAC port <b>N</b> + PHY
+
+App   -> App            : Set port link params with\n- MAC port number (ENET_MAC_PORT_<b>N</b>)\n- PHY/MAC shared params (speed/duplex, MII)\n- MAC specific (macCfg)\n- PHY specific (phyCfg)
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, ENET_PER_OPEN_PORT_LINK, prms<b>)</b>
+activate Enet
+Enet --> App            : status
+deactivate Enet
+end
+
+...
+
+note over Enet          : Link up / link down events\nhandled internally by Enet LLD
+
+@enduml

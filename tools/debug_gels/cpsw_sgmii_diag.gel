@@ -1,0 +1,965 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define WR_MEM_32(addr, data)    *(unsigned int*)(addr) =(unsigned int)(data)
+#define RD_MEM_32(addr)          *(unsigned int*)(addr)
+#define CSL_FEXTR(reg, msb, lsb)                                            \
+    (((reg) >> (lsb)) & ((((uint32_t)1U) << ((msb) - (lsb) + ((uint32_t)1U))) - ((uint32_t)1U)))
+
+#define CPSW_5G_PORT_NUM         (4U)
+#define CPSW_9G_PORT_NUM         (8U)
+
+#define CSL_CPSGMII_IDVER_REG                                   (0x0U)
+#define CSL_CPSGMII_SOFT_RESET_REG                              (0x4U)
+#define CSL_CPSGMII_CONTROL_REG                                 (0x10U)
+#define CSL_CPSGMII_STATUS_REG                                  (0x14U)
+#define CSL_CPSGMII_MR_ADV_ABILITY_REG                          (0x18U)
+#define CSL_CPSGMII_MR_NP_TX_REG                                (0x1CU)
+#define CSL_CPSGMII_MR_LP_ADV_ABILITY_REG                       (0x20U)
+#define CSL_CPSGMII_MR_LP_NP_RX_REG                             (0x24U)
+#define CSL_CPSGMII_DIAG_CLEAR_REG                              (0x40U)
+#define CSL_CPSGMII_DIAG_CONTROL_REG                            (0x44U)
+#define CSL_CPSGMII_DIAG_STATUS_REG                             (0x48U)
+
+#define CPSW9G_SGMII_PORT0_BASE_ADDR                            (0x0C000100)
+
+#define J721E_CTRLMMR_SERDES0_LN0_CTRL                          (0x00104080)
+#define J721E_CTRLMMR_SERDES0_LN1_CTRL                          (0x00104084)
+#define J721E_CTRLMMR_SERDES1_LN0_CTRL                          (0x00104090)
+#define J721E_CTRLMMR_SERDES1_LN1_CTRL                          (0x00104094)
+#define J721E_CTRLMMR_SERDES4_LN0_CTRL                          (0x001040C0)
+#define J721E_CTRLMMR_SERDES4_LN1_CTRL                          (0x001040C4)
+#define J721E_CTRLMMR_SERDES4_LN2_CTRL                          (0x001040C8)
+#define J721E_CTRLMMR_SERDES4_LN3_CTRL                          (0x001040CC)
+
+#define J721E_CTRLMMR_SERDES0_CLKSEL                            (0x00108400)
+#define J721E_CTRLMMR_SERDES0_CLK1SEL                           (0x00108404)
+#define J721E_CTRLMMR_SERDES1_CLKSEL                            (0x00108410)
+#define J721E_CTRLMMR_SERDES1_CLK1SEL                           (0x00108414)
+
+#define J721E_SERDES_16G0_BASEADDR                              (0x05000000)
+#define J721E_SERDES_16G1_BASEADDR                              (0x05010000)
+#define J721E_SERDES_10G0_BASEADDR                              (0x05050000)
+
+#define LANE0                                                   (0x480)
+#define LANE1                                                   (0x4C0)
+#define LANE2                                                   (0x500)
+#define LANE3                                                   (0x540)
+
+#define LANECTL                                                 (0x0)
+#define LANEDIV                                                 (0x4)
+#define LANALIGN                                                (0x8)
+#define LANESTS                                                 (0xC)
+
+/*! Macro to get bit at given bit position  */
+#define ENET_GET_BIT(val, n)            ((val & (1 << n)) >> n)
+
+menuitem "CPSW SGMII Config"
+
+Cpsw_getDuplexMode(int advtLpAbility)
+{
+    int duplexBit = (advtLpAbility & 0x1000) >> 12U;
+
+    if (duplexBit)
+    {
+        return ("Full Duplex");
+    }
+    else
+    {
+        return("Half Duplex");
+    }
+}
+
+Cpsw_getLinkSpeed(int advtLpAbility)
+{
+    int speed = CSL_FEXTR(advtLpAbility, 11, 10);
+
+    if (speed == 0U)
+    {
+        return("10Mbps");
+    }
+    else if (speed == 1U)
+    {
+        return("100Mbps");
+    }
+    else if (speed == 2U)
+    {
+        return("1Gbps");
+    }
+    else
+    {
+        return("ERROR!");
+    }
+}
+
+dialog Cpsw5g_PrintSGMIICfg(portNum "SGMII port number (1-based)
+  Enter 99 for printing all")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_5G_PORT_NUM; i++)
+        {
+            Cpsw5g_PrintSGMIICfg(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_5G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-4\n");
+    }
+    else
+    {
+        Cpsw_ng_PrintSGMIICfg_local(portNum);
+    }
+}
+
+dialog Cpsw9g_PrintSGMIICfg(portNum "SGMII port number (1-based)
+  Enter 99 for printing all")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_9G_PORT_NUM; i++)
+        {
+            Cpsw9g_PrintSGMIICfg(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_9G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-8\n");
+    }
+    else
+    {
+        Cpsw_ng_PrintSGMIICfg_local(portNum);
+    }
+}
+
+Cpsw_ng_PrintSGMIICfg_local(int portNum)
+{
+    int sgmiiBaseAddr, sgmiiCtrl, sgmiiStatus, advtAbility, advtLpAbility;
+
+    GEL_TextOut("\n");
+
+    sgmiiBaseAddr = CPSW9G_SGMII_PORT0_BASE_ADDR + ((portNum-1) * 0x100);
+
+    GEL_TextOut("CPSW Port %d - SGMII Registers\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    sgmiiCtrl   = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_CONTROL_REG);
+    sgmiiStatus = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_STATUS_REG);
+    advtAbility = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_MR_ADV_ABILITY_REG);
+    advtLpAbility = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_MR_LP_ADV_ABILITY_REG);
+
+    GEL_TextOut("SGMII Control \n");
+    GEL_TextOut("  AUTONEG ENABLE      = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 0U));
+    GEL_TextOut("  AUTONEG RESTART     = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 1U));
+    GEL_TextOut("  FAST Link Timer     = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 2U));
+    GEL_TextOut("  Next Page Loaded    = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 3U));
+    GEL_TextOut("  Loopback            = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 4U));
+    GEL_TextOut("  Master Mode         = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 5U));
+    GEL_TextOut("  Test Pattern Enable = %d\n",,,,, ENET_GET_BIT(sgmiiCtrl, 6U));
+
+    GEL_TextOut("SGMII Status \n");
+    GEL_TextOut("  Link Up             = %d\n",,,,, ENET_GET_BIT(sgmiiStatus, 0U));
+    GEL_TextOut("  AUTONEG ERROR       = %d\n",,,,, ENET_GET_BIT(sgmiiStatus, 1U));
+    GEL_TextOut("  AUTONEG Complete    = %d\n",,,,, ENET_GET_BIT(sgmiiStatus, 2U));
+    GEL_TextOut("  Next Page Received  = %d\n",,,,, ENET_GET_BIT(sgmiiStatus, 3U));
+    GEL_TextOut("  SERDES DPLL Locked  = %d\n",,,,, ENET_GET_BIT(sgmiiStatus, 4U));
+
+    GEL_TextOut("SGMII Advertised Ability  \n");
+    GEL_TextOut("  Link Speed          = %s\n",,,,, Cpsw_getLinkSpeed(advtAbility));
+    GEL_TextOut("  Dupexity            = %s\n",,,,, Cpsw_getDuplexMode(advtAbility));
+    GEL_TextOut("  AUTO-NEG ACK        = %d\n",,,,, ENET_GET_BIT(advtAbility, 14U));
+    GEL_TextOut("  Link Up             = %d\n",,,,, ENET_GET_BIT(advtAbility, 15U));
+
+    GEL_TextOut("SGMII Link Partner Advertised Ability \n");
+    GEL_TextOut("  Link Speed          = %s\n",,,,, Cpsw_getLinkSpeed(advtLpAbility));
+    GEL_TextOut("  Dupexity            = %s\n",,,,, Cpsw_getDuplexMode(advtLpAbility));
+    GEL_TextOut("  AUTO-NEG ACK        = %d\n",,,,, ENET_GET_BIT(advtLpAbility, 14U));
+    GEL_TextOut("  Link Up             = %d\n",,,,, ENET_GET_BIT(advtLpAbility, 15U));
+}
+
+/* Print SGMII decoded diagnostic status */
+Cpsw_ng_Print_Diag_Hold_Status(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic Hold signals\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("lock              = %d\n",,,,, (diagStatus & 0x800) >> 11U );
+    GEL_TextOut("r_signal_detect   = %d\n",,,,, (diagStatus & 0x400) >> 10U );
+    GEL_TextOut("an_sync_status    = %d\n",,,,, (diagStatus & 0x200) >> 9U );
+    GEL_TextOut("carrier_detect    = %d\n",,,,, (diagStatus & 0x100) >> 8U );
+    GEL_TextOut("sync_status       = %d\n",,,,, (diagStatus & 0x80)  >> 7U );
+    GEL_TextOut("pcs_rx_k28_5      = %d\n",,,,, (diagStatus & 0x40)  >> 6U );
+    GEL_TextOut("idle_match        = %d\n",,,,, (diagStatus & 0x20)  >> 5U );
+    GEL_TextOut("ability_match     = %d\n",,,,, (diagStatus & 0x10)  >> 4U );
+    GEL_TextOut("consistency_match = %d\n",,,,, (diagStatus & 0x8)   >> 3U );
+    GEL_TextOut("acknowledge_match = %d\n",,,,, (diagStatus & 0x4)   >> 2U );
+    GEL_TextOut("pcs_rx_invalid    = %d\n",,,,, (diagStatus & 0x2)   >> 1U );
+    GEL_TextOut("r_link_timer_done = %d\n",,,,, (diagStatus & 0x1)   >> 0U );
+}
+
+Cpsw_ng_Print_Diag_Sync_Status(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic Sync Status\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("SYNC_ACQUIRED_4A = %d\n",,,,, (diagStatus & 0x1000) >> 12U );
+    GEL_TextOut("SYNC_ACQUIRED_3A = %d\n",,,,, (diagStatus & 0x800) >> 11U );
+    GEL_TextOut("SYNC_ACQUIRED_2A = %d\n",,,,, (diagStatus & 0x400) >> 10U );
+    GEL_TextOut("SYNC_ACQUIRED_4  = %d\n",,,,, (diagStatus & 0x200) >> 9U );
+    GEL_TextOut("SYNC_ACQUIRED_3  = %d\n",,,,, (diagStatus & 0x100) >> 8U );
+    GEL_TextOut("SYNC_ACQUIRED_2  = %d\n",,,,, (diagStatus & 0x80)  >> 7U );
+    GEL_TextOut("SYNC_ACQUIRED_1  = %d\n",,,,, (diagStatus & 0x40)  >> 6U );
+    GEL_TextOut("COMMA_DETECT_3   = %d\n",,,,, (diagStatus & 0x20)  >> 5U );
+    GEL_TextOut("ACQUIRE_SYNC_2   = %d\n",,,,, (diagStatus & 0x10)  >> 4U );
+    GEL_TextOut("COMMA_DETECT_2   = %d\n",,,,, (diagStatus & 0x8)   >> 3U );
+    GEL_TextOut("ACQUIRE_SYNC_1   = %d\n",,,,, (diagStatus & 0x4)   >> 2U );
+    GEL_TextOut("COMMA_DETECT_1   = %d\n",,,,, (diagStatus & 0x2)   >> 1U );
+    GEL_TextOut("LOSS_OF_SYNC     = %d\n",,,,, (diagStatus & 0x1)   >> 0U );
+}
+
+Cpsw_ng_Print_Diag_AN_Status(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic AutoNeg Status\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("LINK_OK               = %d\n",,,,, (diagStatus & 0x200) >> 9U );
+    GEL_TextOut("IDLE_DETECT           = %d\n",,,,, (diagStatus & 0x100) >> 8U );
+    GEL_TextOut("COMPLETE_ACKNOWLEDGE  = %d\n",,,,, (diagStatus & 0x80)  >> 7U );
+    GEL_TextOut("ACKNOWLEDGE_DETECT    = %d\n",,,,, (diagStatus & 0x40)  >> 6U );
+    GEL_TextOut("AN_DISABLE_LINK_OK    = %d\n",,,,, (diagStatus & 0x20)  >> 5U );
+    GEL_TextOut("AN_RESTART            = %d\n",,,,, (diagStatus & 0x10)  >> 4U );
+    GEL_TextOut("NEXT_PAGE_WAIT        = %d\n",,,,, (diagStatus & 0x8)   >> 3U );
+    GEL_TextOut("ABILITY_DETECT        = %d\n",,,,, (diagStatus & 0x4)   >> 2U );
+    GEL_TextOut("AN_ENABLE             = %d\n",,,,, (diagStatus & 0x2)   >> 1U );
+    GEL_TextOut("AN_RESET              = %d\n",,,,, (diagStatus & 0x1)   >> 0U );
+}
+
+Cpsw_ng_Print_Diag_TXOS_Status(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic TXOS Status\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("CARRIER_EXTEND                                              = %d\n",,,,, ENET_GET_BIT(diagStatus, 15U) );
+    GEL_TextOut("END_OF_PACKET_EXT                                           = %d\n",,,,, ENET_GET_BIT(diagStatus, 14U) );
+    GEL_TextOut("TX_DATA_ERROR                                               = %d\n",,,,, ENET_GET_BIT(diagStatus, 13U) );
+    GEL_TextOut("START_ERROR                                                 = %d\n",,,,, ENET_GET_BIT(diagStatus, 12U) );
+    GEL_TextOut("ALIGN_ERR_START                                             = %d\n",,,,, ENET_GET_BIT(diagStatus, 11U) );
+    GEL_TextOut("EXTEND_BY_1                                                 = %d\n",,,,, ENET_GET_BIT(diagStatus, 10U) );
+    GEL_TextOut("(START_OF_PACKET or TX_DATA) with tx_oset_indicate          = %d\n",,,,, ENET_GET_BIT(diagStatus, 9U) );
+    GEL_TextOut("START_OF_PACKET                                             = %d\n",,,,, ENET_GET_BIT(diagStatus, 8U) );
+    GEL_TextOut("XMIT_DATA                                                   = %d\n",,,,, ENET_GET_BIT(diagStatus, 7U) );
+    GEL_TextOut("EPD3                                                        = %d\n",,,,, ENET_GET_BIT(diagStatus, 6U) );
+    GEL_TextOut("EPD2_NOEXT                                                  = %d\n",,,,, ENET_GET_BIT(diagStatus, 5U) );
+    GEL_TextOut("END_O F_PACKET_NOEXT                                        = %d\n",,,,, ENET_GET_BIT(diagStatus, 4U) );
+    GEL_TextOut("TX_DATA                                                     = %d\n",,,,, ENET_GET_BIT(diagStatus, 3U) );
+    GEL_TextOut("IDLE                                                        = %d\n",,,,, ENET_GET_BIT(diagStatus, 2U) );
+    GEL_TextOut("CONFIG                                                      = %d\n",,,,, ENET_GET_BIT(diagStatus, 1U) );
+    GEL_TextOut("(!t_rst_n || (xmit_change && tx_oset_indicate && !tx_even)) = %d\n",,,,, ENET_GET_BIT(diagStatus, 0U) );
+}
+
+Cpsw_ng_Print_Diag_TXCFG_Status(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic TXCFG Status\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("IDLE_IXB       = %d\n",,,,, ENET_GET_BIT(diagStatus, 12U) );
+    GEL_TextOut("IDLE_DISP      = %d\n",,,,, ENET_GET_BIT(diagStatus, 11U) );
+    GEL_TextOut("DATA_GO        = %d\n",,,,, ENET_GET_BIT(diagStatus, 10U) );
+    GEL_TextOut("SPECIAL_GO     = %d\n",,,,, ENET_GET_BIT(diagStatus, 9U) );
+    GEL_TextOut("CONFIG_C2D     = %d\n",,,,, ENET_GET_BIT(diagStatus, 8U) );
+    GEL_TextOut("CONFIG_C2C     = %d\n",,,,, ENET_GET_BIT(diagStatus, 7U) );
+    GEL_TextOut("CONFIG_C2B     = %d\n",,,,, ENET_GET_BIT(diagStatus, 6U) );
+    GEL_TextOut("CONFIG_C2A     = %d\n",,,,, ENET_GET_BIT(diagStatus, 5U) );
+    GEL_TextOut("CONFIG_C1D     = %d\n",,,,, ENET_GET_BIT(diagStatus, 4U) );
+    GEL_TextOut("CONFIG_C1C     = %d\n",,,,, ENET_GET_BIT(diagStatus, 3U) );
+    GEL_TextOut("CONFIG_C1B     = %d\n",,,,, ENET_GET_BIT(diagStatus, 2U) );
+    GEL_TextOut("CONFIG_C1A     = %d\n",,,,, ENET_GET_BIT(diagStatus, 1U) );
+    GEL_TextOut("GEN_CODE_GROUP = %d\n",,,,, ENET_GET_BIT(diagStatus, 0U) );
+}
+
+Cpsw_ng_Print_Diag_RXSM_Status_0(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic RX SM Status Lower Bits\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("EARLY_END_EXT   = %d\n",,,,, ENET_GET_BIT(diagStatus, 15U) );
+    GEL_TextOut("RX_DATA         = %d\n",,,,, ENET_GET_BIT(diagStatus, 14U) );
+    GEL_TextOut("TRR_EXTEND      = %d\n",,,,, ENET_GET_BIT(diagStatus, 13U) );
+    GEL_TextOut("TRI_RRI         = %d\n",,,,, ENET_GET_BIT(diagStatus, 12U) );
+    GEL_TextOut("TX_DATA_ERROR   = %d\n",,,,, ENET_GET_BIT(diagStatus, 11U) );
+    GEL_TextOut("EARLY_END       = %d\n",,,,, ENET_GET_BIT(diagStatus, 10U) );
+    GEL_TextOut("START_OF_PACKET = %d\n",,,,, ENET_GET_BIT(diagStatus, 9U) );
+    GEL_TextOut("FALSE_CARRIER   = %d\n",,,,, ENET_GET_BIT(diagStatus, 8U) );
+    GEL_TextOut("RX_INVALID      = %d\n",,,,, ENET_GET_BIT(diagStatus, 7U) );
+    GEL_TextOut("IDLE_D          = %d\n",,,,, ENET_GET_BIT(diagStatus, 6U) );
+    GEL_TextOut("RX_CD           = %d\n",,,,, ENET_GET_BIT(diagStatus, 5U) );
+    GEL_TextOut("RX_CC           = %d\n",,,,, ENET_GET_BIT(diagStatus, 4U) );
+    GEL_TextOut("RX_CB           = %d\n",,,,, ENET_GET_BIT(diagStatus, 3U) );
+    GEL_TextOut("RX_K            = %d\n",,,,, ENET_GET_BIT(diagStatus, 2U) );
+    GEL_TextOut("WAIT_FOR_K      = %d\n",,,,, ENET_GET_BIT(diagStatus, 1U) );
+    GEL_TextOut("LINK_FAILED     = %d\n",,,,, ENET_GET_BIT(diagStatus, 0U) );
+}
+
+Cpsw_ng_Print_Diag_RXSM_Status_1(int portNum, int diagStatus)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %d - SGMII Diagnostic RX SM Status Upper Bits\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+    GEL_TextOut("EXTEND_ERR          = %d\n",,,,, ENET_GET_BIT(diagStatus, 1U) );
+    GEL_TextOut("PACKET_BURST_RRS    = %d\n",,,,, ENET_GET_BIT(diagStatus, 0U) );
+}
+
+Cpsw_ng_PrintSGMII_DiagStatus(portNum, Diag_Select)
+{
+    /*
+     * Diagnostic Select - Determines which internal diagnostic bits are muxed onto diag_status[15:0].
+     * 001 – Diagnostic Hold Signals
+     * 010 – Diagnostic Sync Status (sync_sm state machine)
+     * 011 – Diagnostic AN Status (amsm state machine)
+     * 100 – Diagnostic TXOS Status (txos state machine)
+     * 101 – Diagnostic TXCG Status (txcg state machine)
+     * 110 – Diagnostic RXSM Status (rxsm state machine lower bits)
+     * 111 – Diagnostic RXSM Status (rxsm state machine upper bits)
+     */
+
+    int sgmiiBaseAddr, diagCtrl, diagStatus;
+
+    sgmiiBaseAddr = CPSW9G_SGMII_PORT0_BASE_ADDR + ((portNum-1) * 0x100);
+
+    diagCtrl = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_DIAG_CONTROL_REG);
+
+    if ( (0U == Diag_Select) || (Diag_Select >= 8) )
+    {
+        GEL_TextOut("Incorrect diag select value\n");
+        return;
+    }
+
+    diagCtrl &= (~0x70);
+    diagCtrl |= (Diag_Select << 4U);
+    WR_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_DIAG_CONTROL_REG, diagCtrl);
+
+    diagStatus = RD_MEM_32(sgmiiBaseAddr + CSL_CPSGMII_DIAG_STATUS_REG);
+
+    if (1U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_Hold_Status(portNum, diagStatus);
+    }
+    else if (2U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_Sync_Status(portNum, diagStatus);
+    }
+    else if (3U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_AN_Status(portNum, diagStatus);
+    }
+    else if (4U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_TXOS_Status(portNum, diagStatus);
+    }
+    else if (5U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_TXCFG_Status(portNum, diagStatus);
+    }
+    else if (6U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_RXSM_Status_0(portNum, diagStatus);
+    }
+    else if (7U == Diag_Select)
+    {
+        Cpsw_ng_Print_Diag_RXSM_Status_1(portNum, diagStatus);
+    }
+    else
+    {
+        return;
+    }
+}
+
+Cpsw_ng_PrintSGMII_AllDiagStatus(portNum)
+{
+    int i;
+
+    for (i = 1; i <= 7; i++)
+    {
+        Cpsw_ng_PrintSGMII_DiagStatus(portNum, i);
+    }
+}
+
+dialog Cpsw5g_PrintSGMII_DiagStatus(portNum "SGMII port (1-based)
+  Enter 99 for printing all ports",
+Diag_Select
+"Diag Hold Signals (1)
+ Diag Sync Status  (2)
+ Diag AN Status    (3)
+ Diag TXOS Status  (4)
+ Diag TXCG Status  (5)
+ Diag RXSM Status  (6)
+ Diag RXSM Status  (7)
+ All Diag Status   (99)")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_5G_PORT_NUM; i++)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,i);
+            GEL_TextOut("=================\n");
+
+            Cpsw_ng_PrintSGMII_AllDiagStatus(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_5G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-4\n");
+    }
+    else
+    {
+        if (Diag_Select == 99)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,portNum);
+            GEL_TextOut("=================\n");
+
+            Cpsw_ng_PrintSGMII_AllDiagStatus(portNum);
+        }
+        else
+        {
+            Cpsw_ng_PrintSGMII_DiagStatus(portNum, Diag_Select);
+        }
+    }
+}
+
+dialog Cpsw9g_PrintSGMII_DiagStatus(portNum "SGMII port (1-based)
+  Enter 99 for printing all ports",
+Diag_Select
+"Diag Hold Signals (1)
+ Diag Sync Status  (2)
+ Diag AN Status    (3)
+ Diag TXOS Status  (4)
+ Diag TXCG Status  (5)
+ Diag RXSM Status  (6)
+ Diag RXSM Status  (7)
+ All Diag Status   (99)")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_9G_PORT_NUM; i++)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,i);
+            GEL_TextOut("=================\n");
+
+            Cpsw_ng_PrintSGMII_AllDiagStatus(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_9G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-8\n");
+    }
+    else
+    {
+        if (Diag_Select == 99)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,portNum);
+            GEL_TextOut("=================\n");
+
+            Cpsw_ng_PrintSGMII_AllDiagStatus(portNum);
+        }
+        else
+        {
+            Cpsw_ng_PrintSGMII_DiagStatus(portNum, Diag_Select);
+        }
+    }
+}
+
+Serdes_PrintClkSel_j721e(int portNum)
+{
+    int serdes;
+    int val;
+    int sel;
+
+    if ((portNum == 1) || (portNum == 2))
+    {
+        serdes = 0;
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES0_CLKSEL);
+        sel = CSL_FEXTR(val, 1, 0);
+    }
+    else if ((portNum == 3) || (portNum == 4))
+    {
+        serdes = 1;
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES1_CLKSEL);
+        sel = CSL_FEXTR(val, 1, 0);
+    }
+
+    if ((portNum == 1) || (portNum == 2) ||
+        (portNum == 3) || (portNum == 4))
+    {
+        if (sel == 0)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK_SEL  = HFOSC0_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 1)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK_SEL  = HFOSC1_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 2)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK_SEL  = MAIN_PLL3_HSDIV4_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 3)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK_SEL  = MAIN_PLL2_HSDIV4_CLKOUT\n",,,,,serdes);
+        }
+    }
+
+    if ((portNum == 1) || (portNum == 2))
+    {
+        serdes = 0;
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES0_CLK1SEL);
+        sel = CSL_FEXTR(val, 1, 0);
+    }
+    else if ((portNum == 3) || (portNum == 4))
+    {
+        serdes = 1;
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES1_CLK1SEL);
+        sel = CSL_FEXTR(val, 1, 0);
+    }
+
+    if ((portNum == 1) || (portNum == 2) ||
+        (portNum == 3) || (portNum == 4))
+    {
+        if (sel == 0)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK1_SEL = HFOSC0_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 1)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK1_SEL = HFOSC1_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 2)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK1_SEL = MAIN_PLL3_HSDIV4_CLKOUT\n",,,,,serdes);
+        }
+        else if (sel == 3)
+        {
+            GEL_TextOut("SERDES%u CORE_REFCLK1_SEL = MAIN_PLL2_HSDIV4_CLKOUT\n",,,,,serdes);
+        }
+    }
+}
+
+Serdes_PrintFunction_j721e(int portNum)
+{
+    int val;
+    int lane_func_sel;
+
+    if (portNum == 1)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES0_LN0_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES0 Lane 0           = Enet Switch Q/SGMII Lane 1\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES0 Lane 0           = PCIe0 Lane 0\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES0 Lane 0           = Not used\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES0 Lane 0           = Not used\n");
+        }
+    }
+    else if (portNum == 2)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES0_LN1_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES0 Lane 1           = Enet Switch Q/SGMII Lane 2\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES0 Lane 1           = PCIe0 Lane 1\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES0 Lane 1           = USB3_0\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES0 Lane 1           = Not used\n");
+        }
+    }
+    else if (portNum == 3)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES1_LN0_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES1 Lane 0           = Enet Switch Q/SGMII Lane 3\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES1 Lane 0           = PCIe1 Lane 0\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES1 Lane 0           = Not used\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES1 Lane 0           = ICSS_G0 SGMII Lane 0\n");
+        }
+    }
+    else if (portNum == 4)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES1_LN1_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES1 Lane 1           = Enet Switch Q/SGMII Lane 4\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES1 Lane 1           = PCIe1 Lane 1\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES1 Lane 1           = USB3_1\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES1 Lane 1           = ICSS_G0 SGMII Lane 1\n");
+        }
+    }
+    else if (portNum == 5)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES4_LN0_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES4 Lane 0           = eDP Lane 0\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES4 Lane 0           = Not used\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES4 Lane 0           = Enet Switch Q/SGMII Lane 5\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES4 Lane 0           = Not used\n");
+        }
+    }
+    else if (portNum == 6)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES4_LN1_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES4 Lane 1           = eDP Lane 1\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES4 Lane 1           = Not used\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES4 Lane 1           = Enet Switch Q/SGMII Lane 6\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES4 Lane 1           = Not used\n");
+        }
+    }
+    else if (portNum == 7)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES4_LN2_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES4 Lane 2           = eDP Lane 2\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES4 Lane 2           = Not used\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES4 Lane 2           = Enet Switch Q/SGMII Lane 7\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES4 Lane 2           = Not used\n");
+        }
+    }
+    else if (portNum == 8)
+    {
+        val = RD_MEM_32(J721E_CTRLMMR_SERDES4_LN3_CTRL);
+        lane_func_sel = CSL_FEXTR(val, 1, 0);
+        if (lane_func_sel == 0)
+        {
+            GEL_TextOut("SERDES4 Lane 3           = eDP Lane 3\n");
+        }
+        else if (lane_func_sel == 1)
+        {
+            GEL_TextOut("SERDES4 Lane 3           = Not used\n");
+        }
+        else if (lane_func_sel == 2)
+        {
+            GEL_TextOut("SERDES4 Lane 3           = Enet Switch Q/SGMII Lane 8\n");
+        }
+        else if (lane_func_sel == 3)
+        {
+            GEL_TextOut("SERDES4 Lane 3           = Not used\n");
+        }
+    }
+}
+
+Serdes_PrintMMR_j721e(int portNum)
+{
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %u - SERDES MMR Registers\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+
+    Serdes_PrintFunction_j721e(portNum);
+    Serdes_PrintClkSel_j721e(portNum);
+}
+
+dialog Cpsw9g_PrintSGMII_SerdesMMR(portNum "SGMII port (1-based)
+  Enter 99 for printing all ports")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_9G_PORT_NUM; i++)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,i);
+            GEL_TextOut("=================\n");
+            Serdes_PrintMMR_j721e(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_9G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-8\n");
+    }
+    else
+    {
+        GEL_TextOut("\n");
+        GEL_TextOut("=================\n");
+        GEL_TextOut("| CPSWnG Port %d |\n",,,,,portNum);
+        GEL_TextOut("=================\n");
+        Serdes_PrintMMR_j721e(portNum);
+    }
+}
+
+Serdes_PrintRegs_j721e(int portNum)
+{
+    int baseAddr;
+    int laneOffs;
+    int serdes;
+    int lane;
+    int val;
+
+    if (portNum == 1)
+    {
+        serdes = 0;
+        lane   = 0;
+        baseAddr = J721E_SERDES_16G0_BASEADDR;
+        laneOffs = LANE0;
+    }
+    else if (portNum == 2)
+    {
+        serdes = 0;
+        lane   = 1;
+        baseAddr = J721E_SERDES_16G0_BASEADDR;
+        laneOffs = LANE1;
+    }
+    else if (portNum == 3)
+    {
+        serdes = 1;
+        lane   = 0;
+        baseAddr = J721E_SERDES_16G1_BASEADDR;
+        laneOffs = LANE0;
+    }
+    else if (portNum == 4)
+    {
+        serdes = 1;
+        lane   = 1;
+        baseAddr = J721E_SERDES_16G1_BASEADDR;
+        laneOffs = LANE1;
+    }
+    else if (portNum == 5)
+    {
+        serdes = 4;
+        lane   = 0;
+        baseAddr = J721E_SERDES_10G0_BASEADDR;
+        laneOffs = LANE0;
+    }
+    else if (portNum == 6)
+    {
+        serdes = 4;
+        lane   = 1;
+        baseAddr = J721E_SERDES_10G0_BASEADDR;
+        laneOffs = LANE1;
+    }
+    else if (portNum == 7)
+    {
+        serdes = 4;
+        lane   = 2;
+        baseAddr = J721E_SERDES_10G0_BASEADDR;
+        laneOffs = LANE2;
+    }
+    else if (portNum == 8)
+    {
+        serdes = 4;
+        lane   = 3;
+        baseAddr = J721E_SERDES_10G0_BASEADDR;
+        laneOffs = LANE3;
+    }
+
+    GEL_TextOut("\n");
+    GEL_TextOut("CPSW Port %u - SERDES Lane Registers\n",,,,,portNum);
+    GEL_TextOut("--------------------------------------------------------\n");
+
+    val = RD_MEM_32(baseAddr + laneOffs + LANECTL);
+    GEL_TextOut("SERDES%d Lane %d LANECTL       = %x\n",,,,,serdes,lane,val);
+
+    val = RD_MEM_32(baseAddr + laneOffs + LANEDIV);
+    GEL_TextOut("SERDES%d Lane %d LANEDIV       = %x\n",,,,,serdes,lane,val);
+
+    val = RD_MEM_32(baseAddr + laneOffs + LANALIGN);
+    GEL_TextOut("SERDES%d Lane %d LANALIGN      = %x\n",,,,,serdes,lane,val);
+
+    val = RD_MEM_32(baseAddr + laneOffs + LANESTS);
+    GEL_TextOut("SERDES%d Lane %d LANESTS       = %x\n",,,,,serdes,lane,val);
+}
+
+dialog Cpsw9g_PrintSGMII_SerdesRegs(portNum "SGMII port (1-based)
+  Enter 99 for printing all ports")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_9G_PORT_NUM; i++)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,i);
+            GEL_TextOut("=================\n");
+            Serdes_PrintRegs_j721e(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_9G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-8\n");
+    }
+    else
+    {
+        GEL_TextOut("\n");
+        GEL_TextOut("=================\n");
+        GEL_TextOut("| CPSWnG Port %d |\n",,,,,portNum);
+        GEL_TextOut("=================\n");
+        Serdes_PrintRegs_j721e(portNum);
+    }
+}
+
+dialog Cpsw9g_PrintSGMII(portNum "SGMII port (1-based)
+  Enter 99 for printing all ports")
+{
+    int i;
+
+    if (portNum == 99U)
+    {
+        for (i = 1; i <= CPSW_9G_PORT_NUM; i++)
+        {
+            GEL_TextOut("\n");
+            GEL_TextOut("=================\n");
+            GEL_TextOut("| CPSWnG Port %d |\n",,,,,i);
+            GEL_TextOut("=================\n");
+            Cpsw_ng_PrintSGMIICfg_local(i);
+            Cpsw_ng_PrintSGMII_AllDiagStatus(i);
+            Serdes_PrintMMR_j721e(i);
+            Serdes_PrintRegs_j721e(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else if ((portNum == 0) || (portNum > CPSW_9G_PORT_NUM))
+    {
+        GEL_TextOut("Incorrect port number. It should be 1-8\n");
+    }
+    else
+    {
+        GEL_TextOut("\n");
+        GEL_TextOut("=================\n");
+        GEL_TextOut("| CPSWnG Port %d |\n",,,,,portNum);
+        GEL_TextOut("=================\n");
+        Cpsw_ng_PrintSGMIICfg_local(portNum);
+        Cpsw_ng_PrintSGMII_AllDiagStatus(portNum);
+        Serdes_PrintMMR_j721e(portNum);
+        Serdes_PrintRegs_j721e(portNum);
+    }
+}

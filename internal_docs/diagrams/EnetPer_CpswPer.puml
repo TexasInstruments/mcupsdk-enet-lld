@@ -1,0 +1,54 @@
+ @startuml
+'Enet Cpsw Ng Peripheral
+
+package EnetMod <<folder>> {
+    class CpswHostPort
+    class CpswMacPort
+    class CpswAle
+    class CpswStats
+    class Mdio
+    class CpswCpts
+    class GmacHostPort
+    class GmacAle
+    class GmacStats
+    class IcssgHostPort
+    class IcssgMacPort
+    class IcssgFdb
+    class IcssgStats
+    class IcssgTimestamp
+    class NullMod
+}
+
+' Trick to enforce order in diagram
+  CpswHostPort -[hidden] CpswMacPort
+   CpswMacPort -[hidden] CpswAle
+       CpswAle -[hidden] CpswStats
+     CpswStats -[hidden] Mdio
+          Mdio -[hidden] CpswCpts
+      CpswCpts -[hidden] GmacHostPort
+  GmacHostPort -[hidden] GmacAle
+       GmacAle -[hidden] GmacStats
+     GmacStats -[hidden] IcssgHostPort
+ IcssgHostPort -[hidden] IcssgMacPort
+  IcssgMacPort -[hidden] IcssgFdb
+      IcssgFdb -[hidden] IcssgStats
+    IcssgStats -[hidden] IcssgTimestamp
+IcssgTimestamp -[hidden] NullMod
+
+class CpswNgPer {
+    aleMod
+    hostPortMod
+    macPortMod[N-1]
+    mdioMod
+    timestampMod
+    statsMod
+}
+
+CpswNgPer "1" *-- "1" CpswAle      : contains
+CpswNgPer "1" *-- "1" CpswHostPort : contains
+CpswNgPer "1" *-- "N" CpswMacPort  : contains
+CpswNgPer "1" *-- "1" Mdio         : contains
+CpswNgPer "1" *-- "1" CpswCpts     : contains
+CpswNgPer "1" *-- "1" CpswStats    : contains
+
+@enduml

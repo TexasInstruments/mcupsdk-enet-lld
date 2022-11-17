@@ -1,0 +1,35 @@
+@startuml
+'Enet init sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+
+App   -> Enet           : <b>Enet_initOsalCfg(</b>osalCfg<b>)</b>
+note left               : Fill osalCfg with\ndefault OSAL implementation
+activate Enet
+Enet --> App
+deactivate Enet
+
+App   -> Enet           : <b>Enet_initUtilsCfg(</b>utilCfg<b>)</b>
+note left               : Fill utilsCfg with\ndefault utils implementation
+activate Enet
+Enet --> App
+deactivate Enet
+
+App   -> App            : Optional:\nOverwrite with app specifics\nOSAL and utils params
+
+App   -> Enet           : <b>Enet_init(</b>osalCfg, utilsCfg<b>)</b>
+activate Enet
+note right              : Apply/save OSAL and utils params
+Enet --> App
+deactivate Enet
+
+@enduml

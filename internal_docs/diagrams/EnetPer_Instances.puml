@@ -1,0 +1,33 @@
+ @startuml
+'Enet hierarchy
+
+Interface EnetPer {
+    name
+    physAddr
+    virtAddr
+    features
+    errata
+
+    initCfg()
+    open()
+    rejoin()
+    ioctl()
+    poll()
+    periodicTick()
+    close()
+}
+
+
+class Cpsw9gPer implements EnetPer {
+}
+
+class GmacPer implements EnetPer {
+}
+
+class IcssgPer implements EnetPer {
+}
+
+class NullPer implements EnetPer {
+}
+
+@enduml

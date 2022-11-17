@@ -1,0 +1,95 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding 20
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App   as "Application"       order 1
+participant Enet  as "Enet"              order 2
+participant Per   as "Cpsw\nPer"         order 3
+participant Dma   as "Enet\nUDMA"        order 4
+participant Host  as "CpswHostPort\nMod" order 5
+participant Ale   as "CpswAle\nMod"      order 6
+participant Cpts  as "CpswCpts\nMod"     order 7
+participant Mdio  as "Mdio\nMod"         order 8
+participant Stats as "CpswStats\nMod"    order 9
+collections Mac   as "CpsMacPort\nMods"  order 10
+participant Phy   as "Phy\nMod"          order 11
+
+App   -> Enet           : <b>Enet_initCfg(</b>ENET_CPSW_nG, 0, cfg<b>)</b>
+note left               : Init CPSW config params\nwith driver's defaults
+activate Enet
+Enet --> App
+deactivate Enet
+
+note over App           : Set application's own parameters
+
+App   -> Enet           : <b>Enet_open(</b>ENET_CPSW_nG, 0, cfg<b>)</b>
+note left               : Open the CPSW peripheral
+activate Enet
+
+Enet  -> Per            : Per_open(hPer, perCfg)
+note left               : Open the CPSW peripheral
+activate Per
+
+Per   -> Host           : EnetMod_open(hHostPort, hostCfg)
+note left               : Open CPSW Host Port module
+activate Host
+Host  --> Per           : status
+deactivate Host
+
+Per   -> Ale            : EnetMod_open(hAle, aleCfg)
+note left               : Open CPSW ALE module
+activate Ale
+Ale  --> Per            : status
+deactivate Ale
+
+Per   -> Cpts           : EnetMod_open(hCpts, cptsCfg)
+note left               : Open CPSW CPTS module
+activate Cpts
+Cpts --> Per            : status
+deactivate Cpts
+
+Per   -> Mdio           : EnetMod_open(hMdio, mdioCfg)
+note left               : Open MDIO driver
+activate Mdio
+Mdio --> Per            : status
+deactivate Mdio
+
+Per   -> Stats          : EnetMod_open(hStats)
+note left               : Open CPSW statistics module
+activate Stats
+Stats --> Per           : status
+deactivate Stats
+
+Per   -> Dma            : EnetHostPortDma_open(dmaCfg)
+note left               : Open DMA
+activate Dma
+Dma  --> Per            : hDma
+deactivate Dma
+
+Per   -> Dma            : EnetHostPortDma_openRxCh(hDma, dmaCfg)
+note left               : Open RX channel\nassociated with host port
+activate Dma
+Dma  --> Per            : status
+deactivate Dma
+
+Per   -> Dma            : EnetHostPortDma_openRsvdFlow(dmaCfg)
+note left               : Open reserved flow\n(flow alloc'd from RM)
+activate Dma
+Dma  --> Per            : hRxRsvdFlow
+deactivate Dma
+
+Per   -> Per            : Register MDIO, CPTS\nand Stats interrupts
+
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : hEnet
+deactivate Enet
+
+@enduml

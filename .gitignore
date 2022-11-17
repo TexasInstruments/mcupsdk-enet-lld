@@ -1,0 +1,14 @@
+lib/*
+obj/
+.dlls
+.executables
+.xdcenv.mak
+*.mak
+.interfaces
+.libraries
+package/*
+Settings.h
+Settings.xdc
+hostApp
+lwipif/obj/
+src/phy/obj

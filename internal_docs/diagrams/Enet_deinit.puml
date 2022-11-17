@@ -1,0 +1,34 @@
+ @startuml
+'Enet deinit sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_deinit()</b>
+activate Enet
+
+loop All Enet Pers
+Enet  -> Soc            : EnetSoc_getEnetHandleByIdx(i)
+activate Soc
+Soc  --> Enet           : hEnet
+deactivate Soc
+note over Enet          : Destroy each Enet's mutex
+end
+
+note over Enet          : Clear all saved\nOSAL and utils params
+Enet --> App
+deactivate Enet
+
+@enduml

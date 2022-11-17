@@ -1,0 +1,431 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define uint32_t                  unsigned int
+#define WR_MEM_32(addr, data)   *(uint32_t*)(addr) = (uint32_t)(data)
+#define RD_MEM_32(addr)         *(uint32_t*)(addr)
+#define CPSW_9G_PORT_NUM        8
+#define CPSW_5G_PORT_NUM        4
+#define CPSW_5G_PORT_NUM        4
+#define CPSW_3G_PORT_NUM        2
+
+menuitem "CPSW Statistics Print"
+
+cpsw_print_stat_with_index_nonzero(regName, portnum, regIdx, regAddr)
+{
+    int regVal = RD_MEM_32(regAddr);
+    if (0 != regVal)
+    {
+            GEL_TextOut("STAT_%d_%s[%d]= %x\n",,,,,portnum, regName, regIdx, regVal);
+    }
+}
+
+cpsw_print_stat_nonzero(regName, portnum, regAddr)
+{
+    int regVal = RD_MEM_32(regAddr);
+    if (0 != regVal)
+    {
+            GEL_TextOut("STAT_%d_%s= %x\n",,,,,portnum, regName, regVal);
+    }
+}
+
+hotmenu cpsw_2g_statsprint_nonzero()
+{
+    uint32_t i, regAddr, portnum;
+
+    GEL_TextOut("          STATS          \n");
+
+    portnum = 0;
+    GEL_TextOut("--------------------------------\n");
+    GEL_TextOut("          PORT%d STATS          \n",,,,,portnum);
+    GEL_TextOut("--------------------------------\n");
+    cpsw_print_stat_nonzero("RXGOODFRAMES              ", portnum, (0x4603A000U));
+    cpsw_print_stat_nonzero("RXBROADCASTFRAMES         ", portnum, (0x4603A004U));
+    cpsw_print_stat_nonzero("RXMULTICASTFRAMES         ", portnum, (0x4603A008U));
+    cpsw_print_stat_nonzero("RXCRCERRORS               ", portnum, (0x4603A010U));
+    cpsw_print_stat_nonzero("RXOVERSIZEDFRAMES         ", portnum, (0x4603A018U));
+    cpsw_print_stat_nonzero("RXUNDERSIZEDFRAMES        ", portnum, (0x4603A020U));
+    cpsw_print_stat_nonzero("RXFRAGMENTS               ", portnum, (0x4603A024U));
+    cpsw_print_stat_nonzero("ALE_DROP                  ", portnum, (0x4603A028U));
+    cpsw_print_stat_nonzero("ALE_OVERRUN_DROP          ", portnum, (0x4603A02CU));
+    cpsw_print_stat_nonzero("RXOCTETS                  ", portnum, (0x4603A030U));
+    cpsw_print_stat_nonzero("TXGOODFRAMES              ", portnum, (0x4603A034U));
+    cpsw_print_stat_nonzero("TXBROADCASTFRAMES         ", portnum, (0x4603A038U));
+    cpsw_print_stat_nonzero("TXMULTICASTFRAMES         ", portnum, (0x4603A03CU));
+    cpsw_print_stat_nonzero("TXOCTETS                  ", portnum, (0x4603A064U));
+    cpsw_print_stat_nonzero("OCTETFRAMES64             ", portnum, (0x4603A068U));
+    cpsw_print_stat_nonzero("OCTETFRAMES65T127         ", portnum, (0x4603A06CU));
+    cpsw_print_stat_nonzero("OCTETFRAMES128T255        ", portnum, (0x4603A070U));
+    cpsw_print_stat_nonzero("OCTETFRAMES256T511        ", portnum, (0x4603A074U));
+    cpsw_print_stat_nonzero("OCTETFRAMES512T1023       ", portnum, (0x4603A078U));
+    cpsw_print_stat_nonzero("OCTETFRAMES1024TUP        ", portnum, (0x4603A07CU));
+    cpsw_print_stat_nonzero("NETOCTETS                 ", portnum, (0x4603A080U));
+    cpsw_print_stat_nonzero("RX_BOTTOM_OF_FIFO_DROP    ", portnum, (0x4603A084U));
+    cpsw_print_stat_nonzero("PORTMASK_DROP             ", portnum, (0x4603A088U));
+    cpsw_print_stat_nonzero("RX_TOP_OF_FIFO_DROP       ", portnum, (0x4603A08CU));
+    cpsw_print_stat_nonzero("ALE_RATE_LIMIT_DROP       ", portnum, (0x4603A090U));
+    cpsw_print_stat_nonzero("ALE_VID_INGRESS_DROP      ", portnum, (0x4603A094U));
+    cpsw_print_stat_nonzero("ALE_DA_EQ_SA_DROP         ", portnum, (0x4603A098U));
+    cpsw_print_stat_nonzero("ALE_BLOCK_DROP            ", portnum, (0x4603A09CU));
+    cpsw_print_stat_nonzero("ALE_SECURE_DROP           ", portnum, (0x4603A0A0U));
+    cpsw_print_stat_nonzero("ALE_AUTH_DROP             ", portnum, (0x4603A0A4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI              ", portnum, (0x4603A0A8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI_BCNT         ", portnum, (0x4603A0ACU));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT              ", portnum, (0x4603A0B0U));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT_BCNT         ", portnum, (0x4603A0B4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD              ", portnum, (0x4603A0B8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD_BCNT         ", portnum, (0x4603A0BCU));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH             ", portnum, (0x4603A0C0U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_RED         ", portnum, (0x4603A0C4U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_YELLOW      ", portnum, (0x4603A0C8U));
+    cpsw_print_stat_nonzero("TX_MEMORY_PROTECT_ERROR   ", portnum, (0x4603A17CU));
+
+    portnum = 1;
+    GEL_TextOut("--------------------------------\n");
+    GEL_TextOut("          PORT%d STATS          \n",,,,,portnum);
+    GEL_TextOut("--------------------------------\n");
+    cpsw_print_stat_nonzero("RXGOODFRAMES              ", portnum, (0x4603A200U));
+    cpsw_print_stat_nonzero("RXBROADCASTFRAMES         ", portnum, (0x4603A204U));
+    cpsw_print_stat_nonzero("RXMULTICASTFRAMES         ", portnum, (0x4603A208U));
+    cpsw_print_stat_nonzero("RXPAUSEFRAMES             ", portnum, (0x4603A20CU));
+    cpsw_print_stat_nonzero("RXCRCERRORS               ", portnum, (0x4603A210U));
+    cpsw_print_stat_nonzero("RXALIGNCODEERRORS         ", portnum, (0x4603A214U));
+    cpsw_print_stat_nonzero("RXOVERSIZEDFRAMES         ", portnum, (0x4603A218U));
+    cpsw_print_stat_nonzero("RXJABBERFRAMES            ", portnum, (0x4603A21CU));
+    cpsw_print_stat_nonzero("RXUNDERSIZEDFRAMES        ", portnum, (0x4603A220U));
+    cpsw_print_stat_nonzero("RXFRAGMENTS               ", portnum, (0x4603A224U));
+    cpsw_print_stat_nonzero("ALE_DROP                  ", portnum, (0x4603A228U));
+    cpsw_print_stat_nonzero("ALE_OVERRUN_DROP          ", portnum, (0x4603A22CU));
+    cpsw_print_stat_nonzero("RXOCTETS                  ", portnum, (0x4603A230U));
+    cpsw_print_stat_nonzero("TXGOODFRAMES              ", portnum, (0x4603A234U));
+    cpsw_print_stat_nonzero("TXBROADCASTFRAMES         ", portnum, (0x4603A238U));
+    cpsw_print_stat_nonzero("TXMULTICASTFRAMES         ", portnum, (0x4603A23CU));
+    cpsw_print_stat_nonzero("TXPAUSEFRAMES             ", portnum, (0x4603A240U));
+    cpsw_print_stat_nonzero("TXDEFERREDFRAMES          ", portnum, (0x4603A244U));
+    cpsw_print_stat_nonzero("TXCOLLISIONFRAMES         ", portnum, (0x4603A248U));
+    cpsw_print_stat_nonzero("TXSINGLECOLLFRAMES        ", portnum, (0x4603A24CU));
+    cpsw_print_stat_nonzero("TXMULTCOLLFRAMES          ", portnum, (0x4603A250U));
+    cpsw_print_stat_nonzero("TXEXCESSIVECOLLISIONS     ", portnum, (0x4603A254U));
+    cpsw_print_stat_nonzero("TXLATECOLLISIONS          ", portnum, (0x4603A258U));
+    cpsw_print_stat_nonzero("RXIPGERROR                ", portnum, (0x4603A25CU));
+    cpsw_print_stat_nonzero("TXCARRIERSENSEERRORS      ", portnum, (0x4603A260U));
+    cpsw_print_stat_nonzero("TXOCTETS                  ", portnum, (0x4603A264U));
+    cpsw_print_stat_nonzero("OCTETFRAMES64             ", portnum, (0x4603A268U));
+    cpsw_print_stat_nonzero("OCTETFRAMES65T127         ", portnum, (0x4603A26CU));
+    cpsw_print_stat_nonzero("OCTETFRAMES128T255        ", portnum, (0x4603A270U));
+    cpsw_print_stat_nonzero("OCTETFRAMES256T511        ", portnum, (0x4603A274U));
+    cpsw_print_stat_nonzero("OCTETFRAMES512T1023       ", portnum, (0x4603A278U));
+    cpsw_print_stat_nonzero("OCTETFRAMES1024TUP        ", portnum, (0x4603A27CU));
+    cpsw_print_stat_nonzero("NETOCTETS                 ", portnum, (0x4603A280U));
+    cpsw_print_stat_nonzero("RX_BOTTOM_OF_FIFO_DROP    ", portnum, (0x4603A284U));
+    cpsw_print_stat_nonzero("PORTMASK_DROP             ", portnum, (0x4603A288U));
+    cpsw_print_stat_nonzero("RX_TOP_OF_FIFO_DROP       ", portnum, (0x4603A28CU));
+    cpsw_print_stat_nonzero("ALE_RATE_LIMIT_DROP       ", portnum, (0x4603A290U));
+    cpsw_print_stat_nonzero("ALE_VID_INGRESS_DROP      ", portnum, (0x4603A294U));
+    cpsw_print_stat_nonzero("ALE_DA_EQ_SA_DROP         ", portnum, (0x4603A298U));
+    cpsw_print_stat_nonzero("ALE_BLOCK_DROP            ", portnum, (0x4603A29CU));
+    cpsw_print_stat_nonzero("ALE_SECURE_DROP           ", portnum, (0x4603A2A0U));
+    cpsw_print_stat_nonzero("ALE_AUTH_DROP             ", portnum, (0x4603A2A4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI              ", portnum, (0x4603A2A8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI_BCNT         ", portnum, (0x4603A2ACU));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT              ", portnum, (0x4603A2B0U));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT_BCNT         ", portnum, (0x4603A2B4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD              ", portnum, (0x4603A2B8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD_BCNT         ", portnum, (0x4603A2BCU));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH             ", portnum, (0x4603A2C0U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_RED         ", portnum, (0x4603A2C4U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_YELLOW      ", portnum, (0x4603A2C8U));
+    cpsw_print_stat_nonzero("TX_MEMORY_PROTECT_ERROR   ", portnum, (0x4603A37CU));
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = 0x4603A380U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_REG             ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = 0x4603A3A0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_BCNT_REG        ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = 0x4603A3C0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_REG        ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = 0x4603A3E0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_BCNT_REG   ", portnum, i, regAddr);
+    }
+}
+
+cpsw_ng_statsprint_nonzero(numMacPorts, baseAddr)
+{
+    uint32_t i, regAddr, portnum;
+    uint32_t portBaseAddr;
+    GEL_TextOut("          STATS          \n");
+
+    portnum = 0;
+    GEL_TextOut("--------------------------------\n");
+    GEL_TextOut("          PORT%d STATS          \n",,,,,portnum);
+    GEL_TextOut("--------------------------------\n");
+    cpsw_print_stat_nonzero("RXGOODFRAMES              ", portnum, (baseAddr + 0xA000U));
+    cpsw_print_stat_nonzero("RXBROADCASTFRAMES         ", portnum, (baseAddr + 0xA004U));
+    cpsw_print_stat_nonzero("RXMULTICASTFRAMES         ", portnum, (baseAddr + 0xA008U));
+    cpsw_print_stat_nonzero("RXCRCERRORS               ", portnum, (baseAddr + 0xA010U));
+    cpsw_print_stat_nonzero("RXOVERSIZEDFRAMES         ", portnum, (baseAddr + 0xA018U));
+    cpsw_print_stat_nonzero("RXUNDERSIZEDFRAMES        ", portnum, (baseAddr + 0xA020U));
+    cpsw_print_stat_nonzero("RXFRAGMENTS               ", portnum, (baseAddr + 0xA024U));
+    cpsw_print_stat_nonzero("ALE_DROP                  ", portnum, (baseAddr + 0xA028U));
+    cpsw_print_stat_nonzero("ALE_OVERRUN_DROP          ", portnum, (baseAddr + 0xA02CU));
+    cpsw_print_stat_nonzero("RXOCTETS                  ", portnum, (baseAddr + 0xA030U));
+    cpsw_print_stat_nonzero("TXGOODFRAMES              ", portnum, (baseAddr + 0xA034U));
+    cpsw_print_stat_nonzero("TXBROADCASTFRAMES         ", portnum, (baseAddr + 0xA038U));
+    cpsw_print_stat_nonzero("TXMULTICASTFRAMES         ", portnum, (baseAddr + 0xA03CU));
+    cpsw_print_stat_nonzero("TXOCTETS                  ", portnum, (baseAddr + 0xA064U));
+    cpsw_print_stat_nonzero("OCTETFRAMES64             ", portnum, (baseAddr + 0xA068U));
+    cpsw_print_stat_nonzero("OCTETFRAMES65T127         ", portnum, (baseAddr + 0xA06CU));
+    cpsw_print_stat_nonzero("OCTETFRAMES128T255        ", portnum, (baseAddr + 0xA070U));
+    cpsw_print_stat_nonzero("OCTETFRAMES256T511        ", portnum, (baseAddr + 0xA074U));
+    cpsw_print_stat_nonzero("OCTETFRAMES512T1023       ", portnum, (baseAddr + 0xA078U));
+    cpsw_print_stat_nonzero("OCTETFRAMES1024TUP        ", portnum, (baseAddr + 0xA07CU));
+    cpsw_print_stat_nonzero("NETOCTETS                 ", portnum, (baseAddr + 0xA080U));
+    cpsw_print_stat_nonzero("RX_BOTTOM_OF_FIFO_DROP    ", portnum, (baseAddr + 0xA084U));
+    cpsw_print_stat_nonzero("PORTMASK_DROP             ", portnum, (baseAddr + 0xA088U));
+    cpsw_print_stat_nonzero("RX_TOP_OF_FIFO_DROP       ", portnum, (baseAddr + 0xA08CU));
+    cpsw_print_stat_nonzero("ALE_RATE_LIMIT_DROP       ", portnum, (baseAddr + 0xA090U));
+    cpsw_print_stat_nonzero("ALE_VID_INGRESS_DROP      ", portnum, (baseAddr + 0xA094U));
+    cpsw_print_stat_nonzero("ALE_DA_EQ_SA_DROP         ", portnum, (baseAddr + 0xA098U));
+    cpsw_print_stat_nonzero("ALE_BLOCK_DROP            ", portnum, (baseAddr + 0xA09CU));
+    cpsw_print_stat_nonzero("ALE_SECURE_DROP           ", portnum, (baseAddr + 0xA0A0U));
+    cpsw_print_stat_nonzero("ALE_AUTH_DROP             ", portnum, (baseAddr + 0xA0A4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI              ", portnum, (baseAddr + 0xA0A8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_UNI_BCNT         ", portnum, (baseAddr + 0xA0ACU));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT              ", portnum, (baseAddr + 0xA0B0U));
+    cpsw_print_stat_nonzero("ALE_UNKN_MLT_BCNT         ", portnum, (baseAddr + 0xA0B4U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD              ", portnum, (baseAddr + 0xA0B8U));
+    cpsw_print_stat_nonzero("ALE_UNKN_BRD_BCNT         ", portnum, (baseAddr + 0xA0BCU));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH             ", portnum, (baseAddr + 0xA0C0U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_RED         ", portnum, (baseAddr + 0xA0C4U));
+    cpsw_print_stat_nonzero("ALE_POL_MATCH_YELLOW      ", portnum, (baseAddr + 0xA0C8U));
+    cpsw_print_stat_nonzero("TX_MEMORY_PROTECT_ERROR   ", portnum, (baseAddr + 0xA17CU));
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = baseAddr + 0xA180U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_REG             ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = baseAddr + 0xA1A0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_BCNT_REG        ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = baseAddr + 0xA1C0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_REG        ", portnum, i, regAddr);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        regAddr = baseAddr + 0xA1E0U + (i * 0x4U);
+        cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_BCNT_REG   ", portnum, i, regAddr);
+    }
+
+    for (portnum = 1; portnum <= numMacPorts; portnum++)
+    {
+        GEL_TextOut("--------------------------------\n");
+        GEL_TextOut("          PORT%d STATS          \n",,,,,portnum);
+        GEL_TextOut("--------------------------------\n");
+        portBaseAddr = baseAddr + 0xA200U + ((portnum-1) * 0x200);
+
+        cpsw_print_stat_nonzero("RXGOODFRAMES              ", portnum, (portBaseAddr));
+        cpsw_print_stat_nonzero("RXBROADCASTFRAMES         ", portnum, (portBaseAddr + 0x4U));
+        cpsw_print_stat_nonzero("RXMULTICASTFRAMES         ", portnum, (portBaseAddr + 0x8U));
+        cpsw_print_stat_nonzero("RXPAUSEFRAMES             ", portnum, (portBaseAddr + 0xCU));
+        cpsw_print_stat_nonzero("RXCRCERRORS               ", portnum, (portBaseAddr + 0x10U));
+        cpsw_print_stat_nonzero("RXALIGNCODEERRORS         ", portnum, (portBaseAddr + 0x14U));
+        cpsw_print_stat_nonzero("RXOVERSIZEDFRAMES         ", portnum, (portBaseAddr + 0x18U));
+        cpsw_print_stat_nonzero("RXJABBERFRAMES            ", portnum, (portBaseAddr + 0x1CU));
+        cpsw_print_stat_nonzero("RXUNDERSIZEDFRAMES        ", portnum, (portBaseAddr + 0x20U));
+        cpsw_print_stat_nonzero("RXFRAGMENTS               ", portnum, (portBaseAddr + 0x24U));
+        cpsw_print_stat_nonzero("ALE_DROP                  ", portnum, (portBaseAddr + 0x28U));
+        cpsw_print_stat_nonzero("ALE_OVERRUN_DROP          ", portnum, (portBaseAddr + 0x2CU));
+        cpsw_print_stat_nonzero("RXOCTETS                  ", portnum, (portBaseAddr + 0x30U));
+        cpsw_print_stat_nonzero("TXGOODFRAMES              ", portnum, (portBaseAddr + 0x34U));
+        cpsw_print_stat_nonzero("TXBROADCASTFRAMES         ", portnum, (portBaseAddr + 0x38U));
+        cpsw_print_stat_nonzero("TXMULTICASTFRAMES         ", portnum, (portBaseAddr + 0x3CU));
+        cpsw_print_stat_nonzero("TXPAUSEFRAMES             ", portnum, (portBaseAddr + 0x40U));
+        cpsw_print_stat_nonzero("TXDEFERREDFRAMES          ", portnum, (portBaseAddr + 0x44U));
+        cpsw_print_stat_nonzero("TXCOLLISIONFRAMES         ", portnum, (portBaseAddr + 0x48U));
+        cpsw_print_stat_nonzero("TXSINGLECOLLFRAMES        ", portnum, (portBaseAddr + 0x4CU));
+        cpsw_print_stat_nonzero("TXMULTCOLLFRAMES          ", portnum, (portBaseAddr + 0x50U));
+        cpsw_print_stat_nonzero("TXEXCESSIVECOLLISIONS     ", portnum, (portBaseAddr + 0x54U));
+        cpsw_print_stat_nonzero("TXLATECOLLISIONS          ", portnum, (portBaseAddr + 0x58U));
+        cpsw_print_stat_nonzero("RXIPGERROR                ", portnum, (portBaseAddr + 0x5CU));
+        cpsw_print_stat_nonzero("TXCARRIERSENSEERRORS      ", portnum, (portBaseAddr + 0x60U));
+        cpsw_print_stat_nonzero("TXOCTETS                  ", portnum, (portBaseAddr + 0x64U));
+        cpsw_print_stat_nonzero("OCTETFRAMES64             ", portnum, (portBaseAddr + 0x68U));
+        cpsw_print_stat_nonzero("OCTETFRAMES65T127         ", portnum, (portBaseAddr + 0x6CU));
+        cpsw_print_stat_nonzero("OCTETFRAMES128T255        ", portnum, (portBaseAddr + 0x70U));
+        cpsw_print_stat_nonzero("OCTETFRAMES256T511        ", portnum, (portBaseAddr + 0x74U));
+        cpsw_print_stat_nonzero("OCTETFRAMES512T1023       ", portnum, (portBaseAddr + 0x78U));
+        cpsw_print_stat_nonzero("OCTETFRAMES1024TUP        ", portnum, (portBaseAddr + 0x7CU));
+        cpsw_print_stat_nonzero("NETOCTETS                 ", portnum, (portBaseAddr + 0x80U));
+        cpsw_print_stat_nonzero("RX_BOTTOM_OF_FIFO_DROP    ", portnum, (portBaseAddr + 0x84U));
+        cpsw_print_stat_nonzero("PORTMASK_DROP             ", portnum, (portBaseAddr + 0x88U));
+        cpsw_print_stat_nonzero("RX_TOP_OF_FIFO_DROP       ", portnum, (portBaseAddr + 0x8CU));
+        cpsw_print_stat_nonzero("ALE_RATE_LIMIT_DROP       ", portnum, (portBaseAddr + 0x90U));
+        cpsw_print_stat_nonzero("ALE_VID_INGRESS_DROP      ", portnum, (portBaseAddr + 0x94U));
+        cpsw_print_stat_nonzero("ALE_DA_EQ_SA_DROP         ", portnum, (portBaseAddr + 0x98U));
+        cpsw_print_stat_nonzero("ALE_BLOCK_DROP            ", portnum, (portBaseAddr + 0x9CU));
+        cpsw_print_stat_nonzero("ALE_SECURE_DROP           ", portnum, (portBaseAddr + 0xA0U));
+        cpsw_print_stat_nonzero("ALE_AUTH_DROP             ", portnum, (portBaseAddr + 0xA4U));
+        cpsw_print_stat_nonzero("ALE_UNKN_UNI              ", portnum, (portBaseAddr + 0xA8U));
+        cpsw_print_stat_nonzero("ALE_UNKN_UNI_BCNT         ", portnum, (portBaseAddr + 0xACU));
+        cpsw_print_stat_nonzero("ALE_UNKN_MLT              ", portnum, (portBaseAddr + 0xB0U));
+        cpsw_print_stat_nonzero("ALE_UNKN_MLT_BCNT         ", portnum, (portBaseAddr + 0xB4U));
+        cpsw_print_stat_nonzero("ALE_UNKN_BRD              ", portnum, (portBaseAddr + 0xB8U));
+        cpsw_print_stat_nonzero("ALE_UNKN_BRD_BCNT         ", portnum, (portBaseAddr + 0xBCU));
+        cpsw_print_stat_nonzero("ALE_POL_MATCH             ", portnum, (portBaseAddr + 0xC0U));
+        cpsw_print_stat_nonzero("ALE_POL_MATCH_RED         ", portnum, (portBaseAddr + 0xC4U));
+        cpsw_print_stat_nonzero("ALE_POL_MATCH_YELLOW      ", portnum, (portBaseAddr + 0xC8U));
+        cpsw_print_stat_nonzero("TX_MEMORY_PROTECT_ERROR   ", portnum, (portBaseAddr + 0x17CU));
+
+        for (i = 0; i < 8; i++)
+        {
+            regAddr = (portBaseAddr + 0x180U) + (i * 0x4U);
+            cpsw_print_stat_with_index_nonzero("TX_PRI_REG             ", portnum, i, regAddr);
+        }
+
+        for (i = 0; i < 8; i++)
+        {
+            regAddr = (portBaseAddr + 0x1A0U) + (i * 0x4U);
+            cpsw_print_stat_with_index_nonzero("TX_PRI_BCNT_REG        ", portnum, i, regAddr);
+        }
+
+        for (i = 0; i < 8; i++)
+        {
+            regAddr = (portBaseAddr + 0x1C0U) + (i * 0x4U);
+            cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_REG        ", portnum, i, regAddr);
+        }
+
+        for (i = 0; i < 8; i++)
+        {
+            regAddr = (portBaseAddr + 0x1E0U) + (i * 0x4U);
+            cpsw_print_stat_with_index_nonzero("TX_PRI_DROP_BCNT_REG   ", portnum, i, regAddr);
+        }
+    }
+}
+
+hotmenu cpsw_3g_statsprint_nonzero()
+{
+    int baseAddr = 0x08030000;
+    cpsw_ng_statsprint_nonzero(CPSW_3G_PORT_NUM, baseAddr);
+}
+
+hotmenu cpsw_5g_statsprint_nonzero()
+{
+    int baseAddr = 0x0C030000U;
+    cpsw_ng_statsprint_nonzero(CPSW_5G_PORT_NUM, baseAddr);
+}
+
+hotmenu cpsw_9g_statsprint_nonzero()
+{
+    int baseAddr = 0x0C030000U;
+    cpsw_ng_statsprint_nonzero(CPSW_9G_PORT_NUM, baseAddr);
+}
+
+cpsw_clear_stat(regAddr)
+{
+    int regVal = RD_MEM_32(regAddr);
+    WR_MEM_32(regAddr, regVal);
+}
+
+hotmenu cpsw_2g_clear_stats()
+{
+    int portnum, baseAddr, numStats;
+
+    for (portnum = 0; portnum <= CPSW_2G_PORT_NUM; portnum++)
+    {
+        baseAddr = 0x4603A000U + (portnum * 0x200);
+
+        GEL_TextOut("Clearing stats for port[%d]\n",,,,,portnum);
+        for (numStats = 0; numStats < 128U; numStats++)
+        {
+            cpsw_clear_stat(baseAddr + (numStats*0x4));
+        }
+    }
+
+    GEL_TextOut("--------CLEARED ALL STATS-------\n");
+}
+
+cpsw_ng_clear_stats(numMacPorts, baseAddr)
+{
+    int portnum, portBaseAddr, numStats;
+
+    for (portnum = 0; portnum <= numMacPorts; portnum++)
+    {
+        portBaseAddr = baseAddr + 0xA000U + (portnum * 0x200);
+
+        GEL_TextOut("Clearing stats for port[%d]\n",,,,,portnum);
+        for (numStats = 0; numStats < 128U; numStats++)
+        {
+            cpsw_clear_stat(portBaseAddr + (numStats*0x4));
+        }
+    }
+
+    GEL_TextOut("--------CLEARED ALL STATS-------\n");
+}
+
+hotmenu cpsw_3g_clear_stats()
+{
+    int baseAddr = 0x08030000;
+    cpsw_ng_clear_stats(CPSW_3G_PORT_NUM, baseAddr);
+}
+
+hotmenu cpsw_5g_clear_stats()
+{
+    int baseAddr = 0x0C030000;
+    cpsw_ng_clear_stats(CPSW_5G_PORT_NUM, baseAddr);
+}
+
+hotmenu cpsw_9g_clear_stats()
+{
+    int baseAddr = 0x0C030000;
+    cpsw_ng_clear_stats(CPSW_9G_PORT_NUM, baseAddr);
+}

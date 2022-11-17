@@ -1,0 +1,14 @@
+@startuml
+
+interface EnetPhy_Drv
+EnetPhy_Drv : .name
+EnetPhy_Drv : .isPhyDevSupported()
+EnetPhy_Drv : .isMacModeSupported()
+EnetPhy_Drv : .config()
+EnetPhy_Drv : .reset()
+EnetPhy_Drv : .isResetComplete()
+EnetPhy_Drv : .readExtReg()
+EnetPhy_Drv : .writeExtReg()
+EnetPhy_Drv : .printRegs()
+
+@enduml

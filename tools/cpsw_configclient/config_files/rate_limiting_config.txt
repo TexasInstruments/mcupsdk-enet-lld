@@ -1,0 +1,8 @@
+,{"cmd":"rate_limiting",
+"src_mac_addr":"02:00:00:00:00:08",
+"ing_portNum":3,
+"dst_mac_addr":"08:00:00:00:00:02",
+"egr_portNum":2,
+"PIR":200000000,
+"CIR":100000000
+}

@@ -1,0 +1,16 @@
+@startuml
+
+class EnetUdma_PktInfo {
+  node : EnetQ_Node
+  bufPtr : uint8_t *
+  orgBufLen : uint32_t
+  userBufLen : uint32_t
+  appPriv : void *
+  pktState: uint32_t
+  chkSumInfo : uint32_t
+  tsInfo : EnetUdma_PktTsInfo
+  txPortNum : Enet_MacPort
+  rxPortNum : Enet_MacPort
+}
+
+@enduml

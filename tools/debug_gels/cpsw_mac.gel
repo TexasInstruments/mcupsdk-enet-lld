@@ -1,0 +1,226 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2020
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#define WR_MEM_32(addr, data)    *(unsigned int*)(addr) =(unsigned int)(data)
+#define RD_MEM_32(addr)          *(unsigned int*)(addr)
+#define CSL_FEXTR(reg, msb, lsb)                                            \
+    (((reg) >> (lsb)) & ((((uint32_t)1U) << ((msb) - (lsb) + ((uint32_t)1U))) - ((uint32_t)1U)))
+
+#define CPSW_2G_MAC_PORT_NUM         (1U)
+#define CPSW_5G_MAC_PORT_NUM         (4U)
+#define CPSW_9G_MAC_PORT_NUM         (8U)
+
+#define CPSW5G_BASE_ADDR                            (0x0C000000)
+#define CPSW9G_BASE_ADDR                            (0x0C000000)
+#define CPSW2G_BASE_ADDR                            (0x46000000)
+
+#define CSL_CPSW_NU_CPSW_NU_ETH_PN_MAC_CONTROL_REG                      (0x00022330U)
+#define CSL_CPSW_NU_CPSW_NU_ETH_PN_MAC_STATUS_REG                       (0x00022334U)
+
+/* PN_MAC_CONTROL_REG */
+#define MAC_CONTROL_REG_FULLDUPLEX_SHIFT     (0x00000000U)
+#define MAC_CONTROL_REG_LOOPBACK_SHIFT       (0x00000001U)
+#define MAC_CONTROL_REG_MTEST_SHIFT          (0x00000002U)
+#define MAC_CONTROL_REG_RX_FLOW_EN_SHIFT     (0x00000003U)
+#define MAC_CONTROL_REG_TX_FLOW_EN_SHIFT     (0x00000004U)
+#define MAC_CONTROL_REG_GMII_EN_SHIFT        (0x00000005U)
+#define MAC_CONTROL_REG_TX_PACE_SHIFT        (0x00000006U)
+#define MAC_CONTROL_REG_GIG_SHIFT            (0x00000007U)
+#define MAC_CONTROL_REG_TX_SHORT_GAP_ENABLE_SHIFT (0x0000000AU)
+#define MAC_CONTROL_REG_CMD_IDLE_SHIFT       (0x0000000BU)
+#define MAC_CONTROL_REG_CRC_TYPE_SHIFT       (0x0000000CU)
+#define MAC_CONTROL_REG_IFCTL_A_SHIFT        (0x0000000FU)
+#define MAC_CONTROL_REG_IFCTL_B_SHIFT        (0x00000010U)
+#define MAC_CONTROL_REG_GIG_FORCE_SHIFT      (0x00000011U)
+#define MAC_CONTROL_REG_CTL_EN_SHIFT         (0x00000012U)
+#define MAC_CONTROL_REG_EXT_RX_FLOW_EN_SHIFT (0x00000013U)
+#define MAC_CONTROL_REG_EXT_TX_FLOW_EN_SHIFT (0x00000014U)
+#define MAC_CONTROL_REG_TX_SHORT_GAP_LIM_EN_SHIFT (0x00000015U)
+#define MAC_CONTROL_REG_RX_CEF_EN_SHIFT      (0x00000016U)
+#define MAC_CONTROL_REG_RX_CSF_EN_SHIFT      (0x00000017U)
+#define MAC_CONTROL_REG_RX_CMF_EN_SHIFT      (0x00000018U)
+
+/* PN_MAC_STATUS_REG */
+#define MAC_STATUS_REG_TX_FLOW_ACT_SHIFT     (0x00000000U)
+#define MAC_STATUS_REG_RX_FLOW_ACT_SHIFT     (0x00000001U)
+#define MAC_STATUS_REG_EXT_FULLDUPLEX_SHIFT  (0x00000003U)
+#define MAC_STATUS_REG_EXT_GIG_SHIFT         (0x00000004U)
+#define MAC_STATUS_REG_EXT_TX_FLOW_EN_SHIFT  (0x00000005U)
+#define MAC_STATUS_REG_EXT_RX_FLOW_EN_SHIFT  (0x00000006U)
+#define MAC_STATUS_REG_RX_PFC_FLOW_ACT_SHIFT (0x00000008U)
+#define MAC_STATUS_REG_TX_PFC_FLOW_ACT_SHIFT (0x00000010U)
+#define MAC_STATUS_REG_TORF_PRI_SHIFT        (0x00000018U)
+#define MAC_STATUS_REG_TORF_SHIFT            (0x0000001BU)
+#define MAC_STATUS_REG_TX_IDLE_SHIFT         (0x0000001CU)
+#define MAC_STATUS_REG_P_IDLE_SHIFT          (0x0000001DU)
+#define MAC_STATUS_REG_E_IDLE_SHIFT          (0x0000001EU)
+#define MAC_STATUS_REG_IDLE_SHIFT            (0x0000001FU)
+
+/*! Macro to get bit at given bit position  */
+#define ENET_GET_BIT(val, n)            ((val & (1 << n)) >> n)
+
+menuitem "CPSW MAC Config"
+
+
+hotmenu Cpsw2g_PrintMACCfg()
+{
+    int portBaseAddr = CPSW2G_BASE_ADDR + (1U * 0x1000);
+    GEL_TextOut("CPSW2G MAC Port %d \n",,,,,1U);
+    Cpsw_ng_PrintMACCfg_local(portBaseAddr, 1U);
+}
+
+dialog Cpsw5g_PrintMACCfg(portNum "MAC port number(starts with zero)
+  Enter 99 for printing all")
+{
+    int i;
+    int portBaseAddr;
+
+    if (portNum == 99U)
+    {
+        for (i = 0; i < CPSW_5G_MAC_PORT_NUM; i++)
+        {
+            Cpsw5g_PrintMACCfg(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else
+    {
+
+        GEL_TextOut("\n");
+        if (portNum >= CPSW_5G_MAC_PORT_NUM)
+        {
+            GEL_TextOut("Port number incorrect \n");
+            return;
+        }
+        else
+        {
+            portBaseAddr = CPSW5G_BASE_ADDR + (portNum * 0x1000);
+            GEL_TextOut("CPSW5G Port %d \n",,,,,portNum);
+            Cpsw_ng_PrintMACCfg_local(portBaseAddr, 0U);
+        }
+    }
+}
+
+dialog Cpsw9g_PrintMACCfg(portNum "MAC port number(starts with zero)
+  Enter 99 for printing all")
+{
+    int i;
+    int portBaseAddr;
+
+    if (portNum == 99U)
+    {
+        for (i = 0; i < CPSW_9G_MAC_PORT_NUM; i++)
+        {
+            Cpsw9g_PrintMACCfg(i);
+        }
+
+        GEL_TextOut("\n");
+    }
+    else
+    {
+
+        GEL_TextOut("\n");
+        if (portNum >= CPSW_9G_MAC_PORT_NUM)
+        {
+            GEL_TextOut("Port number incorrect \n");
+            return;
+        }
+        else
+        {
+            portBaseAddr = CPSW9G_BASE_ADDR + (portNum * 0x1000);
+            GEL_TextOut("CPSW9G Port %d \n",,,,,portNum);
+            Cpsw_ng_PrintMACCfg_local(portBaseAddr, 0U);
+        }
+    }
+}
+
+Cpsw_ng_PrintMACCfg_local(int portBaseAddr, int cpsw2gFlag)
+{
+    int macCtrl, macStatus;
+
+    macCtrl   = RD_MEM_32(portBaseAddr + CSL_CPSW_NU_CPSW_NU_ETH_PN_MAC_CONTROL_REG);
+    macStatus = RD_MEM_32(portBaseAddr + CSL_CPSW_NU_CPSW_NU_ETH_PN_MAC_STATUS_REG);
+
+    GEL_TextOut("MAC Control \n");
+    GEL_TextOut(" FULLDUPLEX          = %d \n",,,,, ENET_GET_BIT(macCtrl, 0U));
+    GEL_TextOut(" LOOPBACK            = %d \n",,,,, ENET_GET_BIT(macCtrl, 1U));
+    GEL_TextOut(" MTEST               = %d \n",,,,, ENET_GET_BIT(macCtrl, 2U));
+    GEL_TextOut(" RX_FLOW_EN          = %d \n",,,,, ENET_GET_BIT(macCtrl, 3U));
+    GEL_TextOut(" TX_FLOW_EN          = %d \n",,,,, ENET_GET_BIT(macCtrl, 4U));
+    GEL_TextOut(" GMII_EN             = %d \n",,,,, ENET_GET_BIT(macCtrl, 5U));
+    GEL_TextOut(" TX_PACE             = %d \n",,,,, ENET_GET_BIT(macCtrl, 6U));
+    GEL_TextOut(" GIG                 = %d \n",,,,, ENET_GET_BIT(macCtrl, 7U));
+    if (0U == cpsw2gFlag)
+    {
+        GEL_TextOut(" XGIG                 = %d \n",,,,, ENET_GET_BIT(macCtrl, 8U));
+    }
+    GEL_TextOut(" TX_SHORT_GAP_ENABLE = %d \n",,,,, ENET_GET_BIT(macCtrl, 10U));
+    GEL_TextOut(" CMD_IDLE            = %d \n",,,,, ENET_GET_BIT(macCtrl, 11U));
+    GEL_TextOut(" CRC_TYPE            = %d \n",,,,, ENET_GET_BIT(macCtrl, 12U));
+    if (0U == cpsw2gFlag)
+    {
+        GEL_TextOut(" XGMII EN            = %d \n",,,,, ENET_GET_BIT(macCtrl, 13U));
+    }
+    GEL_TextOut(" IFCTL_A             = %d \n",,,,, ENET_GET_BIT(macCtrl, 15U));
+    GEL_TextOut(" IFCTL_B             = %d \n",,,,, ENET_GET_BIT(macCtrl, 16U));
+    GEL_TextOut(" GIG_FORCE           = %d \n",,,,, ENET_GET_BIT(macCtrl, 17U));
+    GEL_TextOut(" EXT CTL_EN          = %d \n",,,,, ENET_GET_BIT(macCtrl, 18U));
+    GEL_TextOut(" EXT_RX_FLOW_EN      = %d \n",,,,, ENET_GET_BIT(macCtrl, 19U));
+    GEL_TextOut(" EXT_TX_FLOW_EN      = %d \n",,,,, ENET_GET_BIT(macCtrl, 20U));
+    GEL_TextOut(" TX_SHORT_GAP_LIM_EN = %d \n",,,,, ENET_GET_BIT(macCtrl, 21U));
+    GEL_TextOut(" RX_CEF_EN           = %d \n",,,,, ENET_GET_BIT(macCtrl, 22U));
+    GEL_TextOut(" RX_CSF_EN           = %d \n",,,,, ENET_GET_BIT(macCtrl, 23U));
+    GEL_TextOut(" RX_CMF_EN           = %d \n",,,,, ENET_GET_BIT(macCtrl, 24U));
+    if (0U == cpsw2gFlag)
+    {
+        GEL_TextOut(" EXT_EN_XGIG         = %d \n",,,,, ENET_GET_BIT(macCtrl, 25U));
+    }
+
+    /* PN_MAC_STATUS_REG */
+    GEL_TextOut("MAC Status \n");
+    GEL_TextOut(" TX_FLOW_ACT     = %d \n",,,,, ENET_GET_BIT(macStatus, 0U));
+    GEL_TextOut(" RX_FLOW_ACT     = %d \n",,,,, ENET_GET_BIT(macStatus, 1U));
+    GEL_TextOut(" EXT_FULLDUPLEX  = %d \n",,,,, ENET_GET_BIT(macStatus, 3U));
+    GEL_TextOut(" EXT_GIG         = %d \n",,,,, ENET_GET_BIT(macStatus, 4U));
+    GEL_TextOut(" EXT_TX_FLOW_EN  = %d \n",,,,, ENET_GET_BIT(macStatus, 5U));
+    GEL_TextOut(" EXT_RX_FLOW_EN  = %d \n",,,,, ENET_GET_BIT(macStatus, 6U));
+    GEL_TextOut(" RX_PFC_FLOW_ACT = %d \n",,,,, CSL_FEXTR(macStatus, 15, 8));
+    GEL_TextOut(" TX_PFC_FLOW_ACT = %d \n",,,,, CSL_FEXTR(macStatus, 23, 16));
+    GEL_TextOut(" TORF_PRI        = %d \n",,,,, CSL_FEXTR(macStatus, 26, 24));
+    GEL_TextOut(" TORF            = %d \n",,,,, ENET_GET_BIT(macStatus, 27U));
+    GEL_TextOut(" MAC_TX_IDLE     = %d \n",,,,, ENET_GET_BIT(macStatus, 28U));
+    GEL_TextOut(" P_IDLE          = %d \n",,,,, ENET_GET_BIT(macStatus, 29U));
+    GEL_TextOut(" E_IDLE          = %d \n",,,,, ENET_GET_BIT(macStatus, 30U));
+    GEL_TextOut(" IDLE            = %d \n",,,,, ENET_GET_BIT(macStatus, 31U));
+}
+

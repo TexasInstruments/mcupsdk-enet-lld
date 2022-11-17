@@ -1,0 +1,56 @@
+@startuml
+'Enet init sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_initOsalCfg(osalCfg)</b>
+note left               : Fill cfg with\ndefault OSAL implementation
+activate Enet
+Enet --> App
+deactivate Enet
+
+App   -> Enet           : <b>Enet_initUtilsCfg(utilCfg)</b>
+note left               : Fill cfg with\ndefault utils implementation
+activate Enet
+Enet --> App
+deactivate Enet
+
+note over App           : Overwrite app specifics\nOSAL and utils params
+
+App   -> Enet           : <b>Enet_init(osalCfg, utilsCfg)</b>
+activate Enet
+
+note over Enet          : Apply/save OSAL and utils params
+
+Enet  -> Soc            : EnetSoc_init()
+note over Soc           : One-time, SoC level init
+activate Soc
+
+Soc  --> Enet
+deactivate Soc
+
+loop All Enet Pers
+Enet  -> Soc            : EnetSoc_getEnetHandleByIdx(i)
+activate Soc
+Soc  --> Enet           : hEnet
+deactivate Soc
+note over Enet          : Create mutex and set\nto each Enet instance
+end
+
+Enet --> App
+deactivate Enet
+
+@enduml

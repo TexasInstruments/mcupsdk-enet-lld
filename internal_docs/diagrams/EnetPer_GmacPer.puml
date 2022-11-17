@@ -1,0 +1,54 @@
+ @startuml
+'Enet GMAC Peripheral
+
+package EnetMod <<folder>> {
+    class CpswHostPort
+    class CpswMacPort
+    class CpswAle
+    class CpswStats
+    class Mdio
+    class CpswCpts
+    class GmacHostPort
+    class GmacAle
+    class GmacStats
+    class IcssgHostPort
+    class IcssgMacPort
+    class IcssgFdb
+    class IcssgStats
+    class IcssgTimestamp
+    class NullMod
+}
+
+' Trick to enforce order in diagram
+  CpswHostPort -[hidden] CpswMacPort
+   CpswMacPort -[hidden] CpswAle
+       CpswAle -[hidden] CpswStats
+     CpswStats -[hidden] Mdio
+          Mdio -[hidden] CpswCpts
+      CpswCpts -[hidden] GmacHostPort
+  GmacHostPort -[hidden] GmacAle
+       GmacAle -[hidden] GmacStats
+     GmacStats -[hidden] IcssgHostPort
+ IcssgHostPort -[hidden] IcssgMacPort
+  IcssgMacPort -[hidden] IcssgFdb
+      IcssgFdb -[hidden] IcssgStats
+    IcssgStats -[hidden] IcssgTimestamp
+IcssgTimestamp -[hidden] NullMod
+
+class GmacPer {
+    aleMod
+    hostPortMod
+    macPortMod[2]
+    mdioMod
+    cptsMod
+    statsMod
+}
+
+GmacPer "1" *-- "1" GmacAle      : contains
+GmacPer "1" *-- "1" GmacHostPort : contains
+GmacPer "1" *-- "3" CpswMacPort  : contains
+GmacPer "1" *-- "1" Mdio         : contains
+GmacPer "1" *-- "1" CpswCpts     : contains
+GmacPer "1" *-- "1" GmacStats    : contains
+
+@enduml

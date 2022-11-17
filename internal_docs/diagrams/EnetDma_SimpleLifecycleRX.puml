@@ -1,0 +1,66 @@
+ @startuml
+'Enet life-cycle sequence
+
+skinparam sequence {
+    BoxBorderColor black
+    'GroupBorderThickness .8
+    GroupBodyBackgroundColor transparent
+}
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App1   as "App"              order 1
+participant Enet   as "Enet"             order 2
+participant Enet   as "Udma"             order 3
+
+App1  -> Enet           : <b>EnetDma_initRxChParams(</b>cfg<b>)</b>
+note left               : Initialize RX params\nwith driver's defaults
+activate Enet
+Enet --> App1
+deactivate Enet
+
+note over App1          : Set own config params\n(i.e. callback)
+
+App1  -> Enet           : <b>EnetDma_openRxCh(</b>cfg<b>)</b>
+note left               : Open RX channel
+activate Enet
+Enet --> App1           : hRxCh
+deactivate Enet
+
+note over App1          : Allocate packet memory
+note over App1          : Create queue with\nRX free packet info (rxFreeQ)
+
+App1  -> Enet           : <b>EnetDma_submitRxPktQ(</b>hRxCh, rxFreeQ<b>)</b>
+note left               : Submit RX free packets
+activate Enet
+Enet --> App1
+deactivate Enet
+
+group Packet reception
+App1  -> Enet           : <b>EnetDma_retrieveRxPktQ(</b>hRxCh<b>)</b>
+note left               : Retrieve receive packets
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+note over App1          : Consume RX packets
+note over App1          : Recycle RX packet info\ninto rxFreeQ
+
+App1  -> Enet           : <b>EnetDma_submitRxPktQ(</b>hRxCh, rxFreeQ<b>)</b>
+note left               : Submit recycled packets
+activate Enet
+Enet --> App1
+deactivate Enet
+end
+
+App1  -> Enet           : <b>EnetDma_closeRxCh(</b>hRxCh<b>)</b>
+note left               : Close RX channel
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+@enduml

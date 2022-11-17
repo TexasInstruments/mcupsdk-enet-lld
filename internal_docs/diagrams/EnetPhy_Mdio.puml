@@ -1,0 +1,11 @@
+@startuml
+
+interface EnetPhy_Mdio
+EnetPhy_Mdio : .isAlive()
+EnetPhy_Mdio : .isLinked()
+EnetPhy_Mdio : .readC22()
+EnetPhy_Mdio : .writeC22()
+EnetPhy_Mdio : .readC45()
+EnetPhy_Mdio : .writeC45()
+
+@enduml

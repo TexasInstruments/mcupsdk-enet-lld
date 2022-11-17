@@ -1,0 +1,36 @@
+@startuml
+
+EnetPhy_Drv <|-- GenericPhy_phyDrv
+EnetPhy_Drv <|-- Dp83867_phyDrv
+
+interface EnetPhy_Drv
+EnetPhy_Drv : .name
+EnetPhy_Drv : .isPhyDevSupported()
+EnetPhy_Drv : .isMacModeSupported()
+EnetPhy_Drv : .config()
+EnetPhy_Drv : .reset()
+EnetPhy_Drv : .isResetComplete()
+EnetPhy_Drv : .readExtReg()
+EnetPhy_Drv : .writeExtReg()
+EnetPhy_Drv : .printRegs()
+
+GenericPhy_phyDrv : "generic"
+GenericPhy_phyDrv : GenericPhy_isPhyDevSupported()
+GenericPhy_phyDrv : GenericPhy_isMacModeSupported()
+GenericPhy_phyDrv : GenericPhy_reset()
+GenericPhy_phyDrv : GenericPhy_isResetComplete()
+GenericPhy_phyDrv : GenericPhy_readExtReg()
+GenericPhy_phyDrv : GenericPhy_writeExtReg()
+GenericPhy_phyDrv : GenericPhy_printRegs()
+
+Dp83867_phyDrv : "dp83867"
+Dp83867_phyDrv : Dp83867_isPhyDevSupported()
+Dp83867_phyDrv : Dp83867_isMacModeSupported()
+Dp83867_phyDrv : Dp83867_config()
+Dp83867_phyDrv : Dp83867_reset()
+Dp83867_phyDrv : Dp83867_isResetComplete()
+Dp83867_phyDrv : **GenericPhy_readExtReg()**
+Dp83867_phyDrv : **GenericPhy_writeExtReg()**
+Dp83867_phyDrv : Dp83867_printRegs()
+
+@enduml

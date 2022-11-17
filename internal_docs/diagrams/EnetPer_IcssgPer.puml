@@ -1,0 +1,54 @@
+ @startuml
+'Enet ICSS-G Peripheral
+
+package EnetMod <<folder>> {
+    class CpswHostPort
+    class CpswMacPort
+    class CpswAle
+    class CpswStats
+    class Mdio
+    class CpswCpts
+    class GmacHostPort
+    class GmacAle
+    class GmacStats
+    class IcssgHostPort
+    class IcssgMacPort
+    class IcssgFdb
+    class IcssgStats
+    class IcssgTimestamp
+    class NullMod
+}
+
+' Trick to enforce order in diagram
+  CpswHostPort -[hidden] CpswMacPort
+   CpswMacPort -[hidden] CpswAle
+       CpswAle -[hidden] CpswStats
+     CpswStats -[hidden] Mdio
+          Mdio -[hidden] CpswCpts
+      CpswCpts -[hidden] GmacHostPort
+  GmacHostPort -[hidden] GmacAle
+       GmacAle -[hidden] GmacStats
+     GmacStats -[hidden] IcssgHostPort
+ IcssgHostPort -[hidden] IcssgMacPort
+  IcssgMacPort -[hidden] IcssgFdb
+      IcssgFdb -[hidden] IcssgStats
+    IcssgStats -[hidden] IcssgTimestamp
+IcssgTimestamp -[hidden] NullMod
+
+class IcssgPer {
+    fdbMod
+    hostPortMod
+    macPortMod[4]
+    mdioMod
+    timestampMod
+    statsMod[5]
+}
+
+IcssgPer "1" *-- "1" IcssgFdb       : contains
+IcssgPer "1" *-- "1" IcssgHostPort  : contains
+IcssgPer "1" *-- "4" IcssgMacPort   : contains
+IcssgPer "1" *-- "1" Mdio           : contains
+IcssgPer "1" *-- "1" IcssgTimestamp : contains
+IcssgPer "1" *-- "1" IcssgStats     : contains
+
+@enduml

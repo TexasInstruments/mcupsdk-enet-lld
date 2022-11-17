@@ -1,0 +1,53 @@
+@startuml
+'Enet init sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Soc  as "Enet SoC"    order 3
+participant Per  as "Enet Per"    order 4
+participant Mod1 as "Enet Mod 1"  order 5
+participant Mod2 as "Enet Mod 2"  order 6
+
+App   -> Enet           : <b>Enet_initCfg(enetType, instId, cfg)</b>
+note left               : Init config params for\nperipheral identified by\na type and instance id
+activate Enet
+
+Enet  -> Soc            : EnetSoc_getEnetHandle(enetType, instId)
+note left               : SoC layer owns\nall Enet/Per objects,\nask for the handle
+activate Soc
+Soc  --> Enet           : hEnet, hPer
+deactivate Soc
+
+Enet  -> Per            : hPer->initCfg(hPer, enetType, instId, perCfg)
+note left               : Init peripheral-level\nconfig params
+activate Per
+
+Per   -> Mod1           : hMod1->initCfg(hMod1, enetType, instId, mod1Cfg)
+note left               : Init module 1\nconfig params (i.e. macport)
+activate Mod1
+Mod1 --> Per            :
+deactivate Mod1
+
+Per   -> Mod2           : hMod2->initCfg(hMod2, enetType, instId, mod2Cfg)
+note left               : Init module 2\nconfig params (i.e. macport)
+activate Mod2
+Mod2 --> Per            :
+deactivate Mod2
+
+...Init config params of other modules...
+
+Per  --> Enet           :
+deactivate Per
+
+Enet --> App            :
+deactivate Enet
+
+@enduml

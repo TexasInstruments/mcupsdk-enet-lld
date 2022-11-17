@@ -1,0 +1,73 @@
+@startuml
+'Enet Periodic Tick - Link Down
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application"  order 1
+participant Brd  as "Board"        order 2
+participant Enet as "Enet"         order 3
+participant Per  as "Enet Per"     order 4
+participant Phy  as "EnetPhy"      order 5
+participant Mac  as "MAC Port Mod" order 6
+participant Fdb  as "Fdb Mod"      order 7
+participant Mdio as "MDIO Mod"     order 8
+
+App   -> Enet           : <b>Enet_periodicTick()</b>
+note left               : Run PHY tick on\n all open port links
+activate Enet
+Enet  -> Per            : Per_periodicTick()
+activate Per
+
+loop each port
+Per   -> Phy            : <b>EnetPhy_tick()</b>
+note left               : Run PHY FSM
+activate Phy
+
+Phy   -> Mdio           : hMdio->readC22()
+activate Mdio
+Mdio --> Phy
+deactivate Mdio
+
+Phy   -> Mdio           : hMdio->writeC22()
+activate Mdio
+Mdio --> Phy
+deactivate Mdio
+
+...
+
+Phy  --> Per            : linkStatus (down)
+deactivate Phy
+
+alt Got link down
+Per   -> Mac            : EnetMod_ioctl(hMacPort, MACPORT_IOCTL_DISABLE_PORT, prms)
+note right              : Disable MAC port
+activate Mac
+Mac  --> Per
+deactivate Mac
+
+Per   -> Fdb            : EnetMod_ioctl(hFdb, <FDB>_IOCTL_SET_PORT_STATE, prms)
+note right              : Set port to 'Disable' state
+activate Fdb
+Fdb  --> Per
+deactivate Fdb
+
+Per   -> Fdb            : EnetMod_ioctl(hFdb, <FDB>_IOCTL_REMOVE_LEARNED_ENTRIES, prms)
+note right              : Clear learned entries\nassociated with the port
+activate Fdb
+Fdb  --> Per
+deactivate Fdb
+end
+
+Per  --> Enet
+deactivate Per
+
+Enet --> App
+deactivate Enet
+
+@enduml

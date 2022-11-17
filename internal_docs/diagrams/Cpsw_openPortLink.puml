@@ -1,0 +1,50 @@
+@startuml
+'Enet open sequence
+
+skinparam sequenceParticipantPadding 20
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App   as "Application"       order 1
+participant Enet  as "Enet"              order 2
+participant Per   as "Cpsw\nPer"         order 3
+participant Dma   as "Enet\nUDMA"        order 4
+participant Host  as "CpswHostPort\nMod" order 5
+participant Ale   as "CpswAle\nMod"      order 6
+participant Cpts  as "CpswCpts\nMod"     order 7
+participant Mdio  as "Mdio\nMod"         order 8
+participant Stats as "CpswStats\nMod"    order 9
+collections Mac   as "CpsMacPort\nMods"  order 10
+participant Phy   as "Phy\nMod"          order 11
+
+App   -> App             : Set port link params with\n- PHY/MAC shared params (speed/duplex, MII)\n- MAC specific (macCfg)\n- PHY specific (phyCfg)
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, ENET_PER_OPEN_PORT_LINK, prms<b>)</b>
+note left               : Open MAC port 'n' with PHY
+activate Enet
+Enet  -> Per            : Per_ioctl(hPer, ENET_PORT_OPEN_PORT_LINK, prms)
+note left               : Open PHY module\nand start auto-neg
+activate Per
+
+Per   -> Mac            : EnetMod_open(hMacPort, macCfg)
+note left               : Open CPSW MAC port
+activate Mac
+Mac  --> Per            : status
+deactivate Mac
+
+Per   -> Phy            : EnetPhy_open(phyCfg)
+note left               : Open PHY driver,\nstart FSM
+activate Phy
+Phy  --> Per            : hPhy
+deactivate Phy
+
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : status
+deactivate Enet
+
+@enduml

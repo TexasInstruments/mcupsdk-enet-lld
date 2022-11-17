@@ -1,0 +1,58 @@
+ @startuml
+'Enet life-cycle sequence
+
+skinparam sequence {
+    BoxBorderColor black
+    'GroupBorderThickness .8
+    GroupBodyBackgroundColor transparent
+}
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App1   as "App"              order 1
+participant Enet   as "Enet"             order 2
+participant Enet   as "Udma"             order 3
+
+App1  -> Enet           : <b>EnetDma_initTxChParams(</b>cfg<b>)</b>
+note left               : Initialize TX params\nwith driver's defaults
+activate Enet
+Enet --> App1
+deactivate Enet
+
+note over App1          : Set own config params\n(i.e. callback)
+
+App1  -> Enet           : <b>EnetDma_openTxCh(</b>cfg<b>)</b>
+note left               : Open TX channel
+activate Enet
+Enet --> App1           : hTxCh
+deactivate Enet
+
+group Packet transmission
+note over App1          : Create queue with\npackets ready for TX (txReadyQ)
+
+App1  -> Enet           : <b>EnetDma_submitTxReadyPktQ(</b>hTxCh, txReadyQ<b>)</b>
+note left               : Submit packets for transmission
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+note over App1          : Packets are transmitted\nby hardware
+
+App1  -> Enet           : <b>EnetDma_retrieveTxDonePktQ(</b>hTxCh, txFreeQ<b>)</b>
+note left               : Retrieve consumed packets
+activate Enet
+Enet --> App1
+deactivate Enet
+end
+
+App1  -> Enet           : <b>EnetDma_closeTxCh(</b>hTxCh<b>)</b>
+note left               : Close TX channel
+activate Enet
+Enet --> App1           : status
+deactivate Enet
+
+@enduml

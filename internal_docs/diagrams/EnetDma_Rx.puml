@@ -1,0 +1,88 @@
+@startuml
+'Enet DMA RX Sequence
+
+skinparam sequenceParticipantPadding  60
+
+skinparam note {
+    BackgroundColor #FFFDD0
+}
+
+hide footbox
+
+participant App  as "Application" order 1
+participant Enet as "Enet"        order 2
+participant Dma  as "Enet DMA"    order 3
+participant Per  as "Enet Per"    order 4
+participant Rm   as "RM Mod"      order 5
+participant Fdb  as "Fdb Mod"     order 6
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, ENET_RM_IOCTL_ALLOC_RX_FLOW, prms<b>)</b>
+note left               : Allocate RX flow from RM
+activate Enet
+Enet  -> Per            : <b>EnetPer_ioctl(</b>hPer, cmd, prms<b>)</b>
+activate Per
+Per   -> Rm             : <b>EnetMod_ioctl(</b>hRm, cmd, prms<b>)</b>
+activate Rm
+Rm   --> Per            : status
+deactivate Rm
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : status
+deactivate Enet
+
+App   -> App            : Set rxFlowPrms with RX flow\nallocated from RM: startIdx, flowIdx.
+
+App   -> Dma            : <b>EnetDma_openRxCh(</b>rxFlowPrms<b>)</b>
+note left               : Open RX channel\nwith allocated flow
+activate Dma
+Dma  --> App            : hRxCh
+deactivate Dma
+
+App   -> Enet           : <b>Enet_ioctl(</b>hEnet, CPSW_IOCTL_REGISTER_DSTMAC_RX_FLOW, prms<b>)</b>
+activate Enet
+Enet  -> Per            : <b>EnetPer_ioctl(</b>hEnet, cmd, prms<b>)</b>
+activate Per
+Per   -> Fdb            : <b>EnetMod_ioctl(</b>hAle, CPSW_ALE_IOCTL_SET_POLICER, prms<b>)</b>
+activate Fdb
+note left               : Add flow classifier entry\nwith flowId and classifier field:\nMAC addr, PCP, VLAN, EtherType
+Fdb  --> Per            : status
+deactivate Fdb
+Per  --> Enet           : status
+deactivate Per
+Enet --> App            : status
+deactivate Enet
+
+App   -> Dma            : <b>EnetDma_enableRxEvent(</b>hRxFlow<b>)</b>
+note left               : Enable RX event/interrupt
+activate Dma
+Dma  --> App            : status
+deactivate Dma
+
+App   -> Dma            : <b>EnetDma_submitRxPktQ(</b>rxPktQ<b>)</b>
+note left               : Prime RX channel\nwith free buffers
+activate Dma
+Dma  --> App            : status
+deactivate Dma
+
+...
+
+Dma    -> App           : notifyCb()
+note right              : RX event indicating that\nnew packets have arrived
+activate App
+App    -> Dma           : <b>EnetDma_retrieveRxPktQ(</b>rxPktQ<b>)</b>
+note left               : Retrieve received packets
+activate Dma
+Dma   --> App           : status
+deactivate Dma
+
+App    -> App           : Consume received packets
+
+App    -> Dma           : <b>EnetDma_submitRxPktQ(</b>rxPktQ<b>)</b>
+note left               : Submit used packets
+activate Dma
+Dma   --> App           : status
+deactivate Dma
+
+App   --> Dma
+
+@enduml
