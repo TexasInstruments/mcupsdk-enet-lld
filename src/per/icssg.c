@@ -1168,6 +1168,12 @@ int32_t Icssg_open(EnetPer_Handle hPer,
         status = Icssg_cfgMdioLinkInt(hIcssg, enetType, instId, icssgCfg);
     }
 
+    /* Initialize PHY handles to NULL */
+    for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
+    {
+        hIcssg->hPhy[phyHandleNum] = NULL;
+    }
+
     /* All initialization is complete */
     if (status == ENET_SOK)
     {
@@ -1617,27 +1623,22 @@ void Icssg_periodicTick(EnetPer_Handle hPer)
     Enet_MacPort macPort;
     EnetPhy_LinkStatus linkStatus;
     bool linked;
-    uint32_t maxPorts = 0U;
     uint32_t portId;
     uint32_t i;
     int32_t status = ENET_EFAIL;
 
-    /* Get the max number of ports */
-    maxPorts = EnetSoc_getMacPortMax(hPer->enetType, hPer->instId);
-
     /* Run PHY tick */
-    for (i = 0U; i < maxPorts; i++)
+    for (i = 0U; i < ICSSG_MAC_PORT_MAX; i++)
     {
         hPhy = hIcssg->hPhy[i];
-        macPort = ENET_MACPORT_DENORM(i);
-        portId = ENET_MACPORT_ID(macPort);
-
-        ENETTRACE_VAR(portId);
-        ENETTRACE_VAR(status);
-
         /* Check if the corresponding PHY is enabled */
         if (hPhy != NULL)
         {
+            macPort = ENET_MACPORT_DENORM(i);
+            portId = ENET_MACPORT_ID(macPort);
+
+            ENETTRACE_VAR(portId);
+            ENETTRACE_VAR(status);
             /* TODO: Need to make lock more granular */
             //EnetOsal_lockMutex(hIcssg->lock);
 
@@ -1681,6 +1682,12 @@ void Icssg_close(EnetPer_Handle hPer)
     EnetMod_close(hIcssg->hMdio);
 
     Icssg_unregisterMdioLinkIntr(hIcssg);
+
+    /* Set PHY handles to NULL */
+    for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
+    {
+        hIcssg->hPhy[phyHandleNum] = NULL;
+    }
 
     /* Close TimeSync module, if opened */
     if (hIcssg->hTimeSync != NULL)
@@ -2311,10 +2318,18 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
     {
         if (hIcssg->disablePhyDriver != true)
         {
-            hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, hIcssg->hMdio);
             if (hIcssg->hPhy[portNum] == NULL)
             {
-                ENETTRACE_ERR("%s: Port %u: failed to open PHY\r\n", ENET_PER_NAME(hIcssg), portId);
+                hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, hIcssg->hMdio);
+                if (hIcssg->hPhy[portNum] == NULL)
+                {
+                    ENETTRACE_ERR("%s: Port %u: failed to open PHY\r\n", ENET_PER_NAME(hIcssg), portId);
+                    status = ENET_EFAIL;
+                }
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Port %u: PHY handle in Icssg handle should be NULL before EnetPhy_open() call \r\n", ENET_PER_NAME(hIcssg), portId);
                 status = ENET_EFAIL;
             }
         }
