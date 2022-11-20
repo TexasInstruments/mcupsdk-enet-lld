@@ -65,6 +65,7 @@
 #include <include/per/cpsw.h>
 #include <priv/per/cpsw_priv.h>
 #include <priv/per/cpsw_ioctl_priv.h>
+#include <priv/per/cpsw_est_ioctl_priv.h>
 #include <priv/per/enet_hostport_udma.h>
 #include <include/core/enet_utils.h>
 #include <include/common/enet_phymdio_dflt.h>
@@ -404,6 +405,14 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     CSL_CPSW_setVlanType(regs, (uint32_t)cpswCfg->vlanCfg.vlanSwitch);
     CSL_CPSW_setVlanLTypeReg(regs, cpswCfg->vlanCfg.innerVlan, cpswCfg->vlanCfg.outerVlan);
 
+#if ENET_CFG_IS_ON(CPSW_EST)
+        /* Enable EST global control */
+        if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
+        {
+            Cpsw_enableEst(hPer);
+        }
+#endif
+
     /* Set port global config */
     for (i = 0U; i < ENET_PRI_NUM; i++)
     {
@@ -522,7 +531,13 @@ void Cpsw_close(EnetPer_Handle hPer)
         Cpsw_setDfltThreadCfg(hCpsw, hCpsw->rsvdFlowId);
         Cpsw_closeInternal(hCpsw);
     }
-
+#if ENET_CFG_IS_ON(CPSW_EST)
+    /* Disable EST global control */
+    if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
+    {
+        Cpsw_disableEst(hPer);
+    }
+#endif
    EnetOsal_restoreAllIntr(key);
 }
 
@@ -567,6 +582,26 @@ int32_t Cpsw_ioctl(EnetPer_Handle hPer,
             case ENET_IOCTL_HOSTPORT_BASE:
             {
                 status = EnetMod_ioctl(hCpsw->hHostPort, cmd, prms);
+            }
+            break;
+
+            case ENET_IOCTL_TAS_BASE:
+            {
+#if ENET_CFG_IS_ON(CPSW_EST)
+#if ENET_CFG_IS_OFF(CPSW_MACPORT_EST)
+#error "CPSW EST feature requires ENET_CFG_CPSW_MACPORT_EST"
+#endif
+                if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
+                {
+                    status = Cpsw_ioctlEst(hPer, cmd, prms);
+                }
+                else
+                {
+                    status = ENET_ENOTSUPPORTED;
+                }
+#else
+                status = ENET_ENOTSUPPORTED;
+#endif
             }
             break;
 
@@ -631,7 +666,10 @@ int32_t Cpsw_ioctl(EnetPer_Handle hPer,
             break;
 
             default:
-                break;
+            {
+                status = ENET_ENOTSUPPORTED;
+            }
+            break;
         }
     }
 
@@ -1380,6 +1418,9 @@ int32_t Cpsw_handleLinkDown(Cpsw_Handle hCpsw,
     EnetMod_Handle hMacPort = hCpsw->hMacPort[portNum];
     Enet_IoctlPrms prms;
     CpswAle_SetPortStateInArgs setPortStateInArgs;
+#if ENET_CFG_IS_ON(CPSW_EST)
+    EnetTas_SetStateInArgs estSetStateInArgs;
+#endif
     uint32_t alePortNum;
     uint32_t numEntries = 0U;
     int32_t status;
@@ -1418,6 +1459,19 @@ int32_t Cpsw_handleLinkDown(Cpsw_Handle hCpsw,
                          "Port %u: Failed to delete learned ALE entries: %d\r\n", portId, status);
     }
 
+#if ENET_CFG_IS_ON(CPSW_EST)
+    if (status == ENET_SOK)
+    {
+        EnetPer_Handle hPer = (EnetPer_Handle) hCpsw;
+        estSetStateInArgs.macPort = macPort;
+        estSetStateInArgs.state   = ENET_TAS_RESET;
+        ENET_IOCTL_SET_IN_ARGS(&prms, &estSetStateInArgs);
+
+        CPSW_EST_PRIV_IOCTL(hPer, ENET_TAS_IOCTL_SET_STATE, &prms, status);
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                         "Port %u: Failed to disable EST: %d\r\n", portId, status);
+    }
+#endif
     return status;
 }
 

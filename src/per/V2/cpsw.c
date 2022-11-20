@@ -619,7 +619,10 @@ int32_t Cpsw_ioctl(EnetPer_Handle hPer,
             break;
 
             default:
-                break;
+            {
+                status = ENET_ENOTSUPPORTED;
+            }
+            break;
         }
     }
 

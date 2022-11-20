@@ -43,6 +43,7 @@
 
 #include <stdint.h>
 #include <stdarg.h>
+#include <enet.h>
 #include <csl_cpswitch.h>
 #include <enet_cfg.h>
 #if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X)

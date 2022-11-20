@@ -114,9 +114,6 @@ int32_t CpswMacPortEst_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(
 int32_t CpswMacPortEst_ioctl_handler_CPSW_MACPORT_IOCTL_EST_ENABLE_TIMESTAMP(CpswMacPort_Handle hPort, Enet_IoctlPrms *prms);
 int32_t CpswMacPortEst_ioctl_handler_CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP(CpswMacPort_Handle hPort, Enet_IoctlPrms *prms);
 
-int32_t CpswEst_setState(CpswMacPort_Handle hPort,
-                         EnetTas_TasState state);
-
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

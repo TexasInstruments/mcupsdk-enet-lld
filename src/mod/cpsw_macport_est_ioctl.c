@@ -54,6 +54,7 @@
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_EST)
 
+
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -83,6 +84,7 @@ static int32_t CpswEst_readGateControlList(CpswMacPort_Handle hPort,
                                            bool estBufUpper,
                                            EnetTas_ControlList *controlList);
 
+int32_t CpswEst_setState(CpswMacPort_Handle hPort, EnetTas_TasState state);
 
 /* ========================================================================== */
 /*                            Global Variables                                */

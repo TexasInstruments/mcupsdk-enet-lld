@@ -95,6 +95,9 @@ static int32_t CpswMacPortEst_setIoctlHandlerFxn(uint32_t ioctlCmd,
 static CpswMacPortEstIoctlHandler * CpswMacPortEst_getIoctlHandlerFxn(uint32_t ioctlCmd, CpswMacPortEstIoctlHandlerRegistry_t *ioctlRegistryTbl, uint32_t tableSize);
 static int32_t CpswMacPortEst_getIoctlHandlerIdx(uint32_t ioctlCmd, CpswMacPortEstIoctlHandlerRegistry_t *ioctlRegistryTbl, uint32_t tableSize, uint32_t *tblIdx);
 
+
+int32_t CpswEst_setState(CpswMacPort_Handle hPort, EnetTas_TasState state);
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
