@@ -47,6 +47,7 @@
 #include <assert.h>
 #include <enet.h>
 #include <lwip2lwipif.h>
+#include <pbufQ.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,6 +159,8 @@ typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
 
     /** Timer interval for timer based RX pacing */
     uint32_t timerPeriodUs;
+    pbufNode *pFreeTx;
+	uint32_t   pFreeTxSize;
 } LwipifEnetAppIf_GetEnetLwipIfInstInfo;
 
 typedef struct LwipifEnetAppIf_ReleaseTxHandleInfo_s
@@ -175,12 +178,12 @@ typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
 } LwipifEnetAppIf_ReleaseRxHandleInfo;
 
 
-typedef struct lwip2enet_custom_pbuf_t
+typedef struct LwipifEnetAppIf_custom_rx_pbuf_t
 {
    struct pbuf_custom p;
    EnetDma_Pkt *pktInfoMem;
    EnetDma_PktQ *freePktInfoQ;
-} lwip2enet_custom_pbuf;
+} LwipifEnetAppIf_custom_rx_pbuf;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
@@ -209,7 +212,7 @@ extern void LwipifEnetAppCb_releaseTxHandle(LwipifEnetAppIf_ReleaseTxHandleInfo 
 
 extern void LwipifEnetAppCb_releaseRxHandle(LwipifEnetAppIf_ReleaseRxHandleInfo *releaseInfo);
 
-extern void lwipif_pbuf_free_custom(struct pbuf *p);
+extern void LwipifEnetAppCb_pbuf_free_custom(struct pbuf *p);
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

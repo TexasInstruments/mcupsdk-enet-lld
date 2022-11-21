@@ -39,7 +39,6 @@
  * Free queue from which buffer pointers are allocated
  */
 pbufQ pfreeQ;
-pbufNode pfree[MAXFREE];
 static bool gPbufQ_initialized = false;
 
 static inline void pbufQ_assert(uint8_t cond)
@@ -53,13 +52,14 @@ static inline void pbufQ_assert(uint8_t cond)
  * Needs to be called only once as early in the program as possible
  */
 //TODO: Refractor using enQ/deQ
-void pbufQ_init_freeQ()
+void pbufQ_init_freeQ(pbufNode *pfree, uint32_t maxSize)
 {
     int fQ_iter;
+    pbufQ_assert(NULL != pfree);
 
 	if (!gPbufQ_initialized)
     {
-        for(fQ_iter=0; fQ_iter<MAXFREE-1; fQ_iter++)
+        for(fQ_iter=0; fQ_iter<maxSize-1; fQ_iter++)
         {
             pfree[fQ_iter].next = &pfree[fQ_iter+1];
             pfree[fQ_iter].hPbufPkt = NULL;
@@ -69,8 +69,8 @@ void pbufQ_init_freeQ()
         pfree[fQ_iter].hPbufPkt = NULL;
 
         pfreeQ.head = &pfree[0];
-        pfreeQ.tail = &pfree[MAXFREE - 1];
-        pfreeQ.count = MAXFREE;
+        pfreeQ.tail = &pfree[maxSize - 1];
+        pfreeQ.count = maxSize;
 
         gPbufQ_initialized = true;
     }

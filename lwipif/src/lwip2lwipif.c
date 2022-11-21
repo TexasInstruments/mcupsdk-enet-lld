@@ -392,9 +392,6 @@ static int LWIPIF_LWIP_start(struct netif *netif)
     int retVal = 0U;
     Lwip2Enet_Handle hLwip2Enet;
 
-    /* Initialize free Queue for pbufs*/
-    pbufQ_init_freeQ();
-
     /* Open the translation layer, which itself opens the hardware driver */
     hLwip2Enet = Lwip2Enet_open(netif);
 

@@ -267,6 +267,7 @@ typedef struct EnetUdma_SGList_s
     EnetUdma_SGListEntry list[ENET_UDMA_CPSW_MAX_SG_LIST];
 } EnetUdma_SGList;
 
+typedef EnetUdma_SGListEntry EnetDma_SGListEntry;
 typedef struct EnetUdma_PktInfo_s
 {
     /*! Pointer to next buffer.

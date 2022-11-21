@@ -225,6 +225,7 @@ typedef struct EnetCpdma_SGList_s
     EnetCpdma_SGListEntry list[ENET_CPDMA_CPSW_MAX_SG_LIST];
 } EnetCpdma_SGList;
 
+typedef EnetCpdma_SGListEntry EnetDma_SGListEntry;
 
 /*!
  * \brief Packet data structure.

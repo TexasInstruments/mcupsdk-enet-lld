@@ -12,14 +12,11 @@
  * empty buffers, additional steps must be made before queuing the packet.
  */
 
+#ifndef LWIPIF_PBUFQ_H_
+#define LWIPIF_PBUFQ_H_
+
 #include "lwip/pbuf.h"
 #include "lwipopts.h"
-/*
- * This number is the total number of free buffer pointers available (for all
- * queues. Make sure this number is sufficiently high to accommodate all the
- * buffers that could potentially be made by the stack in worst scenario.
- */
-#define MAXFREE (PBUF_POOL_SIZE * 2)
 
 #define pbufQ_count(pQ) ((pQ)->count)
 
@@ -38,8 +35,10 @@ struct LWIP2ENET_pbufQ
 };
 typedef struct LWIP2ENET_pbufQ pbufQ;
 
-void pbufQ_init_freeQ();
+void pbufQ_init_freeQ(pbufNode *pfree, uint32_t maxSize);
 void pbufQ_init(pbufQ *pQ);
 void pbufQ_enQ(pbufQ *pQ, struct pbuf *p);
 void pbufQ_enQHead(pbufQ *pQ, struct pbuf *p);
 struct pbuf* pbufQ_deQ(pbufQ *pQ);
+
+#endif //LWIPIF_PBUFQ_H_
