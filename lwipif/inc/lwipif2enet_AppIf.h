@@ -138,19 +138,6 @@ typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
     uint32_t txMtu[ENET_PRI_NUM];
     uint32_t hostPortRxMtu;
 
-    uint8_t *rxTaskStack;
-    uint32_t rxTaskStackSize;
-    uint32_t rxtaskPriority;
-
-    uint8_t *txTaskStack;
-    uint32_t txTaskStackSize;
-    uint32_t txtaskPriority;
-
-    uint8_t *pollTaskStack;
-    uint32_t pollTaskStackSize;
-    uint32_t pollTaskPriority;
-    uint32_t pollTasktimerPeriodUs;
-
     /*! Number of netifs allocated by application */
     uint32_t maxNumNetif;
     uint32_t numRxChannels;

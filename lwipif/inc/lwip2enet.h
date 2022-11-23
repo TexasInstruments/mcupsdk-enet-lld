@@ -244,6 +244,8 @@ typedef struct Lwip2Enet_TxObj_s
     /*! lwIP interface statistics */
     Lwip2Enet_TxStats stats;
 
+    Enet_notify_t txPktNotify;
+
     /*! Whether TX event should be disabled or not. When disabled, "lazy" descriptor recycle
      *  is used instead, which defers retrieval till none is available */
     bool disableEvent;
@@ -264,33 +266,11 @@ typedef struct Lwip2Enet_Obj_s
     /*! Number of RX channels allocated by Application */
     uint32_t numRxChannels;
 
-    /*!
-     * Handle to Rx task, whose job it is to receive packets used by the hardware
-     * and give them to the stack, and return freed packets back to the hardware.
-     */
-    TaskP_Object rxPacketTaskObj;
-
-    /*!
-     * Handle to Rx semaphore, on which the rxPacketTaskObj awaits for notification
-     * of used packets available.
-     */
-    SemaphoreP_Object rxPacketSemObj;
-
 	/*! TX object */
     Lwip2Enet_TxObj tx[LWIPIF_MAX_TX_CHANNELS];
 
     /*! Number of TX channels allocated by Application */
     uint32_t numTxChannels;
-
-    /*! Handle to Tx task whose job is to retrieve packets consumed by the hardware and
-     *  give them to the stack */
-    TaskP_Object txPacketTaskObj;
-
-    /*!
-     * Handle to Tx semaphore, on which the txPacketTaskObj awaits for notification
-     * of used packets available.
-     */
-    SemaphoreP_Object txPacketSemObj;
 
     /*! lwIP network interface */
     struct netif *netif[ENET_CFG_NETIF_MAX];
@@ -328,28 +308,9 @@ typedef struct Lwip2Enet_Obj_s
     ClockP_Object pacingClkObj;
 
     /*
-     * Clock handle for triggering the packet Rx notify
-     */
-    ClockP_Object pollLinkClkObj;
-
-    /*
-     * Handle to counting shutdown semaphore, which all subtasks created in the
-     * open function must post before the close operation can complete.
-     */
-    SemaphoreP_Object shutDownSemObj;
-
-    /*
-     * Handle to input task that sends polls the link status
-     */
-    TaskP_Object lWIPIF2LWIPpollObj;
-
-    /*
      * Handle to Binary Semaphore LWIP_LWIPIF_input when Rx packet queue is ready
      */
     SemaphoreP_Object pollLinkSemObj;
-
-    /** Boolean to indicate shutDownFlag status of translation layer.*/
-    volatile bool shutDownFlag;
 
     /**< Print buffer */
     char printBuf[ENET_CFG_PRINT_BUF_LEN];
@@ -367,6 +328,11 @@ typedef struct Lwip2Enet_Obj_s
     struct netif *mapRx2Netif[ENET_CFG_NETIF_MAX];
 
     Enet_MacPort mapNetif2TxPortNum[ENET_CFG_NETIF_MAX];
+
+
+    Enet_notify_t rxPktNotify;
+
+    Enet_notify_t txPktNotify;
 }
 Lwip2Enet_Obj, *Lwip2Enet_Handle;
 
@@ -400,6 +366,14 @@ extern void Lwip2Enet_poll(Lwip2Enet_Handle hlwip2enet,
                           uint32_t fTimerTick);
 
 extern void Lwip2Enet_periodicFxn(struct netif *netif);
+
+void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pRxPktNotify);
+
+void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pTxPktNotify);
+
+void Lwip2Enet_rxPktHandler(Lwip2Enet_Handle hLwip2Enet);
+
+void Lwip2Enet_txPktHandler(Lwip2Enet_Handle hLwip2Enet);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

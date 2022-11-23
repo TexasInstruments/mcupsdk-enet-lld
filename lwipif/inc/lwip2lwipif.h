@@ -49,6 +49,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <lwip/err.h>
+#include <enet_types.h>
 
 /* ========================================================================== */
 /*                                 Macros                                     */
@@ -74,6 +75,14 @@ extern "C" {
 /* Forward declaration */
 struct netif;
 err_t LWIPIF_LWIP_init(struct netif *netif);
+
+void LWIPIF_LWIP_setNotifyCallbacks(struct netif *netif, Enet_notify_t *pRxNotify, Enet_notify_t *pTxNotify);
+
+void LWIPIF_LWIP_periodic_polling(struct netif *netifList);
+
+void LWIPIF_LWIP_rxPktHandler(struct netif *netif);
+
+void LWIPIF_LWIP_txPktHandler(struct netif *netif);
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

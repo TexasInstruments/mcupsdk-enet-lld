@@ -64,13 +64,10 @@
 #include "lwip/opt.h"
 #include "lwip/def.h"
 #include "lwip/pbuf.h"
-#include "lwip/sys.h"
 #include <lwip/stats.h>
-#include <lwip/snmp.h>
 #include <lwip/netifapi.h>
 #include <lwip/ip_addr.h>
 #include "netif/etharp.h"
-#include "netif/ppp/pppoe.h"
 #include "lwip/inet_chksum.h"
 #include "lwip/prot/ethernet.h"
 #include "lwip/prot/ip.h"
@@ -373,6 +370,29 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
     }
 }
 
+void LWIPIF_LWIP_periodic_polling(struct netif *netif)
+{
+    NETIF_FOREACH(netif) // loop along all the netifs (reverse linked list)
+    {
+        Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle) netif->state;
+
+        /* Periodic Function to update Link status */
+        Lwip2Enet_periodicFxn(netif);
+
+        if (!(hLwip2Enet->linkIsUp == (netif->flags & 0x04U) >> 2))
+        {
+            if (hLwip2Enet->linkIsUp)
+            {
+                netif_set_link_up(netif);
+            }
+            else
+            {
+                netif_set_link_down(netif);
+            }
+        }
+    }
+}
+
 /*!
  *  @b LWIPIF_LWIP_Start
  *  @n
@@ -406,6 +426,13 @@ static int LWIPIF_LWIP_start(struct netif *netif)
     return retVal;
 }
 
+void LWIPIF_LWIP_setNotifyCallbacks(struct netif *netif, Enet_notify_t *pRxNotify, Enet_notify_t *pTxNotify)
+{
+    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
+    Lwip2Enet_setRxNotifyCallback(hLwip2Enet, pRxNotify);
+    Lwip2Enet_setTxNotifyCallback(hLwip2Enet, pTxNotify);
+}
+
 /*!
  *  @b LWIPIF_LWIP_Stop
  *  @n
@@ -421,10 +448,6 @@ static void LWIPIF_LWIP_stop(struct netif *netif)
 
     /* Get the pointer to the private data */
     hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-
-    /* Stop and delete timer */
-    ClockP_stop (&hLwip2Enet->pollLinkClkObj);
-    ClockP_destruct (&hLwip2Enet->pollLinkClkObj);
 
     /* Call low-level close function */
     Lwip2Enet_close(hLwip2Enet);
@@ -467,4 +490,16 @@ err_t LWIPIF_LWIP_init(struct netif *netif)
     EnetUtils_printf("[LWIPIF_LWIP] NETIF INIT SUCCESS\r\n");
 
     return ERR_OK;
+}
+
+void LWIPIF_LWIP_rxPktHandler(struct netif *netif)
+{
+    Lwip2Enet_Handle hLwip2Enet =(Lwip2Enet_Handle)netif->state;
+    Lwip2Enet_rxPktHandler(hLwip2Enet);
+}
+
+void LWIPIF_LWIP_txPktHandler(struct netif *netif)
+{
+    Lwip2Enet_Handle hLwip2Enet =(Lwip2Enet_Handle)netif->state;
+    Lwip2Enet_txPktHandler(hLwip2Enet);
 }

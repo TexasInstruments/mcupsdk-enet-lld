@@ -451,6 +451,14 @@ typedef void (*Enet_EventCallback)(Enet_Event evt,
                                    void *arg1,
                                    void *arg2);
 
+typedef void (*Enet_notifyCallback)(void *pArg);
+
+typedef struct Enet_notify_t
+{
+    Enet_notifyCallback cbFxn;
+    void* cbArg;
+} Enet_notify_t;
+
 /*! \brief Number of MAC ports - For internal use only. */
 #define ENET_MAC_PORT_NUM                     ((uint32_t)ENET_MAC_PORT_LAST + 1U)
 

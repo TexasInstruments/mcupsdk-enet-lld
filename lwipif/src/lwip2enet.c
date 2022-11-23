@@ -113,7 +113,7 @@ static void Lwip2Enet_notifyRxPackets(void *cbArg);
 
 static void Lwip2Enet_notifyTxPackets(void *cbArg);
 
-static void Lwip2Enet_rxPacketTask(void *arg0);
+void Lwip2Enet_rxPacketTask(void *arg0);
 
 static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
                                      pbufQ *pbufPktQ,
@@ -128,7 +128,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
 
 static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx);
 
-static void Lwip2Enet_txPacketTask(void *arg0);
+void Lwip2Enet_txPacketTask(void *arg0);
 
 static uint32_t Lwip2Enet_prepTxPktQ(Lwip2Enet_TxObj *tx,
                                     EnetDma_PktQ *pPktQ);
@@ -159,7 +159,7 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
 static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
                                      EnetDma_PktQ *pSubmitQ);
 
-static void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx);
+void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx);
 
 static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg);
 
@@ -248,9 +248,6 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
          * be valid at that point
          */
 
-        /* Create semaphore objects, init shutDownFlag status */
-        hLwip2Enet->shutDownFlag = false;
-
         LwipifEnetAppCb_getEnetLwipIfInstInfo(&hLwip2Enet->appInfo);
 
         /* Save params received from application interface */
@@ -260,14 +257,8 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
         Lwip2Enet_assert(hLwip2Enet->appInfo.isPortLinkedFxn != NULL);
         Lwip2Enet_assert(hLwip2Enet->appInfo.pFreeTx != NULL);
 
-        /*ToDo: for no-RTOS case, task and sempaphores should be created, this will be handled with flag from syscfg*/
-        status = SemaphoreP_constructBinary(&hLwip2Enet->shutDownSemObj, 0U);
-        Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-        /* Initialize free Queue for pbufs*/
         pbufQ_init_freeQ(hLwip2Enet->appInfo.pFreeTx, hLwip2Enet->appInfo.pFreeTxSize);
 
-        Lwip2Enet_createRxTxTasks(hLwip2Enet, &hLwip2Enet->appInfo);
 
         /* set the print function callback if not null */
         hLwip2Enet->print = (Enet_Print) &EnetUtils_printf;
@@ -300,11 +291,6 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
         if (status != ENET_SOK)
         {
             Lwip2Enet_print(hLwip2Enet,"Failed to start the tasks: %d\n", status);
-        }
-        status = Lwip2Enet_startPollTask(hLwip2Enet);
-        if (status != ENET_SOK)
-        {
-            Lwip2Enet_print(hLwip2Enet,"Failed to start Poll tasks: %d\n", status);
         }
 
         /* Get initial link/interface status from the driver */
@@ -389,9 +375,6 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet)
 {
     Lwip2Enet_assert(NULL != hLwip2Enet);
 
-    /* Set the translation layer shutdown flag */
-    hLwip2Enet->shutDownFlag = true;
-
     /* Stop and delete the tick timer */
     ClockP_stop(&hLwip2Enet->pacingClkObj);
     ClockP_destruct(&hLwip2Enet->pacingClkObj);
@@ -406,8 +389,6 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet)
     /* Deinit TX and RX objects, delete task, semaphore, etc */
     Lwip2Enet_deinitTxObj(hLwip2Enet);
     Lwip2Enet_deinitRxObj(hLwip2Enet);
-
-    SemaphoreP_destruct(&hLwip2Enet->shutDownSemObj);
 
     Lwip2Enet_putObj(hLwip2Enet);
 }
@@ -455,44 +436,6 @@ static Lwip2Enet_RxHandle Lwip2Enet_initRxObj(uint32_t rxCh,
     return hRxHandle;
 }
 
-static void Lwip2Enet_createRxTxTasks(Lwip2Enet_Handle hLwip2Enet,
-                                      Lwip2Enet_AppInfo *appInfo)
-{
-	TaskP_Params params;
-	int32_t status;
-
-    status = SemaphoreP_constructBinary(&hLwip2Enet->rxPacketSemObj, 0U);
-    Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-    status = SemaphoreP_constructBinary(&hLwip2Enet->txPacketSemObj, 0U);
-    Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-    /* Create RX packet task */
-    TaskP_Params_init(&params);
-    params.name           = "Lwip2Enet_RxPacketTask";
-    params.priority       = appInfo->rxtaskPriority;
-    params.stack          = appInfo->rxTaskStack;
-    params.stackSize      = appInfo->rxTaskStackSize;
-    params.args           = hLwip2Enet;
-    params.taskMain       = &Lwip2Enet_rxPacketTask;
-
-    status = TaskP_construct(&hLwip2Enet->rxPacketTaskObj , &params);
-    Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-    /* Create TX packet task */
-    TaskP_Params_init(&params);
-    params.name           = "Lwip2Enet_TxPacketTask";
-    params.priority       = appInfo->txtaskPriority;
-    params.stack          = appInfo->txTaskStack;
-    params.stackSize      = appInfo->txTaskStackSize;
-    params.args           = hLwip2Enet;
-    params.taskMain       = &Lwip2Enet_txPacketTask;
-
-    status = TaskP_construct(&hLwip2Enet->txPacketTaskObj , &params);
-    Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-}
-
 static void Lwip2Enet_saveAppIfCfg(Lwip2Enet_Handle hLwip2Enet,
                                      Lwip2Enet_AppInfo *appInfo)
 {
@@ -519,9 +462,6 @@ static void Lwip2Enet_deinitRxObj(Lwip2Enet_Handle hLwip2Enet)
         }
     }
 
-    SemaphoreP_pend(&hLwip2Enet->shutDownSemObj, SystemP_WAIT_FOREVER);
-
-    SemaphoreP_destruct(&hLwip2Enet->rxPacketSemObj);
 }
 
 static void Lwip2Enet_deinitTxObj(Lwip2Enet_Handle hLwip2Enet)
@@ -554,9 +494,6 @@ static void Lwip2Enet_deinitTxObj(Lwip2Enet_Handle hLwip2Enet)
         }
     }
 
-    SemaphoreP_pend(&hLwip2Enet->shutDownSemObj, SystemP_WAIT_FOREVER);
-
-    SemaphoreP_destruct(&hLwip2Enet->txPacketSemObj);
 }
 
 static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
@@ -832,7 +769,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
             Lwip2Enet_submitRxPktQ(&hLwip2Enet->rx[i]);
         }
     }
-
+#if 0 //The below CPU load profilling logic has to be re-worked for all OS variants
 #if defined(LWIPIF_INSTRUMENTATION_ENABLED)
     static uint32_t loadCount = 0U;
     TaskP_Load stat;
@@ -853,7 +790,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
 
     loadCount = (loadCount + 1U) & (HISTORY_CNT - 1U);
 #endif
-
+#endif
     /* Get current link status as reported by the hardware driver */
     hLwip2Enet->linkIsUp = hLwip2Enet->appInfo.isPortLinkedFxn(hLwip2Enet->appInfo.hEnet);
 
@@ -1038,17 +975,18 @@ static void Lwip2Enet_notifyRxPackets(void *cbArg)
     Lwip2Enet_Handle hLwip2Enet = hRxLwip2Enet->hLwip2Enet;
 
     /* do not post events if init not done or shutdown in progress */
-    if ((hLwip2Enet->initDone) && (hLwip2Enet->shutDownFlag == false))
+    if (hLwip2Enet->initDone)
     {
         for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
         {
-		    if (hLwip2Enet->rx[i].enabled)
+            if (hLwip2Enet->rx[i].enabled)
             {
                 EnetDma_disableRxEvent(hLwip2Enet->rx[i].hFlow);
             }
-
-            /* Post semaphore to RX handling task */
-            SemaphoreP_post(&hLwip2Enet->rxPacketSemObj);
+            if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
+            {
+                hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
+            }
         }
     }
 }
@@ -1059,109 +997,84 @@ static void Lwip2Enet_notifyTxPackets(void *cbArg)
     Lwip2Enet_Handle hLwip2Enet = hTxLwip2Enet->hLwip2Enet;
 
     /* do not post events if init not done or shutdown in progress */
-    if ((hLwip2Enet->initDone) && (hLwip2Enet->shutDownFlag == false))
+    if ((hLwip2Enet->initDone) && (hLwip2Enet->txPktNotify.cbFxn != NULL))
     {
-		/* Post semaphore to TX handling task */
-        SemaphoreP_post(&hLwip2Enet->txPacketSemObj);
+        /* Notify Callbacks to post event/semephore */
+        hLwip2Enet->txPktNotify.cbFxn(hLwip2Enet->txPktNotify.cbArg);
     }
 }
 
-static void Lwip2Enet_rxPacketTask(void *arg0)
+void Lwip2Enet_rxPktHandler(Lwip2Enet_Handle hLwip2Enet)
 {
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)arg0;
     EnetDma_PktQ tempQueue;
     int32_t retVal;
     uint32_t pktCnt, rxChNum;
 
-    while (!hLwip2Enet->shutDownFlag)
+    for(rxChNum = 0U; rxChNum < hLwip2Enet->numRxChannels; rxChNum++)
     {
-        /* Wait for the Rx ISR to notify us that packets are available with data */
-        SemaphoreP_pend(&hLwip2Enet->rxPacketSemObj, SystemP_WAIT_FOREVER);
+        pktCnt = 0U;
+        LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.rawNotifyCnt);
 
-        if (hLwip2Enet->shutDownFlag)
+        /* Retrieve the used (filled) packets from the channel */
         {
-            /* This translation layer is shutting down, don't give anything else to the stack */
-            break;
+            EnetQueue_initQ(&tempQueue);
+            retVal = EnetDma_retrieveRxPktQ(hLwip2Enet->rx[rxChNum].hFlow, &tempQueue);
+            if (ENET_SOK != retVal)
+            {
+                Lwip2Enet_print(hLwip2Enet,
+                                "Lwip2Enet_rxPacketTask: failed to retrieve RX pkts: %d\n",
+                                retVal);
+            }
+        }
+        if (tempQueue.count == 0U)
+        {
+            LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.zeroNotifyCnt);
         }
 
-        for(rxChNum = 0U; rxChNum < hLwip2Enet->numRxChannels; rxChNum++)
+        /*
+         * Call Lwip2Enet_prepRxPktQ() even if no packets were received.
+         * This allows new packets to be submitted if PBUF buffers became
+         * newly available and there were outstanding free packets.
+         */
         {
-            pktCnt = 0U;
-            LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.rawNotifyCnt);
-
-            /* Retrieve the used (filled) packets from the channel */
-            {
-                EnetQueue_initQ(&tempQueue);
-                retVal = EnetDma_retrieveRxPktQ(hLwip2Enet->rx[rxChNum].hFlow, &tempQueue);
-                if (ENET_SOK != retVal)
-                {
-                    Lwip2Enet_print(hLwip2Enet,
-                                    "Lwip2Enet_rxPacketTask: failed to retrieve RX pkts: %d\n",
-                                    retVal);
-                }
-            }
-            if (tempQueue.count == 0U)
-            {
-                LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.zeroNotifyCnt);
-            }
-
             /*
-             * Call Lwip2Enet_prepRxPktQ() even if no packets were received.
-             * This allows new packets to be submitted if PBUF buffers became
-             * newly available and there were outstanding free packets.
+             * Get all used Rx DMA packets from the hardware, then send the buffers
+             * of those packets on to the LwIP stack to be parsed/processed.
              */
-            {
-                /*
-                 * Get all used Rx DMA packets from the hardware, then send the buffers
-                 * of those packets on to the LwIP stack to be parsed/processed.
-                 */
-                pktCnt = Lwip2Enet_prepRxPktQ(&hLwip2Enet->rx[rxChNum], &tempQueue);
-            }
+            pktCnt = Lwip2Enet_prepRxPktQ(&hLwip2Enet->rx[rxChNum], &tempQueue);
+        }
 
-            /*
-             * We don't want to time the semaphore post used to notify the LwIP stack as that may cause a
-             * task transition. We don't want to time the semaphore pend, since that would time us doing
-             * nothing but waiting.
-             */
-            if (pktCnt != 0U)
-            {
-                Lwip2Enet_updateRxNotifyStats(&hLwip2Enet->rx[rxChNum].stats.pktStats, pktCnt, 0U);
-            }
+        /*
+         * We don't want to time the semaphore post used to notify the LwIP stack as that may cause a
+         * task transition. We don't want to time the semaphore pend, since that would time us doing
+         * nothing but waiting.
+         */
+        if (pktCnt != 0U)
+        {
+            Lwip2Enet_updateRxNotifyStats(&hLwip2Enet->rx[rxChNum].stats.pktStats, pktCnt, 0U);
+        }
 
-            // ClockP_start(&hLwip2Enet->pacingClkObj);
+        // ClockP_start(&hLwip2Enet->pacingClkObj);
 
-            if (!hLwip2Enet->rx[rxChNum].disableEvent)
-            {
-                EnetDma_enableRxEvent(hLwip2Enet->rx[rxChNum].hFlow);
-            }
+        if (!hLwip2Enet->rx[rxChNum].disableEvent)
+        {
+            EnetDma_enableRxEvent(hLwip2Enet->rx[rxChNum].hFlow);
         }
     }
 
-    /* We are shutting down, notify that we are done */
-    SemaphoreP_post(&hLwip2Enet->shutDownSemObj);
+
 }
 
-static void Lwip2Enet_txPacketTask(void *arg0)
+void Lwip2Enet_txPktHandler(Lwip2Enet_Handle hLwip2Enet )
 {
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)arg0;
     uint32_t txChNum;
 
-    while (!hLwip2Enet->shutDownFlag)
+    for (txChNum = 0U; txChNum < hLwip2Enet->numTxChannels; txChNum++)
     {
-        /*
-         * Wait for the Tx ISR to notify us that empty packets are available
-         * that were used to send data
-         */
-        SemaphoreP_pend(&hLwip2Enet->txPacketSemObj, SystemP_WAIT_FOREVER);
-
-        for(txChNum = 0U; txChNum < hLwip2Enet->numTxChannels; txChNum++)
-        {
-            Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[txChNum]);
-        }
+        Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[txChNum]);
     }
 
-    /* We are shutting down, notify that we are done */
-    SemaphoreP_post(&hLwip2Enet->shutDownSemObj);
+
 }
 
 /*
@@ -1449,126 +1362,22 @@ static int32_t Lwip2Enet_startRxTx(Lwip2Enet_Handle hLwip2Enet)
  * arg : netif
  * arg1 : Semaphore
  */
-static void LWIPIF_LWIP_poll(void *arg)
-{
-    /* Call the driver's periodic polling function */
-    volatile bool flag = 1;
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)arg;
-
-    Lwip2Enet_assert(hLwip2Enet != NULL);
-
-    while (flag)
-    {
-        SemaphoreP_Object *hpollSem = (SemaphoreP_Object *)&hLwip2Enet->pollLinkSemObj;
-        SemaphoreP_pend(hpollSem, SystemP_WAIT_FOREVER);
-
-        if(arg != NULL)
-        {
-            for(uint32_t i = 0U; i < hLwip2Enet->appInfo.maxNumNetif; i++)
-            {
-                struct netif* netif = (struct netif*)hLwip2Enet->netif[i];
-
-                /* Get the pointer to the private data */
-                Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-
-                /* Periodic Function to update Link status */
-                Lwip2Enet_periodicFxn(netif);
-
-                if(!(hLwip2Enet->linkIsUp == (netif->flags & 0x04U)>>2))
-                {
-                    if(hLwip2Enet->linkIsUp)
-                    {
-                        sys_lock_tcpip_core();
-                        netif_set_link_up(netif);
-                        sys_unlock_tcpip_core();
-                    }
-
-                    else
-                    {
-                        sys_lock_tcpip_core();
-                        netif_set_link_down(netif);
-                        sys_unlock_tcpip_core();
-                    }
-                }
-            }
-        }
-    }
-}
-
-static void LWIPIF_LWIP_postPollLink(ClockP_Object *clkObj, void *arg)
-{
-    if(arg != NULL)
-    {
-        SemaphoreP_Object *hpollSem = (SemaphoreP_Object *) arg;
-        SemaphoreP_post(hpollSem);
-    }
-}
-
-static int32_t Lwip2Enet_startPollTask(Lwip2Enet_Handle hLwip2Enet)
-{
-    int32_t status = ENET_SOK;
-    TaskP_Params params;
-    ClockP_Params clkPrms;
-
-    if (NULL != hLwip2Enet)
-    {
-        /*Initialize semaphore to call synchronize the poll function with a timer*/
-        status = SemaphoreP_constructBinary(&hLwip2Enet->pollLinkSemObj, 0U);
-        Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-        /* Initialize the poll function as a thread */
-        TaskP_Params_init(&params);
-        params.name           = "Lwipif_Lwip_poll";
-        params.priority       = hLwip2Enet->appInfo.pollTaskPriority;
-        params.stack          = hLwip2Enet->appInfo.pollTaskStack;
-        params.stackSize      = hLwip2Enet->appInfo.pollTaskStackSize;
-        params.args           = hLwip2Enet;
-        params.taskMain       = &LWIPIF_LWIP_poll;
-
-        status = TaskP_construct(&hLwip2Enet->lWIPIF2LWIPpollObj, &params);
-        Lwip2Enet_assert(status == SystemP_SUCCESS);
-
-        ClockP_Params_init(&clkPrms);
-        clkPrms.start     = 0U;
-        clkPrms.period    = hLwip2Enet->appInfo.pollTasktimerPeriodUs;
-        clkPrms.args      = &hLwip2Enet->pollLinkSemObj;
-        clkPrms.callback  = &LWIPIF_LWIP_postPollLink;
-        clkPrms.timeout   = hLwip2Enet->appInfo.pollTasktimerPeriodUs;
-
-        /* Creating timer and setting timer callback function*/
-        status = ClockP_construct(&hLwip2Enet->pollLinkClkObj,
-                                  &clkPrms);
-        if (status == SystemP_SUCCESS)
-        {
-        /* Set timer expiry time in OS ticks */
-        ClockP_setTimeout(&hLwip2Enet->pollLinkClkObj, hLwip2Enet->appInfo.pollTasktimerPeriodUs);
-        ClockP_start(&hLwip2Enet->pollLinkClkObj);
-        }
-        else
-        {
-        Lwip2Enet_assert (status == SystemP_SUCCESS);
-        }
-    }
-    else
-    {
-        status =  ENET_EFAIL;
-    }
-
-    return status;
-}
 
 
 static void Lwip2Enet_stopRxTx(Lwip2Enet_Handle hLwip2Enet)
 {
 	/* Stop RX packet task */
-    /* Post to rx packet task so that it will terminate (shutDownFlag flag is already set) */
+    /* Post to rx packet task/event so that it will terminate (shutDownFlag flag is already set) */
+    if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
     {
-        SemaphoreP_post(&hLwip2Enet->rxPacketSemObj);
+        hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
     }
+
     /* Stop TX packet task */
-    /* Post to tx packet task so that it will terminate (shutDownFlag flag is already set) */
+    /* Post to tx packet task/event so that it will terminate (shutDownFlag flag is already set) */
+    if (hLwip2Enet->txPktNotify.cbFxn != NULL)
     {
-        SemaphoreP_post(&hLwip2Enet->txPacketSemObj);
+        hLwip2Enet->txPktNotify.cbFxn(hLwip2Enet->txPktNotify.cbArg);
     }
 }
 
@@ -1611,7 +1420,7 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
     }
 }
 
-static void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
+void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
 {
     EnetDma_PktQ tempQueue;
     uint32_t packetCount = 0U;
@@ -1658,22 +1467,19 @@ static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg)
     /* Post semaphore to rx handling task */
     Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)arg;
 
-    if ((hLwip2Enet->initDone) && (hLwip2Enet->shutDownFlag == false))
+    if (hLwip2Enet->initDone)
     {
         for (uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
         {
-            if (hLwip2Enet->rx[i].enabled)
+            if (hLwip2Enet->tx[i].enabled)
             {
                 Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[i]);
             }
         }
 
-        for (uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
+        if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
         {
-            if (hLwip2Enet->rx[i].enabled)
-            {
-                SemaphoreP_post(&hLwip2Enet->rxPacketSemObj);
-            }
+            hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
         }
     }
 #endif
@@ -1731,8 +1537,18 @@ static void Lwip2Enet_initReleaseRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
 
     if (hLwip2Enet->rx[chNum].enabled)
     {
-	inArgs->rxFreePktCb  = &Lwip2Enet_freeRxPktCb;
-    inArgs->rxFreePktCbArg = &hLwip2Enet->rx;
-    inArgs->rxChNum       = chNum;
+        inArgs->rxFreePktCb  = &Lwip2Enet_freeRxPktCb;
+        inArgs->rxFreePktCbArg = &hLwip2Enet->rx;
+        inArgs->rxChNum       = chNum;
     }
+}
+
+void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pRxPktNotify)
+{
+    hLwip2Enet->rxPktNotify = *pRxPktNotify;
+}
+
+void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pTxPktNotify)
+{
+    hLwip2Enet->txPktNotify = *pTxPktNotify;
 }
