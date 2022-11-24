@@ -115,6 +115,27 @@ void LwipifEnetAppCb_getHandle(LwipifEnetAppIf_GetHandleInArgs *inArgs,
     EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
     EnetApp_coreAttach(enetType,instId, coreId, &attachInfo);
 
+#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
+    {
+        /* Confirm HW checksum offload is enabled when LWIP chksum offload is enabled */
+        int32_t status;
+        Enet_IoctlPrms prms;
+        bool csumOffloadFlg;
+        ENET_IOCTL_SET_OUT_ARGS(&prms, &csumOffloadFlg);
+        ENET_IOCTL(handleInfo.hEnet,
+                   coreId,
+                   ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED,
+                   &prms,
+                   status);
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print("() Failed to get checksum offload info: %d\r\n", status);
+        }
+
+        EnetAppUtils_assert(true == csumOffloadFlg);
+    }
+#endif
+
     /* Open TX channel */
     txInArgs.cbArg     = inArgs->txCfg.cbArg;
     txInArgs.notifyCb  = inArgs->txCfg.notifyCb;

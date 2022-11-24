@@ -182,6 +182,8 @@ static void Lwip2Enet_initGetHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
 static void Lwip2Enet_initReleaseHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
                                              LwipifEnetAppIf_ReleaseHandleInfo *inArgs);
 
+static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx);
+
 /*---------------------------------------------------------------------------*\
  |                         Local Variable Declarations                         |
  \*---------------------------------------------------------------------------*/
@@ -191,6 +193,36 @@ static Lwip2Enet_Obj  gLwip2EnetObj = { {{0}} };
 /*---------------------------------------------------------------------------*\
  |                         Global Variable Declarations                        |
  \*---------------------------------------------------------------------------*/
+
+static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx)
+{
+    struct pbuf *pbufNext = pbuf;
+    uint32_t totalPacketFilledLen = 0U;
+
+    pCurrDmaPacket->sgList.numScatterSegments = 0;
+    while (pbufNext != NULL)
+    {
+        EnetUdma_SGListEntry *list;
+
+        Lwip2Enet_assert(pCurrDmaPacket->sgList.numScatterSegments < ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list));
+        list = &pCurrDmaPacket->sgList.list[pCurrDmaPacket->sgList.numScatterSegments];
+        list->bufPtr = (uint8_t*) pbufNext->payload;
+        list->segmentFilledLen = (isRx == true) ? 0U : pbufNext->len;
+        list->segmentAllocLen = pbufNext->len;
+        if ((pbufNext->type_internal == PBUF_ROM) || (pbufNext->type_internal == PBUF_REF))
+        {
+            list->disableCacheOps = true;
+        }
+        else
+        {
+            list->disableCacheOps = false;
+        }
+        totalPacketFilledLen += pbufNext->len;
+        pCurrDmaPacket->sgList.numScatterSegments++;
+        pbufNext = pbufNext->next;
+    }
+    Lwip2Enet_assert(totalPacketFilledLen == pbuf->tot_len);
+}
 
 static Lwip2Enet_Handle Lwip2Enet_getObj(void)
 {
@@ -676,10 +708,8 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx)
                 hPbufPkt = pbufQ_deQ(&tx->readyPbufQ);
                 EnetDma_initPktInfo(pCurrDmaPacket);
 
-                pCurrDmaPacket->bufPtr     = (uint8_t *) hPbufPkt->payload;
+                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
                 pCurrDmaPacket->appPriv    = hPbufPkt;
-                pCurrDmaPacket->orgBufLen  = PBUF_POOL_BUFSIZE;
-                pCurrDmaPacket->userBufLen = hPbufPkt->len;
                 pCurrDmaPacket->txPortNum  = tx->portNum;
                 pCurrDmaPacket->node.next  = NULL;
 #if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
@@ -919,10 +949,9 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
             hPbufPkt = pbufQ_deQ(pbufPktQ);
             EnetDma_initPktInfo(pCurrDmaPacket);
 
-            pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPkt->payload;
+            Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
             pCurrDmaPacket->appPriv    = hPbufPkt;
-            pCurrDmaPacket->orgBufLen  = PBUF_POOL_BUFSIZE;
-            pCurrDmaPacket->userBufLen = hPbufPkt->len;
+            pCurrDmaPacket->txPortNum  = tx->portNum;
             pCurrDmaPacket->node.next = NULL;
 #if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
                 pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
@@ -1242,9 +1271,7 @@ static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx)
                 LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktDeq);
 
                 EnetDma_initPktInfo(pCurrDmaPacket);
-                pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPacket->payload;
-                pCurrDmaPacket->orgBufLen = hPbufPacket->len;
-                pCurrDmaPacket->userBufLen = hPbufPacket->len;
+                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPacket, true);
 
                 /* Save off the PBM packet handle so it can be handled by this layer later */
                 pCurrDmaPacket->appPriv = (void *)hPbufPacket;
@@ -1286,7 +1313,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
         bool isChksumError = false;
         if (hPbufPacket)
         {
-            uint32_t validLen = pCurrDmaPacket->userBufLen;
+            uint32_t validLen = pCurrDmaPacket->sgList.list[0].segmentFilledLen;
 
             /* Fill in PBUF packet length field */
             hPbufPacket->len = validLen;

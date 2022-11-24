@@ -75,6 +75,8 @@ typedef EnetQ EnetUdma_RingMonObjMemQ;
 
 typedef EnetQ EnetUdma_tdCqRingObjMemQ;
 
+#define ENET_UDMA_CPSW_IS_HBD_IDX(i) ( i > ENET_UDMA_CPSW_HOSTPKTDESC_INDEX)
+
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -139,15 +141,15 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
         if (NULL != pHpdDesc)
         {
             dmaPkt = pDmaDesc->dmaPkt;
-            dmaPkt->userBufLen = CSL_udmapCppi5GetPktLen(&pHpdDesc->hostDesc);
-
-            if (Enet_isIcssFamily(hPer->enetType))
-            {
-                dmaPkt->userBufLen -= 4U;
-            }
 
             if (ENET_UDMA_DIR_RX == transferDir)
             {
+                dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen = CSL_udmapCppi5GetPktLen(&pHpdDesc->hostDesc);
+
+                if (Enet_isIcssFamily(hPer->enetType))
+                {
+                    dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen -= 4U;
+                }
 #if ENET_CFG_IS_ON(DEV_ERROR)
                 /* Protocol-specific data is should be in the descriptor (psLocation set to
                  * TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PS_END_PD */
@@ -174,9 +176,8 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
             }
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-            Enet_assert(dmaPkt->orgBufLen == pHpdDesc->hostDesc.orgBufLen);
-            Enet_assert((uint64_t)dmaPkt->bufPtr == CSL_udmapCppi5GetBufferAddr(&pHpdDesc->hostDesc));
-            Enet_assert((uint64_t)dmaPkt->bufPtr == pHpdDesc->hostDesc.orgBufPtr);
+            Enet_assert((uint64_t)dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr == CSL_udmapCppi5GetBufferAddr(&pHpdDesc->hostDesc));
+            Enet_assert((uint64_t)dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr == pHpdDesc->hostDesc.orgBufPtr);
 #endif
 
             EnetDma_checkPktState(&dmaPkt->pktState,
@@ -345,7 +346,6 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     int32_t retVal = UDMA_SOK;
     EnetUdma_DmaDesc *pDmaDesc;
     EnetDma_Pkt *dmaPkt;
-    uint32_t bufLen;
     uint32_t dstTag;
     EnetUdma_CppiRxControl *cppiRxCntr;
     uint32_t *iccsgTxTsId, *tsInfo;
@@ -355,6 +355,8 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
     uint32_t tosIndex, i;
     uint8_t dscpIPv4En, tosVal;
+    uint32_t totalPacketFilledLen = 0;
+    EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
@@ -376,28 +378,45 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
 
         if (NULL != pDmaDesc)
         {
-            EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
+            EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc*) pDmaDesc;
             CSL_UdmapCppi5HMPD *pHostDesc = &pHpdDesc->hostDesc;
 
-            /* Set pktLen for rx to allocated buffer len before submiting packet */
-            if (ENET_UDMA_DIR_RX == transferDir)
-            {
-                dmaPkt->userBufLen = dmaPkt->orgBufLen;
-            }
             pDmaDesc->dmaPkt = dmaPkt;
+            sgList = dmaPkt->sgList.list;
             EnetDma_checkPktState(&pDmaDesc->dmaPkt->pktState,
-                                    ENET_PKTSTATE_MODULE_DRIVER,
-                                    (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW,
-                                    (uint32_t)ENET_PKTSTATE_DMA_WITH_HW);
+                                  ENET_PKTSTATE_MODULE_DRIVER,
+                                  (uint32_t) ENET_PKTSTATE_DMA_NOT_WITH_HW,
+                                  (uint32_t) ENET_PKTSTATE_DMA_WITH_HW);
 
-            CSL_udmapCppi5SetBufferAddr(pHostDesc, (uint64_t)dmaPkt->bufPtr);
-            CSL_udmapCppi5SetBufferLen(pHostDesc, dmaPkt->userBufLen);
+            CSL_UdmapCppi5HMPD *pHDesc = pHostDesc;
+            CSL_UdmapCppi5HMPD *pHDescPrev = NULL;
+            for (i = 0; i < dmaPkt->sgList.numScatterSegments; i++)
+            {
+                if (ENET_UDMA_CPSW_IS_HBD_IDX(i))
+                {
+                    pHDesc = &pDmaDesc->hostBufDesc[i - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX].desc;
+                    /* Link the Descs */
+                    CSL_udmapCppi5LinkDesc(pHDescPrev, (uint64_t) pHDesc);
+                }
+                CSL_udmapCppi5SetBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                if (ENET_UDMA_DIR_TX == transferDir)
+                {
+                    CSL_udmapCppi5SetBufferLen(pHDesc, sgList[i].segmentFilledLen);
+                }
+                else
+                {
+                    CSL_udmapCppi5SetBufferLen(pHDesc, sgList[i].segmentAllocLen);
+                }
+                CSL_udmapCppi5SetOrgBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                CSL_udmapCppi5SetOrgBufferLen(pHDesc, sgList[i].segmentAllocLen);
+                totalPacketFilledLen += sgList[i].segmentFilledLen;
+                pHDescPrev = pHDesc;
+            }
+            /* Link the last segment's Desc to NULL */
+            CSL_udmapCppi5LinkDesc(pHDesc, 0U);
 
-            CSL_udmapCppi5SetOrgBufferAddr(pHostDesc, (uint64_t)dmaPkt->bufPtr);
-            CSL_udmapCppi5SetOrgBufferLen(pHostDesc, dmaPkt->orgBufLen);
+            CSL_udmapCppi5HostSetPktLen(pHostDesc, totalPacketFilledLen);
 
-            CSL_udmapCppi5SetPktLen(pHostDesc,CSL_UDMAP_CPPI5_PD_DESCINFO_DTYPE_VAL_HOST, dmaPkt->userBufLen);
-            CSL_udmapCppi5HostSetPktLen(pHostDesc, dmaPkt->userBufLen);
 
             if (ENET_UDMA_DIR_TX == transferDir)
             {
@@ -484,14 +503,19 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                     if (dscpIPv4En == 1)
                     {
                         dmaPkt->txPktTc = 0;
+                        Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 13);
                         /*check for Vlan tagging*/
-                        if ((dmaPkt->bufPtr[12] == 0x81U) && (dmaPkt->bufPtr[13] == 0x00U))
+                        if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[12] == 0x81U) &&
+                                (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[13] == 0x00U))
                         {
+                            Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 17);
                             /*Check for ipv4 ethertype*/
-                            if ((dmaPkt->bufPtr[16] == 0x08U) && (dmaPkt->bufPtr[17] == 0x00U))
+                            if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[16] == 0x08U) &&
+                                    (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[17] == 0x00U))
                             {
+                                Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 19);
                                 /* upper 6 bits has the dscp index */
-                                tosIndex = ((dmaPkt->bufPtr[19] >> 2) & 0x3f);
+                                tosIndex = ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[19] >> 2) & 0x3f);
 
                                 for (i = 0; i < ENET_PRI_NUM; i++)
                                 {
@@ -507,10 +531,12 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                         else
                         {
                             dmaPkt->txPktTc = 0;
-                            if ((dmaPkt->bufPtr[12] == 0x08U) && (dmaPkt->bufPtr[13] == 0x00U))
+                            if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[12] == 0x08U) &&
+                                    (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[13] == 0x00U))
                             {
                                 /* upper 6 bits has the dscp index */
-                                tosIndex = ((dmaPkt->bufPtr[15] >> 2) & 0x3f);
+                                Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 15);
+                                tosIndex = ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[15] >> 2) & 0x3f);
                                 for (i = 0; i < ENET_PRI_NUM; i++)
                                 {
                                     tosVal = CSL_REG8_RD(baseAddr + (i+1));
@@ -549,18 +575,8 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
 
             if (UDMA_SOK == retVal)
             {
-                if (ENET_UDMA_DIR_RX == transferDir)
-                {
-                    bufLen = dmaPkt->orgBufLen;
-                }
-                else
-                {
-                    bufLen = dmaPkt->userBufLen;
-                }
-
                 retVal = EnetUdma_ringEnqueue(hUdmaRing,
                                              pDmaDesc,
-                                             bufLen,
                                              disableCacheOpsFlag,
                                              transferDir
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
@@ -1267,7 +1283,6 @@ int32_t EnetUdma_closeRxRsvdFlow(EnetDma_RxChHandle hRxFlow)
 
 int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
                             EnetUdma_DmaDesc *pDmaDesc,
-                            uint32_t packetSize,
                             bool disableCacheOpsFlag,
                             EnetUdma_Dir transferDir
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
@@ -1280,42 +1295,68 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
     bool isExposedRing;
     void *virtBufPtr;
     uint64_t physDescPtr;
+    EnetDma_Pkt *dmaPkt = pDmaDesc->dmaPkt;
+    uint32_t numScatterSegments = 0;
 
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
         EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
-
+        CSL_UdmapCppi5HMPD *pHDesc = &pHpdDesc->hostDesc;
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
         isExposedRing = 0U;
 #endif
-        virtBufPtr = (void *)(uintptr_t)pHpdDesc->hostDesc.bufPtr;
-
-        pHpdDesc->hostDesc.bufPtr =
-            EnetUtils_virtToPhys((void *)(uintptr_t)pHpdDesc->hostDesc.bufPtr, NULL);
-
-        pHpdDesc->hostDesc.orgBufPtr =
-            EnetUtils_virtToPhys((void *)(uintptr_t)pHpdDesc->hostDesc.orgBufPtr, NULL);
-
         physDescPtr = (uint64_t)EnetUtils_virtToPhys((void *)&pHpdDesc->hostDesc, NULL);
-
-        /* Wb Invalidate data cache */
-        if ((false == disableCacheOpsFlag) &&
-            (FALSE == Enet_isCacheCoherent()))
+        if (ENET_UDMA_DIR_RX == transferDir)
         {
-            if (ENET_UDMA_DIR_RX == transferDir)
+            numScatterSegments = 1;
+        }
+        else
+        {
+            numScatterSegments = dmaPkt->sgList.numScatterSegments;
+        }
+
+        for (uint32_t i = 0; i < numScatterSegments; i++)
+        {
+            if (ENET_UDMA_CPSW_IS_HBD_IDX(i))
             {
-                EnetOsal_cacheInv(virtBufPtr, packetSize);
+                pHDesc =  &pDmaDesc->hostBufDesc[i - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX].desc;
             }
-            else
+            virtBufPtr = (void *)(uintptr_t)pHDesc->bufPtr;
+
+            pHDesc->bufPtr =
+                    EnetUtils_virtToPhys((void *)(uintptr_t)pHDesc->bufPtr, NULL);
+
+            pHDesc->orgBufPtr =
+                    EnetUtils_virtToPhys((void *)(uintptr_t)pHDesc->orgBufPtr, NULL);
+
+            if(pHDesc->nextDescPtr != 0U)
             {
-                EnetOsal_cacheWbInv(virtBufPtr, packetSize);
+                pHDesc->nextDescPtr =
+                        EnetUtils_virtToPhys((void *)(uintptr_t)pHDesc->nextDescPtr, NULL);
+            }
+
+            if ((false == disableCacheOpsFlag) && (FALSE == Enet_isCacheCoherent()))
+            {
+                /* Wb Invalidate data cache for Tx */
+                if (ENET_UDMA_DIR_RX == transferDir)
+                {
+                    EnetOsal_cacheInv(virtBufPtr, CSL_udmapCppi5GetOrgBufferLen(pHDesc));
+                }
+                else
+                {
+                    if (dmaPkt->sgList.list[i].disableCacheOps != true)
+                    {
+                        EnetOsal_cacheWbInv(virtBufPtr, CSL_udmapCppi5GetBufferLen(pHDesc));
+                    }
+                }
+
             }
         }
 
         if (FALSE == Enet_isCacheCoherent())
         {
-            EnetOsal_cacheWbInv((void *)pHpdDesc, sizeof(*pHpdDesc));
+            EnetOsal_cacheWbInv((void *)pDmaDesc, sizeof(*pDmaDesc));
         }
 
         if (isExposedRing == true)
@@ -1356,7 +1397,8 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
     int32_t retVal = UDMA_SOK;
     bool isExposedRing;
     uint64_t pDesc = 0;
-    EnetUdma_CpswHpdDesc *pHpdDesc;
+    CSL_UdmapCppi5HMPD *pDescEntry;
+    CSL_UdmapCppi5HMPD *pNextDescEntryVirt;
     EnetUdma_DmaDesc *pVirtDmaDesc;
 
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
@@ -1387,22 +1429,31 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
 
         if (UDMA_SOK == retVal)
         {
-            pVirtDmaDesc = (EnetUdma_DmaDesc *)EnetUtils_physToVirt(pDesc, NULL);
-            pHpdDesc     = &pVirtDmaDesc->hpdDesc;
+            pVirtDmaDesc = (EnetUdma_DmaDesc*) EnetUtils_physToVirt(pDesc, NULL);
             if (FALSE == Enet_isCacheCoherent())
             {
 #if ENET_CFG_IS_ON(DEV_ERROR)
-                Enet_assert(ENET_UTILS_IS_ALIGNED(sizeof(*pHpdDesc), ENETDMA_CACHELINE_ALIGNMENT));
+                Enet_assert(ENET_UTILS_IS_ALIGNED(pVirtDmaDesc, UDMA_CACHELINE_ALIGNMENT));
 #endif
-                EnetOsal_cacheInv((void *)pHpdDesc, sizeof(*pHpdDesc));
+                EnetOsal_cacheInv((void*) pVirtDmaDesc, sizeof(*pVirtDmaDesc));
             }
-
             *pDmaDesc = pVirtDmaDesc;
-
-            pHpdDesc->hostDesc.bufPtr =
-                (uint64_t)EnetUtils_physToVirt(pHpdDesc->hostDesc.bufPtr, NULL);
-            pHpdDesc->hostDesc.orgBufPtr =
-                (uint64_t)EnetUtils_physToVirt(pHpdDesc->hostDesc.orgBufPtr, NULL);
+            pDescEntry = &pVirtDmaDesc->hpdDesc.hostDesc;
+            while (pDescEntry != NULL)
+            {
+                pDescEntry->bufPtr = (uint64_t) EnetUtils_physToVirt(pDescEntry->bufPtr, NULL);
+                pDescEntry->orgBufPtr = (uint64_t) EnetUtils_physToVirt(pDescEntry->orgBufPtr, NULL);
+                if (pDescEntry->nextDescPtr != 0ULL)
+                {
+                    pNextDescEntryVirt = (CSL_UdmapCppi5HMPD*) EnetUtils_physToVirt(pDescEntry->nextDescPtr, NULL);
+                    pDescEntry->nextDescPtr = (uintptr_t) pNextDescEntryVirt;
+                    pDescEntry = pNextDescEntryVirt;
+                }
+                else
+                {
+                    pDescEntry = (CSL_UdmapCppi5HMPD*) pDescEntry->nextDescPtr;
+                }
+            }
 
             /* Debug point -> The Cortex A cores can do speculative reads which
              * can mandate to do cache_invalidate before packets are received.

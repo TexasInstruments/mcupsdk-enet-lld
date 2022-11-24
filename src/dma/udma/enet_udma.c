@@ -1834,10 +1834,17 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
 
 void EnetDma_initPktInfo(EnetDma_Pkt *pktInfo)
 {
+    uint32_t i;
+
     memset(&pktInfo->node, 0U, sizeof(pktInfo->node));
-    pktInfo->bufPtr                = NULL;
-    pktInfo->orgBufLen             = 0U;
-    pktInfo->userBufLen            = 0U;
+    for(i = 0; i < ENET_UDMA_CPSW_MAX_SG_LIST; i++)
+    {
+        pktInfo->sgList.list[i].bufPtr    = NULL;
+        pktInfo->sgList.list[i].segmentFilledLen = 0U;
+        pktInfo->sgList.list[i].segmentAllocLen = 0U;
+        pktInfo->sgList.list[i].disableCacheOps = false;
+    }
+    pktInfo->sgList.numScatterSegments = 0U;
     pktInfo->appPriv               = NULL;
     pktInfo->tsInfo.enableHostTxTs = false;
     pktInfo->txPortNum             = ENET_MAC_PORT_INV;

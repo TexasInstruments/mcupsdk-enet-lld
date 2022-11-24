@@ -193,8 +193,12 @@ typedef struct EnetCpdma_SGListEntry_s
 {
     /*! Pointer to scatter fragment */
     uint8_t *bufPtr;
+
     /*! Length of valid data in the scatter fragment */
-    uint32_t filledLen;
+    uint32_t segmentFilledLen;
+
+    /*! Length of allocated buffer for scatter fragment */
+    uint32_t segmentAllocLen;
 
     bool disableCacheOps;
 } EnetCpdma_SGListEntry;
@@ -214,7 +218,7 @@ typedef struct EnetCpdma_SGList_s
 {
     /*! Number of valid scatter segments in the packet to be transmitted
      *  If packet is made of a single continuous buffer (no scatter list
-     *  case) then numScatterSegments == 0
+     *  case) then numScatterSegments == 1
      */
     uint32_t numScatterSegments;
     /*! Array of scatterList having info on each individual scatter segement */
@@ -256,24 +260,6 @@ typedef struct EnetCpdma_PktInfo_s
      *  Note: Keep EnetQ_Node as first member always as driver uses generic
      *  queue functions and dereferences to this member */
     EnetQ_Node node;
-
-    /*! Pointer to data buffer */
-    uint8_t *bufPtr;
-
-    /*! Length of data buffer allocated */
-    uint32_t bufPtrAllocLen;
-
-    /*! Actual filled buffer length while receiving data with DMA
-     *  For transmit indicates length of valid data in bufPtr
-     *  If packet to be trasmitted is a single contiguous fragment
-     *  bufPtrFilledLen = txTotalPktLen
-     */
-    uint32_t bufPtrFilledLen;
-
-    /*! Total length of the packet to be transmitted . Not used for receive packets
-     *  Total packet length == sum of bufPtrFilledLen + valid sgList entries filledLen
-     */
-    uint32_t txTotalPktLen;
 
     /*! Pointer to application layer specific data blob */
     void *appPriv;
@@ -323,14 +309,10 @@ typedef struct EnetCpdma_PktInfo_s
      *  This value is obtained from the Source Tag – Low bits of packet descriptor. */
     Enet_MacPort rxPortNum;
 
-    bool disableCacheOps;
-
     /*! Scatter Gather list information for packets to be transmitted.
-     *  When a single tx packet is fragmented across multiple chunks
-     *  the first chunk will be pointed to by bufPtr
-     *  Info on Chunks from 2 to the last fragment will be present in
-     *  sgList.
-     * _If not using SGList sgList.numScatterSegments should be set to 0_
+     *  A single tx packet can be fragmented across multiple chunks,
+     *  the bufPtrs and filled len of each segment are contained here.
+     *  sgList.numScatterSegments = 1 by default.
      */
     EnetCpdma_SGList sgList;
 } EnetCpdma_PktInfo;

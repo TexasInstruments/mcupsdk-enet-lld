@@ -621,7 +621,6 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
 
 int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
                             EnetUdma_DmaDesc *pDmaDesc,
-                            uint32_t packetSize,
                             bool disableCacheOpsFlag,
                             EnetUdma_Dir transferDir
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)

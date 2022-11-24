@@ -183,7 +183,7 @@ static void Lwip2Enet_initGetHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
 static void Lwip2Enet_initReleaseHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
                                              LwipifEnetAppIf_ReleaseHandleInfo *inArgs);
 
-static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf);
+static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx);
 
 /*---------------------------------------------------------------------------*\
  |                         Local Variable Declarations                         |
@@ -630,9 +630,10 @@ void Lwip2Enet_setRx(Lwip2Enet_Handle hLwip2Enet)
 {
 }
 
-static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf)
+static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx)
 {
-    struct pbuf *pbufNext = pbuf->next;
+    struct pbuf *pbufNext = pbuf;
+    uint32_t totalPacketFilledLen = 0U;
 
     pCurrDmaPacket->sgList.numScatterSegments = 0;
     while(pbufNext != NULL)
@@ -642,7 +643,8 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf)
         Lwip2Enet_assert(pCurrDmaPacket->sgList.numScatterSegments < ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list));
         list = &pCurrDmaPacket->sgList.list[pCurrDmaPacket->sgList.numScatterSegments];
         list->bufPtr = (uint8_t* )pbufNext->payload;
-        list->filledLen = pbufNext->len;
+        list->segmentFilledLen = (isRx == true) ? 0U : pbufNext->len;
+        list->segmentAllocLen = pbufNext->len;
         if ((pbufNext->type_internal == PBUF_ROM)
             ||
             (pbufNext->type_internal == PBUF_REF))
@@ -653,9 +655,11 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf)
         {
             list->disableCacheOps = false;
         }
+        totalPacketFilledLen += pbufNext->len;
         pCurrDmaPacket->sgList.numScatterSegments++;
         pbufNext = pbufNext->next;
     }
+    Lwip2Enet_assert(totalPacketFilledLen == pbuf->tot_len);
 }
 
 /*!
@@ -707,10 +711,8 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx)
                 hPbufPkt = pbufQ_deQ(&tx->readyPbufQ);
                 EnetDma_initPktInfo(pCurrDmaPacket);
 
-                pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPkt->payload;
+                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
                 pCurrDmaPacket->appPriv    = hPbufPkt;
-                pCurrDmaPacket->txTotalPktLen  = hPbufPkt->tot_len;
-                pCurrDmaPacket->bufPtrFilledLen = hPbufPkt->len;
                 pCurrDmaPacket->txPortNum  = tx->portNum;
                 pCurrDmaPacket->node.next = NULL;
 #if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
@@ -718,21 +720,6 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx)
 #else
                 pCurrDmaPacket->chkSumInfo = 0;
 #endif
-                if ((hPbufPkt->type_internal == PBUF_ROM)
-                    ||
-                    (hPbufPkt->type_internal == PBUF_REF))
-                {
-                    pCurrDmaPacket->disableCacheOps = true;
-                }
-                else
-                {
-                    pCurrDmaPacket->disableCacheOps = false;
-                }
-                if (hPbufPkt->next)
-                {
-                    Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt);
-                }
-
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0);
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
 
@@ -952,32 +939,16 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
             hPbufPkt = pbufQ_deQ(pbufPktQ);
             EnetDma_initPktInfo(pCurrDmaPacket);
 
-            pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPkt->payload;
+            Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
             pCurrDmaPacket->appPriv    = hPbufPkt;
-            pCurrDmaPacket->txTotalPktLen  = hPbufPkt->tot_len;
-            pCurrDmaPacket->bufPtrFilledLen = hPbufPkt->len;
-			if ((hPbufPkt->type_internal == PBUF_ROM)
-                ||
-                (hPbufPkt->type_internal == PBUF_REF))
-            {
-                pCurrDmaPacket->disableCacheOps = true;
-            }
-            else
-            {
-                pCurrDmaPacket->disableCacheOps = false;
-            }
-
             pCurrDmaPacket->node.next = NULL;
+            pCurrDmaPacket->txPortNum  = tx->portNum;
 #if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
             pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
 #else
             pCurrDmaPacket->chkSumInfo = 0;
 #endif
             ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0);
-            if (hPbufPkt->next)
-            {
-                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt);
-            }
 
             EnetQueue_enq(pDmaPktInfoQ, &(pCurrDmaPacket->node));
 
@@ -1291,9 +1262,7 @@ static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx)
                 LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktDeq);
 
                 EnetDma_initPktInfo(pCurrDmaPacket);
-                pCurrDmaPacket->bufPtr = (uint8_t *) hPbufPacket->payload;
-            	pCurrDmaPacket->bufPtrAllocLen = hPbufPacket->len;
-            	pCurrDmaPacket->bufPtrFilledLen = 0;
+                Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPacket, true);
 
                 /* Save off the PBM packet handle so it can be handled by this layer later */
                 pCurrDmaPacket->appPriv = (void *)hPbufPacket;
@@ -1337,7 +1306,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
         if (hPbufPacket)
         {
             Lwip2Enet_assert(hPbufPacket->payload != NULL);
-            uint32_t validLen = pCurrDmaPacket->bufPtrFilledLen;
+            uint32_t validLen = pCurrDmaPacket->sgList.list[0].segmentFilledLen;
 
             /* Fill in PBUF packet length field */
             hPbufPacket->len = validLen;

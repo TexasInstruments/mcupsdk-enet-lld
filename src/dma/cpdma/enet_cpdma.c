@@ -624,24 +624,31 @@ static int32_t EnetCpdma_netChClose(EnetDma_Handle hEnetDma, const EnetCpdma_ChI
     return (retVal);
 }
 
-static void EnetCpdma_setSOPInfo(EnetCpdma_cppiDesc *pDescThis, EnetCpdma_PktInfo *pPkt);
-static void EnetCpdma_setSOPInfo(EnetCpdma_cppiDesc *pDescThis, EnetCpdma_PktInfo *pPkt)
+static void EnetCpdma_setSOPInfo(EnetCpdma_cppiDesc *pDescThis, EnetCpdma_PktInfo *pPkt, uint32_t totalPktLen);
+static void EnetCpdma_setSOPInfo(EnetCpdma_cppiDesc *pDescThis, EnetCpdma_PktInfo *pPkt, uint32_t totalPktLen)
 {
     if(pPkt->chkSumInfo != 0)
     {
+#if ENET_CFG_IS_ON(DEV_ERROR)
+       if( (ENET_CPDMA_GET_CSUM_RESULT_BYTE(pPkt->chkSumInfo) > totalPktLen) ||
+           (ENET_CPDMA_GET_CSUM_START_BYTE(pPkt->chkSumInfo) + ENET_CPDMA_GET_CSUM_BYTE_COUNT(pPkt->chkSumInfo) - 1 > totalPktLen))
+       {
+           Enet_assert(false);
+       }
+#endif
         pDescThis->chkSumInfo = pPkt->chkSumInfo;
         pDescThis->pBuffer   = ENET_CPDMA_VIRT2SOCADDR((uint8_t *)(&(pDescThis->chkSumInfo)));
         pDescThis->bufOffLen = ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN;
-        pDescThis->pktFlgLen = (pPkt->txTotalPktLen + ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN)
-                              | ENET_CPDMA_DESC_PKT_FLAG_SOP
-                              | ENET_CPDMA_DESC_PKT_FLAG_OWNER
-                              | ENET_CPDMA_DESC_PKT_FLAG_CHKSUM_ENCAP;
+        pDescThis->pktFlgLen = (totalPktLen + ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN)
+                             | ENET_CPDMA_DESC_PKT_FLAG_SOP
+                             | ENET_CPDMA_DESC_PKT_FLAG_OWNER
+                             | ENET_CPDMA_DESC_PKT_FLAG_CHKSUM_ENCAP;
     }
     else
     {
-        pDescThis->pBuffer = ENET_CPDMA_VIRT2SOCADDR(pPkt->bufPtr);
-        pDescThis->bufOffLen = pPkt->bufPtrFilledLen;
-        pDescThis->pktFlgLen =  pPkt->txTotalPktLen
+        pDescThis->pBuffer = ENET_CPDMA_VIRT2SOCADDR(pPkt->sgList.list[0].bufPtr);
+        pDescThis->bufOffLen = pPkt->sgList.list[0].segmentFilledLen;
+        pDescThis->pktFlgLen  = totalPktLen
                               | ENET_CPDMA_DESC_PKT_FLAG_SOP
                               | ENET_CPDMA_DESC_PKT_FLAG_OWNER;
     }
@@ -689,6 +696,12 @@ static void EnetCpdma_enqueueTx( EnetCpdma_DescCh *pDescCh)
     volatile EnetCpdma_cppiDesc *pStartDesc = NULL;
     volatile EnetCpdma_cppiDesc *pEndDesc = NULL;
     uint32_t count;
+    uint32_t totalPktLen = 0;
+    uint32_t i = 0U;
+    uint32_t loopCount = 0U;
+    EnetCpdma_SGListEntry *list;
+    uint32_t scatterSegmentIndex = 0U;
+    bool isCsumIteration = false;
 
     pStartDesc = pDescCh->pDescWrite;
     /* Try to post any waiting packets if there is enough room */
@@ -696,122 +709,85 @@ static void EnetCpdma_enqueueTx( EnetCpdma_DescCh *pDescCh)
             (pDescCh->descFreeCount > 0))
     {
         pPkt = (EnetCpdma_PktInfo *)EnetQueue_deq(&pDescCh->waitQueue);
-        Enet_assert (pPkt != NULL);
-        /* Assign the pointer to "this" desc */
-        pDescThis = pDescCh->pDescWrite;
-        /* Move the write pointer and bump count */
-        if (pDescCh->pDescWrite == pDescCh->pDescLast)
+        Enet_assert (pPkt != NULL || pPkt->sgList.numScatterSegments >= 1);
+        totalPktLen = 0;
+        for (i = 0U; i < pPkt->sgList.numScatterSegments; i++)
         {
-            pDescCh->pDescWrite = pDescCh->pDescFirst;
+            totalPktLen += pPkt->sgList.list[i].segmentFilledLen;
         }
-        else
+        loopCount = 0U;
+        scatterSegmentIndex = 0U;
+        while (scatterSegmentIndex < pPkt->sgList.numScatterSegments)
         {
-            pDescCh->pDescWrite++;
-        }
-        pDescCh->descFreeCount--;
-        EnetCpdma_setSOPInfo(pDescThis, pPkt);
-        if(pPkt->chkSumInfo != 0)
-        {
-#if ENET_CFG_IS_ON(DEV_ERROR)
-           if( (ENET_CPDMA_GET_CSUM_RESULT_BYTE(pPkt->chkSumInfo) > pPkt->txTotalPktLen) ||
-               (ENET_CPDMA_GET_CSUM_START_BYTE(pPkt->chkSumInfo) + ENET_CPDMA_GET_CSUM_BYTE_COUNT(pPkt->chkSumInfo) - 1 > pPkt->txTotalPktLen))
-           {
-               Enet_assert(false);
-           }
-#endif
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
-            pDescThis->pNext =  ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
-            /* Fill the dequeued pPkt into the next desc */
             Enet_assert(pDescCh->descFreeCount > 0);
             pDescThis = pDescCh->pDescWrite;
             /* Move the write pointer and bump count */
-             if (pDescCh->pDescWrite == pDescCh->pDescLast)
-             {
-                 pDescCh->pDescWrite = pDescCh->pDescFirst;
-             }
-             else
-             {
-                 pDescCh->pDescWrite++;
-             }
-             pDescCh->descFreeCount--;
-             pDescThis->pBuffer = ENET_CPDMA_VIRT2SOCADDR(pPkt->bufPtr);
-             pDescThis->bufOffLen = pPkt->bufPtrFilledLen;
-             pDescThis->pktFlgLen = 0;
-        }
-        /*
-         * If this is the last descriptor, the forward pointer is (void *)0
-         * Otherwise; this desc points to the next desc in the wait queue
-         */
-        if (((count == 1U) && (pPkt->sgList.numScatterSegments == 0)) || (pDescCh->descFreeCount == 0U))
-        {
-            pDescThis->pNext = NULL;
-        }
-        else
-        {
-            pDescThis->pNext =  ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
-        }
-
-        if (pPkt->sgList.numScatterSegments == 0)
-        {
-            pDescThis->pktFlgLen |= ENET_CPDMA_DESC_PKT_FLAG_EOP;
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
-            if (pPkt->disableCacheOps != true)
+            if (pDescCh->pDescWrite == pDescCh->pDescLast)
             {
-                EnetOsal_cacheWbInv((void*)pPkt->bufPtr, pPkt->bufPtrFilledLen);
+                pDescCh->pDescWrite = pDescCh->pDescFirst;
             }
-        }
-        else
-        {
-            uint32_t i;
-
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
-            if (pPkt->disableCacheOps != true)
+            else
             {
-                EnetOsal_cacheWbInv((void*)pPkt->bufPtr, pPkt->bufPtrFilledLen);
+                pDescCh->pDescWrite++;
             }
-            for (i = 0;i <  pPkt->sgList.numScatterSegments; i++)
+            pDescCh->descFreeCount--;
+            pDescThis->pktFlgLen = 0;
+            isCsumIteration = false;
+            if (loopCount == 0)
             {
-                EnetCpdma_SGListEntry *list;
-
-                Enet_assert(pDescCh->descFreeCount > 0);
-                list = &pPkt->sgList.list[i];
-                /* Assign the pointer to "this" desc */
-                pDescThis = pDescCh->pDescWrite;
-                /* Move the write pointer and bump count */
-                if (pDescCh->pDescWrite == pDescCh->pDescLast)
+                /* Fill the SOP pkt in the first loop iteration. This could be first sg segment or chksuminfo */
+                EnetCpdma_setSOPInfo(pDescThis, pPkt, totalPktLen);
+                if (pPkt->chkSumInfo != 0)
                 {
-                    pDescCh->pDescWrite = pDescCh->pDescFirst;
+                    /* Mark this loop iteration for chksuminfo. sgList.list[0] is handled in the next loop */
+                    isCsumIteration = true;
                 }
                 else
                 {
-                    pDescCh->pDescWrite++;
+                    /* No chksuminfo, SOP is sgList.list[0], cacheWbInv the data */
+                    list = &pPkt->sgList.list[0];
+                    if (list->disableCacheOps != true)
+                    {
+                        EnetOsal_cacheWbInv((void*) list->bufPtr, list->segmentFilledLen);
+                    }
                 }
-                pDescCh->descFreeCount--;
-                pDescThis->pBuffer   = ENET_CPDMA_VIRT2SOCADDR(list->bufPtr);
-                pDescThis->bufOffLen = list->filledLen;
+            }
+            else
+            {
+                /* Handle the Non-SOP descriptors */
+                list = &pPkt->sgList.list[scatterSegmentIndex];
+                pDescThis->pBuffer = ENET_CPDMA_VIRT2SOCADDR(list->bufPtr);
+                pDescThis->bufOffLen = list->segmentFilledLen;
+                pDescThis->pktFlgLen = 0;
                 if (list->disableCacheOps != true)
                 {
-                    EnetOsal_cacheWbInv((void*)list->bufPtr, list->filledLen);
+                    EnetOsal_cacheWbInv((void*) list->bufPtr, list->segmentFilledLen);
                 }
-                if (i ==  (pPkt->sgList.numScatterSegments - 1))
+            }
+            if (scatterSegmentIndex == (pPkt->sgList.numScatterSegments - 1) && (!isCsumIteration))
+            {
+                pDescThis->pktFlgLen |= ENET_CPDMA_DESC_PKT_FLAG_EOP;
+                if ((count == 1U) || (pDescCh->descFreeCount == 0U))
                 {
-                    pDescThis->pktFlgLen = ENET_CPDMA_DESC_PKT_FLAG_EOP;
-                    if ((count == 1U)  || (pDescCh->descFreeCount == 0U))
-                    {
-                        pDescThis->pNext = NULL;
-                    }
-                    else
-                    {
-                        pDescThis->pNext =  ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
-                    }
+                    pDescThis->pNext = NULL;
                 }
                 else
                 {
-                    pDescThis->pktFlgLen = 0;
                     pDescThis->pNext = ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
                 }
-                EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
             }
+            else
+            {
+                Enet_assert(pDescCh->descFreeCount > 0);
+                pDescThis->pNext = ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
+            }
+            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
+            if (!isCsumIteration)
+            {
+                /* If this iteration is for chksuminfo, sgList.list[0] is not handled yet, do not increment the index */
+                scatterSegmentIndex++;
+            }
+            loopCount++;
         }
         pEndDesc = pDescThis;
         EnetQueue_enq(&pDescCh->descQueue, &pPkt->node);
@@ -933,7 +909,7 @@ static bool EnetCpdma_dequeueTx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *p
                 }
             }
 
-            if (pPkt->sgList.numScatterSegments == 0)
+            if (pPkt->sgList.numScatterSegments == 1)
             {
                 /* Move the read pointer */
                 if (pDescCh->pDescRead == pDescCh->pDescLast)
@@ -990,7 +966,7 @@ static bool EnetCpdma_dequeueTx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *p
                 Enet_assert (( pDesc->pktFlgLen & ENET_CPDMA_DESC_PKT_FLAG_EOQ) == 0);
                 Enet_assert (pDesc->pNext != NULL);
 
-                for (i = 0; i < pPkt->sgList.numScatterSegments;i++)
+                for (i = 1; i < pPkt->sgList.numScatterSegments;i++)
                 {
                     pDesc = pDescCh->pDescRead;
 
@@ -1188,11 +1164,11 @@ void EnetCpdma_enqueueRx(EnetCpdma_DescCh *pDescCh)
         {
             pDescThis->pNext = ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
         }
-        pDescThis->pBuffer   = ENET_CPDMA_VIRT2SOCADDR(pPkt->bufPtr);
-        pDescThis->bufOffLen = pPkt->bufPtrAllocLen;
+        pDescThis->pBuffer   = ENET_CPDMA_VIRT2SOCADDR(pPkt->sgList.list[0].bufPtr);
+        pDescThis->bufOffLen = pPkt->sgList.list[0].segmentAllocLen;
         pDescThis->pktFlgLen = ENET_CPDMA_DESC_PKT_FLAG_OWNER;
         /* Push the packet buffer on the local descriptor queue */
-        EnetOsal_cacheInv((void*)pPkt->bufPtr, pPkt->bufPtrAllocLen);
+        EnetOsal_cacheInv((void*)pPkt->sgList.list[0].bufPtr, pPkt->sgList.list[0].segmentAllocLen);
         EnetOsal_descCacheWbInv(pDescCh->hEnetDma,pDescThis);
         EnetQueue_enq(&pDescCh->descQueue, &pPkt->node);
     }
@@ -1257,6 +1233,7 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
     volatile EnetCpdma_cppiDesc *pDescFirst = NULL;
     volatile EnetCpdma_cppiDesc *pDescLast = NULL;
     uintptr_t key;
+    EnetCpdma_SGListEntry *list;
     bool matchFound = false;
 
     key = EnetOsal_disableAllIntr();
@@ -1319,16 +1296,17 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
             Enet_assert(pPkt != NULL);
 
             /* Fill in the necessary packet header fields */
-            pPkt->bufPtrFilledLen = (pktFlgLen & ENET_CPDMA_DESC_PSINFO_RX_PACKET_LEN_MASK);
+            list = &pPkt->sgList.list[0];
+            list->segmentFilledLen = (pktFlgLen & ENET_CPDMA_DESC_PSINFO_RX_PACKET_LEN_MASK);
             pPkt->chkSumInfo = 0;
 
             if (pktFlgLen & ENET_CPDMA_DESC_PSINFO_RX_CHECKSUM_INFO_MASK)
             {
                 /* fall here if CHECKSUM OFFLOAD to CPSW is enabled */
                 /* First,remove the THOST encapsulated word (suffixed) from the packet*/
-                pPkt->bufPtrFilledLen -= ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN;
+                list->segmentFilledLen -= ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN;
                 /* Then, Copy Checksum encapsulation word*/
-                memcpy(&pPkt->chkSumInfo, &pPkt->bufPtr[pPkt->bufPtrFilledLen], ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN);
+                memcpy(&pPkt->chkSumInfo, &(list->bufPtr[list->segmentFilledLen]), ENET_CPDMA_ENCAPINFO_CHECKSUM_INFO_LEN);
             }
 
             pPkt->rxPortNum = ENET_MACPORT_DENORM(((pktFlgLen & ENET_CPDMA_DESC_PSINFO_FROM_PORT_MASK)
@@ -2640,17 +2618,21 @@ int32_t EnetDma_submitTxPkt(EnetDma_TxChHandle hTxCh,
 
 void EnetDma_initPktInfo(EnetDma_Pkt *pktInfo)
 {
+    uint32_t i;
+
     memset(&pktInfo->node, 0U, sizeof(pktInfo->node));
-    pktInfo->bufPtr                = NULL;
-    pktInfo->bufPtrAllocLen        = 0U;
-    pktInfo->bufPtrFilledLen       = 0U;
-    pktInfo->txTotalPktLen         = 0U;
+    for (i = 0; i < ENET_CPDMA_CPSW_MAX_SG_LIST; i++)
+    {
+        pktInfo->sgList.list[i].bufPtr = NULL;
+        pktInfo->sgList.list[i].segmentFilledLen = 0U;
+        pktInfo->sgList.list[i].segmentAllocLen = 0U;
+        pktInfo->sgList.list[i].disableCacheOps = false;
+    }
     pktInfo->chkSumInfo            = 0U;
     pktInfo->appPriv               = NULL;
     pktInfo->tsInfo.enableHostTxTs = false;
     pktInfo->txPortNum             = ENET_MAC_PORT_INV;
     pktInfo->sgList.numScatterSegments = 0U;
-    pktInfo->disableCacheOps           = false;
     ENET_UTILS_SET_PKT_DRIVER_STATE(&pktInfo->pktState,
                                     (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
     return;

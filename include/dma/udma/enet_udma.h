@@ -109,6 +109,18 @@ extern "C" {
 */
 #define ENET_UDMA_RXMTU_ALIGN                                (1U << 5U)
 
+/*! Maximum number of scatter gather segments supported in a packet */
+#define ENET_UDMA_CPSW_MAX_SG_LIST                           (4U)
+
+/*! \brief Index of the Host Packet(first packet) descriptor */
+#define ENET_UDMA_CPSW_HOSTPKTDESC_INDEX                     (0U)
+
+/*! \brief Index of the first Host Buffer descriptor */
+#define ENET_UDMA_CPSW_HOSTBUFDESC_INDEX                     (1U)
+
+/*! Count of Host Buffer Descriptor */
+#define ENET_UDMA_CPSW_MAX_HOSTBUFDESC_COUNT                 (ENET_UDMA_CPSW_MAX_SG_LIST - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX)
+
 /*! \brief Source tag low mask of descriptor (used to get packet's received port number) */
 #define ENET_UDMA_HPD_SRC_TAG_LOW_MASK                       (0xFF)
 
@@ -211,21 +223,56 @@ typedef struct EnetUdma_PktTsInfo_s
  * This structure contains packet info used by application for getting/passing
  * the packet data with DMA module.
  */
+
+/*!
+ * \brief Transmit Packet scatter gather list entry.
+ *
+ * This structure contains info on scatter-gather fragments used for
+ * transmitting packets when packets are split into list of
+ * discontinuous fragments called scatter-gather list. Each sg list
+ * has a fragment of the packet
+ */
+typedef struct EnetUdma_SGListEntry_s
+{
+    /*! Pointer to scatter fragment */
+    uint8_t *bufPtr;
+
+    /*! Length of valid data in the scatter fragment */
+    uint32_t segmentFilledLen;
+
+    /*! Length of allocated buffer for scatter fragment */
+    uint32_t segmentAllocLen;
+
+    bool disableCacheOps;
+} EnetUdma_SGListEntry;
+
+/*!
+ * \brief Transmit packet scatter list info
+ *
+ * This structure contains info on the scatter list used for
+ * transmitting packets that are split into list of fragments.
+ * Using a scatter list allows application to transmit packet
+ * that are not a single continuous buffer but a list of
+ * scatter fragments chained together. Support for scatter
+ * list is needed for supporting zero copy in network
+ * stacks protocols like UDP
+ */
+typedef struct EnetUdma_SGList_s
+{
+    /*! Number of valid scatter segments in the packet to be transmitted
+     *  If packet is made of a single continuous buffer then numScatterSegments = 1
+     */
+    uint32_t numScatterSegments;
+    /*! Array of scatterList having info on each individual scatter segment */
+    EnetUdma_SGListEntry list[ENET_UDMA_CPSW_MAX_SG_LIST];
+} EnetUdma_SGList;
+
 typedef struct EnetUdma_PktInfo_s
 {
     /*! Pointer to next buffer.
      *  Note: Keep EnetQ_Node as first member always as driver uses generic
      *  queue functions and dereferences to this member */
     EnetQ_Node node;
-
-    /*! Pointer to data buffer */
-    uint8_t *bufPtr;
-
-    /*! Original length of the data buffer passed */
-    uint32_t orgBufLen;
-
-    /*! Actual filled buffer length while receiving/transmitting data with DMA */
-    uint32_t userBufLen;
 
     /*! Pointer to application layer specific data blob */
     void *appPriv;
@@ -282,6 +329,13 @@ typedef struct EnetUdma_PktInfo_s
     /*! Transmit timestamp id. Used to correleate request with response */
     uint32_t txTsId;
 
+    /*! Scatter Gather list information for packets to be transmitted.
+     * A single tx packet can be fragmented across multiple chunks,
+     * the bufPtrs and filled len of each segment are contained here.
+     * sgList.numScatterSegments = 1 by default.
+     */
+    EnetUdma_SGList sgList;
+
 }EnetUdma_PktInfo;
 
 /*!
@@ -330,6 +384,11 @@ typedef struct EnetUdma_DmaDesc_s
      * Note: This MUST be first member as it is typecasted to
      * #EnetUdma_CpswHpdDesc */
     EnetUdma_CpswHpdDesc hpdDesc;
+
+    struct EnetUdma_HBDDesc_s
+    {
+        CSL_UdmapCppi5HMPD desc __attribute__ ((aligned(ENETDMA_CACHELINE_ALIGNMENT)));
+    } hostBufDesc[ENET_UDMA_CPSW_MAX_HOSTBUFDESC_COUNT];
 
     /*! Pointer to next DMA desc in the queue */
     struct EnetUdma_DmaDesc_s *pNextDesc;
