@@ -94,6 +94,18 @@ extern "C" {
 
 #define LWIP_RXFLOW_2_PORTIDX(num) (num - 1U)
 
+/* Netif mapping to Rx port
+ * First netif --> ENET_MAC_PORT_FIRST
+ * Second netif--> ENET_MAC_PORT_2 and so on.
+ */
+#define LWIP_NETIF_IDX_2_RX_PORT(num) (num)
+
+/* Netif mapping to Tx port
+ * First netif --> ENET_MAC_PORT_FIRST
+ * Second netif--> ENET_MAC_PORT_2 and so on.
+ */
+#define LWIP_NETIF_IDX_2_TX_PORT(num) (num)
+
 #if (ENET_CFG_IS_OFF(CPSW_CSUM_OFFLOAD_SUPPORT))
 #if (!(CHECKSUM_CHECK_UDP || CHECKSUM_CHECK_TCP || CHECKSUM_GEN_UDP || CHECKSUM_GEN_TCP))
 #error "Hardware csum offload disabled and lwipopts disables sw csum also.Fix lwiptops.h"
@@ -325,7 +337,7 @@ typedef struct Lwip2Enet_Obj_s
 
     Lwip2Enet_TxHandle mapNetif2Tx[ENET_CFG_NETIF_MAX];
 
-    struct netif *mapRx2Netif[ENET_CFG_NETIF_MAX];
+    struct netif *mapRxPort2Netif[CPSW_STATS_MACPORT_MAX];
 
     Enet_MacPort mapNetif2TxPortNum[ENET_CFG_NETIF_MAX];
 

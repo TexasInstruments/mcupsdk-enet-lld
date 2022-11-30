@@ -99,15 +99,15 @@ static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
 static Lwip2Enet_RxHandle Lwip2Enet_initRxObj(uint32_t rxCh,
                                               Lwip2Enet_Handle hLwip2Enet);
 
-static void mapNetif2Tx(struct netif *netif,
-                        bool isDirected,
-                        Lwip2Enet_TxHandle hTxLwip2Enet,
-                        Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_mapNetif2Tx(struct netif *netif,
+                                  bool isDirected,
+                                  Lwip2Enet_TxHandle hTxLwip2Enet,
+                                  Lwip2Enet_Handle hLwip2Enet);
 
-static void mapNetif2Rx(struct netif *netif,
-                        bool isDirected,
-                        Lwip2Enet_RxHandle hRxLwip2Enet,
-                        Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_mapNetif2Rx(struct netif *netif,
+                                  bool isDirected,
+                                  Lwip2Enet_RxHandle hRxLwip2Enet,
+                                  Lwip2Enet_Handle hLwip2Enet);
 
 static void Lwip2Enet_notifyRxPackets(void *cbArg);
 
@@ -238,9 +238,14 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
         {
             hLwip2Enet->mapNetif2Rx[i] = NULL;
             hLwip2Enet->mapNetif2Tx[i] = NULL;
-            hLwip2Enet->mapRx2Netif[i] = NULL;
             hLwip2Enet->mapNetif2TxPortNum[i] = ENET_MAC_PORT_INV;
         }
+
+        for (i = 0U; i < CPSW_STATS_MACPORT_MAX; i++)
+        {
+            hLwip2Enet->mapRxPort2Netif[i] = NULL;
+        }
+
 
         /* First init tasks, semaphores and clocks. This is required because
          * EnetDma event cb ISR can happen immediately after opening rx flow
@@ -270,17 +275,17 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
     for(i=0U; i < netifInfo.numTxChannels; i++)
     {
         hTxLwip2Enet = Lwip2Enet_initTxObj(i, hLwip2Enet);
-        mapNetif2Tx(netif, netifInfo.isDirected, hTxLwip2Enet, hLwip2Enet);
+        Lwip2Enet_mapNetif2Tx(netif, netifInfo.isDirected, hTxLwip2Enet, hLwip2Enet);
     }
 
     for(i=0U; i < netifInfo.numRxChannels; i++)
     {
         hRxLwip2Enet = Lwip2Enet_initRxObj(i, hLwip2Enet);
-        mapNetif2Rx(netif, netifInfo.isDirected, hRxLwip2Enet, hLwip2Enet);
+        Lwip2Enet_mapNetif2Rx(netif, netifInfo.isDirected, hRxLwip2Enet, hLwip2Enet);
     }
     /* Updating the netif params */
     EnetUtils_copyMacAddr(netif->hwaddr ,&hLwip2Enet->macAddr[netif->num][0U]);
-    netif->hwaddr_len = 6U;
+    netif->hwaddr_len = ENET_MAC_ADDR_LEN;
     netif->state = (void *)hLwip2Enet;
     hLwip2Enet->netif[netif->num] = netif;
 
@@ -322,7 +327,7 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
     return hLwip2Enet;
 }
 
-static void mapNetif2Tx(struct netif *netif,
+static void Lwip2Enet_mapNetif2Tx(struct netif *netif,
                         bool isDirected,
                         Lwip2Enet_TxHandle hTxLwip2Enet,
                         Lwip2Enet_Handle hLwip2Enet)
@@ -331,21 +336,21 @@ static void mapNetif2Tx(struct netif *netif,
 
     if(isDirected)
     {
-        hLwip2Enet->mapNetif2TxPortNum[netif->num] = ENET_MACPORT_DENORM(netif->num);
+        hLwip2Enet->mapNetif2TxPortNum[netif->num] = ENET_MACPORT_DENORM(LWIP_NETIF_IDX_2_TX_PORT(netif->num));
     }
 }
 
-static void mapNetif2Rx(struct netif *netif,
+static void Lwip2Enet_mapNetif2Rx(struct netif *netif,
                         bool isDirected,
                         Lwip2Enet_RxHandle hRxLwip2Enet,
                         Lwip2Enet_Handle hLwip2Enet)
 {
 
     hLwip2Enet->mapNetif2Rx[netif->num] = hRxLwip2Enet;
-    hLwip2Enet->mapRx2Netif[netif->num] = netif;
+    hLwip2Enet->mapRxPort2Netif[LWIP_NETIF_IDX_2_RX_PORT(netif->num)] = netif;
 #if (ENET_ENABLE_PER_ICSSG == 1)
     /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the hRxLwip2Enet->flowIdx to map to netif*/
-    hLwip2Enet->mapRx2Netif[LWIP_RXFLOW_2_PORTIDX(hRxLwip2Enet->flowIdx)] = netif;
+    hLwip2Enet->mapRxPort2Netif[LWIP_RXFLOW_2_PORTIDX(hRxLwip2Enet->flowIdx)] = netif;
 #endif
     /* For non-directed packets, we map both ports to the first netif*/
     if(!isDirected)
@@ -354,7 +359,7 @@ static void mapNetif2Rx(struct netif *netif,
         {
             if(portIdx < ENET_CFG_NETIF_MAX)
             {
-            hLwip2Enet->mapRx2Netif[portIdx] = netif;
+            hLwip2Enet->mapRxPort2Netif[portIdx] = netif;
             }
         }
     }
@@ -536,22 +541,6 @@ static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
     return hTxHandle;
 }
 
-
-/*!
- *  @b Lwip2Enet_setRx
- *  @n
- *      Sets the filter for Ethernet peripheral. Sets up the multicast addresses in
- *      the ALE.
- *
- *  \param[in]  hLwip2Enet
- *      Lwip2Enet_object structure pointer.
- *
- *  \retval
- *      void
- */
-void Lwip2Enet_setRx(Lwip2Enet_Handle hLwip2Enet)
-{
-}
 static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx)
 {
     struct pbuf *pbufNext = pbuf;
