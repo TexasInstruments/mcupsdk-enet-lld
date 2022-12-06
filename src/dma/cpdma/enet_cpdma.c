@@ -709,7 +709,10 @@ static void EnetCpdma_enqueueTx( EnetCpdma_DescCh *pDescCh)
             (pDescCh->descFreeCount > 0))
     {
         pPkt = (EnetCpdma_PktInfo *)EnetQueue_deq(&pDescCh->waitQueue);
-        Enet_assert (pPkt != NULL || pPkt->sgList.numScatterSegments >= 1);
+        Enet_assert(pPkt != NULL);
+        Enet_assert(pPkt->sgList.numScatterSegments > 0);
+        Enet_assert(pPkt->sgList.numScatterSegments <= ENET_CPDMA_CPSW_MAX_SG_LIST);
+
         totalPktLen = 0;
         for (i = 0U; i < pPkt->sgList.numScatterSegments; i++)
         {
