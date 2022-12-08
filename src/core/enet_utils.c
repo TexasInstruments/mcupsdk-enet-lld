@@ -69,6 +69,9 @@
                NOP10; \
                NOP10
 
+/* Max value reported by CycleCounterP_getTimeStamp() */
+#define ENET_UTILS_TIMESTAMP_MAX (0xFFFFFFFFULL)
+
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -198,12 +201,18 @@ void EnetUtils_delayTicks(const uint32_t delayTicks)
     {
         NOP50;
         currentTick = (uint64_t)CycleCounterP_getCount32();
+        if ((currentTick < endTick) &&
+            ((endTick - currentTick) > delayTicks))
+        {
+            currentTick += ENET_UTILS_TIMESTAMP_MAX + 1ULL;
+        }
     }
     return;
 }
 
 void EnetUtils_delayNs(const uint32_t delayNs)
 {
+    uint64_t delayTicks = (uint64_t)CycleCounterP_nsToTicks(delayNs);
     uint64_t currentTick   = (uint64_t)CycleCounterP_getCount32();
     const uint64_t endTick = currentTick + (uint64_t)CycleCounterP_nsToTicks(delayNs);
 
@@ -211,6 +220,11 @@ void EnetUtils_delayNs(const uint32_t delayNs)
     {
         NOP50;
         currentTick = (uint64_t)CycleCounterP_getCount32();
+        if ((currentTick < endTick) &&
+            ((endTick - currentTick) > delayTicks))
+        {
+            currentTick += ENET_UTILS_TIMESTAMP_MAX + 1ULL;
+        }
     }
     return;
 }
