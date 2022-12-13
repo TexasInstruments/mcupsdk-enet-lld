@@ -1238,9 +1238,11 @@ void IcssgUtils_fwConfig(Icssg_Handle hIcssg,
     /* Random number for Backoff timer calculation */
     Icssg_wr32(hIcssg, dram + HD_RAND_SEED_OFFSET, (uint32_t)rand());
 
+/*  Moved MII RXCFG configuration to firmware (done by RX_PRU)
     // Program RXCFG0/1 and TXCFG0/1
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_CFG_REGS_BASE + CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_CFG_RXCFG0, 0x213U);
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_CFG_REGS_BASE + CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_CFG_RXCFG1, 0x21BU);
+*/
 
     if (EnetMacPort_isRgmii(&cfg->mii))
     {

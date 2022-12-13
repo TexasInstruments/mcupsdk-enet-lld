@@ -1,8 +1,8 @@
-/* 
+/*
  * TX_PRU_SLICE0_bin.h
- * 
- * 
- * Copyright (c) 2015 - 2016, Texas Instruments Incorporated
+ *
+ *
+ * Copyright (c) 2023, Texas Instruments Incorporated
  * All rights reserved not granted herein.
  *
  * Limited License.
@@ -21,7 +21,7 @@
  * code license limitations below) in the documentation and/or other materials provided
  * with the distribution
  *
- * Redistribution and use in binary form, without modification, are permitted provided 
+ * Redistribution and use in binary form, without modification, are permitted provided
  * that the following conditions are met:
  *       No reverse engineering, decompilation, or disassembly of this software is
  *       permitted with respect to any software provided in binary form.
@@ -36,19 +36,19 @@
  *       Any redistribution and use of any object code compiled from the source code and
  *   any resulting derivative works, are licensed by TI for use only with TI Devices.
  *
- * Neither the name of Texas Instruments Incorporated nor the names of its suppliers 
- * may be used to endorse or  promote products derived from this software without 
+ * Neither the name of Texas Instruments Incorporated nor the names of its suppliers
+ * may be used to endorse or  promote products derived from this software without
  * specific prior written permission.
  *
  * DISCLAIMER.
  *
  * THIS SOFTWARE IS PROVIDED BY TI AND TI'S LICENSORS "AS IS" AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
- * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND 
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND
  * TI'S LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
@@ -65,21 +65,21 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0xe1002283,
 0x240002c2,
 0x24a40082,
-0x2403a2e3,
-0x2403a4e4,
-0x2403a2e5,
+0x2403b2e3,
+0x2403b4e4,
+0x2403b2e5,
 0xe108a283,
-0x2403a2e3,
-0x24045ce4,
+0x2403b2e3,
+0x240478e4,
 0xe1146283,
 0x240002c2,
 0x24a40082,
-0x2403a2e3,
-0x2403a2e4,
-0x2403a2e5,
+0x2403b2e3,
+0x2403b2e4,
+0x2403b2e5,
 0xe11ca283,
-0x2403a2e3,
-0x2403a2e4,
+0x2403b2e3,
+0x2403b2e4,
 0xe1286283,
 0x240002c2,
 0x24a40082,
@@ -269,14 +269,14 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x90843883,
 0x910c2b84,
 0x60e3e402,
-0x7b000025,
-0x7b0000f7,
+0x7b000026,
+0x2102d300,
 0x9104268b,
 0xc90feb04,
 0x24008601,
 0x81440901,
-0x2102ce00,
-0xd317fe1e,
+0x2102d300,
+0xd317fe1f,
 0xc9003423,
 0xc904fe21,
 0xd1073420,
@@ -311,7 +311,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x24000012,
 0x2f320012,
 0x2eff8994,
-0x2102ce00,
+0x2102d300,
 0x9188180b,
 0x51000b1c,
 0x1f0ffefe,
@@ -428,7 +428,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x2405a1ab,
 0x80ab190b,
 0x818c180b,
-0xc90cfe26,
+0xc90cfe27,
 0x2400008a,
 0x2f18008a,
 0x2e980f82,
@@ -438,6 +438,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x79000002,
 0x916c1b9c,
 0x91103a85,
+0x0b019cfc,
 0x0053fcfc,
 0x010cfcfc,
 0x108888fd,
@@ -491,14 +492,14 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x79000008,
 0x2400008a,
 0x2f181082,
-0xcb04fe1a,
-0xd3003419,
-0xd310fe18,
-0xcb00fe17,
+0xcb04fe1e,
+0xd300341d,
+0xd310fe1c,
+0xcb00fe1b,
 0x79000005,
 0xc904fe26,
 0xd04d1907,
-0xd310fe13,
+0xd310fe17,
 0xc900fe05,
 0x934c3894,
 0x1d00fefe,
@@ -516,7 +517,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x32800000,
 0x79000003,
 0x32800000,
-0x7b000001,
+0x7b000005,
 0x24006401,
 0x81440901,
 0x2e940193,
@@ -540,7 +541,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0xd04d1902,
 0x1f013434,
 0xc9073402,
-0x790000e9,
+0x790000ed,
 0x0902148b,
 0x240e00cb,
 0x00cb8b8b,
@@ -553,21 +554,25 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x091879eb,
 0x00ebf5f5,
 0x240000d7,
-0xd10674ce,
+0xd10674d2,
 0xd1077408,
-0xd108fecc,
+0xd108fed0,
 0xc90cfe06,
 0x2408fa8b,
 0x090114cb,
 0x00cb8b8b,
 0x908b198b,
-0x60978bc6,
+0x60978bca,
 0x2eb20012,
 0xd703f2ff,
 0x10f5f5f3,
 0xd1077404,
 0x24000792,
 0x24004058,
+0x79000007,
+0xd102fe04,
+0x24000492,
+0x24002058,
 0x79000003,
 0x24000592,
 0x24002058,
@@ -831,10 +836,10 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x10d09e9e,
 0x8091398f,
 0x91741a06,
-0xc9000699,
+0xc90006a4,
 0x24000126,
 0x81741a26,
-0x81b01926,
+0x81b41926,
 0x2483fe82,
 0x90821c06,
 0x69ef0605,
@@ -868,7 +873,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x80857c82,
 0x24846885,
 0x90851c02,
-0x51000212,
+0x51000213,
 0x2483ec82,
 0x90827c82,
 0x0b17e2e6,
@@ -886,6 +891,17 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x24846885,
 0x24000002,
 0x80851c02,
+0x1f03fefe,
+0xc903fe0a,
+0x91143a06,
+0x2483f882,
+0x90823c07,
+0x00e6e7e6,
+0xc917e60d,
+0x2eff8187,
+0x80823c07,
+0x1d03fefe,
+0x79000003,
 0x91143a06,
 0xc917e607,
 0x2483f482,
@@ -986,8 +1002,8 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x2f181082,
 0x21007600,
 0x2efe0060,
-0x2103a300,
-0xc90034b6,
+0x2103b300,
+0xc90034c2,
 0x2f852780,
 0x2f85059a,
 0xd102fe0f,
@@ -1001,13 +1017,13 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x916c1b8b,
 0x0b018b8b,
 0xd101fe03,
-0x5f088bfa,
+0x5f068bfa,
 0x79000006,
 0x5f038bf8,
 0x79000004,
 0x2e940193,
 0x117f5353,
-0x491f539e,
+0x491f53aa,
 0xc916fe53,
 0xc9003452,
 0x913c1b1b,
@@ -1075,7 +1091,7 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x808b0996,
 0x2eff8994,
 0x1f18fefe,
-0x7900005a,
+0x79000066,
 0x24008a01,
 0x81440901,
 0x2eb20012,
@@ -1090,10 +1106,10 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x808b0996,
 0x242000df,
 0x2eff8994,
-0x7900004b,
+0x79000057,
 0xc911fe02,
-0x79000049,
-0xd1033448,
+0x79000055,
+0xd1033454,
 0xc9077409,
 0xd1043408,
 0xf103160b,
@@ -1139,6 +1155,18 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x79000002,
 0x240d448b,
 0x808b0996,
+0xd102fe0c,
+0xc907740b,
+0x5100201f,
+0x10f5f5f3,
+0x24000492,
+0x2f320392,
+0x2eb20012,
+0xd703f2ff,
+0x0020d7d7,
+0x00209898,
+0x0058f5f5,
+0x7900000a,
 0x51002015,
 0x0020d7d7,
 0x00209898,
@@ -1168,9 +1196,9 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x2efe0060,
 0x2f852780,
 0x2f85059a,
-0x21045900,
+0x21047500,
 0x2efe0060,
-0x21045b00,
+0x21047700,
 0x2f053b80,
 0x91203994,
 0x4902f41a,
@@ -1203,4 +1231,4 @@ const unsigned int TX_PRU_SLICE0_b00_Swt[]= {
 0x81203994,
 0x2efe0060,
 0x2e853b80,
-0x21047c00 };
+0x21049800 };

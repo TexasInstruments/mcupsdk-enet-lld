@@ -1,8 +1,8 @@
-/* 
+/*
  * RTU0_SLICE0_bin.h
- * 
- * 
- * Copyright (c) 2015 - 2016, Texas Instruments Incorporated
+ *
+ *
+ * Copyright (c) 2023, Texas Instruments Incorporated
  * All rights reserved not granted herein.
  *
  * Limited License.
@@ -21,7 +21,7 @@
  * code license limitations below) in the documentation and/or other materials provided
  * with the distribution
  *
- * Redistribution and use in binary form, without modification, are permitted provided 
+ * Redistribution and use in binary form, without modification, are permitted provided
  * that the following conditions are met:
  *       No reverse engineering, decompilation, or disassembly of this software is
  *       permitted with respect to any software provided in binary form.
@@ -36,19 +36,19 @@
  *       Any redistribution and use of any object code compiled from the source code and
  *   any resulting derivative works, are licensed by TI for use only with TI Devices.
  *
- * Neither the name of Texas Instruments Incorporated nor the names of its suppliers 
- * may be used to endorse or  promote products derived from this software without 
+ * Neither the name of Texas Instruments Incorporated nor the names of its suppliers
+ * may be used to endorse or  promote products derived from this software without
  * specific prior written permission.
  *
  * DISCLAIMER.
  *
  * THIS SOFTWARE IS PROVIDED BY TI AND TI'S LICENSORS "AS IS" AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
- * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND 
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND
  * TI'S LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
@@ -63,21 +63,21 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0xe1003293,
 0x240002d2,
 0x24a10092,
-0x240223f3,
-0x24011ff4,
-0x240223f5,
+0x24022bf3,
+0x240126f4,
+0x24022bf5,
 0xe108b293,
-0x240223f3,
-0x240153f4,
+0x24022bf3,
+0x24015af4,
 0xe1147293,
 0x240002d2,
 0x24a10092,
-0x240223f3,
-0x240223f4,
-0x240223f5,
+0x24022bf3,
+0x24022bf4,
+0x24022bf5,
 0xe11cb293,
-0x240223f3,
-0x240223f4,
+0x24022bf3,
+0x24022bf4,
 0xe1287293,
 0x240002d2,
 0x24a10092,
@@ -135,7 +135,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x240000c0,
 0x24040880,
 0x248301c1,
-0x24002d81,
+0x24003481,
 0x240019c2,
 0x24830682,
 0x2eff898d,
@@ -178,6 +178,9 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x6f08e1fd,
 0x2eff8180,
 0x32800000,
+0x2400aa02,
+0x2400b0c2,
+0x80c21802,
 0x2483fc81,
 0x90817c82,
 0x51000230,
@@ -250,6 +253,10 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x80810122,
 0x24000322,
 0x80810122,
+0x91a81853,
+0x91a81973,
+0x58537302,
+0x1f079e9e,
 0x2ef80381,
 0xc910e11f,
 0x240d40ea,
@@ -281,14 +288,14 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x240029ff,
 0x79000002,
 0x80ea0981,
-0x2100c300,
-0x23036795,
+0x2100ca00,
+0x23036f95,
 0x2ea80181,
 0x110fe1e1,
-0x5700e195,
+0x5700e191,
 0x51002e05,
 0x102ee152,
-0x57005292,
+0x5700528e,
 0x105252e1,
 0x79000006,
 0x69000e0b,
@@ -301,7 +308,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0xd102e124,
 0xd101e11f,
 0xd100e11a,
-0x21007b00,
+0x21007e00,
 0x24000017,
 0xc8170e0b,
 0x011617ea,
@@ -312,7 +319,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x10c2c2ce,
 0x10e3e3ef,
 0x10f0f0e4,
-0x230339d5,
+0x230341d5,
 0x51003704,
 0x01011717,
 0x6f0417f4,
@@ -325,23 +332,23 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x2e8f0f82,
 0x32800000,
 0x10e6e6e1,
-0x2102a900,
+0x2102b100,
 0x2ea88981,
 0x24000017,
-0x23022595,
-0x7f000069,
+0x23022d95,
+0x7f000065,
 0x2ea90981,
 0x24000117,
-0x23022595,
-0x7f000065,
+0x23022d95,
+0x7f000061,
 0x2ea98981,
 0x24000217,
-0x23022595,
-0x7f000061,
+0x23022d95,
+0x7f00005d,
 0x2eaa0981,
 0x24000317,
-0x23022595,
-0x21007b00,
+0x23022d95,
+0x21007e00,
 0x2f853380,
 0x2e878a02,
 0xc9020702,
@@ -393,7 +400,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x80ea0983,
 0x2efe0060,
 0x2f853380,
-0x21015200,
+0x21015900,
 0x2f853380,
 0x2e878a02,
 0x2eff839a,
@@ -402,26 +409,26 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x2e90040a,
 0xc9044a03,
 0x91281804,
-0x7900000c,
+0x7900000d,
 0xd1069e04,
 0xd1065a03,
 0x912a1804,
-0x79000008,
+0x79000009,
 0x27015124,
 0x51202405,
 0x013c2493,
 0x90931804,
 0x09052424,
-0x79000002,
+0x79000003,
 0x24000004,
-0x11070404,
+0x09052424,
 0x69014407,
 0x68046406,
 0x1f08c3c3,
 0x2f078982,
 0x24008e01,
 0x81400901,
-0x790000b2,
+0x790000b3,
 0x240800d2,
 0x24000232,
 0x10040412,
@@ -493,7 +500,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x2f078982,
 0x01240401,
 0x81440901,
-0x7900006a,
+0x7900006b,
 0x240800d2,
 0x24000332,
 0x10040412,
@@ -503,7 +510,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x2f078982,
 0x01240401,
 0x81440901,
-0x79000060,
+0x79000061,
 0x2e90040a,
 0x24000013,
 0xc9020c05,
@@ -543,10 +550,11 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0xc9099e02,
 0xc904c302,
 0x1f0ec3c3,
-0xc90ec30c,
+0xc90ec30d,
 0x01340493,
 0x9093187a,
-0xc9077a08,
+0xc9077a09,
+0xd1079e08,
 0x1f0fc3c3,
 0x2f0780c3,
 0x240bb885,
@@ -594,16 +602,16 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x80d25cc5,
 0x0106d2d2,
 0x80d25cce,
-0x240d50d2,
+0x240d4cd2,
 0x80d20992,
 0xc9020702,
 0x2f06039a,
 0x2f0780c3,
 0x2efe0060,
 0x2f853380,
-0x21022200,
+0x21022a00,
 0x2efe0060,
-0x21022400,
+0x21022c00,
 0x6900411b,
 0x1107644f,
 0x69014403,
@@ -712,7 +720,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x24000212,
 0x81802592,
 0x10e1e1e6,
-0x230339d5,
+0x230341d5,
 0x510137a6,
 0x10e6e6e1,
 0x79000015,
@@ -845,7 +853,7 @@ const unsigned int RTU0_SLICE0_b00_Swt[]= {
 0x240029ff,
 0x79000002,
 0x80ea0981,
-0x2102f700,
+0x2102ff00,
 0x7f0000c1,
 0xc9026f1e,
 0xc9014e03,

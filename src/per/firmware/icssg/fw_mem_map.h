@@ -83,12 +83,14 @@
 #define NRT_NUM_HOST_EGRESS_QUEUES              (4)                 /* Number of Host Egress queues for both ports. 2 each */
 #define NRT_PORT_QUEUE_SIZE                     (25 * 1024)         /* 25kB per port queue */
 #define NRT_HOST_QUEUE_SIZE                     (6400)              /* ~6.5kB per host queue */
+#define NRT_HOST_EGRESS_QUEUE_SIZE              (12 * 1024)         /* 12kB per host Egress queue */
 #define NRT_RESERVED_MEM                        (2048)
 
 /* Descriptor Q sizes */
 /*  See design doc. It's calculated as ((queue size) / 64) * 4 plus some additional descriptors for margin of safety */
 #define NRT_PORT_DESC_QUEUE_SIZE                ((((NRT_PORT_QUEUE_SIZE + NRT_RESERVED_MEM) / 64) + 29) * 4)     /*  for 25kB queue size */
 #define NRT_HOST_DESC_QUEUE_SIZE                ((((NRT_HOST_QUEUE_SIZE + NRT_RESERVED_MEM) / 64) + 9) * 4)   /*  for ~6kB queue size */
+#define NRT_HOST_EGRESS_DESC_QUEUE_SIZE         (((NRT_HOST_EGRESS_QUEUE_SIZE / 64) + 4) * 4)   /*  for 12kB queue size */
 
 #define NRT_PORT_DESC_SMEM_SIZE                 0xE68       /* FIXME : Magic number? */
 #define NRT_HOST_DESC_SMEM_SIZE                 0x468       /* FIXME : Magic number? */
@@ -161,6 +163,10 @@
 #define FW_LINK_SPEED_10M                          (0x02)
 #define FW_LINK_SPEED_100M_HD                      (0x81)
 #define FW_LINK_SPEED_10M_HD                       (0x82)
+#define FW_LINK_SPEED_BIT_CLR_MASK                 (0xF9)
+
+/* RTU PRU SYNC constants */
+#define PRU_RTU_INIT_SYNC_CONST                    (0xAA)
 
 /*********************** Ethernet Switch Constants End *********************/
 
@@ -313,9 +319,9 @@
 #define HD_RAND_SEED_OFFSET                                0x0934
 /*16B for Host Egress MSMC Q (Express) context*/
 #define HOST_RX_Q_EXP_CONTEXT_OFFSET                       0x0940
-/*DSCP enable/disable written here*/
+/*DSCP enable/disable status written here*/
 #define DSCP_ENABLE_DISABLE_STATUS                         0x0A50
-/*DSCP priority map is written here 8 dscp to 8 queues */
+/*DSCP priority map is written here 8 dscp to 8 queues*/
 #define DSCP_BASED_PRI_MAP_INDEX_OFFSET                    0x0A51
 
 /* Memory Usage of
@@ -325,6 +331,10 @@
 #define DEFAULT_MSMC_Q_OFFSET                              0x00AC
 /*Used by FW to generate random number with the SEED value*/
 #define HD_RAND_SEED_OFFSET                                0x0934
+/*DSCP enable/disable status written here*/
+#define DSCP_ENABLE_DISABLE_STATUS                         0x0A50
+/*DSCP priority map is written here 8 dscp to 8 queues*/
+#define DSCP_BASED_PRI_MAP_INDEX_OFFSET                    0x0A51
 
 /* Memory Usage of
  * PA_STAT
@@ -485,5 +495,9 @@
 #define RX_EXPRESS_FRAG_Q_DROP_SLICE0_PASTATID             0x0238
 /*Rx PRU1 diagnostic counter which increments when express frame is received in same queue as previous fragment*/
 #define RX_EXPRESS_FRAG_Q_DROP_SLICE1_PASTATID             0x023C
+/*RX fifo overrun for slice 0*/
+#define RX_FIFO_OVERRUN_SLICE0_PASTATID                    0x0240
+/*RX fifo overrun for slice 1*/
+#define RX_FIFO_OVERRUN_SLICE1_PASTATID                    0x0244
 
 #endif /* ____fw_mem_map_h*/
