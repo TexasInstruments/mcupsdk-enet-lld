@@ -1378,6 +1378,7 @@ static void EnetPhy_linkWaitState(EnetPhy_Handle hPhy)
 {
     EnetPhy_State *state = &hPhy->state;
     uint32_t nwayCaps;
+    uint16_t control;
     uint16_t status;
 
     EnetPhy_readReg(hPhy, PHY_BMSR, &status);
@@ -1386,15 +1387,25 @@ static void EnetPhy_linkWaitState(EnetPhy_Handle hPhy)
     {
         /* Populate FSM state now as most FSM states are bypassed for strapped PHYs */
         if (hPhy->phyCfg.isStrapped)
-        {
-            state->phyLinkCaps = EnetPhy_getLocalCaps(hPhy);
-            nwayCaps = EnetPhy_findCommonNwayCaps(hPhy);
-            if (nwayCaps != 0U)
+        {          
+            /*Check link capabilities only for auto -negotiation mode*/
+            EnetPhy_readReg(hPhy, PHY_BMCR, &control);
+            
+            if ((control & BMCR_ANEN) != 0U)
             {
-                EnetPhy_capToMode(nwayCaps, &state->speed, &state->duplexity);
+                state->phyLinkCaps = EnetPhy_getLocalCaps(hPhy);
+                nwayCaps = EnetPhy_findCommonNwayCaps(hPhy);
+                if (nwayCaps != 0U)
+                {
+                    EnetPhy_capToMode(nwayCaps, &state->speed, &state->duplexity);
 
-                ENETTRACE_DBG("PHY %u: negotiated mode: %s\r\n",
-                              hPhy->addr, EnetPhy_getModeString(state->speed, state->duplexity));
+                    ENETTRACE_DBG("PHY %u: negotiated mode: %s\r\n",
+                                  hPhy->addr, EnetPhy_getModeString(state->speed, state->duplexity));
+                }
+            }
+            else
+            {
+                EnetPhy_capToMode(hPhy->reqLinkCaps, &state->speed, &state->duplexity);
             }
         }
 
