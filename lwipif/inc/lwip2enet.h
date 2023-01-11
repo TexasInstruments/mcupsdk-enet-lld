@@ -207,8 +207,15 @@ typedef struct Lwip2Enet_RxObj_s
     /*! Flow index for RX flow */
     uint32_t flowIdx;
 
-    /*! DMA Rx free packet info queue (holds packets returned from the hardware) */
-    EnetDma_PktQ freePktInfoQ;
+    /*! Queue with empty pbufs, payload is not populated */
+    pbufQ freePbufInfoQ;
+
+    /*! Queue that holds packets ready to be sent to the hardware,
+     *  Buffer pointers are populated. */
+    EnetDma_PktQ readyRxPktQ;
+
+    /*! Queue with empty DMA Pkt Infos, buffer ptrs are not populated */
+    EnetDma_PktQ freeRxPktInfoQ;
 
     /*! Number of packets*/
     uint32_t numPackets;

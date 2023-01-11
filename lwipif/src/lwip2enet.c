@@ -52,6 +52,7 @@
  */
 #include "lwip/opt.h"
 #include "lwip/pbuf.h"
+#include "custom_pbuf.h"
 #include "lwip2enet.h"
 #include "lwip/inet_chksum.h"
 #include "lwip/prot/ip.h"
@@ -83,9 +84,6 @@
  |                         Local Function Declarations                         |
  \*---------------------------------------------------------------------------*/
 
-static void Lwip2Enet_createRxTxTasks(Lwip2Enet_Handle hLwip2Enet,
-                                      Lwip2Enet_AppInfo *appInfo);
-
 static void Lwip2Enet_deinitTxObj(Lwip2Enet_Handle hLwip2Enet);
 
 static void Lwip2Enet_deinitRxObj(Lwip2Enet_Handle hLwip2Enet);
@@ -113,8 +111,6 @@ static void Lwip2Enet_notifyRxPackets(void *cbArg);
 
 static void Lwip2Enet_notifyTxPackets(void *cbArg);
 
-void Lwip2Enet_rxPacketTask(void *arg0);
-
 static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
                                      pbufQ *pbufPktQ,
                                      EnetDma_PktQ *pDmaPktInfoQ,
@@ -127,8 +123,6 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                                     EnetDma_PktQ *pPktQ);
 
 static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx);
-
-void Lwip2Enet_txPacketTask(void *arg0);
 
 static uint32_t Lwip2Enet_prepTxPktQ(Lwip2Enet_TxObj *tx,
                                     EnetDma_PktQ *pPktQ);
@@ -260,9 +254,9 @@ Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
 
         Lwip2Enet_assert(hLwip2Enet->appInfo.hEnet != NULL);
         Lwip2Enet_assert(hLwip2Enet->appInfo.isPortLinkedFxn != NULL);
-        Lwip2Enet_assert(hLwip2Enet->appInfo.pFreeTx != NULL);
+        Lwip2Enet_assert(hLwip2Enet->appInfo.pPbufInfo != NULL);
 
-        pbufQ_init_freeQ(hLwip2Enet->appInfo.pFreeTx, hLwip2Enet->appInfo.pFreeTxSize);
+        pbufQ_init_freeQ(hLwip2Enet->appInfo.pPbufInfo, hLwip2Enet->appInfo.pPbufInfoSize);
 
 
         /* set the print function callback if not null */
@@ -463,7 +457,8 @@ static void Lwip2Enet_deinitRxObj(Lwip2Enet_Handle hLwip2Enet)
             Lwip2Enet_initReleaseRxHandleInArgs(hLwip2Enet,i,&inArgs);
             LwipifEnetAppCb_releaseRxHandle(&inArgs);
             hLwip2Enet->rx[i].hFlow = NULL;
-            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->rx[i].freePktInfoQ);
+            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->rx[i].readyRxPktQ);
+            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->rx[i].freeRxPktInfoQ);
         }
     }
 
@@ -733,7 +728,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
 
     for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
     {
-        EnetQueue_verifyQCount(&hLwip2Enet->rx[i].freePktInfoQ);
+        EnetQueue_verifyQCount(&hLwip2Enet->rx[i].readyRxPktQ);
 
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
         status = EnetUdma_checkRxFlowSanity(hLwip2Enet->rx[i].hFlow, 5U);
@@ -753,7 +748,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
      */
     for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
     {
-        if (EnetQueue_getQCount(&hLwip2Enet->rx[i].freePktInfoQ) != 0U)
+        if (EnetQueue_getQCount(&hLwip2Enet->rx[i].readyRxPktQ) != 0U)
         {
             Lwip2Enet_submitRxPktQ(&hLwip2Enet->rx[i]);
         }
@@ -808,27 +803,23 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
 static void Lwip2Enet_processRxUnusedQ(Lwip2Enet_RxObj *rx,
                                        EnetDma_PktQ *unUsedQ)
 {
-    EnetDma_Pkt *pDmaPacket;
+    EnetDma_Pkt *pCurrDmaPacket;
 
-    pDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(unUsedQ);
-    while (pDmaPacket != NULL)
+    pCurrDmaPacket = (EnetDma_Pkt*) EnetQueue_deq(unUsedQ);
+    while (pCurrDmaPacket != NULL)
     {
-        /* Get the full PBUF packet that needs to be returned to the rx.freePktInfoQ */
-        struct pbuf* hPbufPacket = (struct pbuf *)pDmaPacket->appPriv;
-        if (hPbufPacket)
+        if ((pCurrDmaPacket->sgList.numScatterSegments <= 0)
+                || (pCurrDmaPacket->sgList.numScatterSegments > ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list))
+                || (pCurrDmaPacket->sgList.list[0].bufPtr == NULL))
         {
-            /* Put packet info into free Q as we have removed the Pbuf buffers
-             * from the it */
-            EnetQueue_enq(&rx->freePktInfoQ, &pDmaPacket->node);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
-
-            pDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(unUsedQ);
+            Lwip2Enet_assert(FALSE);
         }
         else
         {
-            /* should never happen as this is received from HW */
-            Lwip2Enet_assert(FALSE);
+            EnetQueue_enq(&rx->readyRxPktQ, &pCurrDmaPacket->node);
         }
+
+        pCurrDmaPacket = (EnetDma_Pkt*) EnetQueue_deq(unUsedQ);
     }
 }
 
@@ -1073,56 +1064,39 @@ void Lwip2Enet_txPktHandler(Lwip2Enet_Handle hLwip2Enet )
 static void Lwip2Enet_submitRxPktQ(Lwip2Enet_RxObj *rx)
 {
     EnetDma_PktQ resubmitPktQ;
-    struct pbuf* hPbufPacket;
-    EnetDma_Pkt *pCurrDmaPacket;
-    uint32_t bufSize;
-    Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
+    EnetDma_Pkt *pCurrDmaPacket = NULL;
 
     EnetQueue_initQ(&resubmitPktQ);
-
-    /*
-     * Fill in as many packets as we can with new PBUF buffers so they can be
-     * returned to the stack to be filled in.
-     */
-    pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&rx->freePktInfoQ);
-
-    while (NULL != pCurrDmaPacket)
+    pCurrDmaPacket = (EnetDma_Pkt*) EnetQueue_deq(&rx->readyRxPktQ);
+    while (pCurrDmaPacket != NULL)
     {
-        hPbufPacket = (struct pbuf*)pCurrDmaPacket->appPriv;
-        if (hPbufPacket)
+        EnetDma_checkPktState(&pCurrDmaPacket->pktState,
+                               ENET_PKTSTATE_MODULE_APP,
+                               ENET_PKTSTATE_APP_WITH_READYQ,
+                               ENET_PKTSTATE_APP_WITH_DRIVER);
+        if ((pCurrDmaPacket->sgList.numScatterSegments <= 0)
+                || (pCurrDmaPacket->sgList.numScatterSegments > ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list))
+                || (pCurrDmaPacket->sgList.list[0].bufPtr == NULL))
         {
-            LwipifEnetAppIf_custom_rx_pbuf* my_pbuf  = (LwipifEnetAppIf_custom_rx_pbuf*)hPbufPacket;
-
-            my_pbuf->p.custom_free_function = LwipifEnetAppCb_pbuf_free_custom;
-            my_pbuf->pktInfoMem         = pCurrDmaPacket;
-            my_pbuf->freePktInfoQ         = &rx->freePktInfoQ;
-            my_pbuf->p.pbuf.flags |= PBUF_FLAG_IS_CUSTOM;
-
-            bufSize = ENET_UTILS_ALIGN(hLwip2Enet->appInfo.hostPortRxMtu, ENETDMA_CACHELINE_ALIGNMENT);
-            hPbufPacket = pbuf_alloced_custom(PBUF_RAW, bufSize, PBUF_POOL, &my_pbuf->p, pCurrDmaPacket->sgList.list[0].bufPtr, pCurrDmaPacket->sgList.list[0].segmentAllocLen);
-
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktDeq);
-            LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktDeq);
-
-            EnetQueue_enq(&resubmitPktQ, &pCurrDmaPacket->node);
-
-            pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&rx->freePktInfoQ);
+            Lwip2Enet_assert(FALSE);
         }
         else
         {
-            EnetQueue_enq(&rx->freePktInfoQ, &pCurrDmaPacket->node);
-            break;
+            EnetQueue_enq(&resubmitPktQ, &pCurrDmaPacket->node);
         }
-    }
 
-    /*
-     * Return the same DMA packets back to the DMA channel (but now
-     * associated with a new PBM Packet and buffer)
-     */
+        pCurrDmaPacket = (EnetDma_Pkt*) EnetQueue_deq(&rx->readyRxPktQ);
+    }
     if (EnetQueue_getQCount(&resubmitPktQ))
     {
         Lwip2Enet_submitRxPackets(rx, &resubmitPktQ);
     }
+
+}
+static inline struct pbuf * Lwip2Enet_setCustomPbuf(pbuf_layer l, u16_t length, pbuf_type type, struct pbuf_custom *p,
+        void *payload_mem, u16_t payload_mem_len)
+{
+    return pbuf_alloced_custom(l, length, type, p, payload_mem, payload_mem_len);
 }
 
 static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
@@ -1131,22 +1105,61 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
     uint32_t packetCount = 0U;
     EnetDma_Pkt *pCurrDmaPacket;
     bool isChksumError = false;
-    uint32_t validLen = 0U;
+    uint32_t scatterSegmentIndex = 0U;
+    EnetDma_SGListEntry *list = NULL;
+    struct pbuf *hPbufPacket = NULL;
+    Rx_CustomPbuf *cPbuf = NULL;
+    Rx_CustomPbuf *cPbufPrev = NULL;
 
     pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(pPktQ);
     while (pCurrDmaPacket)
     {
-        /* Get the full PBUF packet that needs to be returned to the LwIP stack */
-        struct pbuf* hPbufPacket = (struct pbuf *)pCurrDmaPacket->appPriv;
         isChksumError = false;
-        if (hPbufPacket)
+        Lwip2Enet_assert(pCurrDmaPacket->sgList.numScatterSegments <= ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list));
+        Lwip2Enet_assert(pCurrDmaPacket->sgList.numScatterSegments != 0);
+        if (pbufQ_count(&rx->freePbufInfoQ) >= pCurrDmaPacket->sgList.numScatterSegments)
         {
-            validLen = pCurrDmaPacket->sgList.list[0].segmentFilledLen;
+            EnetDma_checkPktState(&pCurrDmaPacket->pktState,
+                                  ENET_PKTSTATE_MODULE_APP,
+                                  ENET_PKTSTATE_APP_WITH_DRIVER,
+                                  ENET_PKTSTATE_APP_WITH_FREEQ);
+            scatterSegmentIndex = 0;
+            Enet_MacPort rxPortNum = pCurrDmaPacket->rxPortNum;
+            while (scatterSegmentIndex < pCurrDmaPacket->sgList.numScatterSegments)
+            {
+                list = &pCurrDmaPacket->sgList.list[scatterSegmentIndex];
+                Lwip2Enet_assert(list->bufPtr != NULL);
 
-            /* Fill in PBUF packet length field */
-            hPbufPacket->len = validLen;
-            hPbufPacket->tot_len = validLen;
-            Lwip2Enet_assert(hPbufPacket->payload != NULL);
+                cPbuf  = (Rx_CustomPbuf *)pbufQ_deQ(&rx->freePbufInfoQ);
+                LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktDeq);
+                if (scatterSegmentIndex == 0)
+                {
+                    /* store the head of the pbuf */
+                    hPbufPacket = &(cPbuf->p.pbuf);
+                }
+                /* Fill the pbuf with the sg list data */
+                if (Lwip2Enet_setCustomPbuf(PBUF_RAW, list->segmentFilledLen, PBUF_POOL, &(cPbuf->p), list->bufPtr, list->segmentAllocLen) == NULL)
+                {
+                    Lwip2Enet_assert(false);
+                }
+                cPbuf->orgBufLen = list->segmentAllocLen;
+                cPbuf->orgBufPtr = list->bufPtr;
+                cPbuf->alivePbufCount = pCurrDmaPacket->sgList.numScatterSegments;
+                if (scatterSegmentIndex > 0)
+                {
+                    cPbufPrev->next = cPbuf;
+                    pbuf_cat(hPbufPacket, &(cPbuf->p.pbuf));
+                }
+                if (scatterSegmentIndex == pCurrDmaPacket->sgList.numScatterSegments - 1)
+                {
+                    /* Make sure the next pointer of last pbuf is NULL */
+                    cPbuf->p.pbuf.next = NULL;
+                    /* Point the last to first. If there is only one segment, it points to itself. */
+                    cPbuf->next = (Rx_CustomPbuf *) hPbufPacket;
+                }
+                cPbufPrev = cPbuf;
+                scatterSegmentIndex++;
+            }
 
 #if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
             {
@@ -1169,29 +1182,28 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 }
             }
 #endif
+            EnetDma_initPktInfo(pCurrDmaPacket);
+            EnetQueue_enq(&rx->freeRxPktInfoQ, &pCurrDmaPacket->node);
+            LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
             if (!isChksumError)
             {
                 /* Pass the received packet to the LwIP stack */
-                LWIPIF_LWIP_input(rx, pCurrDmaPacket->rxPortNum, hPbufPacket);
+                LWIPIF_LWIP_input(rx, rxPortNum, hPbufPacket);
                 packetCount++;
             }
             else
             {
-                /* Put PBUF buffer in free Q as we are not passing to stack */
-                EnetQueue_enq(&rx->freePktInfoQ, &pCurrDmaPacket->node);
-                LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
+                /* Free the pbuf as we are not submitting to the stack */
+                pbuf_free(hPbufPacket);
                 LWIP2ENETSTATS_ADDONE(&rx->stats.chkSumErr);
             }
-
-            /* Put packet info into free Q as we have removed the PBUF buffers
-             * from the it */
-            pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(pPktQ);
         }
         else
         {
-            /* Should never happen as this is received from HW */
+            /*! This should not occur as we have equal number of pbufInfos and bufptrs */
             Lwip2Enet_assert(FALSE);
         }
+        pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(pPktQ);
     }
 
     /* return as many packets to driver as we can */
@@ -1393,20 +1405,11 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
 
     /* Now that we free PBUF buffers, push all freed pktInfo's into Rx
      * free Q */
-    EnetQueue_append(&rx->freePktInfoQ, fqPktInfoQ);
+    EnetQueue_append(&rx->readyRxPktQ, fqPktInfoQ);
     LWIP2ENETSTATS_ADDNUM(&rx->stats.freeAppPktEnq, EnetQueue_getQCount(fqPktInfoQ));
-    Lwip2Enet_freePbufPackets(fqPktInfoQ);
 
-    EnetQueue_append(&rx->freePktInfoQ, cqPktInfoQ);
+    EnetQueue_append(&rx->readyRxPktQ, cqPktInfoQ);
     LWIP2ENETSTATS_ADDNUM(&rx->stats.freeAppPktEnq, EnetQueue_getQCount(cqPktInfoQ));
-    Lwip2Enet_freePbufPackets(cqPktInfoQ);
-
-    /* Flush out our pending receive queues */
-    while (EnetQueue_getQCount(&rx->freePktInfoQ) != 0U)
-    {
-        EnetQueue_deq(&rx->freePktInfoQ);
-        LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktDeq);
-    }
 }
 
 void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
@@ -1504,10 +1507,12 @@ static void Lwip2Enet_initGetRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
                                             uint32_t chNum,
                                             LwipifEnetAppIf_GetRxHandleInArgs *inArgs)
 {
-    inArgs->cbArg      = &hLwip2Enet->rx[chNum];
-    inArgs->notifyCb   = &Lwip2Enet_notifyRxPackets;
-    inArgs->chId       = chNum;
-    inArgs->pktInfoQ   = &hLwip2Enet->rx[chNum].freePktInfoQ;
+    inArgs->cbArg           = &hLwip2Enet->rx[chNum];
+    inArgs->notifyCb        = &Lwip2Enet_notifyRxPackets;
+    inArgs->chId            = chNum;
+    inArgs->pFreePbufInfoQ      = &hLwip2Enet->rx[chNum].freePbufInfoQ;
+    inArgs->pReadyRxPktQ    = &hLwip2Enet->rx[chNum].readyRxPktQ;
+    inArgs->pFreeRxPktInfoQ   = &hLwip2Enet->rx[chNum].freeRxPktInfoQ;
 }
 
 static void Lwip2Enet_initReleaseTxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,

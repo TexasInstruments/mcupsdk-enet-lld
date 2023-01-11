@@ -197,7 +197,6 @@ struct pbuf* pbufQ_deQ(pbufQ *pQ)
         pQ->count--;
 
         pbufQ_assert(rtnPbuf != NULL);
-        pbufQ_assert(rtnPbuf->payload != NULL);
         mempQ_free(temp);
     }
 

@@ -85,7 +85,9 @@ typedef struct LwipifEnetAppIf_GetRxHandleInArgs_s
     void *cbArg;
     EnetDma_PktNotifyCb notifyCb;
     uint32_t chId;
-    EnetDma_PktQ *pktInfoQ;
+    pbufQ *pFreePbufInfoQ;
+    EnetDma_PktQ *pReadyRxPktQ;
+    EnetDma_PktQ *pFreeRxPktInfoQ;
 } LwipifEnetAppIf_GetRxHandleInArgs;
 
 
@@ -146,8 +148,8 @@ typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
 
     /** Timer interval for timer based RX pacing */
     uint32_t timerPeriodUs;
-    pbufNode *pFreeTx;
-	uint32_t   pFreeTxSize;
+    pbufNode *pPbufInfo;
+    uint32_t pPbufInfoSize;
 } LwipifEnetAppIf_GetEnetLwipIfInstInfo;
 
 typedef struct LwipifEnetAppIf_ReleaseTxHandleInfo_s
@@ -163,14 +165,6 @@ typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
     LwipifEnetAppIf_RxFreePktCbFxn rxFreePktCb;
     void *rxFreePktCbArg;
 } LwipifEnetAppIf_ReleaseRxHandleInfo;
-
-
-typedef struct LwipifEnetAppIf_custom_rx_pbuf_t
-{
-   struct pbuf_custom p;
-   EnetDma_Pkt *pktInfoMem;
-   EnetDma_PktQ *freePktInfoQ;
-} LwipifEnetAppIf_custom_rx_pbuf;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */

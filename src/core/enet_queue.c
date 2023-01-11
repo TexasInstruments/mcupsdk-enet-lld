@@ -107,6 +107,9 @@ void EnetQueue_enq(EnetQ *queue,
     Enet_devAssert(queue->magic == ENET_Q_INIT_DONE,
                    "Queue is not initializated\n");
 
+    Enet_devAssert(node != NULL,
+                   "NULL enq to the queue\n");
+
     node->next = NULL;
 
     if (0U == queue->count)
