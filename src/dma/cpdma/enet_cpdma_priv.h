@@ -101,10 +101,17 @@ typedef struct EnetCpdma_cppiDesc_s
     * \brief        Packet Flags(MSW) and Length(LSW).
     */
     uint32_t        pktFlgLen;
+    /*
+     * The below fields are not used by CPDMA HW. These are stored here for SW purpose.
+     */
     /*!
     * \brief        Fhost Chksum Encap Info.
     */
     EnetCpdma_ChecksumEncapWord_s chkSumInfo  __attribute__ ((aligned(8)));
+    /*!
+    * \brief        Original buffer allocated length.
+    */
+    uint16_t        orgBufLen;
 } __attribute__((packed)) EnetCpdma_cppiDesc;
 
 #define ENET_CPDMA_DESC_PKT_FLAG_SOP                  (0x80000000U)
@@ -261,6 +268,8 @@ typedef struct EnetCpdma_DescCh_s {
     uint32_t          descMax;
     /*! Current number of desc */
     uint32_t          descFreeCount;
+    /*! Current number of desc with H/W */
+    uint32_t          descSubmittedCount;
     /*! First desc location */
     EnetCpdma_cppiDesc *pDescFirst;
     /*! Last desc location */
