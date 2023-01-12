@@ -131,6 +131,9 @@ extern "C" {
 #error "Enet library compilation not supported on non cortex R cores. Update correct cache line size"
 #endif
 
+/*! \brief UDMA descriptor address alignment requirement */
+#define ENET_UDMA_DESC_ALIGNMENT               (64U)
+
 /*!
  * \brief Opaque handle that holds config Info for Enet DMA channel.
  */
@@ -347,7 +350,7 @@ typedef struct EnetUdma_PktInfo_s
 typedef struct EnetUdma_CpswHpdDesc_s
 {
     /*! Host-mode packet descriptor (must be the first member of the structure */
-    CSL_UdmapCppi5HMPD hostDesc  __attribute__ ((aligned(UDMA_CACHELINE_ALIGNMENT)));
+    CSL_UdmapCppi5HMPD hostDesc  __attribute__ ((aligned(ENET_UDMA_DESC_ALIGNMENT)));
 
     /*! Extended Packet Info Block.
      *
@@ -388,7 +391,7 @@ typedef struct EnetUdma_DmaDesc_s
 
     struct EnetUdma_HBDDesc_s
     {
-        CSL_UdmapCppi5HMPD desc __attribute__ ((aligned(ENETDMA_CACHELINE_ALIGNMENT)));
+        CSL_UdmapCppi5HMPD desc __attribute__ ((aligned(ENET_UDMA_DESC_ALIGNMENT)));
     } hostBufDesc[ENET_UDMA_CPSW_MAX_HOSTBUFDESC_COUNT];
 
     /*! Pointer to next DMA desc in the queue */

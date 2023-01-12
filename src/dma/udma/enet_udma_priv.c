@@ -132,6 +132,9 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
     EnetDma_Pkt *dmaPkt;
     EnetUdma_CppiTxStatus *cppiTxStatus;
     uint32_t srcTag;
+    uint32_t scatterSegmentIndex;
+    uint32_t lastFilledSegmentIndex;
+    uint32_t totalPacketFilledLen = 0U;
 
     if (NULL != pDmaDesc)
     {
@@ -144,11 +147,38 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
 
             if (ENET_UDMA_DIR_RX == transferDir)
             {
-                dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen = CSL_udmapCppi5GetPktLen(&pHpdDesc->hostDesc);
+                scatterSegmentIndex = 0;
+                totalPacketFilledLen = CSL_udmapCppi5GetPktLen(&pHpdDesc->hostDesc);
+                lastFilledSegmentIndex = 0;
 
+                while (scatterSegmentIndex < dmaPkt->sgList.numScatterSegments)
+                {
+                    if (scatterSegmentIndex == ENET_UDMA_CPSW_HOSTPKTDESC_INDEX)
+                    {
+                        dmaPkt->sgList.list[scatterSegmentIndex].segmentFilledLen =
+                                EnetUtils_min(CSL_udmapCppi5GetOrgBufferLen(&pHpdDesc->hostDesc),
+                                              totalPacketFilledLen);
+                    }
+                    else
+                    {
+                        dmaPkt->sgList.list[scatterSegmentIndex].segmentFilledLen =
+                                EnetUtils_min(CSL_udmapCppi5GetOrgBufferLen(&(pDmaDesc->hostBufDesc[(scatterSegmentIndex- ENET_UDMA_CPSW_HOSTBUFDESC_INDEX)].desc)),
+                                              totalPacketFilledLen);
+                    }
+                    if (dmaPkt->sgList.list[scatterSegmentIndex].segmentFilledLen != 0)
+                    {
+                        lastFilledSegmentIndex = scatterSegmentIndex;
+                    }
+                    totalPacketFilledLen -= dmaPkt->sgList.list[scatterSegmentIndex].segmentFilledLen;
+                    scatterSegmentIndex++;
+                }
                 if (Enet_isIcssFamily(hPer->enetType))
                 {
-                    dmaPkt->sgList.list[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen -= 4U;
+#if ENET_CFG_IS_ON(DEV_ERROR)
+                   Enet_assert((lastFilledSegmentIndex < ENET_ARRAYSIZE(dmaPkt->sgList.list))
+                           && (dmaPkt->sgList.list[lastFilledSegmentIndex].segmentFilledLen >= 4));
+#endif
+                   dmaPkt->sgList.list[lastFilledSegmentIndex].segmentFilledLen -= 4;
                 }
 #if ENET_CFG_IS_ON(DEV_ERROR)
                 /* Protocol-specific data is should be in the descriptor (psLocation set to
@@ -170,8 +200,7 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
                     dmaPkt->tsInfo.rxPktTs = hPer->convertTs(hPer, dmaPkt->tsInfo.rxPktTs);
                 }
 
-                srcTag = CSL_udmapCppi5GetSrcTag(&pHpdDesc->hostDesc) &
-                                  ENET_UDMA_HPD_SRC_TAG_LOW_MASK;
+                srcTag = CSL_udmapCppi5GetSrcTag(&pHpdDesc->hostDesc) & ENET_UDMA_HPD_SRC_TAG_LOW_MASK;
                 dmaPkt->rxPortNum = CPSW_ALE_ALEPORT_TO_MACPORT(srcTag);
             }
 
@@ -416,7 +445,6 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
             CSL_udmapCppi5LinkDesc(pHDesc, 0U);
 
             CSL_udmapCppi5HostSetPktLen(pHostDesc, totalPacketFilledLen);
-
 
             if (ENET_UDMA_DIR_TX == transferDir)
             {
@@ -1296,7 +1324,7 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
     void *virtBufPtr;
     uint64_t physDescPtr;
     EnetDma_Pkt *dmaPkt = pDmaDesc->dmaPkt;
-    uint32_t numScatterSegments = 0;
+    uint32_t numScatterSegments = dmaPkt->sgList.numScatterSegments;
 
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
@@ -1307,14 +1335,6 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
         isExposedRing = 0U;
 #endif
         physDescPtr = (uint64_t)EnetUtils_virtToPhys((void *)&pHpdDesc->hostDesc, NULL);
-        if (ENET_UDMA_DIR_RX == transferDir)
-        {
-            numScatterSegments = 1;
-        }
-        else
-        {
-            numScatterSegments = dmaPkt->sgList.numScatterSegments;
-        }
 
         for (uint32_t i = 0; i < numScatterSegments; i++)
         {
