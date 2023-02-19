@@ -1826,11 +1826,11 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
      * (i.e. large number of RX flows and/or TX channels) */
     if (pUdmaInfo->useGlobalEvt)
     {
-        evtPrms.masterEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
+        evtPrms.controllerEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
     }
     else
     {
-        evtPrms.masterEventHandle = NULL;
+        evtPrms.controllerEventHandle = NULL;
     }
 
     evtPrms.eventCb           = eventCb;
