@@ -81,6 +81,8 @@
 /*! \brief Default timeout if MDIX is enabled (in ticks). */
 #define ENETPHY_TIMEOUT_MDIX                  (27U)
 
+/*! \brief state timeout value to say as expired */
+#define ENETPHY_TIMEOUT_EXPIRED               (0U)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -162,6 +164,18 @@ static uint32_t EnetPhy_findBestCap(uint32_t caps);
 static void EnetPhy_capToMode(uint32_t caps,
                               EnetPhy_Speed *speed,
                               EnetPhy_Duplexity *duplexity);
+
+/*!
+ * \brief Check if state specific timer ticks are expired
+ *
+ * Checks if timer has expired. If expired return true,
+ * else return false and decrement timer value
+ *
+ * \param pState     pointer to state data
+ *
+ * \return true is timer has expired
+ */
+static bool EnetPhy_checkTimeout(EnetPhy_State *pState);
 
 static void EnetPhy_showLinkPartnerCompat(EnetPhy_Handle hPhy,
                                           EnetPhy_Speed speed,
@@ -844,14 +858,13 @@ static void EnetPhy_setNextState(EnetPhy_Handle hPhy,
                                  EnetPhy_FsmState fsmState)
 {
     EnetPhy_FsmTimeoutCfg *timeoutCfg = &hPhy->phyCfg.timeoutCfg;
-    EnetPhy_FsmState prevFsmState = hPhy->state.fsmState;
-    uint32_t timeout;
+    EnetPhy_FsmState prevFsmState     = hPhy->state.fsmState;
+    uint32_t timeout       = ENETPHY_TIMEOUT_NO_WAIT;
     uint32_t residenceTime = 0U;
 
     switch (fsmState)
     {
         case ENETPHY_FSM_STATE_INIT:
-            timeout = 0U;
             break;
 
         case ENETPHY_FSM_STATE_FINDING:
@@ -859,7 +872,6 @@ static void EnetPhy_setNextState(EnetPhy_Handle hPhy,
             break;
 
         case ENETPHY_FSM_STATE_FOUND:
-            timeout = 0U;
             break;
 
         case ENETPHY_FSM_STATE_RESET_WAIT:
@@ -868,7 +880,6 @@ static void EnetPhy_setNextState(EnetPhy_Handle hPhy,
             break;
 
         case ENETPHY_FSM_STATE_ENABLE:
-            timeout = 0U;
             break;
 
         case ENETPHY_FSM_STATE_NWAY_START:
@@ -884,15 +895,12 @@ static void EnetPhy_setNextState(EnetPhy_Handle hPhy,
             break;
 
         case ENETPHY_FSM_STATE_LINKED:
-            timeout = 0U;
             break;
 
         case ENETPHY_FSM_STATE_LOOPBACK:
-            timeout = 0U;
             break;
 
         default:
-            timeout = 0U;
             break;
     }
 
@@ -985,11 +993,7 @@ static void EnetPhy_findingState(EnetPhy_Handle hPhy)
     }
     else
     {
-        if (state->timeout != 0U)
-        {
-            state->timeout--;
-        }
-        else
+        if (EnetPhy_checkTimeout(state))
         {
             ENETTRACE_DBG("PHY %u: timed out\r\n", phyAddr);
             state->timeout = ENETPHY_TIMEOUT_FINDING;
@@ -1032,11 +1036,7 @@ static void EnetPhy_resetWaitState(EnetPhy_Handle hPhy)
     }
     else
     {
-        if (state->timeout != 0U)
-        {
-            state->timeout--;
-        }
-        else
+        if (EnetPhy_checkTimeout(state))
         {
             EnetPhy_phyTimeout(hPhy);
         }
@@ -1320,11 +1320,7 @@ static void EnetPhy_nwayStartState(EnetPhy_Handle hPhy)
     }
     else
     {
-        if (state->timeout != 0U)
-        {
-            state->timeout--;
-        }
-        else
+        if (EnetPhy_checkTimeout(state))
         {
             EnetPhy_phyTimeout(hPhy);
         }
@@ -1363,11 +1359,7 @@ static void EnetPhy_nwayWaitState(EnetPhy_Handle hPhy)
     }
     else
     {
-        if (state->timeout != 0U)
-        {
-            state->timeout--;
-        }
-        else
+        if (EnetPhy_checkTimeout(state))
         {
             EnetPhy_phyTimeout(hPhy);
         }
@@ -1413,11 +1405,7 @@ static void EnetPhy_linkWaitState(EnetPhy_Handle hPhy)
     }
     else
     {
-        if (state->timeout != 0U)
-        {
-            state->timeout--;
-        }
-        else
+        if (EnetPhy_checkTimeout(state))
         {
             EnetPhy_phyTimeout(hPhy);
         }
@@ -1847,6 +1835,25 @@ static void EnetPhy_capToMode(uint32_t caps,
         *speed  = ENETPHY_SPEED_10MBIT;
         *duplexity = ENETPHY_DUPLEX_HALF;
     }
+}
+
+static bool EnetPhy_checkTimeout(EnetPhy_State *pState)
+{
+    bool hasTimedOut = false;
+    if (pState->timeout != ENETPHY_TIMEOUT_WAIT_FOREVER)
+    {
+        /* Fall here if the TIMEOUT is not disabled */
+        if (pState->timeout == ENETPHY_TIMEOUT_EXPIRED)
+        {
+            /* timed out */
+            hasTimedOut = true;
+        }
+        else
+        {
+            pState->timeout--;
+        }
+    }
+    return hasTimedOut;
 }
 
 static void EnetPhy_showLinkPartnerCompat(EnetPhy_Handle hPhy,

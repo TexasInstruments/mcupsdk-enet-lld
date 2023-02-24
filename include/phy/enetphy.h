@@ -183,6 +183,12 @@ extern "C" {
 /*! \brief Invalid PHY address indicator. */
 #define ENETPHY_INVALID_PHYADDR               (~0U)
 
+/*! \brief State timeout value to set to disable timeout */
+#define ENETPHY_TIMEOUT_WAIT_FOREVER          (0xFFFFFFFFU)
+
+/*! \brief State timeout value to set to expire immediately */
+#define ENETPHY_TIMEOUT_NO_WAIT               (0U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -306,25 +312,40 @@ typedef struct EnetPhy_LinkCfg_s
  */
 typedef struct EnetPhy_FsmTimeoutCfg_s
 {
-    /*! \brief FINDING state timeout (in ticks) */
+    /*! \brief FINDING state timeout (in ticks).
+     *
+     * Set to \ref ENETPHY_TIMEOUT_WAIT_FOREVER, to disable timeout.\n
+     * Set to \ref ENETPHY_TIMEOUT_NO_WAIT, to expire immediately */
     uint32_t findingStateTicks;
 
-    /*! \brief RESET_WAIT state timeout (in ticks) */
+    /*! \brief RESET_WAIT state timeout (in ticks).
+     *
+     * Set to \ref ENETPHY_TIMEOUT_WAIT_FOREVER, to disable timeout.\n
+     * Set to \ref ENETPHY_TIMEOUT_NO_WAIT, to expire immediately */
     uint32_t resetWaitStateTicks;
 
-    /*! \brief RESET_WAIT state residence time (in ticks) */
+    /*! \brief RESET_WAIT state residence time (in ticks). */
     uint32_t resetWaitStateResidenceTicks;
 
-    /*! \brief NWAY_START state timeout (in ticks) */
+    /*! \brief NWAY_START state timeout (in ticks).
+     *
+     * Set to \ref ENETPHY_TIMEOUT_WAIT_FOREVER, to disable timeout.\n
+     * Set to \ref ENETPHY_TIMEOUT_NO_WAIT, to expire immediately */
     uint32_t nwayStartStateTicks;
 
-    /*! \brief NWAY_WAIT state timeout (in ticks) */
+    /*! \brief NWAY_WAIT state timeout (in ticks).
+     *
+     * Set to \ref ENETPHY_TIMEOUT_WAIT_FOREVER, to disable timeout.\n
+     * Set to \ref ENETPHY_TIMEOUT_NO_WAIT, to expire immediately */
     uint32_t nwayWaitStateTicks;
 
-    /*! \brief LINK_WAIT state timeout (in ticks) */
+    /*! \brief LINK_WAIT state timeout (in ticks).
+     *
+     * Set to \ref ENETPHY_TIMEOUT_WAIT_FOREVER, to disable timeout.\n
+     * Set to \ref ENETPHY_TIMEOUT_NO_WAIT, to expire immediately */
     uint32_t linkWaitStateTicks;
 
-    /*! \brief Timeout if MDIX is enabled (in ticks) */
+    /*! \brief Timeout if MDIX is enabled (in ticks). */
     uint32_t mdixTicks;
 } EnetPhy_FsmTimeoutCfg;
 
