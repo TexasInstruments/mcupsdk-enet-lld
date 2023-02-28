@@ -399,11 +399,6 @@ typedef EnetCpdma_OpenRxChPrms EnetDma_OpenRxChPrms;
  */
 typedef struct EnetCpdma_RxChInitPrms_s
 {
-    /*! This field selects which scheduling bin the channel will be placed in
-     *  for bandwidth allocation of the Rx DMA units. */
-    /* TODO: It may not be required anymore */
-    uint8_t dmaPriority;
-
     /*! Receive buffer offset */
     uint32_t rxBufferOffset;
 } EnetCpdma_RxChInitPrms;

@@ -1864,7 +1864,6 @@ void EnetCpdma_initParams(Enet_Type enetType, EnetDma_Cfg *pDmaConfig)
     pDmaConfig->enChOverrideFlag            = false;
     pDmaConfig->rxInterruptPerMSec          = 0U;
     pDmaConfig->txInterruptPerMSec          = 0U;
-    pDmaConfig->rxChInitPrms.dmaPriority    = 0U;
     pDmaConfig->rxChInitPrms.rxBufferOffset = 0U;
     pDmaConfig->maxTxChannels               = ENET_CPDMA_CPSW_MAX_TX_CH;
     pDmaConfig->maxRxChannels               = ENET_CPDMA_CPSW_MAX_RX_CH;
