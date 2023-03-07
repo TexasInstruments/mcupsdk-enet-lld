@@ -87,11 +87,11 @@ typedef struct IcssgStatsIoctlHandlerTableEntry_s
 static void IcssgStats_getPaStats(IcssgStats_Handle hStats,
                                   IcssgStats_Pa *paStats);
 
-static void IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
+static int32_t IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
                                        Enet_MacPort macPort,
                                        IcssgStats_MacPort *stats);
 
-static void IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
+static int32_t IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
                                          Enet_MacPort macPort);
 
 static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(EnetMod_Handle hMod,
@@ -298,13 +298,14 @@ static void IcssgStats_getPaStats(IcssgStats_Handle hStats,
     }
 }
 
-static void IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
+static int32_t IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
                                        Enet_MacPort macPort,
                                        IcssgStats_MacPort *stats)
 {
     uint32_t *statsRegs;
     uint32_t *stats32 = (uint32_t *)stats;
     uint32_t i;
+    int32_t status = ENET_SOK;
 
     if (macPort == ENET_MAC_PORT_1)
     {
@@ -312,21 +313,33 @@ static void IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
     }
     else
     {
+        // valid only for SWITCH mode
         statsRegs = (uint32_t *)hStats->port2Addr;
     }
 
-    for (i = 0U; i < sizeof(IcssgStats_MacPort) / sizeof(uint32_t); i++)
+    if (statsRegs == NULL)
     {
-        stats32[i] = CSL_REG32_RD(&statsRegs[i]);
+        status = ENET_EINVALIDPARAMS;
     }
+
+    if (status == ENET_SOK)
+    {
+        for (i = 0U; i < sizeof(IcssgStats_MacPort) / sizeof(uint32_t); i++)
+        {
+            stats32[i] = CSL_REG32_RD(&statsRegs[i]);
+        }
+    }
+
+    return status;
 }
 
-static void IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
+static int32_t IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
                                          Enet_MacPort macPort)
 {
     uint32_t *statsRegs;
     uint32_t stats32;
     uint32_t i;
+    int32_t status = ENET_SOK;
 
     if (macPort == ENET_MAC_PORT_1)
     {
@@ -337,11 +350,20 @@ static void IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
         statsRegs = (uint32_t *)hStats->port2Addr;
     }
 
-    for (i = 0U; i < sizeof(IcssgStats_MacPort) / sizeof(uint32_t); i++)
+    if (statsRegs == NULL)
     {
-        stats32 = CSL_REG32_RD(&statsRegs[i]);
-        CSL_REG32_WR(&statsRegs[i], stats32);
+        status = ENET_EINVALIDPARAMS;
     }
+
+    if (status == ENET_SOK)
+    {
+        for (i = 0U; i < sizeof(IcssgStats_MacPort) / sizeof(uint32_t); i++)
+        {
+            stats32 = CSL_REG32_RD(&statsRegs[i]);
+            CSL_REG32_WR(&statsRegs[i], stats32);
+        }
+    }
+    return status;
 }
 
 int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(EnetMod_Handle hMod,
@@ -371,9 +393,7 @@ int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(EnetMod_Hand
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     IcssgStats_MacPort *stats = (IcssgStats_MacPort *)prms->outArgs;
 
-    IcssgStats_getMacPortStats(hStats, macPort, stats);
-
-    return ENET_SOK;
+    return IcssgStats_getMacPortStats(hStats, macPort, stats);
 }
 
 int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(EnetMod_Handle hMod,
@@ -386,9 +406,7 @@ int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(EnetMod_Ha
 
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
-    IcssgStats_resetMacPortStats(hStats, macPort);
-
-    return ENET_SOK;
+    return IcssgStats_resetMacPortStats(hStats, macPort);
 }
 
 int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(EnetMod_Handle hMod,

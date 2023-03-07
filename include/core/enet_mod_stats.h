@@ -116,6 +116,8 @@ typedef enum EnetStats_Ioctl_e
      * Gets the network statistics of the given MAC port number. It's caller's
      * responsibility to typecast the returned statistics structure according
      * to the underlying peripheral's definition.
+     * For ICSSG MAC mode usecase, port number can't be other than  #ENET_MAC_PORT_1,
+     * as each ICSSG MAC supports only one MAC port.
      *
      * IOCTL parameters:
      * -  inArgs: #Enet_MacPort
@@ -141,6 +143,8 @@ typedef enum EnetStats_Ioctl_e
      * \brief Reset MAC port statistics.
      *
      * Resets the network statistics counters of the given MAC port number.
+     * For ICSSG MAC mode usecase, port number can't be other than #ENET_MAC_PORT_1,
+     * as each ICSSG MAC supports only one MAC port.
      *
      * IOCTL parameters:
      * -  inArgs: #Enet_MacPort
