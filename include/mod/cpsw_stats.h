@@ -121,8 +121,8 @@ typedef struct CpswStats_HostPort_2g_s
     /*! Total number of undersized frames received */
     uint64_t rxUndersizedFrames;
 
-    /*! Total number of fragmented frames received */
-    uint64_t rxFragments;
+    /*! Reserved */
+    uint64_t reserved10;
 
     /*! Total number of frames dropped by the ALE */
     uint64_t aleDrop;
@@ -143,7 +143,16 @@ typedef struct CpswStats_HostPort_2g_s
     uint64_t txMcastFrames;
 
     /*! Reserved */
-    uint64_t reserved17to25[9U];
+    uint64_t reserved17to19[3];
+
+    /*! Tx Start of Frame Overrun */
+    uint64_t txSofOverrun;
+
+    /*! Tx Middle of Frame Overrun */
+    uint64_t txMofOverrun;
+
+    /*! Reserved */
+    uint64_t reserved22to25[4U];
 
     /*! Total number of bytes in all good frames transmitted */
     uint64_t txOctets;
@@ -223,14 +232,38 @@ typedef struct CpswStats_HostPort_2g_s
     /*! ALE policer matched and condition yellow */
     uint64_t alePolicyMatchYellow;
 
+    /*! ALE multicast source address drop */
+    uint64_t aleMultSADrop;
+
+    /*! ALE dual VLAN drop */
+    uint64_t aleDualVlanDrop;
+
+    /*! ALE IEEE 802.3 length error drop */
+    uint64_t aleLenErrorDrop;
+
+    /*! ALE IP next header limit drop */
+    uint64_t aleIpNextHdrDrop;
+
+    /*! ALE IPv4 fragment drop */
+    uint64_t aleIPv4FragDrop;
+
     /*! Reserved */
-    uint64_t reserved52to95[44U];
+    uint64_t reserved57to95[39U];
 
     /*! Transmit memory protect CRC error */
     uint64_t txMemProtectError;
 
-    /*! Reserved */
-    uint64_t reserved97to128[32U];
+    /*! Host port priority packet count */
+    uint64_t txPri[8U];
+
+    /*! Host port priority packet byet count */
+    uint64_t txPriBcnt[8U];
+
+    /*! Host port priority packet drop count */
+    uint64_t txPriDrop[8U];
+
+    /*! Host port priority packet drop byte count */
+    uint64_t txPriDropBcnt[8U];
 } CpswStats_HostPort_2g;
 
 /*!
@@ -393,8 +426,44 @@ typedef struct CpswStats_MacPort_2g_s
     /*! ALE policer matched and condition yellow */
     uint64_t alePolicyMatchYellow;
 
+    /*! ALE multicast source address drop */
+    uint64_t aleMultSADrop;
+
+    /*! ALE dual VLAN drop */
+    uint64_t aleDualVlanDrop;
+
+    /*! ALE IEEE 802.3 length error drop */
+    uint64_t aleLenErrorDrop;
+
+    /*! ALE IP next header limit drop */
+    uint64_t aleIpNextHdrDrop;
+
+    /*! ALE IPv4 fragment drop */
+    uint64_t aleIPv4FragDrop;
+
     /*! Reserved */
-    uint64_t reserved52to95[44U];
+    uint64_t reserved57to80[24U];
+
+    /*! IET receive assembly error */
+    uint64_t ietRxAssemblyErr;
+
+    /*! IET receive assembly OK */
+    uint64_t ietRxAssemblyOk;
+
+    /*! IET receive SMD error */
+    uint64_t ietRxSmdError;
+
+    /*! IET recieve merge fragment count */
+    uint64_t ietRxFrag;
+
+    /*! IET transmit merge fragment count */
+    uint64_t ietTxHold;
+
+    /*! IET transmit merge hold count */
+    uint64_t ietTxFrag;
+
+    /*! Reserved */
+    uint64_t reserved87to95[9U];
 
     /*! Transmit memory protect CRC error */
     uint64_t txMemProtectError;
@@ -447,7 +516,7 @@ typedef struct CpswStats_HostPort_Ng_s
     uint64_t rxUndersizedFrames;
 
     /*! Total number of fragmented frames received */
-    uint64_t rxFragments;
+    uint64_t reserved10;
 
     /*! Total number of frames dropped by the ALE */
     uint64_t aleDrop;
@@ -468,7 +537,16 @@ typedef struct CpswStats_HostPort_Ng_s
     uint64_t txMcastFrames;
 
     /*! Reserved */
-    uint64_t reserved17to25[9U];
+    uint64_t reserved17to19[3];
+
+    /*! Tx Start of Frame Overrun */
+    uint64_t txSofOverrun;
+
+    /*! Tx Middle of Frame Overrun */
+    uint64_t txMofOverrun;
+
+    /*! Reserved */
+    uint64_t reserved22to25[4U];
 
     /*! Total number of bytes in all good frames transmitted */
     uint64_t txOctets;
@@ -564,28 +642,7 @@ typedef struct CpswStats_HostPort_Ng_s
     uint64_t aleIPv4FragDrop;
 
     /*! Reserved */
-    uint64_t reserved57to80[24U];
-
-    /*! IET receive assembly error */
-    uint64_t ietRxAssemblyErr;
-
-    /*! IET receive assembly OK */
-    uint64_t ietRxAssemblyOk;
-
-    /*! IET receive SMD error */
-    uint64_t ietRxSmdError;
-
-    /*! IET recieve merge fragment count */
-    uint64_t ietRxFrag;
-
-    /*! IET transmit merge fragment count */
-    uint64_t ietTxHold;
-
-    /*! IET transmit merge hold count */
-    uint64_t ietTxFrag;
-
-    /*! Reserved */
-    uint64_t reserved87to95[9U];
+    uint64_t reserved57to95[39U];
 
     /*! Transmit memory protect CRC error */
     uint64_t txMemProtectError;

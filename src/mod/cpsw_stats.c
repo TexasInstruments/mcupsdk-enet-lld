@@ -184,7 +184,7 @@ static Enet_IoctlValidate gCpswStats_privIoctlValidate[] =
 };
 #endif
 
-static CpswStatsIoctlHandlerRegistry_t CpswStatsIoctlHandlerRegistry[] = 
+static CpswStatsIoctlHandlerRegistry_t CpswStatsIoctlHandlerRegistry[] =
 {
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_GET_VERSION),
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_PRINT_REGS),
@@ -372,7 +372,7 @@ static int32_t CpswStats_isSupported(CSL_Xge_cpswRegs *regs)
 void CpswStats_resetHostStats(CpswStats_Handle hStats)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
-    CSL_CPSW_STATS portStats;
+    union CSL_CPSW_STATS portStats;
 
     Enet_devAssert(hStats->hostPortStats != NULL, "Invalid host port stats memory address\n");
 
@@ -380,7 +380,7 @@ void CpswStats_resetHostStats(CpswStats_Handle hStats)
     memset(hStats->hostPortStats, 0, sizeof(CpswStats_PortStats));
 
     /* Clear hardware stats through a dummy read */
-    memset(&portStats, 0, sizeof(CSL_CPSW_STATS));
+    memset(&portStats.p0_stats, 0, sizeof(portStats.p0_stats));
     CSL_CPSW_getPortStats(regs, 0U, &portStats);
 }
 
@@ -388,7 +388,7 @@ void CpswStats_resetMacStats(CpswStats_Handle hStats,
                                     Enet_MacPort macPort)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
-    CSL_CPSW_STATS portStats;
+    union CSL_CPSW_STATS portStats;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
 
     Enet_devAssert(portNum < hStats->macPortNum, "Invalid port number %u\n", portNum);
@@ -398,8 +398,8 @@ void CpswStats_resetMacStats(CpswStats_Handle hStats,
     memset(&hStats->macPortStats[portNum], 0, sizeof(CpswStats_PortStats));
 
     /* Clear hardware stats through a dummy read */
-    memset(&portStats, 0, sizeof(CSL_CPSW_STATS));
-    CSL_CPSW_getPortStats(regs, portNum + 1U, &portStats);
+    memset(&portStats.pn_stats, 0, sizeof(portStats.pn_stats));
+    CSL_CPSW_getPortStats(regs, portNum + 1, &portStats);
 }
 
 
@@ -472,9 +472,9 @@ static int32_t CpswStats_ioctl_handler_CPSW_STATS_IOCTL_REGISTER_HANDLER(CpswSta
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status;
 
-    status = CpswStats_setIoctlHandlerFxn(inArgs->cmd, 
-                                        (CpswStatsIoctlHandler *)inArgs->fxn, 
-                                        CpswStatsIoctlHandlerRegistry, 
+    status = CpswStats_setIoctlHandlerFxn(inArgs->cmd,
+                                        (CpswStatsIoctlHandler *)inArgs->fxn,
+                                        CpswStatsIoctlHandlerRegistry,
                                         ENET_ARRAYSIZE(CpswStatsIoctlHandlerRegistry));
     return status;
 }

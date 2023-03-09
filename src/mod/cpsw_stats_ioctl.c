@@ -98,7 +98,7 @@ int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_VERSION(CpswStats_Handle hS
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_PRINT_REGS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
- 
+
     ENETTRACE_VAR(regs);
     ENETTRACE_INFO("STATS: 0x%08x\n", regs->STAT_PORT_EN_REG);
     return status;
@@ -186,7 +186,7 @@ int32_t CpswStats_ioctl_handler_CPSW_STATS_IOCTL_SYNC(CpswStats_Handle hStats, C
 static void CpswStats_readHostStats(CpswStats_Handle hStats)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
-    CSL_CPSW_STATS portStats;
+    union CSL_CPSW_STATS portStats;
     uint64_t *stats64;
     uint32_t *stats32 = (uint32_t *)&portStats;
     uint32_t i;
@@ -195,7 +195,7 @@ static void CpswStats_readHostStats(CpswStats_Handle hStats)
 
     /* CSL blindly reads all registers in the statistics block regardless
      * of whether they are applicable or not to a CPSW instance type */
-    memset(&portStats, 0, sizeof(CSL_CPSW_STATS));
+    memset(&portStats.p0_stats, 0, sizeof(portStats.p0_stats));
     CSL_CPSW_getPortStats(regs, 0U, &portStats);
 
     stats64 = &hStats->hostPortStats->val[0U];
@@ -215,9 +215,9 @@ static void CpswStats_readHostStats(CpswStats_Handle hStats)
             hostStats2g->reserved4 = 0U;
             hostStats2g->reserved6 = 0U;
             hostStats2g->reserved8 = 0U;
-            memset(hostStats2g->reserved17to25, 0, sizeof(hostStats2g->reserved17to25));
-            memset(hostStats2g->reserved52to95, 0, sizeof(hostStats2g->reserved52to95));
-            memset(hostStats2g->reserved97to128, 0, sizeof(hostStats2g->reserved97to128));
+            memset(hostStats2g->reserved17to19, 0, sizeof(hostStats2g->reserved17to19));
+            memset(hostStats2g->reserved22to25, 0, sizeof(hostStats2g->reserved22to25));
+            memset(hostStats2g->reserved57to95, 0, sizeof(hostStats2g->reserved57to95));
         }
         break;
 
@@ -231,9 +231,10 @@ static void CpswStats_readHostStats(CpswStats_Handle hStats)
             hostStatsNg->reserved4 = 0U;
             hostStatsNg->reserved6 = 0U;
             hostStatsNg->reserved8 = 0U;
-            memset(hostStatsNg->reserved17to25, 0, sizeof(hostStatsNg->reserved17to25));
-            memset(hostStatsNg->reserved57to80, 0, sizeof(hostStatsNg->reserved57to80));
-            memset(hostStatsNg->reserved87to95, 0, sizeof(hostStatsNg->reserved87to95));
+            hostStatsNg->reserved10 = 0U;
+            memset(hostStatsNg->reserved17to19, 0, sizeof(hostStatsNg->reserved17to19));
+            memset(hostStatsNg->reserved22to25, 0, sizeof(hostStatsNg->reserved22to25));
+            memset(hostStatsNg->reserved57to95, 0, sizeof(hostStatsNg->reserved57to95));
         }
         break;
 
@@ -249,7 +250,7 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
                                    Enet_MacPort macPort)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
-    CSL_CPSW_STATS portStats;
+    union CSL_CPSW_STATS portStats;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
     uint64_t *stats64;
@@ -262,8 +263,8 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
 
     /* CSL blindly reads all registers in the statistics block regardless
      * of whether they are applicable or not to a CPSW instance type */
-    memset(&portStats, 0, sizeof(CSL_CPSW_STATS));
-    CSL_CPSW_getPortStats(regs, portNum + 1U, &portStats);
+    memset(&portStats.pn_stats, 0, sizeof(portStats.pn_stats));
+    CSL_CPSW_getPortStats(regs, portNum + 1, &portStats);
 
     stats64 = &hStats->macPortStats[portNum].val[0U];
     for (i = 0U; i < CPSW_STATS_BLOCK_ELEM_NUM; i++)
@@ -278,7 +279,8 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
         {
             CpswStats_MacPort_2g *macStats2g = (CpswStats_MacPort_2g *)stats64;
 
-            memset(macStats2g->reserved52to95, 0, sizeof(macStats2g->reserved52to95));
+            memset(macStats2g->reserved57to80, 0, sizeof(macStats2g->reserved57to80));
+            memset(macStats2g->reserved87to95, 0, sizeof(macStats2g->reserved87to95));
         }
         break;
 
