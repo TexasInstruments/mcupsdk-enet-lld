@@ -53,6 +53,7 @@
 #include <priv/core/enet_trace_priv.h>
 #include <include/common/enet_osal_dflt.h>
 #include <include/common/enet_utils_dflt.h>
+#include <utils/include/enet_cpdmautils.h>
 
 #include <include/core/enet_dma.h>
 #include <include/core/enet_dma_pktutils.h>
@@ -93,11 +94,6 @@ static int32_t EnetCpdma_checkTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms);
 
 static int32_t EnetCpdma_checkRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms);
 
-static void EnetOsal_descCacheInv(EnetCpdma_DrvObj *pEnetDmaObj,
-                           volatile EnetCpdma_cppiDesc *pDescVirtAddr);
-static void EnetOsal_descCacheWbInv(EnetCpdma_DrvObj *pEnetDmaObj,
-                             volatile EnetCpdma_cppiDesc *pDescVirtAddr);
-
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -105,23 +101,6 @@ static void EnetOsal_descCacheWbInv(EnetCpdma_DrvObj *pEnetDmaObj,
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
-static void EnetOsal_descCacheInv(EnetCpdma_DrvObj *pEnetDmaObj,
-                           volatile EnetCpdma_cppiDesc *pDescVirtAddr)
-{
-    if (true == pEnetDmaObj->isCacheable)
-    {
-        EnetOsal_cacheInv((const EnetCpdma_cppiDesc *)pDescVirtAddr, sizeof(EnetCpdma_cppiDesc));
-    }
-}
-
-static void EnetOsal_descCacheWbInv(EnetCpdma_DrvObj *pEnetDmaObj,
-                             volatile EnetCpdma_cppiDesc *pDescVirtAddr)
-{
-    if (true == pEnetDmaObj->isCacheable)
-    {
-        EnetOsal_cacheWbInv((const EnetCpdma_cppiDesc *)pDescVirtAddr, sizeof(EnetCpdma_cppiDesc));
-    }
-}
 
 /*!
  *  \brief EnetCpdma_mapApp2CpdmaCoreId returns the coreId expected by CPDMA module.
@@ -786,7 +765,6 @@ static void EnetCpdma_enqueueTx( EnetCpdma_DescCh *pDescCh)
                 Enet_assert(pDescCh->descFreeCount > 0);
                 pDescThis->pNext = ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
             }
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescThis);
             if (!isCsumIteration)
             {
                 /* If this iteration is for chksuminfo, sgList.list[0] is not handled yet, do not increment the index */
@@ -803,10 +781,8 @@ static void EnetCpdma_enqueueTx( EnetCpdma_DescCh *pDescCh)
         if (pDescCh->pDescTail)
         {
             Enet_assert((pEndDesc != NULL) && (pStartDesc != NULL));
-            EnetOsal_descCacheInv(pDescCh->hEnetDma , pDescCh->pDescTail);
             Enet_assert(pDescCh->pDescTail->pNext == NULL);
             pDescCh->pDescTail->pNext = ENET_CPDMA_VIRT2SOCADDR(pStartDesc);
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescCh->pDescTail);
             pDescCh->pDescTail = pEndDesc;
         }
         else
@@ -859,7 +835,6 @@ static bool EnetCpdma_dequeueTx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *p
     while (EnetQueue_getQCount(&pDescCh->descQueue) > 0U)
     {
         pDesc = pDescCh->pDescRead;
-        EnetOsal_descCacheInv(pDescCh->hEnetDma ,pDesc);
         Enet_assert(((pDesc->pktFlgLen) & ENET_CPDMA_DESC_PKT_FLAG_SOP) != 0);
         if ((pDesc->pktFlgLen) & ENET_CPDMA_DESC_PKT_FLAG_OWNER)
         {
@@ -987,7 +962,6 @@ static bool EnetCpdma_dequeueTx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *p
                         pDescCh->unackedCpDescCount = 0;
                         pDescCh->unackedCpDescFirst = NULL;
                     }
-                    EnetOsal_descCacheInv(pDescCh->hEnetDma ,pDesc);
                     Enet_assert(((pDesc->pktFlgLen) & ENET_CPDMA_DESC_PKT_FLAG_SOP) == 0);
                     Enet_assert(((pDesc->pktFlgLen) & ENET_CPDMA_DESC_PKT_FLAG_OWNER) == 0);
                     /* Move the read pointer */
@@ -1222,7 +1196,6 @@ void EnetCpdma_enqueueRx(EnetCpdma_DescCh *pDescCh)
                 pDescThis->pNext = ENET_CPDMA_VIRT2SOCADDR(pDescCh->pDescWrite);
             }
 
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma,pDescThis);
             scatterSegmentIndex++;
         }
         EnetDma_initPktInfo(pPkt);
@@ -1244,10 +1217,8 @@ void EnetCpdma_enqueueRx(EnetCpdma_DescCh *pDescCh)
         if (pDescCh->pDescTail)
         {
             Enet_assert((pDescThis != NULL) && (pStartPtr != NULL));
-            EnetOsal_descCacheInv(pDescCh->hEnetDma , pDescCh->pDescTail);
             Enet_assert(pDescCh->pDescTail->pNext == NULL);
             pDescCh->pDescTail->pNext = ENET_CPDMA_VIRT2SOCADDR(pStartPtr);
-            EnetOsal_descCacheWbInv(pDescCh->hEnetDma, pDescCh->pDescTail);
             pDescCh->pDescTail = pDescThis;
         }
         else
@@ -1316,8 +1287,6 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
     {
         pDesc = pDescCh->pDescRead;
 
-        EnetOsal_descCacheInv(pDescCh->hEnetDma ,pDesc);
-
         /* Get the status of this descriptor */
         /* Bit 16,17 and 18 indicate the port number(ingress)
          * Passcrc bit is always set in the received packets.Clear it before putting the \
@@ -1350,11 +1319,7 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
                 }
                 pDescCh->descFreeCount++;
                 pDescCh->descSubmittedCount--;
-                if (numScatterSegments > 0)
-                {
-                    /* SOP desc is cacheInvalidated outside the loop */
-                    EnetOsal_descCacheInv(pDescCh->hEnetDma ,pDesc);
-                }
+
                 pktFlgLen = (pDesc->pktFlgLen) & ((uint32_t)~ENET_CPDMA_DESC_PSINFO_PASSCRC_FLAG);
                 if (pDescFirst == NULL)
                 {
@@ -1860,7 +1825,6 @@ static int32_t EnetCpdma_checkTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms)
 
 void EnetCpdma_initParams(Enet_Type enetType, EnetDma_Cfg *pDmaConfig)
 {
-    pDmaConfig->isCacheable                 = true;
     pDmaConfig->enChOverrideFlag            = false;
     pDmaConfig->rxInterruptPerMSec          = 0U;
     pDmaConfig->txInterruptPerMSec          = 0U;
@@ -1910,12 +1874,19 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
 
     if (ENET_SOK == retVal)
     {
+        if (EnetAppUtils_isDescCached() == true)
+        {
+            ENETTRACE_ERR("[ENET DMA Error] CPDMA descriptors are not in un-cached memory region !!\n");
+            retVal = ENET_EINVALIDPARAMS;
+        }
+    }
+
+    if (ENET_SOK == retVal)
+    {
         /* TODO: more error check */
         pEnetDmaObj = EnetSoc_getDmaHandle(enetType, 0U /* instId */);
 
         Enet_assert(pEnetDmaObj != NULL);
-
-        pEnetDmaObj->isCacheable = pDmaCfg->isCacheable;
 
         pEnetDmaObj->cpdmaCoreId = EnetCpdma_mapApp2CpdmaCoreId(appCoreId);
 

@@ -411,9 +411,6 @@ typedef struct EnetCpdma_RxChInitPrms_s
  */
 typedef struct EnetCpdma_Cfg_s
 {
-    /*! flag to indicate whether the descriptor area is cacheable */
-    bool        isCacheable;
-
     /*! Number of tx Interrupts per millisecond */
     uint32_t txInterruptPerMSec;
 

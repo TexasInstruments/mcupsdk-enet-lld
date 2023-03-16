@@ -306,9 +306,6 @@ typedef struct EnetCpdma_DrvObj_s
     /*! CPPI descriptor memory */
     void*   cppiRamBase;
 
-    /*! flag to indicate whether the descriptor area is cacheable */
-    bool    isCacheable;
-
     /*! total size of the reserved CPPI descriptor area in bytes */
     uint32_t    descSize;
 

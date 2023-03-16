@@ -723,7 +723,6 @@ static int32_t EnetTxSG_openEnet(void)
         EnetAppUtils_print("CPSW_2G Test\r\n");
     } 
     EnetAppUtils_assert(EnetAppUtils_isDescCached() == false);
-    dmaCfg.isCacheable = false;
     dmaCfg.rxInterruptPerMSec = 8;
     dmaCfg.txInterruptPerMSec = 2;
     /* Set Enet global runtime log level */
