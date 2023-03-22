@@ -84,7 +84,7 @@ extern "C" {
 /* ========================================================================== */
 
 /*!
- * \brief CPSW MAC port IOCTL commands.
+ * \brief CPSW HOST port IOCTL commands.
  */
 typedef enum CpswHostPort_Ioctl_s
 {
@@ -157,12 +157,20 @@ typedef struct CpswHostPort_Cfg_s
      *  true) or replaced with port's VID (if set to false) */
     bool passPriorityTaggedUnchanged;
 
-    /*! Enable checksum offload feature which allows TCP checksum computation
+    /*! Enable Tx checksum offload feature which allows TCP checksum computation
      *  to be offloaded to the CPSW for frames transmitted by any core.
      *  The Protocol specific info needs to be populated in the descriptor
      *  to indicate the location in the packet where the computed checksum
-     *  should be inserted */
-    bool csumOffloadEn;
+     *  should be inserted.
+     *     On AM243x and AM64x platforms there is no specific control along
+     *  Rx or Tx direction. Hence txCsumOffloadEn enables both Tx and Rx Checksum
+     *  offload.*/
+    bool txCsumOffloadEn;
+
+    /*! Enable Rx checksum offload feature which allows TCP/UDP checksum validation
+     *  to be offloaded to the CPSW for frames received.
+     *  On AM243x and AM64x platforms this field has no meaning. */
+    bool rxCsumOffloadEn;
 
     /*! RX VLAN remap controls whether the hardware switch priority for VLAN
      *  tagged or priority tagged packets is determined from CPPI thread number

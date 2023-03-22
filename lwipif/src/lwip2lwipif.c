@@ -219,8 +219,13 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p)
         {
             Lwip2Enet_assert(p->len >= (sizeof(struct ip_hdr) + sizeof(struct eth_hdr) + sizeof(struct udp_hdr)));
             struct udp_hdr* pUdpHdr = (struct udp_hdr*)pIpPayload;
-            /* calculate the checksum in software and fill the corresponding field */
-            pUdpHdr->chksum = LWIPIF_LWIP_getUdpLiteChksum(p, ipPktHdrLen, ipPktPayloadLen, pUdpHdr, &srcIp, &dstIp);
+
+            if (pUdpHdr->chksum == 0U)
+            {
+                /* checksum is valid and not computed by stack */
+                /* calculate the checksum in software and fill the corresponding field */
+                pUdpHdr->chksum = LWIPIF_LWIP_getUdpLiteChksum(p, ipPktHdrLen, ipPktPayloadLen, pUdpHdr, &srcIp, &dstIp);
+            }
             chkSumInfo = 0;
         }
         break;
@@ -235,29 +240,41 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p)
             {
                 Lwip2Enet_assert(p->len >= (sizeof(struct ip_hdr) + sizeof(struct eth_hdr) + sizeof(struct udp_hdr)));
                 struct udp_hdr* pUdpHdr = (struct udp_hdr*)pIpPayload;
-                csumCoverageStartByte = (uint8_t*)pUdpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
-                csumResultByte = (uint8_t*)(&(pUdpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
-                pseudoIpHdrChkSum = ~(ip_chksum_pseudo(NULL, IP_PROTO_UDP, ipPktPayloadLen, &srcIp, &dstIp));
-                pUdpHdr->chksum = pseudoIpHdrChkSum;
+
+                if (pUdpHdr->chksum == 0U)
+                {
+                    /* checksum is valid and not computed by stack */
+
+                    csumCoverageStartByte = (uint8_t*)pUdpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
+                    csumResultByte = (uint8_t*)(&(pUdpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
+                    pseudoIpHdrChkSum = ~(ip_chksum_pseudo(NULL, IP_PROTO_UDP, ipPktPayloadLen, &srcIp, &dstIp));
+                    pUdpHdr->chksum = pseudoIpHdrChkSum;
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, ipPktPayloadLen);
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_STARTBYTE(chkSumInfo, csumCoverageStartByte);
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_RESBYTE(chkSumInfo, csumResultByte);
+                }
             }
             else if (protocolType == IP_PROTO_TCP)
             {
                 Lwip2Enet_assert(p->len >= (sizeof(struct ip_hdr) + sizeof(struct eth_hdr) + sizeof(struct tcp_hdr)));
                 struct tcp_hdr* pTcpHdr = (struct tcp_hdr*)pIpPayload;
-                csumCoverageStartByte = (uint8_t*)pTcpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
-                csumResultByte = (uint8_t*)(&(pTcpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
-                pseudoIpHdrChkSum = ~(ip_chksum_pseudo(NULL, IP_PROTO_TCP, ipPktPayloadLen, &srcIp, &dstIp));
-                pTcpHdr->chksum = pseudoIpHdrChkSum;
+
+                if (pTcpHdr->chksum == 0U)
+                {
+                    csumCoverageStartByte = (uint8_t*)pTcpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
+                    csumResultByte = (uint8_t*)(&(pTcpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
+                    pseudoIpHdrChkSum = ~(ip_chksum_pseudo(NULL, IP_PROTO_TCP, ipPktPayloadLen, &srcIp, &dstIp));
+                    pTcpHdr->chksum = pseudoIpHdrChkSum;
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, ipPktPayloadLen);
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_STARTBYTE(chkSumInfo, csumCoverageStartByte);
+                    ENETDMA_TXCSUMINFO_SET_CHKSUM_RESBYTE(chkSumInfo, csumResultByte);
+                }
             }
             else
             {
                 EnetUtils_printf("[LWIPIF_LWIP] Un-Supported protocol for HW checksum offload\r\n");
-                return 0;
+                chkSumInfo = 0;
             }
-
-            ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, ipPktPayloadLen);
-            ENETDMA_TXCSUMINFO_SET_CHKSUM_STARTBYTE(chkSumInfo, csumCoverageStartByte);
-            ENETDMA_TXCSUMINFO_SET_CHKSUM_RESBYTE(chkSumInfo, csumResultByte);
         }
         break;
         default:
@@ -292,7 +309,6 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
     Lwip2Enet_Handle hLwip2Enet;
     Lwip2Enet_TxHandle hTxHandle;
     Enet_MacPort macPort;
-
     /* Get the pointer to the private data */
     hLwip2Enet = (Lwip2Enet_Handle)netif->state;
     hTxHandle  = hLwip2Enet->mapNetif2Tx[netif->num];
@@ -485,6 +501,9 @@ err_t LWIPIF_LWIP_init(struct netif *netif)
     netif->linkoutput           = LWIPIF_LWIP_send;
     netif->flags               |= NETIF_FLAG_ETHARP;
 
+#if !ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
+    EnetUtils_printf("[LWIPIF_LWIP] LwIP Checksum offload support disabled\r\n");
+#endif
     LWIPIF_LWIP_start(netif);
 
     EnetUtils_printf("[LWIPIF_LWIP] NETIF INIT SUCCESS\r\n");

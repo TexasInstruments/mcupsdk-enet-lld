@@ -576,8 +576,7 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
  *  \retval
  *      void
  */
-void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx,
-                             Enet_MacPort macPort)
+void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort)
 {
     Lwip2Enet_Handle hLwip2Enet;
     EnetDma_Pkt *pCurrDmaPacket;
@@ -621,11 +620,7 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx,
                 pCurrDmaPacket->appPriv    = hPbufPkt;
                 pCurrDmaPacket->txPortNum  = macPort;
                 pCurrDmaPacket->node.next  = NULL;
-                pCurrDmaPacket->chkSumInfo = 0U;
-
-#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
                 pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
-#endif
 
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
@@ -669,6 +664,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
                        void *param,
                        uint32_t size)
 {
+
     int32_t retVal = 0U;
 
     // TODO - make IOCTL design consistent with Enet/Enet modules
@@ -784,7 +780,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
         /* ToDo: Discard all queued packets */
     }
 
-    for(uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
+    for (uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
     {
         /* If link status changed from down->up, then send any queued packets */
         if ((prevLinkState == 0U) && (hLwip2Enet->linkIsUp))
@@ -861,10 +857,10 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
 
         if (pCurrDmaPacket == NULL)
         {
-        /* If we run out of packet info Q, retrieve packets from HW
+            /* If we run out of packet info Q, retrieve packets from HW
             * and try to dequeue free packet again */
-        Lwip2Enet_retrieveTxPkts(tx);
-        pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&tx->freePktInfoQ);
+            Lwip2Enet_retrieveTxPkts(tx);
+            pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&tx->freePktInfoQ);
         }
 
         if (NULL != pCurrDmaPacket)
@@ -878,10 +874,7 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
             pCurrDmaPacket->node.next = NULL;
             pCurrDmaPacket->chkSumInfo = 0U;
             pCurrDmaPacket->txPortNum  = macPort;
-
-#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
             pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
-#endif
 
             ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
             EnetQueue_enq(pDmaPktInfoQ, &(pCurrDmaPacket->node));
@@ -1161,11 +1154,12 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 scatterSegmentIndex++;
             }
 
-#if ((ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1) && (ENET_ENABLE_PER_CPSW == 1))
+
             {
                 struct ip_hdr* pIpPkt = (struct ip_hdr* ) LWIPIF_LWIP_getIpPktStart((uint8_t*) hPbufPacket->payload);
                 if (IPH_PROTO(pIpPkt) == IP_PROTO_UDPLITE)
                 {
+                    /* As HW is can not compute checksum offload for UDP-lite packet, trigger SW checksum validation */
                     isChksumError = LWIPIF_LWIP_UdpLiteValidateChkSum(hPbufPacket);
                 }
                 else
@@ -1174,17 +1168,18 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                      * as default value of this field when offload not enabled is false */
                     const uint32_t csumInfo =  pCurrDmaPacket->chkSumInfo;
 
-                    if ( ENETDMA_RXCSUMINFO_GET_IPV4_FLAG(csumInfo) ||
-                            ENETDMA_RXCSUMINFO_GET_IPV6_FLAG(csumInfo))
+                    if (ENETDMA_RXCSUMINFO_GET_IPV4_FLAG(csumInfo) ||
+                        ENETDMA_RXCSUMINFO_GET_IPV6_FLAG(csumInfo))
                     {
                         isChksumError = ENETDMA_RXCSUMINFO_GET_CHKSUM_ERR_FLAG(csumInfo);
                     }
                 }
             }
-#endif
+
             EnetDma_initPktInfo(pCurrDmaPacket);
             EnetQueue_enq(&rx->freeRxPktInfoQ, &pCurrDmaPacket->node);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
+
             if (!isChksumError)
             {
                 /* Pass the received packet to the LwIP stack */

@@ -225,7 +225,8 @@ void CpswHostPort_initCfg(CpswHostPort_Cfg *hostPortCfg)
     hostPortCfg->vlanCfg.portVID   = 0U;
     hostPortCfg->rxPriorityType    = ENET_INGRESS_PRI_TYPE_FIXED;
     hostPortCfg->txPriorityType    = ENET_EGRESS_PRI_TYPE_FIXED;
-    hostPortCfg->csumOffloadEn     = true;
+    hostPortCfg->rxCsumOffloadEn   = true;
+    hostPortCfg->txCsumOffloadEn   = true;
 }
 
 int32_t CpswHostPort_open(EnetMod_Handle hMod,
@@ -304,16 +305,13 @@ int32_t CpswHostPort_open(EnetMod_Handle hMod,
 
     CSL_CPSW_getCppiP0Control(regs, &cppiP0ControlCfg);
 
-    if ((hostPortCfg->csumOffloadEn == true) && (ENET_CFG_CPSW_CSUM_OFFLOAD_SUPPORT == ENET_ON))
-    {
-        cppiP0ControlCfg.p0RxChksumEn = TRUE;
-        cppiP0ControlCfg.p0TxChksumEn = TRUE;
-    }
-    else
-    {
-        cppiP0ControlCfg.p0RxChksumEn = FALSE;
-        cppiP0ControlCfg.p0TxChksumEn = FALSE;
-    }
+#if (ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT) == 1)
+    cppiP0ControlCfg.p0RxChksumEn = hostPortCfg->txCsumOffloadEn; // FHOST
+    cppiP0ControlCfg.p0TxChksumEn = hostPortCfg->rxCsumOffloadEn; // THOST
+#else
+    cppiP0ControlCfg.p0RxChksumEn = FALSE;
+    cppiP0ControlCfg.p0TxChksumEn = FALSE;
+#endif
 
     cppiP0ControlCfg.p0RxRemapVlan     = hostPortCfg->rxVlanRemapEn ? TRUE : FALSE;
     cppiP0ControlCfg.p0RxRemapDscpIpv4 = hostPortCfg->rxDscpIPv4RemapEn ? TRUE : FALSE;

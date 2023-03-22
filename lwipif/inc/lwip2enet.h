@@ -373,8 +373,7 @@ extern void Lwip2Enet_close(Lwip2Enet_Handle hlwip2enet);
 
 extern void Lwip2Enet_setRx(Lwip2Enet_Handle hlwip2enet);
 
-extern void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx,
-                                    Enet_MacPort macPort);
+extern void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort);
 
 extern int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hlwip2enet,
                               uint32_t cmd,

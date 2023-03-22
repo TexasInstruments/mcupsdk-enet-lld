@@ -189,8 +189,8 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
                 Enet_assert(true == CSL_udmapCppi5IsEpiDataPresent(&pHpdDesc->hostDesc));
 #endif
                 cppiTxStatus           = (EnetUdma_CppiTxStatus *)pHpdDesc->psInfo;
-                dmaPkt->chkSumInfo     = cppiTxStatus->chkSumInfo;
 
+                dmaPkt->chkSumInfo     = Enet_isIcssFamily(hPer->enetType) ? 0U : cppiTxStatus->chkSumInfo;
                 dmaPkt->tsInfo.rxPktTs = ((((uint64_t)cppiTxStatus->tsHigh) << 32U) |
                                                 ((uint64_t)cppiTxStatus->tsLow));
 
@@ -458,14 +458,15 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                                 CSL_udmapCppi5GetPsDataLen(pHostDesc));
 #endif
                 cppiRxCntr = (EnetUdma_CppiRxControl *)pHpdDesc->psInfo;
-                cppiRxCntr->chkSumInfo = dmaPkt->chkSumInfo;
 
                 if (Enet_isIcssFamily(hPer->enetType))
                 {
+                    cppiRxCntr->chkSumInfo = 0U;
                     tsInfo = (uint32_t *)&pHpdDesc->extendedPktInfo[4U];
                 }
                 else
                 {
+                    cppiRxCntr->chkSumInfo = dmaPkt->chkSumInfo;
                     tsInfo = (uint32_t *)&cppiRxCntr->tsInfo;
                 }
 
