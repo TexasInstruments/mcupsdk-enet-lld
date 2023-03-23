@@ -207,6 +207,24 @@ typedef enum EnetMacPort_Ioctl_e
      */
     ENET_MACPORT_IOCTL_GET_LINK_CFG = ENET_MACPORT_PUBLIC_IOCTL(12U),
 
+    /*!
+     * \brief Set Idleslope for Credit Based Shaper on MAC Port.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_CreditBasedShaperInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING = ENET_MACPORT_PUBLIC_IOCTL(13U),
+
+    /*!
+     * \brief Get Idleslope of Credit Based Shaper on MAC Port.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: #EnetPort_CreditBasedShapingCfg
+     */
+    ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING = ENET_MACPORT_PUBLIC_IOCTL(14U),
+
 } EnetMacPort_Ioctl;
 
 /*!
@@ -379,6 +397,18 @@ typedef struct EnetMacPort_EnableEgressTrafficShapingInArgs_s
     /*! Traffic shaping configuration for all priorities */
     EnetPort_TrafficShapingCfg trafficShapingCfg;
 } EnetMacPort_EnableEgressTrafficShapingInArgs;
+
+/*!
+ * \brief Input args for #ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING command.
+ */
+typedef struct EnetMacPort_CreditBasedShaperInArgs_s
+{
+    /*! Port number */
+    Enet_MacPort macPort;
+
+    /*! Credit based shaper configuration */
+    EnetPort_CreditBasedShapingCfg cbsCfg;
+} EnetMacPort_CreditBasedShaperInArgs;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */

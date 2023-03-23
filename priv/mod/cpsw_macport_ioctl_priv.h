@@ -131,6 +131,8 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(CpswMacPort_Handl
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_EST_ENABLE_TIMESTAMP(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 
 void CpswMacPort_disablePort(CSL_Xge_cpswRegs *regs, Enet_MacPort macPort);
 

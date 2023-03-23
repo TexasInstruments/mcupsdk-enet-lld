@@ -211,6 +211,24 @@ typedef enum EnetHostPort_Ioctl_e
      * - outArgs: bool
      */
     ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED = ENET_HOSTPORT_PUBLIC_IOCTL(14U),
+
+    /*!
+     * \brief Set Idleslope for Credit Based Shaper on Host Port.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetPort_CreditBasedShapingCfg
+     * - outArgs: None
+     */
+    ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING = ENET_HOSTPORT_PUBLIC_IOCTL(15U),
+
+    /*!
+     * \brief Get Idleslope of Credit Based Shaper on Host Port.
+     *
+     * IOCTL parameters:
+     * -  inArgs: None
+     * - outArgs: #EnetPort_CreditBasedShapingCfg
+     */
+    ENET_HOSTPORT_IOCTL_GET_CREDIT_BASED_SHAPING = ENET_HOSTPORT_PUBLIC_IOCTL(16U),
 } EnetHostPort_Ioctl;
 
 /*!

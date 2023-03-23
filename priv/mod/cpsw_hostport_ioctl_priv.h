@@ -108,6 +108,8 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED(CpswHos
 int32_t CpswHostPort_ioctl_handler_CPSW_HOSTPORT_IOCTL_GET_FIFO_STATS(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswHostPort_ioctl_handler_CPSW_HOSTPORT_GET_FLOW_ID_OFFSET(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswHostPort_ioctl_handler_CPSW_HOSTPORT_SET_FLOW_ID_OFFSET(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_GET_CREDIT_BASED_SHAPING(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -101,6 +101,15 @@ typedef struct EnetPort_TrafficShapingRates_s
 } EnetPort_TrafficShapingRates;
 
 /*!
+ * \brief Credit Based shaping parameters (idleSlope).
+ */
+typedef struct EnetPort_CreditBasedShapingCfg_s
+{
+    /*! idleSlope for CBS on each switch queue priority */
+    uint64_t idleSlope[ENET_PRI_NUM];
+} EnetPort_CreditBasedShapingCfg;
+
+/*!
  * \brief Traffic shaping configuration for all priorities.
  */
 typedef struct EnetPort_TrafficShapingCfg_s

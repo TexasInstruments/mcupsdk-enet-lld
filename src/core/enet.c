@@ -270,6 +270,14 @@ static Enet_IoctlValidate gEnetHostPort_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED,
                           0U,
                           sizeof(bool)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING,
+                          sizeof(EnetPort_CreditBasedShapingCfg),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_HOSTPORT_IOCTL_GET_CREDIT_BASED_SHAPING,
+                          0U,
+                          sizeof(EnetPort_CreditBasedShapingCfg)),
 };
 
 /* Public MAC port IOCTL validation data. */
@@ -326,6 +334,14 @@ static Enet_IoctlValidate gEnetMacPort_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_LINK_CFG,
                           sizeof(EnetMacPort_GenericInArgs),
                           sizeof(EnetMacPort_LinkCfg)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING,
+                          sizeof(EnetMacPort_CreditBasedShaperInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(EnetPort_CreditBasedShapingCfg)),
 };
 
 /* Public MDIO IOCTL validation data. */

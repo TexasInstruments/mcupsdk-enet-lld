@@ -307,6 +307,53 @@ int32_t CpswHostPort_ioctl_handler_CPSW_HOSTPORT_SET_FLOW_ID_OFFSET(CpswHostPort
     return status;
 }
 
+int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_SOK;
+#if ENET_CFG_IS_ON(CPSW_HOSTPORT_TRAFFIC_SHAPING)
+    const EnetPort_CreditBasedShapingCfg *inArgs =
+        (const EnetPort_CreditBasedShapingCfg *)prms->inArgs;
+    uint32_t cppiClkFreqHz,i;
+    EnetPort_TrafficShapingCfg trafficShapingCfg;
+
+    cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
+
+    for (i = 0U; i < ENET_PRI_NUM; i++)
+    {
+        trafficShapingCfg.rates[i].committedRateBitsPerSec = inArgs->idleSlope[i];
+        trafficShapingCfg.rates[i].excessRateBitsPerSec = 0U;
+    }
+
+    status = CpswHostPort_setTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
+#else
+     status = ENET_ENOTSUPPORTED;
+#endif
+    return status;
+}
+
+int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_GET_CREDIT_BASED_SHAPING(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_SOK;
+#if ENET_CFG_IS_ON(CPSW_HOSTPORT_TRAFFIC_SHAPING)
+    EnetPort_CreditBasedShapingCfg *cbsCfg = (EnetPort_CreditBasedShapingCfg *)prms->outArgs;
+    uint32_t cppiClkFreqHz,i;
+    EnetPort_TrafficShapingCfg trafficShapingCfg;
+
+    cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
+
+    status = CpswHostPort_getTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to get traffic shaping: %d\n", status);
+
+    for (i = 0U; i < ENET_PRI_NUM; i++)
+    {
+        cbsCfg->idleSlope[i] = trafficShapingCfg.rates[i].committedRateBitsPerSec;
+    }
+#else
+     status = ENET_ENOTSUPPORTED;
+#endif
+    return status;
+}
 
 static void CpswHostPort_printRegs(CSL_Xge_cpswRegs *regs)
 {
