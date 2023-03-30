@@ -703,6 +703,28 @@ typedef enum Icssg_Ioctl_e
     ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM = ICSSG_PUBLIC_IOCTL(34U),
 
     /*!
+     * \brief cut through or prempt select configuration.
+     *
+     * IOCTL params:
+     * -  inArgs: #IcssgMacPort_SetQueueCtPremptModeInArgs
+     * - outArgs: None
+     *
+     * Type: Synchronous.
+     */
+    ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT = ICSSG_PUBLIC_IOCTL(35U),
+
+    /*!
+     * \brief special frame priority configuration.
+     *
+     * IOCTL params:
+     * -  inArgs: #IcssgMacPort_ConfigSpecialFramePrioInArgs
+     * - outArgs: None
+     *
+     * Type: Synchronous.
+     */
+    ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO = ICSSG_PUBLIC_IOCTL(36U),
+
+    /*!
      * \brief Register Handler for the IOCTL CMD
      *
      * IOCTL params:
@@ -711,7 +733,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_INTERNAL_IOCTL_REGISTER_HANDLER = ICSSG_PUBLIC_IOCTL(35U),
+    ICSSG_INTERNAL_IOCTL_REGISTER_HANDLER = ICSSG_PUBLIC_IOCTL(37U),
 
 } Icssg_Ioctl;
 
@@ -738,6 +760,33 @@ typedef enum Icssg_QueueForwardMode_e
     /*! Cut-through queue */
     ICSSG_QUEUE_FORWARD_MODE_CUTTHROUGH,
 } Icssg_QueueForwardMode;
+
+/*!
+ * \brief Input arguments for #ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT command.
+ */
+typedef struct IcssgMacPort_SetQueueCtPremptModeInArgs_s
+{
+    /*! Port number */
+    Enet_MacPort macPort;
+
+    /*! Queue preemption mode */
+    Icssg_QueuePreemptMode queuePreemptMode[ENET_PRI_NUM];
+
+    /*! Queue forward mode */
+    Icssg_QueueForwardMode queueForwardMode[ENET_PRI_NUM];
+} IcssgMacPort_SetQueueCtPremptModeInArgs;
+
+/*!
+ * \brief Input arguments for #ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO command.
+ */
+typedef struct IcssgMacPort_ConfigSpecialFramePrioInArgs_s
+{
+    /*! Port number */
+    Enet_MacPort macPort;
+
+    /*! special frame priority */
+    uint8_t specialFramePrio;
+} IcssgMacPort_ConfigSpecialFramePrioInArgs;
 
 /*!
  * \brief Port states.
@@ -1012,6 +1061,32 @@ typedef struct Icssg_IngressRateLim_s
 } Icssg_IngressRateLim;
 
 /*!
+ * \brief ICSSG custom firmware.
+ *
+ * Container structure for the ICSSG custom firmware blobs for PRU, RTU and TX PRU.
+ */
+typedef struct Icssg_custom_Fw_s
+{
+    /*! Pointer to PRU firmware header */
+    const uint32_t *pru;
+
+    /*! Size of PRU firmware header */
+    uint32_t pruSize;
+
+    /*! Pointer to RTU firmware header */
+    const uint32_t *rtu;
+
+    /*! Size of RTU firmware header */
+    uint32_t rtuSize;
+
+    /*! Pointer to TXPRU firmware header */
+    const uint32_t *txpru;
+
+    /*! Size of TX PRU firmware header */
+    uint32_t txpruSize;
+} Icssg_custom_Fw;
+
+/*!
  * \brief ICSSG buffer pool memories.
  *
  * Memory used by ICSSG firmware for host and port buffer pools, as well as,
@@ -1165,6 +1240,15 @@ typedef struct Icssg_Cfg_s
     /*! Whether premption Queue is enabled or not  */
     uint32_t isPremQueEnable;
 
+    /*! Clock type in firmware */
+    IcssgTimeSync_ClkType clockTypeFw;
+
+    /*! ICSSG custom firmware configuration: image addresses and sizes.
+     *  - Switch peripheral (#ENET_ICSSG_SWITCH), application must populate all
+     *    firmwares entries of this array.
+     *  - Dual-MAC peripheral (#ENET_ICSSG_DUALMAC), application must populate
+     *    only the first firmware entry. */
+    Icssg_custom_Fw fw[ICSSG_MAC_PORT_MAX];
 } Icssg_Cfg;
 
 /*!

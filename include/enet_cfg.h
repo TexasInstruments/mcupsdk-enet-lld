@@ -96,7 +96,7 @@ extern "C" {
 #define ENET_CFG_RM_PRESENT                         (ENET_ON)
 
 /*! \brief Maximum number of TX channels allocated for Resource Manager */
-#define ENET_CFG_RM_TX_CH_MAX                       (4U)
+#define ENET_CFG_RM_TX_CH_MAX                       (8U)
 
 /*! \brief Maximum number of RX channels allocated for Resource Manager */
 #define ENET_CFG_RM_RX_CH_MAX                       (4U)

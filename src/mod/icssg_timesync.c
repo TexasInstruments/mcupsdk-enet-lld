@@ -243,6 +243,7 @@ static IcssgTimeSyncIoctlHandlerTableEntry_t IcssgTimeSyncIoctlHandlerTable[] =
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP),
+    ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT(ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER)
 };
 
@@ -428,7 +429,7 @@ int32_t IcssgTimeSync_setClockTime(IcssgTimeSync_Handle hTimeSync,
         hTimeSync->setClockOngoing = true;
 
         // FIXME - When is clock setting done?
-        hTimeSync->setClockOngoing = false;
+        //hTimeSync->setClockOngoing = false;
     }
 
     return status;
@@ -487,7 +488,7 @@ int32_t IcssgTimeSync_adjustClock(IcssgTimeSync_Handle hTimeSync,
     /* Allow extension or shrinking of cycles by only 10% max */
     if (status == ENET_SOK)
     {
-        if (compensationPeriod < 10U)
+        if ((compensationPeriod > 0) && (compensationPeriod < 10))
         {
             ENETTRACE_ERR("%s: Invalid compensation period %u, exp < 10\n",
                           hMod->name, compensationPeriod);
@@ -627,10 +628,11 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(EnetMod_H
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP);
 
-    uint64_t tsLoadVal = *(uint64_t *)prms->inArgs;
+    EnetTimeSync_setTimestamp *tsSet = (EnetTimeSync_setTimestamp *)prms->inArgs;
+    uint64_t tsLoadVal = tsSet->tsLoadVal;
     IcssgTimeSync_Timestamp clkTime;
-    uint8_t clkMode = 0U; /* Absolute or relative setClock mode for WorkingClock*/
-    uint8_t clkSign = 0U; // FIXME
+    uint8_t clkMode = tsSet->clkMode; /* Absolute or relative setClock mode for WorkingClock*/
+    uint8_t clkSign = tsSet->clkSign; // FIXME
 
     clkTime.nanoseconds = tsLoadVal % 1000000000;
     clkTime.seconds     = tsLoadVal / 1000000000;
@@ -659,6 +661,21 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(EnetMo
                                         tsAdj->intervalInNsecs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Failed to adjust clock: %d\n", hMod->name, status);
+
+    return status;
+
+}
+
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(EnetMod_Handle hMod,
+                                             uint32_t cmd,
+                                             Enet_IoctlPrms *prms)
+{
+    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
+    int32_t status = ENET_SOK;
+
+    Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE);
+
+    hTimeSync->setClockOngoing = false;
 
     return status;
 

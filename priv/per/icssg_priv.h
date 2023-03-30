@@ -391,6 +391,8 @@ typedef struct Icssg_Obj_s
     /*! Whether premption Queue is enabled or not  */
     uint32_t isPremQueEnable;
 
+    /*! Clock type in firmware */
+    IcssgTimeSync_ClkType clockTypeFw;
 } Icssg_Obj;
 
 /*!

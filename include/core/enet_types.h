@@ -185,6 +185,9 @@ extern "C" {
 /*! \brief EtherType value for PTP over Ethernet Annex F (IEEE 802.3). */
 #define ENET_ETHERTYPE_PTP                    (0x88F7U)
 
+/*! \brief RX MAX MTU. */
+#define ENET_RX_MTU_MAX                      (2016U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */

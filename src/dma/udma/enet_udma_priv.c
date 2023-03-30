@@ -490,7 +490,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                     /* For ICSSG psinfo word 0 is used for passing cookie to the firmwareiccsgTxTsId
                      * This is don't care/reserved word for CPSW so we set without any check */
                     iccsgTxTsId = (uint32_t *)&pHpdDesc->extendedPktInfo[0U];
-                    *iccsgTxTsId = dmaPkt->tsInfo.txPktSeqId;
+                    *iccsgTxTsId = dmaPkt->txTsId;
                 }
                 else
                 {

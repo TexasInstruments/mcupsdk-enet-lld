@@ -1057,6 +1057,7 @@ void IcssgUtils_fwConfig(Icssg_Handle hIcssg,
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_CMP0_REG0, (cfg->cycleTimeNs - 0x4U));
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_CMP0_REG1, (cfg->cycleTimeNs - 0x4U));
     hIcssg->cycleTimeNs = cfg->cycleTimeNs;
+    hIcssg->clockTypeFw = cfg->clockTypeFw;
 
     /* Clear IEP0 COUNT register */
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_COUNT_REG0, 0x0U);
@@ -1369,6 +1370,7 @@ void IcssgUtils_configSwtFw(Icssg_Handle hIcssg,
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_CMP0_REG0, 0x000F423C);
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_CMP0_REG1, 0x000F423C);
     hIcssg->cycleTimeNs = cfg->cycleTimeNs;
+    hIcssg->clockTypeFw = cfg->clockTypeFw;
 
     /* Clear IEP0 COUNT register */
     Icssg_wr32(hIcssg, baseAddr + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE + CSL_ICSS_G_PR1_IEP0_SLV_COUNT_REG0, 0x0U);

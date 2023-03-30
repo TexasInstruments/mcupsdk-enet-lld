@@ -117,7 +117,7 @@ typedef enum EnetTimeSync_Ioctl_e
      * \brief Set timestamp value.
      *
      * IOCTL parameters:
-     * -  inArgs: uint64_t
+     * -  inArgs: EnetTimeSync_setTimestamp
      * - outArgs: None
      */
     ENET_TIMESYNC_IOCTL_SET_TIMESTAMP = ENET_TIMESYNC_PUBLIC_IOCTL(4U),
@@ -158,6 +158,14 @@ typedef enum EnetTimeSync_Ioctl_e
      */
     ENET_TIMESYNC_IOCTL_RESET = ENET_TIMESYNC_PUBLIC_IOCTL(8U),
 
+    /*!
+     * \brief ICSSG Set timestamp operation completed.
+     *
+     * IOCTL parameters:
+     * -  inArgs: None
+     * - outArgs: None
+     */
+    ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE = ENET_TIMESYNC_PUBLIC_IOCTL(9U),
 } EnetTimeSync_Ioctl;
 
 /*!
@@ -225,6 +233,21 @@ typedef enum EnetTimeSync_AdjDir_e
     /*! Decrease timestamp with adjustment value */
     ENET_TIMESYNC_ADJDIR_DECREASE,
 } EnetTimeSync_AdjDir;
+
+/*!
+ * \brief Timestamp set.
+ */
+typedef struct EnetTimeSync_setTimestamp_s
+{
+    /*! timestamp to set */
+    uint64_t tsLoadVal;
+
+    /*! mode of the clock */
+    uint8_t clkMode;
+
+    /*! sign of the clock */
+    uint8_t clkSign;
+} EnetTimeSync_setTimestamp;
 
 /*!
  * \brief Timestamp adjustment.

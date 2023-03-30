@@ -84,6 +84,10 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(EnetMo
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms);
 
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(EnetMod_Handle hMod,
+                                             uint32_t cmd,
+                                             Enet_IoctlPrms *prms);
+
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

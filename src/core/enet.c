@@ -453,7 +453,7 @@ static Enet_IoctlValidate gEnetTimeSync_ioctlValidate[] =
                           sizeof(uint64_t)),
 
     ENET_IOCTL_VALID_PRMS(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP,
-                          sizeof(uint64_t),
+                          sizeof(EnetTimeSync_setTimestamp),
                           0U),
 
     ENET_IOCTL_VALID_PRMS(ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP,
@@ -469,6 +469,9 @@ static Enet_IoctlValidate gEnetTimeSync_ioctlValidate[] =
                           sizeof(uint64_t)),
 
     ENET_IOCTL_VALID_PRMS(ENET_TIMESYNC_IOCTL_RESET,
+                          0U,
+                          0U),
+    ENET_IOCTL_VALID_PRMS(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE,
                           0U,
                           0U),
 };

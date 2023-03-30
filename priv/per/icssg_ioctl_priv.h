@@ -262,6 +262,14 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_UNAWARE(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms);
+
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms);
+
 int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKUP_EVENT(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);

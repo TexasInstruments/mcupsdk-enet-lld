@@ -78,7 +78,7 @@
 #define ICSSG_VLAN_TBL_MAX_ENTRIES          (4096U)
 #define ICSSG_VLAN_UNTAGGED                 ((int16_t)-1)
 #define ICSSG_DRAM1_OFFSET_FROM_DRAM0       (0x2000U)
-#define ICSSG_CFG_DEFAULT_AGING_PERIOD_MS   (5000U)
+#define ICSSG_CFG_DEFAULT_AGING_PERIOD_MS   (0x6FC23AC00)
 #define ICSSG_CFG_TX_IPG_960_NS             (0x17U)
 #define ICSSG_CFG_TX_IPG_104_NS             (0x0BU)
 
@@ -521,6 +521,14 @@ static Enet_IoctlValidate gIcssg_ioctlValidate[] =
                           sizeof(Icssg_IngressRateLim),
                           0U),
 
+    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT,
+                          sizeof(IcssgMacPort_SetQueueCtPremptModeInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO,
+                          sizeof(IcssgMacPort_ConfigSpecialFramePrioInArgs),
+                          0U),
+
     ENET_IOCTL_VALID_PRMS(ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER,
                           sizeof(Enet_IoctlRegisterHandlerInArgs),
                           0U),
@@ -573,6 +581,8 @@ static IcssgInternalIoctlHandlerTableEntry_t IcssgInternalIoctlHandlerTable[] =
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_SET_VLAN_AWARE),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_SET_VLAN_UNAWARE),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_HANDLE_EXTPHY_LINKUP_EVENT),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_HANDLE_EXTPHY_LINKDOWN_EVENT),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT(ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER),
@@ -625,7 +635,7 @@ void Icssg_initCfg(EnetPer_Handle hPer,
 
     memset(icssgInitCfg, 0, sizeof(Icssg_Cfg));
 
-    icssgInitCfg->agingPeriod = ICSSG_CFG_DEFAULT_AGING_PERIOD_MS;
+    icssgInitCfg->agingPeriod = (uint64_t)ICSSG_CFG_DEFAULT_AGING_PERIOD_MS;
 
     icssgInitCfg->vlanCfg.portPri  = 0U;
     icssgInitCfg->vlanCfg.portCfi  = 0U;
@@ -635,6 +645,8 @@ void Icssg_initCfg(EnetPer_Handle hPer,
     Mdio_initCfg(&icssgInitCfg->mdioCfg);
 
     icssgInitCfg->cycleTimeNs = ICSSG_IEP_DFLT_CYCLE_TIME_NSECS;
+
+    icssgInitCfg->clockTypeFw = ICSSG_TIMESYNC_CLKTYPE_WORKING_CLOCK;
 
     /* Initialize TimeSync config params */
     IcssgTimeSync_initCfg(&icssgInitCfg->timeSyncCfg);
@@ -790,7 +802,14 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
                                 &fwPoolMem[0U],
                                 hIcssg->dmaResInfo[0U].rxStartIdx);
 
-            status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, &hIcssg->fw[0U]);
+            if ((cfg->fw[0U].pru != NULL) && (cfg->fw[0U].rtu != NULL) && (cfg->fw[0U].txpru != NULL))
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, (Icssg_Fw *)&cfg->fw[0U]);
+            }
+            else
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, &hIcssg->fw[0U]);
+            }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: firmware download failure: %d\r\n",
                              ENET_PER_NAME(hIcssg), status);
@@ -820,7 +839,14 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
 
         if (status == ENET_SOK)
         {
-            status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, &hIcssg->fw[0U]);
+            if ((cfg->fw[0U].pru != NULL) && (cfg->fw[0U].rtu != NULL) && (cfg->fw[0U].txpru != NULL))
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, (Icssg_Fw *)&cfg->fw[0U]);
+            }
+            else
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, &hIcssg->fw[0U]);
+            }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: Port 1: firmware download failure: %d\r\n",
                              ENET_PER_NAME(hIcssg), status);
@@ -828,7 +854,14 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
 
         if (status == ENET_SOK)
         {
-            status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_2, &hIcssg->fw[1U]);
+            if ((cfg->fw[1U].pru != NULL) && (cfg->fw[1U].rtu != NULL) && (cfg->fw[1U].txpru != NULL))
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_2, (Icssg_Fw *)&cfg->fw[1U]);
+            }
+            else
+            {
+                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_2, &hIcssg->fw[1U]);
+            }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: Port 2: firmware download failure: %d\r\n",
                              ENET_PER_NAME(hIcssg), status);
@@ -1803,7 +1836,7 @@ static void Icssg_ioctlCfgAgeingPeriod(Icssg_Handle hIcssg,
     /* The actual value written to memory is aging timeout divided by
      * number of buckets because firmware iterates per bucket not for
      * entire FDB. See NRT design doc for more details. */
-    Icssg_wr64(hIcssg, sharedRam + FDB_AGEING_TIMEOUT_OFFSET, ageingPeriod / (uint64_t)numFDBBuckets);
+    Icssg_wr64(hIcssg, sharedRam + FDB_AGEING_TIMEOUT_OFFSET, 2*((uint64_t)ageingPeriod / (uint64_t)numFDBBuckets));
 }
 
 static void Icssg_ioctlVlanFidResetTable(Icssg_Handle hIcssg,
@@ -3639,15 +3672,22 @@ uint64_t Icssg_convertTs(EnetPer_Handle hPer,
     uint32_t rolloverCntHi;
     uint64_t ns;
 
-    swHi = Icssg_rd32(hIcssg, sharedRam + TIMESYNC_FW_WC_COUNT_HI_SW_OFFSET_OFFSET);
+    if(hIcssg->clockTypeFw == ICSSG_TIMESYNC_CLKTYPE_SYSTEM_TIME)
+    {
+        /* Working clock conversion not required in case FW doing in system time*/
+        ns = ts;
+    }
+    else
+    {
+        swHi = Icssg_rd32(hIcssg, sharedRam + TIMESYNC_FW_WC_COUNT_HI_SW_OFFSET_OFFSET);
 
-    iepCntLo = (uint32_t)(ts & 0xFFFFFU);
-    iepCntHi = (uint32_t)((ts >> 20U) & 0x7FFFFFU);
-    rolloverCntHi = (uint32_t)((ts >> 43U) & 0x1FFFFFU);
+        iepCntLo = (uint32_t)(ts & 0xFFFFFU);
+        iepCntHi = (uint32_t)((ts >> 20U) & 0x7FFFFFU);
+        rolloverCntHi = (uint32_t)((ts >> 43U) & 0x1FFFFFU);
 
-    ns = ((uint64_t)rolloverCntHi) << 23U | (iepCntHi + swHi);
-    ns = ns * cycleTimeNs + iepCntLo;
-
+        ns = ((uint64_t)rolloverCntHi) << 23U | (iepCntHi + swHi);
+        ns = ns * cycleTimeNs + iepCntLo;
+    }
     return ns;
 }
 
@@ -4532,7 +4572,8 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,
             outArgs->txMtu[i] = 2008U; //FIXME - Does ICSSG supports per priority MTU?
         }
 
-        outArgs->rxMtu = 1536U;
+        //outArgs->rxMtu = 1536U;
+        outArgs->rxMtu = ENET_RX_MTU_MAX;
 #if 0
         outArgs->rxMtu = CSL_REG32_FEXT(hIcssg->dram0 +
                                         CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_CFG_REGS_BASE +
@@ -4735,6 +4776,43 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_UNAWARE(EnetPer_Handle hPer,
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to set VLAN unaware mode: %d\r\n",
                         ENET_PER_NAME(hIcssg), status);
+    return status;
+}
+
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms)
+{
+    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    int32_t status = ENET_SOK;
+    IcssgMacPort_SetQueueCtPremptModeInArgs *inArgs =
+        (IcssgMacPort_SetQueueCtPremptModeInArgs *)prms->inArgs;
+
+    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT);
+
+    Enet_MacPort macPort = inArgs->macPort;
+
+    Icssg_configCutThroughOrPreempt(hIcssg, macPort,
+                                &inArgs->queuePreemptMode[0U],
+                                &inArgs->queueForwardMode[0U]);
+    return status;
+}
+
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms)
+{
+    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    int32_t status = ENET_SOK;
+    IcssgMacPort_ConfigSpecialFramePrioInArgs *inArgs =
+        (IcssgMacPort_ConfigSpecialFramePrioInArgs *)prms->inArgs;
+    Enet_MacPort macPort = inArgs->macPort;
+    uint8_t specialFramePrio = inArgs->specialFramePrio;
+
+    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO);
+
+    Icssg_setSpecialFramePrioCfg(hIcssg, macPort, specialFramePrio);
+
     return status;
 }
 
