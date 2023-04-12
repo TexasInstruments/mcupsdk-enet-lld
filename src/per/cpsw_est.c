@@ -98,7 +98,7 @@ static int32_t CpswEst_getIoctlHandlerIdx(uint32_t ioctlCmd, CpswEstIoctlHandler
 /*                            Global Variables                                */
 /* ========================================================================== */
 
-static CpswEstIoctlHandlerRegistry_t CpswEstIoctlHandlerRegistry[] = 
+static CpswEstIoctlHandlerRegistry_t CpswEstIoctlHandlerRegistry[] =
 {
     CPSW_EST_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TAS_IOCTL_SET_ADMIN_LIST),
     CPSW_EST_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TAS_IOCTL_SET_STATE),
@@ -228,9 +228,9 @@ static int32_t CpswEst_ioctl_handler_CPSW_EST_IOCTL_REGISTER_HANDLER(Cpsw_Handle
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status;
 
-    status = CpswEst_setIoctlHandlerFxn(inArgs->cmd, 
-                                        (CpswEstIoctlHandler *)inArgs->fxn, 
-                                        CpswEstIoctlHandlerRegistry, 
+    status = CpswEst_setIoctlHandlerFxn(inArgs->cmd,
+                                        (CpswEstIoctlHandler *)inArgs->fxn,
+                                        CpswEstIoctlHandlerRegistry,
                                         ENET_ARRAYSIZE(CpswEstIoctlHandlerRegistry));
     return status;
 }

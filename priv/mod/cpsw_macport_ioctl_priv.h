@@ -146,8 +146,10 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATU
 int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
-
-
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_CUT_THRU_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
+#endif
 void CpswMacPort_disablePort(CSL_Xge_cpswRegs *regs, Enet_MacPort macPort);
 
 /* ========================================================================== */

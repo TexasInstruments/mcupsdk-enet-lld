@@ -319,7 +319,7 @@ static Enet_IoctlValidate gCpswMacPort_privIoctlValidate[] =
 };
 #endif
 
-static CpswMacPortIoctlHandlerRegistry_t CpswMacPortIoctlHandlerRegistry[] = 
+static CpswMacPortIoctlHandlerRegistry_t CpswMacPortIoctlHandlerRegistry[] =
 {
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_VERSION),
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_PRINT_REGS),
@@ -336,6 +336,10 @@ static CpswMacPortIoctlHandlerRegistry_t CpswMacPortIoctlHandlerRegistry[] =
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING),
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_MAXLEN),
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_LINK_CFG),
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS),
+    CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_CUT_THRU_PARAMS),
+#endif
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_MACPORT_IOCTL_GET_FIFO_STATS),
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_MACPORT_IOCTL_ENABLE_CPTS_EVENT),
     CPSW_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_MACPORT_IOCTL_DISABLE_CPTS_EVENT),
@@ -1498,9 +1502,9 @@ static int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_REGISTER_HANDLER(Cps
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status = ENET_ENOTSUPPORTED;
 
-    status = CpswMacPort_setIoctlHandlerFxn(inArgs->cmd, 
-                                         (CpswMacPortIoctlHandler *)inArgs->fxn, 
-                                         CpswMacPortIoctlHandlerRegistry, 
+    status = CpswMacPort_setIoctlHandlerFxn(inArgs->cmd,
+                                         (CpswMacPortIoctlHandler *)inArgs->fxn,
+                                         CpswMacPortIoctlHandlerRegistry,
                                          ENET_ARRAYSIZE(CpswMacPortIoctlHandlerRegistry));
     return status;
 }

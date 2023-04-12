@@ -71,6 +71,7 @@
 #include <include/common/enet_phymdio_dflt.h>
 #include <include/phy/enetphy.h>
 #include <networking/enet/core/src/per/cpsw_intervlan.h>
+#include <priv/mod/cpsw_clks.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -91,6 +92,9 @@
 
 /*! \brief Number of UDMA RX channels required for CPSW host port */
 #define CPSW_UDMA_NUM_RX_CH                   (1U)
+
+/*! \brief Convert Hz to Mhz */
+#define CPSW_FREQ_CONVERT_HZ_TO_MHZ           (1000000ULL)
 
 #define CPSW_IOCTL_HANDLER_ENTRY_INIT(x)            \
           {.cmd = x,                                \
@@ -152,7 +156,7 @@ static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
 
 static int32_t Cpsw_registerInternalIoctlHandler(EnetPer_Handle hPer, Enet_IoctlPrms *prms);
 
-static CpswIoctlHandler * Cpsw_getIoctlHandlerFxn(uint32_t ioctlCmd, 
+static CpswIoctlHandler * Cpsw_getIoctlHandlerFxn(uint32_t ioctlCmd,
                                                   CpswIoctlHandlerRegistry_t *ioctlRegistryTbl,
                                                   uint32_t tableSize);
 static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
@@ -278,7 +282,7 @@ static Enet_IoctlValidate gCpsw_ioctlValidate[] =
 };
 #endif
 
-static CpswIoctlHandlerRegistry_t CpswIoctlHandlerRegistry[] = 
+static CpswIoctlHandlerRegistry_t CpswIoctlHandlerRegistry[] =
 {
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_GET_VERSION),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_PRINT_REGS),
@@ -367,6 +371,7 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     Cpsw_Cfg *cpswCfg = (Cpsw_Cfg *)cfg;
     Enet_IoctlPrms prms;
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    uint32_t cpsw_freq_in_MHz = 0;
 #if ENET_CFG_IS_ON(CPSW_SGMII)
     CSL_Xge_cpsw_ss_sRegs *ssRegs = (CSL_Xge_cpsw_ss_sRegs *)hPer->virtAddr2;
 #endif
@@ -421,6 +426,16 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
         if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
         {
             Cpsw_enableEst(hPer);
+        }
+#endif
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+        /* Enable EST global control */
+        if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_CUTTHRU))
+        {
+            cpsw_freq_in_MHz = (EnetSoc_getClkFreq(enetType, instId, CPSW_CPPI_CLK)/CPSW_FREQ_CONVERT_HZ_TO_MHZ);
+            CSL_CPSW_setCpswFrequency(regs, cpsw_freq_in_MHz);
+            CSL_CPSW_enableCutThru(regs);
         }
 #endif
 
@@ -524,6 +539,7 @@ int32_t Cpsw_rejoin(EnetPer_Handle hPer,
 void Cpsw_close(EnetPer_Handle hPer)
 {
     Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
     Enet_IoctlPrms prms;
     uintptr_t key;
     int32_t status;
@@ -555,6 +571,15 @@ void Cpsw_close(EnetPer_Handle hPer)
         Cpsw_disableEst(hPer);
     }
 #endif
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    /* Disable EST global control */
+    if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_CUTTHRU))
+    {
+        CSL_CPSW_disableCutThru(regs);
+    }
+#endif
+
    EnetOsal_restoreAllIntr(key);
 }
 
@@ -1680,9 +1705,9 @@ static int32_t Cpsw_registerInternalIoctlHandler(EnetPer_Handle hPer, Enet_Ioctl
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status;
 
-    status = Cpsw_setIoctlHandlerFxn(inArgs->cmd, 
-                                     (CpswIoctlHandler *)inArgs->fxn, 
-                                      CpswIoctlHandlerRegistry, 
+    status = Cpsw_setIoctlHandlerFxn(inArgs->cmd,
+                                     (CpswIoctlHandler *)inArgs->fxn,
+                                      CpswIoctlHandlerRegistry,
                                       ENET_ARRAYSIZE(CpswIoctlHandlerRegistry));
     return status;
 }
@@ -1812,9 +1837,9 @@ static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
         }
         break;
     }
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to register IOCTL handler: %d, %x, %p\r\n", 
-                     status, 
-                     ioctlHandlerRegister->cmd, 
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to register IOCTL handler: %d, %x, %p\r\n",
+                     status,
+                     ioctlHandlerRegister->cmd,
                      ioctlHandlerRegister->fxn);
     return status;
 }
@@ -1830,7 +1855,7 @@ static int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(
 static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     int32_t status;
-    
+
     status = ENET_ENOTSUPPORTED;
     return status;
 }

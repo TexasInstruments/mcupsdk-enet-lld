@@ -75,6 +75,14 @@
 /*! \brief PTP sequence ID offset minimum value. */
 #define CPSW_MACPORT_PTP_SEQID_OFFSET_MIN_VAL (0x6U)
 
+/*! \brief Maximum Priority for Cut-thru*/
+#define CPSW_MACPORT_MAXIMUM_PRIORITY_CUT_THRU (255U)
+
+#define CPSW_MACPORT_MAXIMUM_CPSW_FREQUENCY (1023U)
+
+/*! \brief Port Speed Auto Enable Mask*/
+#define CPSW_MACPORT_SPEED_AUTO_ENABLE_MASK (0x00000001)
+
 #if ENET_CFG_IS_ON(CPSW_MACPORT_TRAFFIC_SHAPING)
 static uint64_t CpswMacPort_mapBwToCnt(uint64_t rateInBps,
                                        uint32_t cppiClkFreqHz);
@@ -165,6 +173,32 @@ static void CpswMacPort_getTxPriority(CSL_Xge_cpswRegs *regs,
 static void CpswMacPort_getMaxLen(CSL_Xge_cpswRegs *regs,
                                   Enet_MacPort macPort,
                                   EnetPort_MaxLen *maxLen);
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+static int32_t CpswMacPort_setRxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *rxCutThruParams);
+
+static int32_t CpswMacPort_getRxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams);
+
+static int32_t CpswMacPort_setTxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *txCutThruParams);
+
+static int32_t CpswMacPort_getTxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams);
+
+static int32_t CpswMacPort_setPortSpeedCutThru(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams);
+
+static int32_t CpswMacPort_getPortSpeedCutThru(CSL_Xge_cpswRegs *regs,
+                                               Enet_MacPort macPort,
+                                               EnetPort_CutThruParams *cutThruParams);
+#endif
 
 static void CpswMacPort_getLinkCfg(CSL_Xge_cpswRegs *regs,
                                    Enet_MacPort macPort,
@@ -401,6 +435,63 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_MAXLEN(CpswMacPort_Hand
     CpswMacPort_getMaxLen(regs, macPort, maxLen);
     return status;
 }
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_SOK;
+    EnetMacPort_CutThruParams *inArgs =
+        (EnetMacPort_CutThruParams *)prms->inArgs;
+    const Enet_MacPort macPort = hPort->macPort;
+
+    Enet_devAssert(macPort == inArgs->macPort,
+                   "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
+
+    status = CpswMacPort_setRxCutThruParams(regs, macPort, &inArgs->cutThruCfg);
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "MAC %u: Failed to set RX Cut-thru Params: %d\n", ENET_MACPORT_ID(macPort), status);
+
+    if (status == ENET_SOK)
+    {
+        status = CpswMacPort_setTxCutThruParams(regs, macPort, &inArgs->cutThruCfg);
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "MAC %u: Failed to set TX Cut-thru Params: %d\n", ENET_MACPORT_ID(macPort), status);
+    }
+
+    if (status == ENET_SOK)
+    {
+        status = CpswMacPort_setPortSpeedCutThru(regs, macPort, &inArgs->cutThruCfg);
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                         "MAC %u: Failed to set Port Speed: %d\n", ENET_MACPORT_ID(macPort), status);
+    }
+
+    return status;
+}
+
+int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_CUT_THRU_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_SOK;
+    EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;
+    EnetPort_CutThruParams *cutThruParams = (EnetPort_CutThruParams *)prms->outArgs;
+    Enet_MacPort macPort = hPort->macPort;
+
+    Enet_devAssert(macPort == inArgs->macPort,
+                   "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
+
+    status = CpswMacPort_getRxCutThruParams(regs, macPort, cutThruParams);
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "MAC %u: Failed to get RX Cut-thru Params: %d\n", ENET_MACPORT_ID(macPort), status);
+
+    status = CpswMacPort_getTxCutThruParams(regs, macPort, cutThruParams);
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "MAC %u: Failed to get TX Cut-thru Params: %d\n", ENET_MACPORT_ID(macPort), status);
+
+    status = CpswMacPort_getPortSpeedCutThru(regs, macPort, cutThruParams);
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "MAC %u: Failed to get Port Speed: %d\n", ENET_MACPORT_ID(macPort), status);
+    return status;
+}
+#endif
 
 int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_LINK_CFG(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
@@ -651,14 +742,14 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(CpswMacPort_Hand
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_SET_ADMIN_LIST,prms,status);
-    return status;    
+    return status;
 }
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_GET_OPER_LIST_STATUS,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -666,7 +757,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(CpswMacPort_Handle hP
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_SET_STATE,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -674,7 +765,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(CpswMacPort_Handle hP
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_GET_STATE,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -682,7 +773,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(CpswMacPort_Hand
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_GET_ADMIN_LIST,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -690,7 +781,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(CpswMacPort_Handl
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_GET_OPER_LIST,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -698,7 +789,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(Cps
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS,prms,status);
-    return status;    
+    return status;
 }
 
 
@@ -707,7 +798,7 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_EST_ENABLE_TIMESTAMP(CpswMa
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, CPSW_MACPORT_IOCTL_EST_ENABLE_TIMESTAMP,prms,status);
-    return status;    
+    return status;
 }
 
 int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -715,7 +806,7 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP(CpswM
     int32_t status = ENET_SOK;
 
     CPSW_MACPORT_EST_PRIV_IOCTL(hPort, CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP,prms,status);
-    return status;    
+    return status;
 }
 #endif
 
@@ -1136,7 +1227,7 @@ static void CpswMacPort_printRegs(CSL_Xge_cpswRegs *regs,
 {
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
-    
+
     if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
     {
         CSL_Xge_cpswEnetportRegs *macPortRegs = &regs->ENETPORT[portNum];
@@ -1294,6 +1385,130 @@ static void CpswMacPort_getMaxLen(CSL_Xge_cpswRegs *regs,
         maxLen->mtu[i] = CSL_CPSW_getTxMaxLenPerPriority(regs, i);
     }
 }
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+static int32_t CpswMacPort_setRxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (cutThruParams->rxPriCutThruEn > CPSW_MACPORT_MAXIMUM_PRIORITY_CUT_THRU)
+    {
+        ENETTRACE_ERR("MAC %u: Invalid priority -> %u\n", ENET_MACPORT_ID(macPort), cutThruParams->rxPriCutThruEn);
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    if (portNum < ENET_ARRAYSIZE(regs->ENETPORT))
+    {
+        if (status == ENET_SOK)
+        {
+            CSL_CPSW_setPortRxCutThruPri(regs, portNum, cutThruParams->rxPriCutThruEn);
+        }
+    }
+
+    return status;
+}
+
+static int32_t CpswMacPort_getRxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (portNum < ENET_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_CPSW_getPortRxCutThruPri(regs, portNum, &cutThruParams->rxPriCutThruEn);
+    }
+    else
+    {
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    return status;
+}
+
+static int32_t CpswMacPort_setTxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (cutThruParams->txPriCutThruEn > CPSW_MACPORT_MAXIMUM_PRIORITY_CUT_THRU)
+    {
+        ENETTRACE_ERR("MAC %u: Invalid priority -> %u\n", ENET_MACPORT_ID(macPort), cutThruParams->txPriCutThruEn);
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    if (status == ENET_SOK)
+    {
+        CSL_CPSW_setPortTxCutThruPri(regs, portNum, cutThruParams->txPriCutThruEn);
+    }
+
+    return status;
+}
+
+static int32_t CpswMacPort_getTxCutThruParams(CSL_Xge_cpswRegs *regs,
+                                              Enet_MacPort macPort,
+                                              EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (portNum < ENET_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_CPSW_getPortTxCutThruPri(regs, portNum, &cutThruParams->txPriCutThruEn);
+    }
+    else
+    {
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    return status;
+}
+
+static int32_t CpswMacPort_setPortSpeedCutThru(CSL_Xge_cpswRegs *regs,
+                                               Enet_MacPort macPort,
+                                               EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (cutThruParams->portSpeedAutoEn == 1U)
+    {
+        CSL_CPSW_setPortSpeedAutoEnable(regs, portNum, cutThruParams->portSpeedAutoEn);
+    }
+    else
+    {
+        ENETTRACE_ERR("MAC %u: Auto enable Port Speed not set-> %u\n", ENET_MACPORT_ID(macPort), cutThruParams->portSpeedAutoEn);
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    return status;
+}
+
+static int32_t CpswMacPort_getPortSpeedCutThru(CSL_Xge_cpswRegs *regs,
+                                               Enet_MacPort macPort,
+                                               EnetPort_CutThruParams *cutThruParams)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    if (portNum < ENET_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_CPSW_getPortSpeedAutoEnable(regs, portNum, &cutThruParams->portSpeedAutoEn);
+    }
+    else
+    {
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    return status;
+}
+#endif
 
 static void CpswMacPort_getLinkCfg(CSL_Xge_cpswRegs *regs,
                                    Enet_MacPort macPort,

@@ -394,6 +394,15 @@ static Enet_IoctlValidate gEnetMacPort_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPTION,
                           sizeof(EnetMacPort_GenericInArgs),
                           0U),
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS,
+                          sizeof(EnetMacPort_CutThruParams),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_CUT_THRU_PARAMS,
+                          0U,
+                          sizeof(EnetMacPort_CutThruParams)),
+#endif
 };
 
 /* Public MDIO IOCTL validation data. */
