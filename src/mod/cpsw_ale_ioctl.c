@@ -2534,7 +2534,7 @@ static int32_t CpswAle_getPolicerDefaultThreadConfig(CpswAle_Handle hAle,
                                                      CpswAle_DfltThreadCfg *defaultThreadCfg)
 {
     EnetMod_Handle hMod = (EnetMod_Handle)hAle;
-    CSL_CPSW_ALE_POLICER_GLOB_CONFIG defThreadConfig;
+    CSL_CPSW_ALE_POLICER_GLOB_CONFIG defThreadConfig = {0};
     CSL_CPSW_ALE_POLICER_CONTROL policerControl;
 
     CSL_CPSW_getAlePolicerGlobConfig(regs, &defThreadConfig);
@@ -2591,7 +2591,7 @@ static void CpswAle_getPolicerStats(CSL_AleRegs *regs,
                                     bool clearStats)
 {
     CSL_CPSW_ALE_POLICER_TEST_CONTROL policerTstCtrl;
-    CSL_CPSW_ALE_POLICER_HSTAT policerHStatCfg;
+    CSL_CPSW_ALE_POLICER_HSTAT policerHStatCfg = {0};
 
     policerTstCtrl.polClrallHit       = 0;
     policerTstCtrl.polClrallRedhit    = 0;
@@ -5271,7 +5271,7 @@ static void CpswAle_printRegs(CpswAle_Handle hAle,
 int32_t CpswAle_ioctl_handler_ENET_FDB_IOCTL_GET_VERSION(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_CPSW_ALE_VERSION ver;
+    CSL_CPSW_ALE_VERSION ver = {0};
     int32_t status = ENET_SOK;
 
     CSL_CPSW_getAleVersionInfo(regs, &ver);

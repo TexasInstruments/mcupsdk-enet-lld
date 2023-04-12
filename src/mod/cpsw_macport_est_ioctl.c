@@ -417,7 +417,7 @@ static EnetTas_TasState CpswEst_getState(CpswMacPort_Handle hPort)
     EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    CSL_CPSW_PORT_CONTROL portControl;
+    CSL_CPSW_PORT_CONTROL portControl = {0};
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     EnetTas_TasState state;
 

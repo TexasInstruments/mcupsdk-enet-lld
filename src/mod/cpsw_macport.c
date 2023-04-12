@@ -749,7 +749,7 @@ static int32_t CpswMacPort_checkSocCfg(Enet_Type enetType,
 static void CpswMacPort_reset(CSL_Xge_cpswRegs *regs,
                               Enet_MacPort macPort)
 {
-    CSL_CPGMAC_SL_MACSTATUS macStatus;
+    CSL_CPGMAC_SL_MACSTATUS macStatus = {0};
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t gmiiEn;
     uint32_t done;

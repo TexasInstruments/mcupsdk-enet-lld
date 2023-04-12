@@ -1156,6 +1156,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
 
 
             {
+                Lwip2Enet_assert(hPbufPacket->payload != NULL);
                 struct ip_hdr* pIpPkt = (struct ip_hdr* ) LWIPIF_LWIP_getIpPktStart((uint8_t*) hPbufPacket->payload);
                 if (IPH_PROTO(pIpPkt) == IP_PROTO_UDPLITE)
                 {

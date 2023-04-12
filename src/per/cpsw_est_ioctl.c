@@ -100,6 +100,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(Cpsw_Handle hCpsw, u
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     if (hCpsw->estState[portNum].state == ENET_TAS_ENABLE)
     {
         if (inArgs->adminList.cycleTime != hCpsw->estState[portNum].cycleTime)
@@ -143,6 +144,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(Cpsw_Handle hCpsw, uint32
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     if (hCpsw->estState[portNum].state != inArgs->state)
     {
         if (inArgs->state == ENET_TAS_ENABLE)
@@ -194,6 +196,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(Cpsw_Handle hCpsw, u
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_ADMIN_LIST, prms, status);
 
     controlList->cycleTime = hCpsw->estState[portNum].cycleTime;
@@ -211,6 +214,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(Cpsw_Handle hCpsw, ui
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_OPER_LIST, prms, status);
 
     controlList->cycleTime = hCpsw->estState[portNum].cycleTime;
@@ -228,6 +232,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(Cpsw_Handle hC
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     /* Update operBaseTime when oper list has been updated */
     CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_OPER_LIST_STATUS, prms, status);
     if ((status == ENET_SOK) &&
@@ -247,6 +252,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(Cpsw_Handle hCpsw, uint32
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     int32_t status = ENET_SOK;
 
+    Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     /* Pass through */
     CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_STATE, prms, status);
     return status;

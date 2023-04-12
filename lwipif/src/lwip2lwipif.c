@@ -359,7 +359,14 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
     struct netif *netif;
 
 #if (ENET_ENABLE_PER_CPSW == 1)
-    netif = hLwip2Enet->mapRxPort2Netif[ENET_MACPORT_NORM(rxPortNum)];
+    if (ENET_MACPORT_NORM(rxPortNum) < CPSW_STATS_MACPORT_MAX)
+    {
+        netif = hLwip2Enet->mapRxPort2Netif[ENET_MACPORT_NORM(rxPortNum)];
+    }
+    else
+    {
+        netif = NULL;
+    }
 #else
     /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the rx->flowIdx to map to netif*/
     netif = hLwip2Enet->mapRxPort2Netif[LWIP_RXFLOW_2_PORTIDX(rx->flowIdx)];

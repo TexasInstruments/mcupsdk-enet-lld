@@ -129,7 +129,7 @@ static int32_t CpswCpts_handleEvents(CpswCpts_Handle hCpts,
 int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_VERSION(CpswCpts_Handle hCpts, CSL_cptsRegs *regs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_CPTS_VERSION ver;
+    CSL_CPTS_VERSION ver = {0};
     int32_t status = ENET_SOK;
 
     CSL_CPTS_getCptsVersionInfo(regs, &ver);
@@ -651,7 +651,7 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_ESTF_NUDGE(CpswCpts_Handle hC
 int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SELECT_TS_OUTPUT_BIT(CpswCpts_Handle hCpts, CSL_cptsRegs *regs, Enet_IoctlPrms *prms)
 {
     CpswCpts_OutputBitSel bitSelect = *(CpswCpts_OutputBitSel *)prms->inArgs;
-    CSL_CPTS_CONTROL control;
+    CSL_CPTS_CONTROL control = {0};
     int32_t status = ENET_SOK;
 
     CSL_CPTS_getCntlReg(regs, &control);
@@ -1061,7 +1061,7 @@ static int32_t CpswCpts_handleEvents(CpswCpts_Handle hCpts,
 #if ENET_CFG_IS_ON(ENET_CFG_CPSW_CPTS_STATS)
     CpswCpts_EventStats *stats = &hCpts->eventStats;
 #endif
-    CSL_CPTS_EVENTINFO eventInfo;
+    CSL_CPTS_EVENTINFO eventInfo = {0};
     volatile bool intrPendStatus = false;
     uint32_t *idx = NULL;
     uint64_t tsVal = 0U;

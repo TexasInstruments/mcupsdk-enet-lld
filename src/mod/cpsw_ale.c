@@ -1566,7 +1566,7 @@ int32_t CpswAle_findVlan(CpswAle_Handle hAle,
             {
                 if (polEntryType == CSL_ALE_POLICER_ENTRYTYPE_OVLAN)
                 {
-                    CSL_CPSW_ALE_OUTER_VLAN_ENTRY oVlanEntry;
+                    CSL_CPSW_ALE_OUTER_VLAN_ENTRY oVlanEntry = {0};
 
                     CSL_CPSW_getAleOutVlanEntry(regs, i, &oVlanEntry, tableType);
                     if (oVlanEntry.vlanId == vlanId)

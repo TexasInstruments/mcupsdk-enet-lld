@@ -81,7 +81,7 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_VERSION(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_CPSW_VERSION ver;
+    CSL_CPSW_VERSION ver = {0};
     int32_t status = ENET_SOK;
 
     /* Report CPSW Control version as ours */

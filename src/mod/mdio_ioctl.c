@@ -128,7 +128,7 @@ static void Mdio_handleIntr(CSL_mdioHandle mdioRegs,
 int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_MDIO_VERSION ver;
+    CSL_MDIO_VERSION ver = {0};
     int32_t status = ENET_SOK;
 
     CSL_MDIO_getVersionInfo(mdioRegs, &ver);

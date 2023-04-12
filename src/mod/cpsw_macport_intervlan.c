@@ -181,7 +181,7 @@ bool CpswMacPort_isRouteIdFree(CSL_Xge_cpswRegs *regs,
                                uint32_t portNum,
                                CpswMacPort_InterVlanRouteId routeId)
 {
-    CSL_CPSW_INTERVLANCFG cslCfg;
+    CSL_CPSW_INTERVLANCFG cslCfg = {0};
     uint32_t interVlanPtr = CPSW_MACPORT_INTERVLAN_ROUTE2PTR(routeId);
     bool isFree = false;
 

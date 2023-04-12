@@ -176,7 +176,7 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_VERSION(CpswMacPort_Han
 {
     EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_CPSW_VERSION ver;
+    CSL_CPSW_VERSION ver = {0};
     Enet_MacPort macPort = hPort->macPort;
     int32_t status = ENET_SOK;
 
@@ -899,20 +899,24 @@ static void CpswMacPort_printRegs(CSL_Xge_cpswRegs *regs,
 {
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
-    CSL_Xge_cpswEnetportRegs *macPortRegs = &regs->ENETPORT[portNum];
-    uint32_t *regAddr = (uint32_t *)((uintptr_t)macPortRegs + CPSW_MACPORT_START_REG_OFFSET);
-    uint32_t regIdx = 0U;
-
-    ENETTRACE_VAR(portId);
-    while (((uintptr_t)regAddr) <= ((uintptr_t)macPortRegs + CPSW_MACPORT_END_REG_OFFSET))
+    
+    if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
     {
-        if (*regAddr != 0U)
-        {
-            ENETTRACE_INFO("MACPORT %u: %u: 0x%08x\n", portId, regIdx, *regAddr);
-        }
+        CSL_Xge_cpswEnetportRegs *macPortRegs = &regs->ENETPORT[portNum];
+        uint32_t *regAddr = (uint32_t *)((uintptr_t)macPortRegs + CPSW_MACPORT_START_REG_OFFSET);
+        uint32_t regIdx = 0U;
 
-        regAddr++;
-        regIdx++;
+        ENETTRACE_VAR(portId);
+        while (((uintptr_t)regAddr) <= ((uintptr_t)macPortRegs + CPSW_MACPORT_END_REG_OFFSET))
+        {
+            if (*regAddr != 0U)
+            {
+                ENETTRACE_INFO("MACPORT %u: %u: 0x%08x\n", portId, regIdx, *regAddr);
+            }
+
+            regAddr++;
+            regIdx++;
+        }
     }
 }
 
@@ -1059,7 +1063,7 @@ static void CpswMacPort_getLinkCfg(CSL_Xge_cpswRegs *regs,
                                    EnetMacPort_LinkCfg *linkCfg)
 {
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
-    CSL_CPGMAC_SL_MACSTATUS macStatus;
+    CSL_CPGMAC_SL_MACSTATUS macStatus = {0};
 
     CSL_CPGMAC_SL_getMacStatusReg(regs, portNum, &macStatus);
 
@@ -1087,8 +1091,8 @@ static void CpswMacPort_getFifoStats(CSL_Xge_cpswRegs *regs,
                                      Enet_MacPort macPort,
                                      CpswMacPort_FifoStats *stats)
 {
-    CSL_CPSW_THRURATE thruRate;
-    CSL_CPGMAC_SL_FIFOSTATUS fifoStatus;
+    CSL_CPSW_THRURATE thruRate = {0};
+    CSL_CPGMAC_SL_FIFOSTATUS fifoStatus = {0};
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t i;
 

@@ -120,7 +120,7 @@ static int32_t CpswHostPort_getTrafficShaping(CSL_Xge_cpswRegs *regs,
 int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_GET_VERSION(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
-    CSL_CPSW_VERSION ver;
+    CSL_CPSW_VERSION ver = {0};
     int32_t status = ENET_SOK;
 
     /* Report CPSW Control version as ours */
@@ -272,7 +272,7 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_GET_MAXLEN(CpswHostPort_H
 int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED(CpswHostPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     bool *csumEn = (bool *)prms->outArgs;
-    CSL_CPSW_CPPI_P0_CONTROL cppiP0ControlCfg;
+    CSL_CPSW_CPPI_P0_CONTROL cppiP0ControlCfg = {0};
     int32_t status = ENET_SOK;
 
     CSL_CPSW_getCppiP0Control(regs, &cppiP0ControlCfg);
@@ -493,8 +493,8 @@ static void CpswHostPort_getMaxLen(CSL_Xge_cpswRegs *regs,
 static void CpswHostPort_getFifoStats(CSL_Xge_cpswRegs *regs,
                                       CpswHostPort_FifoStats *fifoStats)
 {
-    CSL_CPSW_THRURATE thruRate;
-    CSL_CPSW_CPPI_P0_FIFOSTATUS p0FifoStatus;
+    CSL_CPSW_THRURATE thruRate = {0};
+    CSL_CPSW_CPPI_P0_FIFOSTATUS p0FifoStatus = {0};
 
     CSL_CPSW_getPortBlockCountReg(regs, 0U,
                                   &fifoStats->rxBlockCountExpress,
