@@ -158,6 +158,12 @@ static CpswIoctlHandler * Cpsw_getIoctlHandlerFxn(uint32_t ioctlCmd,
 static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 static int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+static void Cpsw_enableIet(EnetPer_Handle hPer);
+
+static void Cpsw_disableIet(EnetPer_Handle hPer);
+#endif
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -405,6 +411,11 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     CSL_CPSW_setVlanType(regs, (uint32_t)cpswCfg->vlanCfg.vlanSwitch);
     CSL_CPSW_setVlanLTypeReg(regs, cpswCfg->vlanCfg.innerVlan, cpswCfg->vlanCfg.outerVlan);
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+    /* Enable IET global control */
+     Cpsw_enableIet(hPer);
+#endif
+
 #if ENET_CFG_IS_ON(CPSW_EST)
         /* Enable EST global control */
         if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
@@ -531,6 +542,12 @@ void Cpsw_close(EnetPer_Handle hPer)
         Cpsw_setDfltThreadCfg(hCpsw, hCpsw->rsvdFlowId);
         Cpsw_closeInternal(hCpsw);
     }
+
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+    /* Disable IET global control */
+     Cpsw_disableIet(hPer);
+#endif
+
 #if ENET_CFG_IS_ON(CPSW_EST)
     /* Disable EST global control */
     if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
@@ -1818,5 +1835,27 @@ static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw, CSL_Xge_cps
     return status;
 }
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+static void Cpsw_enableIet(EnetPer_Handle hPer)
+{
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_CPSW_CONTROL cpswControl;
 
+    /* Enable IET in CPSW Control Reg */
+    CSL_CPSW_getCpswControlReg(regs, &cpswControl);
+    cpswControl.ietEnable = TRUE;
+    CSL_CPSW_setCpswControlReg(regs, &cpswControl);
+}
+
+static void Cpsw_disableIet(EnetPer_Handle hPer)
+{
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_CPSW_CONTROL cpswControl;
+
+    /* Disable IET in CPSW Control Reg */
+    CSL_CPSW_getCpswControlReg(regs, &cpswControl);
+    cpswControl.ietEnable = FALSE;
+    CSL_CPSW_setCpswControlReg(regs, &cpswControl);
+}
+#endif
 

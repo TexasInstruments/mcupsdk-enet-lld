@@ -342,6 +342,58 @@ static Enet_IoctlValidate gEnetMacPort_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING,
                           sizeof(EnetMacPort_GenericInArgs),
                           sizeof(EnetPort_CreditBasedShapingCfg)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_IET_RELEASE_PREEMPT_TRAFFIC,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_IET_HOLD_PREEMPT_TRAFFIC,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(EnetMacPort_QueuePreemptCfg)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE,
+                          sizeof(EnetMacPort_SetPreemptQueueInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(uint8_t)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE,
+                          sizeof(EnetMacPort_SetPreemptMinFragSizeInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(EnetMacPort_PreemptVerifyStatus)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(bool)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(bool)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_DISABLE_PREEMPTION,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPTION,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          0U),
 };
 
 /* Public MDIO IOCTL validation data. */

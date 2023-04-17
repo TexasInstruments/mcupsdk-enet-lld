@@ -120,6 +120,21 @@ extern "C" {
                                                            CPSW_MACPORT_EST_ALLOWCNT_FACTOR_##speed) + 292U) * \
                                                          CPSW_MACPORT_EST_TIME_STEP_##speed)
 
+/*! \brief CPSW IET Verify timeout for 1 gig mode is 10ms */
+#define CPSW_MACPORT_GIGABIT_IET_VERIFY_TIMEOUT_NS      (10*1000*1000)
+
+/*! \brief CPSW Rx FIFO Blocks to enable IET. */
+#define CPSW_MACPORT_RX_MAX_BLKS_IET    (7U)
+
+/*! \brief CPSW Tx FIFO Blocks to enable IET. */
+#define CPSW_MACPORT_TX_MAX_BLKS_IET    (13U)
+
+/*! \brief CPSW default Rx FIFO Blocks for fifo_oneram */
+#define CPSW_MACPORT_RX_MAX_BLKS_DEFAULT    (4U)
+
+/*! \brief CPSW default Tx FIFO Blocks for fifo_oneram */
+#define CPSW_MACPORT_TX_MAX_BLKS_DEFAULT    (16U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */

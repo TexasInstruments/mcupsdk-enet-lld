@@ -225,6 +225,123 @@ typedef enum EnetMacPort_Ioctl_e
      */
     ENET_MACPORT_IOCTL_GET_CREDIT_BASED_SHAPING = ENET_MACPORT_PUBLIC_IOCTL(14U),
 
+    /*!
+     * \brief IET release preemptible traffic.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_IET_RELEASE_PREEMPT_TRAFFIC = ENET_MACPORT_PUBLIC_IOCTL(15U),
+
+    /*!
+     * \brief IET hold preemptible traffic.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_IET_HOLD_PREEMPT_TRAFFIC = ENET_MACPORT_PUBLIC_IOCTL(16U),
+
+    /*!
+     * \brief Get macport queue preemption status.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: #EnetMacPort_QueuePreemptCfg
+     */
+    ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS = ENET_MACPORT_PUBLIC_IOCTL(17U),
+
+    /*!
+     * \brief Set macport queue preemption mode.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_SetPreemptQueueInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE = ENET_MACPORT_PUBLIC_IOCTL(18U),
+
+    /*!
+     * \brief Get minimum fragment size.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: uint8_t
+     */
+    ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE = ENET_MACPORT_PUBLIC_IOCTL(19U),
+
+    /*!
+     * \brief Set minimum fragment size.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_SetPreemptMinFragSizeInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE = ENET_MACPORT_PUBLIC_IOCTL(20U),
+
+    /*!
+     * \brief Get IET verification status.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: #EnetMacPort_PreemptVerifyStatus
+     */
+    ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS = ENET_MACPORT_PUBLIC_IOCTL(21U),
+
+    /*!
+     * \brief Disable IET verification.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION = ENET_MACPORT_PUBLIC_IOCTL(22U),
+
+    /*!
+     * \brief Enable IET verification.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION = ENET_MACPORT_PUBLIC_IOCTL(23U),
+
+    /*!
+     * \brief Get preemption active status
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: bool
+     */
+    ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS = ENET_MACPORT_PUBLIC_IOCTL(24U),
+
+    /*!
+     * \brief Get preemption enable status
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: bool
+     */
+    ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS = ENET_MACPORT_PUBLIC_IOCTL(25U),
+
+    /*!
+     * \brief Disable frame preemption.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_DISABLE_PREEMPTION = ENET_MACPORT_PUBLIC_IOCTL(26U),
+
+    /*!
+     * \brief Enable IET frame preemption.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetMacPort_GenericInArgs
+     * - outArgs: None
+     */
+    ENET_MACPORT_IOCTL_ENABLE_PREEMPTION = ENET_MACPORT_PUBLIC_IOCTL(27U),
+
 } EnetMacPort_Ioctl;
 
 /*!
@@ -409,6 +526,78 @@ typedef struct EnetMacPort_CreditBasedShaperInArgs_s
     /*! Credit based shaper configuration */
     EnetPort_CreditBasedShapingCfg cbsCfg;
 } EnetMacPort_CreditBasedShaperInArgs;
+
+/*!
+ * \brief MacPort IET Verification status
+ */
+typedef enum EnetMacPort_PreemptVerifyStatus_e
+{
+    /*! Unknown status */
+    ENET_MAC_VERIFYSTATUS_UNKNOWN = 0U,
+
+    /*! Verify Success */
+    ENET_MAC_VERIFYSTATUS_SUCCEEDED,
+
+    /*! Verify Failure */
+    ENET_MAC_VERIFYSTATUS_FAILED,
+
+    /*! Received Verify Packet with Errors */
+    ENET_MAC_VERIFYSTATUS_RXRESPOND_ERROR,
+
+    /*! Received Verify Packet with Errors */
+    ENET_MAC_VERIFYSTATUS_RXVERIFY_ERROR,
+
+    /*! Verification Disabled */
+    ENET_MAC_VERIFYSTATUS_DISABLED,
+} EnetMacPort_PreemptVerifyStatus;
+
+/*!
+ * \brief Input args for #ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE.
+ *
+ */
+typedef struct EnetMacPort_SetPreemptMinFragSizeInArgs_s
+{
+    /*! Port number */
+    Enet_MacPort macPort;
+
+    /*! preemptMinFragSize is addFragSize as defined in IEEE 802.3br
+     * 64*(1 + addFragSize) becomes the minimum fragment size */
+    uint8_t preemptMinFragSize;
+} EnetMacPort_SetPreemptMinFragSizeInArgs;
+
+/*!
+ * \brief Queue preemptive mode: express or preemptive.
+ */
+typedef enum EnetMacPort_QueuePreemptMode_e
+{
+    /*! Express queue */
+    ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS,
+
+    /*! Preemptive queue */
+    ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT,
+} EnetMacPort_QueuePreemptMode;
+
+/*!
+ * \brief MacPort Queue Preempt Config
+ */
+typedef struct EnetMacPort_QueuePreemptCfg_s
+{
+    /*! Preemption mode for each queue */
+    EnetMacPort_QueuePreemptMode preemptMode[ENET_PRI_NUM];
+} EnetMacPort_QueuePreemptCfg;
+
+/*!
+ * \brief Input args for #ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE
+ *
+ */
+typedef struct EnetMacPort_SetPreemptQueueInArgs_s
+{
+    /*! Port number */
+    Enet_MacPort macPort;
+
+    /*! Queue preemption mode */
+    EnetMacPort_QueuePreemptCfg queuePreemptCfg;
+} EnetMacPort_SetPreemptQueueInArgs;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
