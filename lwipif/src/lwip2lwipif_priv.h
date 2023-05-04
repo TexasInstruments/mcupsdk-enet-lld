@@ -76,8 +76,8 @@ extern "C" {
 /* ========================================================================== */
 
 void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
-                       Enet_MacPort rxPortNum,
-                       struct pbuf *hPbufPacket);
+                        struct netif* netif,
+                        struct pbuf *hPbufPacket);
 
 
 uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p);

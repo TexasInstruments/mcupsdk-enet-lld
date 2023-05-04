@@ -287,58 +287,6 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p)
 }
 
 /*!
- *  @b LWIPIF_LWIP_send
- *  @n
- *  This function should do the actual transmission of the packet. The packet is
- * contained in the pbuf that is passed to the function. This pbuf
- * might be chained.
- *
- *  \param[in]  netif
- *      The lwip network interface structure for this ethernetif
- *  \param[in]  p
- *      the MAC packet to send (e.g. IP packet including MAC addresses and type)
- *
- *  \retval
- *      ERR_OK if the packet could be sent
- *  \retval
- *      an err_t value if the packet couldn't be sent
- */
-static err_t LWIPIF_LWIP_send(struct netif *netif,
-                         struct pbuf *p)
-{
-    Lwip2Enet_Handle hLwip2Enet;
-    Lwip2Enet_TxHandle hTxHandle;
-    Enet_MacPort macPort;
-    /* Get the pointer to the private data */
-    hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-    hTxHandle  = hLwip2Enet->mapNetif2Tx[netif->num];
-    macPort    = hLwip2Enet->mapNetif2TxPortNum[netif->num];
-
-    Lwip2Enet_assert(hLwip2Enet != NULL);
-    Lwip2Enet_assert(hTxHandle != NULL);
-
-    /*
-     * When transmitting a packet, the buffer may be deleted before transmission by the
-     * stack. The stack implements a 'ref' feature within the buffers. The following happens
-     * internally:
-     *  If p->ref > 1, ref--;
-     *  If p->ref == 1, free(p);
-     * pbuf_ref(p) increments the ref.
-     */
-    pbuf_ref(p);
-
-    /* Enqueue the packet */
-    pbufQ_enQ(&hTxHandle->readyPbufQ, p);
-    LWIP2ENETSTATS_ADDONE(&hTxHandle->stats.readyPbufPktEnq);
-
-    /* Pass the packet to the translation layer */
-    Lwip2Enet_sendTxPackets(hTxHandle, macPort);
-
-    /* Packet has been successfully transmitted or enqueued to be sent when link comes up */
-    return ERR_OK;
-}
-
-/*!
  *  @b LWIPIF_LWIP_input
  *  @n
  *  This is currently a task which consumes the RX packets retrieved from
@@ -352,25 +300,9 @@ static err_t LWIPIF_LWIP_send(struct netif *netif,
  *      void
  */
 void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
-                       Enet_MacPort rxPortNum,
+                       struct netif* netif,
                        struct pbuf *hPbufPacket)
 {
-    Lwip2Enet_Handle hLwip2Enet = rx->hLwip2Enet;
-    struct netif *netif;
-
-#if (ENET_ENABLE_PER_CPSW == 1)
-    if (ENET_MACPORT_NORM(rxPortNum) < CPSW_STATS_MACPORT_MAX)
-    {
-        netif = hLwip2Enet->mapRxPort2Netif[ENET_MACPORT_NORM(rxPortNum)];
-    }
-    else
-    {
-        netif = NULL;
-    }
-#else
-    /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the rx->flowIdx to map to netif*/
-    netif = hLwip2Enet->mapRxPort2Netif[LWIP_RXFLOW_2_PORTIDX(rx->flowIdx)];
-#endif
     Lwip2Enet_assert(netif != NULL);
 
     /* Pass the packet to the LwIP stack */
@@ -395,16 +327,15 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
 
 void LWIPIF_LWIP_periodic_polling(struct netif *netif)
 {
-    NETIF_FOREACH(netif) // loop along all the netifs (reverse linked list)
-    {
-        Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle) netif->state;
+        Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
+        Lwip2Enet_assert(pInterface != NULL);
 
         /* Periodic Function to update Link status */
         Lwip2Enet_periodicFxn(netif);
 
-        if (!(hLwip2Enet->linkIsUp == (netif->flags & 0x04U) >> 2))
+        if (!(pInterface->isLinkUp == (netif->flags & 0x04U) >> 2))
         {
-            if (hLwip2Enet->linkIsUp)
+            if (pInterface->isLinkUp)
             {
                 netif_set_link_up(netif);
             }
@@ -413,30 +344,15 @@ void LWIPIF_LWIP_periodic_polling(struct netif *netif)
                 netif_set_link_down(netif);
             }
         }
-    }
 }
 
-/*!
- *  @b LWIPIF_LWIP_Start
- *  @n
- *  The function is used to initialize and start the Enet
- *  controller and device.
- *
- *  \param[in]  pNETIFDevice
- *      NETIF_DEVICE structure pointer.
- *
- *  \retval
- *      Success -   0
- *  \retval
- *      Error   -   <0
- */
-static int LWIPIF_LWIP_start(struct netif *netif)
+int32_t LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif)
 {
-    int retVal = 0U;
+    int32_t retVal = 0U;
     Lwip2Enet_Handle hLwip2Enet;
 
     /* Open the translation layer, which itself opens the hardware driver */
-    hLwip2Enet = Lwip2Enet_open(netif);
+    hLwip2Enet = Lwip2Enet_open(enetType, instId, netif);
 
     if (NULL == hLwip2Enet)
     {
@@ -445,15 +361,21 @@ static int LWIPIF_LWIP_start(struct netif *netif)
         EnetUtils_printf("[LWIPIF_LWIP] Failed to start Enet\r\n");
         retVal = -1;
     }
-
     return retVal;
 }
 
 void LWIPIF_LWIP_setNotifyCallbacks(struct netif *netif, Enet_notify_t *pRxNotify, Enet_notify_t *pTxNotify)
 {
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
-    Lwip2Enet_setRxNotifyCallback(hLwip2Enet, pRxNotify);
-    Lwip2Enet_setTxNotifyCallback(hLwip2Enet, pTxNotify);
+    Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
+    for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
+    {
+        Lwip2Enet_setTxNotifyCallback(pInterface->hTx[idx], pTxNotify);
+    }
+
+    for (uint32_t idx = 0; idx < pInterface->count_hRx; idx++)
+    {
+        Lwip2Enet_setRxNotifyCallback(pInterface->hRx[idx], pRxNotify);
+    }
 }
 
 /*!
@@ -473,7 +395,7 @@ static void LWIPIF_LWIP_stop(struct netif *netif)
     hLwip2Enet = (Lwip2Enet_Handle)netif->state;
 
     /* Call low-level close function */
-    Lwip2Enet_close(hLwip2Enet);
+    Lwip2Enet_close(hLwip2Enet, netif);
 
     /* Enet controller has been stopped. */
 }
@@ -511,8 +433,6 @@ err_t LWIPIF_LWIP_init(struct netif *netif)
 #if !ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
     EnetUtils_printf("[LWIPIF_LWIP] LwIP Checksum offload support disabled\r\n");
 #endif
-    LWIPIF_LWIP_start(netif);
-
     EnetUtils_printf("[LWIPIF_LWIP] NETIF INIT SUCCESS\r\n");
 
     return ERR_OK;
@@ -520,12 +440,45 @@ err_t LWIPIF_LWIP_init(struct netif *netif)
 
 void LWIPIF_LWIP_rxPktHandler(struct netif *netif)
 {
-    Lwip2Enet_Handle hLwip2Enet =(Lwip2Enet_Handle)netif->state;
-    Lwip2Enet_rxPktHandler(hLwip2Enet);
+    Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
+    for (uint32_t idx = 0; idx < pInterface->count_hRx; idx++)
+    {
+        Lwip2Enet_rxPktHandler(pInterface->hRx[idx]);
+    }
 }
 
 void LWIPIF_LWIP_txPktHandler(struct netif *netif)
 {
-    Lwip2Enet_Handle hLwip2Enet =(Lwip2Enet_Handle)netif->state;
-    Lwip2Enet_txPktHandler(hLwip2Enet);
+    Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
+    for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
+    {
+        Lwip2Enet_txPktHandler(pInterface->hTx[idx]);
+    }
+}
+
+err_t LWIPIF_LWIP_send(struct netif *netif, struct pbuf *p)
+{
+    /* Get the pointer to the private data */
+    Lwip2Enet_netif_t* pInterface  = (Lwip2Enet_netif_t*) netif->state;
+    const Enet_MacPort macPort = pInterface->macPort;
+    Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
+
+    Lwip2Enet_assert(pInterface != NULL);
+    Lwip2Enet_assert(hTx != NULL);
+    /*
+     * When transmitting a packet, the buffer may be deleted before transmission by the
+     * stack. The stack implements a 'ref' feature within the buffers. The following happens
+     * internally:
+     *  If p->ref > 1, ref--;
+     *  If p->ref == 1, free(p);
+     * pbuf_ref(p) increments the ref.
+     */
+    pbuf_ref(p);
+    /* Enqueue the packet */
+    pbufQ_enQ(&hTx->readyPbufQ, p);
+    LWIP2ENETSTATS_ADDONE(&hTx->stats.readyPbufPktEnq);
+    /* Pass the packet to the translation layer */
+    Lwip2Enet_sendTxPackets(pInterface, macPort);
+    /* Packet has been successfully transmitted or enqueued to be sent when link comes up */
+    return ERR_OK;
 }

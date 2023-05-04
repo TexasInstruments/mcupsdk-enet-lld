@@ -57,6 +57,44 @@ extern "C" {
 /*                                 Macros                                     */
 /* ========================================================================== */
 
+/* Maximum number of MAC ports available on SOC and
+ * by supported by LwIP-If layer.
+ */
+#define LWIPIF_MAX_NUM_MAC_PORTS             (CPSW_STATS_MACPORT_MAX)
+
+/*Max number of netif enabled. */
+#define LWIPIF_MAX_NETIFS_SUPPORTED          (LWIPIF_MAX_NUM_MAC_PORTS)
+
+/*Max number of RX channels supported by lwipif*/
+#define LWIPIF_MAX_RX_CHANNELS               (CPSW_STATS_MACPORT_MAX)
+
+/*Max number of TX channels supported by lwipif */
+#define LWIPIF_MAX_TX_CHANNELS               (CPSW_STATS_MACPORT_MAX)
+
+
+/* Maximum number of ENET Peripheral instances supported
+ * by LwIP-IF layer.In the current version, we can two ICSSG enet
+ * (ICSSG Dual mac/ dual netif) instances, which is considered as maximum.
+ * For CPSW case, it is one CPSW instance able to setup dual mac.
+ * have ports available on SOC.
+ */
+#define LWIPIF_MAX_NUM_PERIPHERALS               (CPSW_STATS_MACPORT_MAX)
+
+/* Maximum number of RX DMA channels that can be associated to LwIP per peripheral.
+ * Lwip2enet supports only one channel association */
+#define LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL   (CPSW_STATS_MACPORT_MAX)
+
+/* Maximum number of TX DMA channel that can be associated to LwIP per peripheral.
+
+ * Lwip2enet supports only one channel association */
+#define LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL   (1U)
+
+/* Maximum number of MAC ports supported per peripheral */
+#define LWIPIF_MAX_NUM_MAC_PORTS_PER_PHERIPHERAL (CPSW_STATS_MACPORT_MAX)
+
+/* Maximum number of NEtIFs supported per peripheral */
+#define LWIPIF_MAX_NETIFS_PER_PHERIPHERAL        (LWIPIF_MAX_NUM_MAC_PORTS_PER_PHERIPHERAL)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -75,6 +113,8 @@ typedef bool (*LwipifEnetAppIf_IsPhyLinkedCbFxn)(Enet_Handle hEnet);
 typedef struct LwipifEnetAppIf_GetTxHandleInArgs_s
 {
     void *cbArg;
+    Enet_Type enetType;
+    uint32_t  instId;
     EnetDma_PktNotifyCb notifyCb;
     uint32_t chId;
     EnetDma_PktQ *pktInfoQ;
@@ -83,6 +123,8 @@ typedef struct LwipifEnetAppIf_GetTxHandleInArgs_s
 typedef struct LwipifEnetAppIf_GetRxHandleInArgs_s
 {
     void *cbArg;
+    Enet_Type enetType;
+    uint32_t  instId;
     EnetDma_PktNotifyCb notifyCb;
     uint32_t chId;
     pbufQ *pFreePbufInfoQ;
@@ -122,28 +164,14 @@ typedef struct LwipifEnetAppIf_RxHandleInfo_s
      * retrieve packets periodically from driver */
     bool disableEvent;
         /** Mac Address allocated for the flow */
-    uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
+    uint8_t macAddr[LWIPIF_MAX_NETIFS_SUPPORTED][ENET_MAC_ADDR_LEN];
 } LwipifEnetAppIf_RxHandleInfo;
 
-typedef struct LwipifEnetAppIf_GetHandleNetifInfo_s
-{
-    uint32_t numRxChannels;
-    uint32_t numTxChannels;
-    uint32_t rxChMask;
-    uint32_t txChMask;
-    bool isDirected;
-} LwipifEnetAppIf_GetHandleNetifInfo;
 
 typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
 {
-    Enet_Handle hEnet;
     uint32_t txMtu[ENET_PRI_NUM];
     uint32_t hostPortRxMtu;
-
-    /*! Number of netifs allocated by application */
-    uint32_t maxNumNetif;
-    uint32_t numRxChannels;
-    uint32_t numTxChannels;
 	LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;
 
     /** Timer interval for timer based RX pacing */
@@ -155,6 +183,8 @@ typedef struct LwipifEnetAppIf_GetEnetLwipIfInstInfo_s
 typedef struct LwipifEnetAppIf_ReleaseTxHandleInfo_s
 {
     uint32_t txChNum;
+    Enet_Type enetType;
+    uint32_t  instId;
     LwipifEnetAppIf_TxFreePktCbFxn txFreePktCb;
 	void *txFreePktCbArg;
 } LwipifEnetAppIf_ReleaseTxHandleInfo;
@@ -162,6 +192,8 @@ typedef struct LwipifEnetAppIf_ReleaseTxHandleInfo_s
 typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
 {
     uint32_t rxChNum;
+    Enet_Type enetType;
+    uint32_t  instId;
     LwipifEnetAppIf_RxFreePktCbFxn rxFreePktCb;
     void *rxFreePktCbArg;
 } LwipifEnetAppIf_ReleaseRxHandleInfo;
@@ -176,18 +208,13 @@ typedef struct LwipifEnetAppIf_ReleasRxHandleInfo_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-extern void LwipifEnetAppCb_getEnetLwipIfInstInfo(LwipifEnetAppIf_GetEnetLwipIfInstInfo *outArgs);
-
-extern void LwipifEnetAppCb_getNetifInfo(struct netif *netif,
-                                         LwipifEnetAppIf_GetHandleNetifInfo *outArgs);
+extern void LwipifEnetAppCb_getEnetLwipIfInstInfo(Enet_Type enetType, uint32_t instId, LwipifEnetAppIf_GetEnetLwipIfInstInfo *outArgs);
 
 extern void LwipifEnetAppCb_getTxHandleInfo(LwipifEnetAppIf_GetTxHandleInArgs *inArgs,
                                             LwipifEnetAppIf_TxHandleInfo *outArgs);
 
 extern void LwipifEnetAppCb_getRxHandleInfo(LwipifEnetAppIf_GetRxHandleInArgs *inArgs,
                                             LwipifEnetAppIf_RxHandleInfo *outArgs);
-
-
 
 extern void LwipifEnetAppCb_releaseTxHandle(LwipifEnetAppIf_ReleaseTxHandleInfo *releaseInfo);
 

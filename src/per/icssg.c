@@ -772,6 +772,42 @@ static int32_t Icssg_disablePruss(Icssg_Handle hIcssg)
     return status;
 }
 
+static uint32_t Icssg_getFwIdx(uint32_t instId)
+{
+	uint32_t fwIdx;
+
+	switch(instId)
+	{
+	    case 0:
+	    	fwIdx = 0;
+	    	break;
+
+	    case 1:
+	    	fwIdx = 1;
+	    	break;
+
+	    case 2:
+	    	fwIdx = 0;
+	    	break;
+
+	    case 3:
+	    	fwIdx = 1;
+	    	break;
+	}
+	return fwIdx;
+}
+
+static Enet_MacPort Icssg_getMacFromInstId(uint32_t instId)
+{ Enet_MacPort macPort;
+
+        switch(instId) { case 0: macPort = ENET_MAC_PORT_1; break; case 2: macPort = ENET_MAC_PORT_1; break;
+
+        case 1: macPort = ENET_MAC_PORT_2; break;
+
+        case 3: macPort = ENET_MAC_PORT_2; break; }
+
+        return macPort; }
+
 static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
                                          const Icssg_Cfg *cfg)
 {
@@ -783,6 +819,10 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
     /* Config and download firmware for MAC port 1. This is applicable for Dual-MAC */
     if (hPer->enetType == ENET_ICSSG_DUALMAC)
     {
+        Enet_MacPort macPort;
+
+        macPort = Icssg_getMacFromInstId(hPer->instId);
+
         status = IcssgUtils_checkFwPoolMem(hIcssg, &fwPoolMem[0U]);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: invalid firmware memory\r\n",
@@ -797,18 +837,18 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
 
         if (status == ENET_SOK)
         {
-            IcssgUtils_fwConfig(hIcssg, ENET_MAC_PORT_1,
+            IcssgUtils_fwConfig(hIcssg, macPort,
                                 cfg,
                                 &fwPoolMem[0U],
                                 hIcssg->dmaResInfo[0U].rxStartIdx);
 
             if ((cfg->fw[0U].pru != NULL) && (cfg->fw[0U].rtu != NULL) && (cfg->fw[0U].txpru != NULL))
             {
-                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, (Icssg_Fw *)&cfg->fw[0U]);
+                status = IcssgUtils_downloadFirmware(hIcssg, macPort, (Icssg_Fw *)&cfg->fw[0U]);
             }
             else
             {
-                status = IcssgUtils_downloadFirmware(hIcssg, ENET_MAC_PORT_1, &hIcssg->fw[0U]);
+                status = IcssgUtils_downloadFirmware(hIcssg, macPort, &hIcssg->fw[0U]);
             }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: firmware download failure: %d\r\n",

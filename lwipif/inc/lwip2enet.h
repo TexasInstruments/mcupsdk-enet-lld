@@ -61,6 +61,7 @@ extern "C" {
 #include "lwipif2enet_AppIf.h"
 #include <enet.h>
 #include <enet_cfg.h>
+#include <enet_types.h>
 #include "pbufQ.h"
 
 /* ========================================================================== */
@@ -79,12 +80,12 @@ extern "C" {
 // #define     PKT_PREPAD                      ((uint32_t)8U)
 #define     PKT_PREPAD                      ((uint32_t)0)
 
-/* Indicates whether RAM based multicast lists are suported for this
+/* Indicates whether RAM based multicast lists are supported for this
  * peripheral.
  */
 #define     RAM_MCAST                       0U
 
-/* Indicates whether HASH based multicasting is suported for this
+/* Indicates whether HASH based multicasting is supported for this
  * peripheral.
  */
 #define     HASH_MCAST                      0U
@@ -182,6 +183,17 @@ typedef struct Lwip2Enet_Stats_s
     uint32_t hwiLoad[HISTORY_CNT];
 } Lwip2Enet_Stats;
 
+typedef enum Lwip2Enet_RxMode_t
+{
+    Lwip2Enet_RxMode_SwitchSharedChannel, /* appicable for CPSW and ICSSG in SW mode */
+    Lwip2Enet_RxMode_MacSharedChannel, /* appicable for CPSW in MAC mode */
+    Lwip2Enet_RxMode_MacPort1Channel, /* appicable for ICSSG in MAC mode */
+    Lwip2Enet_RxMode_MacPort2Channel, /* appicable for ICSSG in MAC mode */ 
+    Lwip2Enet_RxMode_SwitchPort1Channel, /* appicable for ICSSG in SW mode */
+    Lwip2Enet_RxMode_SwitchPort2Channel, /* appicable for ICSSG in SW mode */
+    Lwip2Enet_RxMode_NumModes, /* max value for iteration- invalid */
+} Lwip2Enet_RxMode_t;
+
 struct Lwip2Enet_Obj_s;
 
 /*!
@@ -196,10 +208,14 @@ typedef struct Lwip2Enet_RxObj_s
     EnetDma_RxChHandle hFlow;
 
     /*! Whether this RX object is being used or not */
-    bool enabled;
+    uint32_t chEntryIdx;
 
     /*! Reference count for RX flow */
     uint32_t refCount;
+
+    Lwip2Enet_RxMode_t mode;
+
+    struct netif* mapPortToNetif[CPSW_STATS_MACPORT_MAX];
 
     /*! Start index for RX flow */
     uint32_t flowStartIdx;
@@ -223,6 +239,8 @@ typedef struct Lwip2Enet_RxObj_s
     /*! lwIP interface statistics */
     Lwip2Enet_RxStats stats;
 
+    Enet_notify_t rxPktNotify;
+
     /*! Whether RX event should be disabled or not. When disabled, it relies on pacing timer
      *  to retrieve packets from RX channel/flow */
     bool disableEvent;
@@ -239,11 +257,7 @@ typedef struct Lwip2Enet_TxObj_s
     /*! Enet DMA transmit channel */
     EnetDma_TxChHandle hCh;
 
-    /*! TX channel peer id */
-    uint32_t chNum;
-
-    /*! Whether this TX object is being used or not */
-    bool enabled;
+    uint32_t chEntryIdx;
 
     /*! Reference count for TX object */
     uint32_t refCount;
@@ -272,6 +286,29 @@ typedef struct Lwip2Enet_TxObj_s
 
 /**
  * \brief
+ *  enet and netif interface Info
+ *
+ * \details
+ *  This structure caches the device info.
+ */
+
+typedef struct
+{
+    struct netif *pNetif;
+    Enet_Handle hEnet;
+    uint8_t count_hRx;
+    uint8_t count_hTx;
+    Lwip2Enet_RxHandle hRx[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    Lwip2Enet_TxHandle hTx[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL];
+    Enet_MacPort macPort;
+    uint8_t macAddr[ENET_MAC_ADDR_LEN];
+    LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;
+    bool isLinkUp;
+    uint8_t isActive;
+} Lwip2Enet_netif_t;
+
+/**
+ * \brief
  *  Packet device information
  *
  * \details
@@ -279,28 +316,14 @@ typedef struct Lwip2Enet_TxObj_s
  */
 typedef struct Lwip2Enet_Obj_s
 {
-    /*! RX object */
-    Lwip2Enet_RxObj rx[LWIPIF_MAX_RX_CHANNELS];
 
-    /*! Number of RX channels allocated by Application */
-    uint32_t numRxChannels;
+    Lwip2Enet_netif_t interfaceInfo[LWIPIF_MAX_NETIFS_SUPPORTED];
+    uint32_t numOpenedNetifs;
 
-	/*! TX object */
-    Lwip2Enet_TxObj tx[LWIPIF_MAX_TX_CHANNELS];
-
-    /*! Number of TX channels allocated by Application */
-    uint32_t numTxChannels;
-
-    /*! lwIP network interface */
-    struct netif *netif[ENET_CFG_NETIF_MAX];
-
-    uint8_t macAddr[ENET_CFG_NETIF_MAX][ENET_MAC_ADDR_LEN];
-	/*! Total number of allocated PktInfo elements */
     uint32_t allocPktInfo;
-
     Lwip2Enet_AppInfo appInfo;
-    /** Initialization flag.*/
-    uint32_t initDone;
+    bool isInitDone;
+    bool isAllocated;
     /** Index of currently connect physical port.*/
     uint32_t currLinkedIf;
 
@@ -314,8 +337,7 @@ typedef struct Lwip2Enet_Obj_s
     uint32_t MCastCnt;
     /** Multicast list configured by the Application.*/
     uint8_t bMCast[(uint32_t)ENET_MAC_ADDR_LEN * PKT_MAX_MCAST];
-    /** Link is up flag. */
-    uint32_t linkIsUp;
+
     /** Device is operating in test digital loopback mode.*/
     uint32_t inDLBMode;
     /** Total number of PBM packets allocated by application - used for debug purpose.*/
@@ -326,11 +348,6 @@ typedef struct Lwip2Enet_Obj_s
      */
     ClockP_Object pacingClkObj;
 
-    /*
-     * Handle to Binary Semaphore LWIP_LWIPIF_input when Rx packet queue is ready
-     */
-    SemaphoreP_Object pollLinkSemObj;
-
     /**< Print buffer */
     char printBuf[ENET_CFG_PRINT_BUF_LEN];
 
@@ -340,21 +357,14 @@ typedef struct Lwip2Enet_Obj_s
     /*! CPU load stats */
     Lwip2Enet_Stats stats;
 
-    Lwip2Enet_RxHandle mapNetif2Rx[ENET_CFG_NETIF_MAX];
+    Lwip2Enet_RxObj  lwip2EnetRxObj[LWIPIF_MAX_RX_CHANNELS];
+    Lwip2Enet_TxObj  lwip2EnetTxObj[LWIPIF_MAX_TX_CHANNELS];
 
-    Lwip2Enet_TxHandle mapNetif2Tx[ENET_CFG_NETIF_MAX];
+    uint32_t lwip2EnetRxObjCount;
+    uint32_t lwip2EnetTxObjCount;
 
-    struct netif *mapRxPort2Netif[CPSW_STATS_MACPORT_MAX];
-
-    Enet_MacPort mapNetif2TxPortNum[ENET_CFG_NETIF_MAX];
-
-
-    Enet_notify_t rxPktNotify;
-
-    Enet_notify_t txPktNotify;
 }
 Lwip2Enet_Obj, *Lwip2Enet_Handle;
-
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
 /* ========================================================================== */
@@ -367,13 +377,13 @@ Lwip2Enet_Obj, *Lwip2Enet_Handle;
 /*
  * Functions Provided by our translation layer code
  */
-extern Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif);
+extern Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif);
 
-extern void Lwip2Enet_close(Lwip2Enet_Handle hlwip2enet);
+extern void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif);
 
 extern void Lwip2Enet_setRx(Lwip2Enet_Handle hlwip2enet);
 
-extern void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort);
+extern void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort macPort);
 
 extern int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hlwip2enet,
                               uint32_t cmd,
@@ -385,13 +395,13 @@ extern void Lwip2Enet_poll(Lwip2Enet_Handle hlwip2enet,
 
 extern void Lwip2Enet_periodicFxn(struct netif *netif);
 
-void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pRxPktNotify);
+void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_RxHandle hRx, Enet_notify_t *pRxPktNotify);
 
-void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pTxPktNotify);
+void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_TxHandle hTx, Enet_notify_t *pTxPktNotify);
 
-void Lwip2Enet_rxPktHandler(Lwip2Enet_Handle hLwip2Enet);
+void Lwip2Enet_rxPktHandler(Lwip2Enet_RxHandle hRx);
 
-void Lwip2Enet_txPktHandler(Lwip2Enet_Handle hLwip2Enet);
+void Lwip2Enet_txPktHandler(Lwip2Enet_TxHandle hRx);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
@@ -422,20 +432,9 @@ static inline void Lwip2EnetStats_addNum(uint32_t *statCnt,
 #define LWIP2ENETSTATS_ADDNUM(statsCntPtr, addCnt)   do {} while (0)
 #endif
 
-static inline void Lwip2Enet_assert(bool cond)
-{
-    volatile static bool gCpswAssertWaitInLoop = TRUE;
+void Lwip2Enet_assertPriv(bool cond, const int32_t line, const char* file);
 
-    if (!(cond))
-    {
-        void EnetAppUtils_print(const char *pcString,...);
-        EnetAppUtils_print("Assertion @ Line: %d in %s : failed !!!\r\n",
-                            (int32_t) __LINE__, (const char *) __FILE__);
-        while (gCpswAssertWaitInLoop)
-        {
-        }
-    }
-}
+#define Lwip2Enet_assert(cond)  Lwip2Enet_assertPriv(cond, __LINE__, __FILE__);
 
 #ifdef __cplusplus
 }

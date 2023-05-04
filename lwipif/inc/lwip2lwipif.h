@@ -74,15 +74,77 @@ extern "C" {
 /* ========================================================================== */
 /* Forward declaration */
 struct netif;
+
 err_t LWIPIF_LWIP_init(struct netif *netif);
 
+/*!
+ *  This API is used to initialize and start the Enet and DMA
+ *  peripherals for data path and associates with netif
+ *
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param netif     LwIP netif that needs to be associated with peripheral
+ * \param macPort   MAC port that needs to be associated with the netif
+ *
+ * \return Return 0 if successful. else negative values.
+ */
+int LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif);
+
+/*!
+ *  This API shall set the notification callbacks when the packets are received (along Rx direction)
+ *  or when packets has completed transmission (along TX direction)
+ *  peripherals for data path and associates with netif
+ *
+ * \param netif      LwIP netif
+ * \param pRxNotify  Rx side notification cabllback details
+ * \param pTxNotify  Tx side notification cabllback details
+ *
+ */
 void LWIPIF_LWIP_setNotifyCallbacks(struct netif *netif, Enet_notify_t *pRxNotify, Enet_notify_t *pTxNotify);
 
-void LWIPIF_LWIP_periodic_polling(struct netif *netifList);
+/*!
+ * Periodic polling API. Suggestion to call the regular interval as per the required packet latency.
+ *
+ * \param netif      LwIP netif
+ *
+ */
+void LWIPIF_LWIP_periodic_polling(struct netif *netif);
 
+/*!
+ * RX packet handler API, that retrieves the received packets/descriptors from driver.
+ *
+ * \param netif      LwIP netif
+ *
+ */
 void LWIPIF_LWIP_rxPktHandler(struct netif *netif);
 
+/*!
+ * TX packet handler API, that retrieves the freed Tx packets/descriptors from driver.
+ *
+ * \param netif      LwIP netif
+ *
+ */
 void LWIPIF_LWIP_txPktHandler(struct netif *netif);
+
+/*!
+ *  @b LWIPIF_LWIP_send
+ *  @n
+ *  This function should do the actual transmission of the packet. The packet is
+ * contained in the pbuf that is passed to the function. This pbuf
+ * might be chained.
+ *
+ *  \param[in]  netif
+ *      The lwip network interface structure for this ethernetif
+ *  \param[in]  p
+ *      the MAC packet to send (e.g. IP packet including MAC addresses and type)
+ *
+ *  \retval
+ *      ERR_OK if the packet could be sent
+ *  \retval
+ *      an err_t value if the packet couldn't be sent
+ */
+ err_t LWIPIF_LWIP_send(struct netif *netif, struct pbuf *p);
+
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

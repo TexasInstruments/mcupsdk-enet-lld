@@ -57,6 +57,7 @@
 #include "lwip/inet_chksum.h"
 #include "lwip/prot/ip.h"
 #include <lwip/netif.h>
+#include <networking/enet/core/lwipif/inc/lwipif2enet_AppIf.h>
 
 /**
  * Enet device specific header files
@@ -66,7 +67,7 @@
 #include <enet_appmemutils.h>
 #include <networking/enet/core/include/core/enet_utils.h>
 #include <enet_cfg.h>
-
+#include "enet_apputils.h"
 #include <networking/enet/core/lwipif/src/lwip2lwipif_priv.h>
 #include <kernel/nortos/dpl/common/printf.h>
 
@@ -80,22 +81,22 @@
  |                            Local Macros/Defines                             |
  \*---------------------------------------------------------------------------*/
 
+#define LWIP2ENET_UNKNOWN_MAC_PORT (-1)
+
 /*---------------------------------------------------------------------------*\
  |                         Local Function Declarations                         |
  \*---------------------------------------------------------------------------*/
 
-static void Lwip2Enet_deinitTxObj(Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_deinitTxObj(Enet_Type enetType, uint32_t instId, Lwip2Enet_TxHandle hTx);
 
-static void Lwip2Enet_deinitRxObj(Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_deinitRxObj(Enet_Type enetType, uint32_t instId, Lwip2Enet_RxHandle hRx);
 
 static void Lwip2Enet_saveAppIfCfg(Lwip2Enet_Handle hLwip2Enet,
                                    Lwip2Enet_AppInfo *appInfo);
 
-static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
-                                              Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_initTxObj(Enet_Type enetType, uint32_t instId, uint32_t chEntryIdx, Lwip2Enet_TxObj* pTx);
 
-static Lwip2Enet_RxHandle Lwip2Enet_initRxObj(uint32_t rxCh,
-                                              Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_initRxObj(Enet_Type enetType, uint32_t instId, uint32_t chEntryIdx, Lwip2Enet_RxHandle hRx);
 
 static void Lwip2Enet_mapNetif2Tx(struct netif *netif,
                                   bool isDirected,
@@ -141,11 +142,9 @@ static void Lwip2Enet_print(Lwip2Enet_Handle hLwip2Enet,
                             const char *prnStr,
                             ...);
 
-static int32_t Lwip2Enet_startRxTx(Lwip2Enet_Handle hLwip2Enet);
-
 static int32_t Lwip2Enet_startPollTask(Lwip2Enet_Handle hLwip2Enet);
 
-static void Lwip2Enet_stopRxTx(Lwip2Enet_Handle hLwip2Enet);
+static void Lwip2Enet_stopRxTx(Lwip2Enet_TxObj* pTx, Lwip2Enet_RxObj* pRx);
 
 static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
                                       EnetDma_PktQ *pSubmitQ);
@@ -153,211 +152,290 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
 static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
                                      EnetDma_PktQ *pSubmitQ);
 
-void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx);
+void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx);
 
 static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg);
 
 static void Lwip2Enet_createTimer(Lwip2Enet_Handle hLwip2Enet);
 
-static void Lwip2Enet_initGetTxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                            uint32_t chNum,
-                                            LwipifEnetAppIf_GetTxHandleInArgs *inArgs);
+static void Lwip2Enet_initReleaseTxHandleInArgs(Lwip2Enet_TxHandle hTx,
+        uint32_t chNum,
+        LwipifEnetAppIf_ReleaseTxHandleInfo *inArgs);
 
-static void Lwip2Enet_initGetRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                            uint32_t chNum,
-                                            LwipifEnetAppIf_GetRxHandleInArgs *inArgs);
+static void Lwip2Enet_initReleaseRxHandleInArgs(Lwip2Enet_RxHandle hRx,
+        uint32_t chNum,
+        LwipifEnetAppIf_ReleaseRxHandleInfo *inArgs);
 
-static void Lwip2Enet_initReleaseTxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                              uint32_t chNum,
-                                              LwipifEnetAppIf_ReleaseTxHandleInfo *inArgs);
-
-static void Lwip2Enet_initReleaseRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                              uint32_t chNum,
-                                              LwipifEnetAppIf_ReleaseRxHandleInfo *inArgs);
+static uint32_t Lwip2Enet_getRxTxObjIdx(Enet_Type enetType, uint32_t instId, Enet_MacPort macPort);
 
 static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx);
+
+static void Lwip2Enet_freeRxPktCb(void *cbArg,
+                                  EnetDma_PktQ *fqPktInfoQ,
+                                  EnetDma_PktQ *cqPktInfoQ);
+
+static void Lwip2Enet_freeTxPktCb(void *cbArg,
+                                  EnetDma_PktQ *fqPktInfoQ,
+                                  EnetDma_PktQ *cqPktInfoQ);
+
+static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, Enet_Handle hEnet,uint8_t macAddr[ENET_MAC_ADDR_LEN]);
+
+Lwip2Enet_RxMode_t LwipifEnetAppCb_getRxMode(Enet_Type enetType, uint32_t instId);
+
+bool Lwip2Enet_decrementRxRefCount(Lwip2Enet_RxObj* pRx);
+
+bool Lwip2Enet_decrementTxRefCount(Lwip2Enet_TxObj* pTx);
+
+void LwipifEnetApp_getRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL]);
+
+void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t* pTxChIdCount, uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL]);
+
+uint32_t LwipifEnetAppCb_getMacPort(const Enet_Type enetType, const uint32_t instId);
+
 /*---------------------------------------------------------------------------*\
  |                         Local Variable Declarations                         |
  \*---------------------------------------------------------------------------*/
 
-static Lwip2Enet_Obj  gLwip2EnetObj = { {{0}} };
+static Lwip2Enet_Obj  gLwip2EnetObj =  {.isInitDone = false, .isAllocated = false };
 
 /*---------------------------------------------------------------------------*\
  |                         Global Variable Declarations                        |
  \*---------------------------------------------------------------------------*/
 
-static Lwip2Enet_Handle Lwip2Enet_getObj(void)
+static Lwip2Enet_Handle Lwip2Enet_allocateObj(void)
 {
     uintptr_t key = EnetOsal_disableAllIntr();
-
     Lwip2Enet_Handle hLwip2Enet = &gLwip2EnetObj;
 
-	EnetOsal_restoreAllIntr(key);
+    if (!hLwip2Enet->isAllocated)
+    {
+        hLwip2Enet = &gLwip2EnetObj;
+        //phn initialize hLwip2Enet
+        hLwip2Enet->isAllocated = true;
+        hLwip2Enet->isInitDone = false;
+
+        for (uint32_t rxChIdIdx = 0; rxChIdIdx < LWIPIF_MAX_RX_CHANNELS; rxChIdIdx++)
+        {
+            hLwip2Enet->lwip2EnetRxObj[rxChIdIdx].refCount = 0;
+        }
+
+        for (uint32_t txChIdIdx = 0; txChIdIdx < LWIPIF_MAX_TX_CHANNELS; txChIdIdx++)
+        {
+            hLwip2Enet->lwip2EnetTxObj[txChIdIdx].refCount = 0;
+        }
+    }
+
+    EnetOsal_restoreAllIntr(key);
 
     return hLwip2Enet;
 }
 
-static void Lwip2Enet_putObj(Lwip2Enet_Handle hLwip2Enet)
+void Lwip2Enet_assertPriv(bool cond, const int32_t line, const char* file)
+{
+    volatile static bool waitInLoop = TRUE;
+
+    if (!(cond))
+    {
+        void EnetAppUtils_print(const char *pcString,...);
+        EnetAppUtils_print("Assertion @ Line: %d in %s : failed !!!\r\n", line, file);
+        while (waitInLoop)
+        {
+
+        }
+    }
+}
+static Lwip2Enet_RxHandle Lwip2Enet_allocateRxHandle(Lwip2Enet_Handle hLwip2Enet, Enet_Type enetType, uint32_t instId, const uint32_t objIdx)
 {
     uintptr_t key = EnetOsal_disableAllIntr();
-    /* Clear the allocated translation */
-    memset(hLwip2Enet, 0, sizeof(*hLwip2Enet));
+    Lwip2Enet_RxHandle hRx = NULL;
+    if (objIdx < LWIPIF_MAX_RX_CHANNELS)
+    {
+        hRx = &hLwip2Enet->lwip2EnetRxObj[objIdx];
+    }
+
     EnetOsal_restoreAllIntr(key);
 
+    return hRx;
 }
 
-/**
- * Initializes Ethernet peripheral hardware
- */
-Lwip2Enet_Handle Lwip2Enet_open(struct netif *netif)
+static Lwip2Enet_TxHandle Lwip2Enet_allocateTxHandle(Lwip2Enet_Handle hLwip2Enet, Enet_Type enetType, uint32_t instId, const uint32_t objIdx)
 {
-    Lwip2Enet_Handle hLwip2Enet;
-    Lwip2Enet_TxHandle hTxLwip2Enet;
-    Lwip2Enet_RxHandle hRxLwip2Enet;
-    LwipifEnetAppIf_GetHandleNetifInfo netifInfo;
-    int32_t status;
-    uint32_t i;
-
-    hLwip2Enet = Lwip2Enet_getObj();
-    if (hLwip2Enet->initDone == false)
+    uintptr_t key = EnetOsal_disableAllIntr();
+    Lwip2Enet_TxHandle hTx = NULL;
+    if (objIdx < LWIPIF_MAX_TX_CHANNELS)
     {
+        hTx = &hLwip2Enet->lwip2EnetTxObj[objIdx];
+    }
 
-        /* MCast List is EMPTY */
-        hLwip2Enet->MCastCnt = 0U;
+    EnetOsal_restoreAllIntr(key);
 
-        /* Init internal bookkeeping fields */
-        hLwip2Enet->oldMCastCnt = 0U;
-
-        for (i = 0U; i < ENET_CFG_NETIF_MAX; i++)
-        {
-            hLwip2Enet->mapNetif2Rx[i] = NULL;
-            hLwip2Enet->mapNetif2Tx[i] = NULL;
-            hLwip2Enet->mapNetif2TxPortNum[i] = ENET_MAC_PORT_INV;
-        }
-
-        for (i = 0U; i < CPSW_STATS_MACPORT_MAX; i++)
-        {
-            hLwip2Enet->mapRxPort2Netif[i] = NULL;
-        }
+    return hTx;
+}
 
 
+Enet_MacPort Lwip2Enet_findMacPortFromEnet(Enet_Type enetType, uint32_t instId) // move to Cb file autogenerated
+{
+    Enet_MacPort macPort = ENET_MAC_PORT_INV;
+    if (enetType == ENET_ICSSG_DUALMAC)
+    {
+        macPort = (Enet_MacPort)(instId & 0x01);
+    }
+    return macPort;
+}
+
+Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif)
+{
+    uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL];
+    uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    EnetApp_GetMacAddrOutArgs          macAddr;
+    EnetApp_HandleInfo                 handleInfo;
+    Lwip2Enet_Handle    hLwip2Enet = Lwip2Enet_allocateObj();
+    Lwip2Enet_netif_t*  pInterface = &(hLwip2Enet->interfaceInfo[hLwip2Enet->numOpenedNetifs++]);
+    uint32_t txChIdCount = 0, rxChIdCount = 0;
+
+    /* get TxChID & RxChID and the corresponding channel counts */
+    LwipifEnetApp_getTxChIDs(enetType, instId, &txChIdCount, &txChIdList[0]);
+    LwipifEnetApp_getRxChIDs(enetType, instId, &rxChIdCount, &rxChIdList[0]);
+
+
+    EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
+    Lwip2Enet_assert(handleInfo.hEnet != NULL);
+    pInterface->hEnet = handleInfo.hEnet;
+
+    /* MCast List is EMPTY */
+    hLwip2Enet->MCastCnt = 0U;
+
+    /* Init internal bookkeeping fields */
+    hLwip2Enet->oldMCastCnt = 0U;
+
+    if (hLwip2Enet->isInitDone == false)
+    {
         /* First init tasks, semaphores and clocks. This is required because
          * EnetDma event cb ISR can happen immediately after opening rx flow
          * in LwipifEnetAppCb_getHandle and all semaphores, clocks and tasks should
          * be valid at that point
          */
 
-        LwipifEnetAppCb_getEnetLwipIfInstInfo(&hLwip2Enet->appInfo);
+        LwipifEnetAppCb_getEnetLwipIfInstInfo(enetType, instId, &hLwip2Enet->appInfo);
 
         /* Save params received from application interface */
         Lwip2Enet_saveAppIfCfg(hLwip2Enet, &hLwip2Enet->appInfo);
 
-        Lwip2Enet_assert(hLwip2Enet->appInfo.hEnet != NULL);
         Lwip2Enet_assert(hLwip2Enet->appInfo.isPortLinkedFxn != NULL);
         Lwip2Enet_assert(hLwip2Enet->appInfo.pPbufInfo != NULL);
 
         pbufQ_init_freeQ(hLwip2Enet->appInfo.pPbufInfo, hLwip2Enet->appInfo.pPbufInfoSize);
 
-
         /* set the print function callback if not null */
         hLwip2Enet->print = (Enet_Print) &EnetUtils_printf;
-	}
-
-    /* Process netif related parameters*/
-    LwipifEnetAppCb_getNetifInfo(netif, &netifInfo);
-
-    for(i=0U; i < netifInfo.numTxChannels; i++)
-    {
-        hTxLwip2Enet = Lwip2Enet_initTxObj(i, hLwip2Enet);
-        Lwip2Enet_mapNetif2Tx(netif, netifInfo.isDirected, hTxLwip2Enet, hLwip2Enet);
-    }
-
-    for(i=0U; i < netifInfo.numRxChannels; i++)
-    {
-        hRxLwip2Enet = Lwip2Enet_initRxObj(i, hLwip2Enet);
-        Lwip2Enet_mapNetif2Rx(netif, netifInfo.isDirected, hRxLwip2Enet, hLwip2Enet);
-    }
-    /* Updating the netif params */
-    EnetUtils_copyMacAddr(netif->hwaddr ,&hLwip2Enet->macAddr[netif->num][0U]);
-    netif->hwaddr_len = ENET_MAC_ADDR_LEN;
-    netif->state = (void *)hLwip2Enet;
-    hLwip2Enet->netif[netif->num] = netif;
-
-    /* DMA handles are availablw now, so starting the tasks and completing the initialization of lwipif*/
-    if(hLwip2Enet->initDone == false)
-    {
-        status = Lwip2Enet_startRxTx(hLwip2Enet);
-        if (status != ENET_SOK)
-        {
-            Lwip2Enet_print(hLwip2Enet,"Failed to start the tasks: %d\n", status);
-        }
-
-        /* Get initial link/interface status from the driver */
-        hLwip2Enet->linkIsUp = hLwip2Enet->appInfo.isPortLinkedFxn(hLwip2Enet->appInfo.hEnet);
-
-        for (i = 0U; i < hLwip2Enet->numTxChannels; i++)
-        {
-            if (hLwip2Enet->tx[i].disableEvent)
-            {
-                EnetDma_disableTxEvent(hLwip2Enet->tx[i].hCh);
-            }
-        }
-
-        for (i = 0U; i < hLwip2Enet->numRxChannels; i++)
-        {
-            if ((hLwip2Enet->rx[i].enabled) &&  (hLwip2Enet->rx[i].disableEvent))
-            {
-                EnetDma_disableRxEvent(hLwip2Enet->rx[i].hFlow);
-            }
-        }
-        /* assert if clk period is not valid  */
-        Lwip2Enet_assert(0U != hLwip2Enet->appInfo.timerPeriodUs);
+        hLwip2Enet->isInitDone = true;
         Lwip2Enet_createTimer(hLwip2Enet);
-        // ClockP_start(&hLwip2Enet->pacingClkObj);
+    }
+    else
+    {
 
-        hLwip2Enet->initDone = TRUE;
     }
 
+    /* Associate with corresponding Tx Channels */
+    for (uint32_t txChIdIndex = 0; txChIdIndex < txChIdCount; txChIdIndex++)
+    {
+        const uint32_t txChId = txChIdList[txChIdIndex];
+        pInterface->hTx[txChIdIndex] = Lwip2Enet_allocateTxHandle(hLwip2Enet, enetType, instId, txChId);
+        Lwip2Enet_initTxObj(enetType, instId, txChId, pInterface->hTx[txChIdIndex]);
+        hLwip2Enet->allocPktInfo += pInterface->hTx[txChIdIndex]->numPackets;
+        pInterface->hTx[txChIdIndex]->hLwip2Enet = hLwip2Enet;
+        Lwip2Enet_assert(NULL != pInterface->hTx[txChIdIndex]->hCh);
+        EnetDma_enableTxEvent(pInterface->hTx[txChIdIndex]->hCh);
+    }
+    pInterface->count_hTx = txChIdCount;
+
+    /* Associate with corresponding Rx Channels */
+    for (uint32_t rxChIdIdx = 0; rxChIdIdx < rxChIdCount; rxChIdIdx++)
+    {
+        const uint32_t rxChId = rxChIdList[rxChIdIdx];
+        pInterface->hRx[rxChIdIdx] = Lwip2Enet_allocateRxHandle(hLwip2Enet, enetType, instId, rxChId);
+        Lwip2Enet_initRxObj(enetType, instId, rxChId, pInterface->hRx[rxChIdIdx]);
+
+        EnetApp_getMacAddress(rxChId, &macAddr);
+        Lwip2Enet_assert(macAddr.macAddressCnt >= pInterface->hRx[rxChIdIdx]->refCount);
+        EnetUtils_copyMacAddr(netif->hwaddr ,&macAddr.macAddr[rxChIdIdx][0U]);
+        netif->hwaddr_len = ENET_MAC_ADDR_LEN;
+        #if ENET_ENABLE_PER_ICSSG
+        Lwip2Enet_setMacAddress(enetType, instId, pInterface->hEnet, &macAddr.macAddr[rxChIdIdx][0U]);
+        #endif // ENET_ENABLE_PER_ICSSG
+
+        /* Process netif related parameters*/
+        pInterface->hRx[rxChIdIdx]->mode = LwipifEnetAppCb_getRxMode(enetType, instId);
+        if ((pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_SwitchSharedChannel) ||
+            (pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_SwitchPort1Channel) ||
+            (pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_SwitchPort2Channel))
+        {
+            for (uint32_t portIdx = 0; portIdx < CPSW_STATS_MACPORT_MAX; portIdx++)
+            {
+                pInterface->hRx[rxChIdIdx]->mapPortToNetif[portIdx] = netif;
+            }
+            pInterface->macPort = ENET_MAC_PORT_INV;
+        }
+        else if (pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_MacSharedChannel)
+        {
+            const Enet_MacPort macPort = (Enet_MacPort)((pInterface->hRx[rxChIdIdx]->refCount -1));
+            Lwip2Enet_assert(macPort < LWIPIF_MAX_NUM_MAC_PORTS);
+            pInterface->hRx[rxChIdIdx]->mapPortToNetif[macPort] = netif;
+            pInterface->macPort = macPort;
+        }
+        else
+        {
+            /* rxChIdx is treated as MAC PORT in case of dedicated CH per netif.
+             * This is in both ICSSG dual mac and switch usecase */
+            const Enet_MacPort macPort = Lwip2Enet_findMacPortFromEnet(enetType, instId);
+            Lwip2Enet_assert(macPort < LWIPIF_MAX_NUM_MAC_PORTS);
+            pInterface->hRx[rxChIdIdx]->mapPortToNetif[macPort] = netif;
+            pInterface->macPort = macPort;
+        }
+
+        hLwip2Enet->allocPktInfo += pInterface->hRx[rxChIdIdx]->numPackets;
+        pInterface->hRx[rxChIdIdx]->hLwip2Enet = hLwip2Enet;
+        Lwip2Enet_assert(NULL != pInterface->hRx[rxChIdIdx]->hFlow);
+        /* Submit all allocated packets to DMA so it can use for packet RX */
+        Lwip2Enet_submitRxPktQ(pInterface->hRx[rxChIdIdx]);
+    }
+    pInterface->count_hRx = rxChIdCount;
+
+    /* Get initial link/interface status from the driver */
+    pInterface->isLinkUp = hLwip2Enet->appInfo.isPortLinkedFxn(pInterface->hEnet);
+    pInterface->isPortLinkedFxn = hLwip2Enet->appInfo.isPortLinkedFxn;
+    pInterface->pNetif   = netif;
+
+    /* Updating the netif params */
+    netif->hwaddr_len = ENET_MAC_ADDR_LEN;
+    netif->state = (void *)pInterface;
+
+    /* assert if clk period is not valid  */
+    Lwip2Enet_assert(0U != hLwip2Enet->appInfo.timerPeriodUs);
+
+    ClockP_start(&hLwip2Enet->pacingClkObj);
     return hLwip2Enet;
 }
 
-static void Lwip2Enet_mapNetif2Tx(struct netif *netif,
-                        bool isDirected,
-                        Lwip2Enet_TxHandle hTxLwip2Enet,
-                        Lwip2Enet_Handle hLwip2Enet)
+
+Lwip2Enet_netif_t* Lwip2Enet_getInterfaceObj(Lwip2Enet_Handle hLwip2Enet, struct netif *netif)
 {
-    hLwip2Enet->mapNetif2Tx[netif->num] = hTxLwip2Enet;
-
-    if(isDirected)
+    Lwip2Enet_netif_t* pInterface = NULL;
+    for (uint32_t ifIdx = 0; ifIdx < LWIPIF_MAX_NETIFS_SUPPORTED; ifIdx++)
     {
-        hLwip2Enet->mapNetif2TxPortNum[netif->num] = ENET_MACPORT_DENORM(LWIP_NETIF_IDX_2_TX_PORT(netif->num));
-    }
-}
-
-static void Lwip2Enet_mapNetif2Rx(struct netif *netif,
-                        bool isDirected,
-                        Lwip2Enet_RxHandle hRxLwip2Enet,
-                        Lwip2Enet_Handle hLwip2Enet)
-{
-
-    hLwip2Enet->mapNetif2Rx[netif->num] = hRxLwip2Enet;
-    hLwip2Enet->mapRxPort2Netif[LWIP_NETIF_IDX_2_RX_PORT(netif->num)] = netif;
-#if (ENET_ENABLE_PER_ICSSG == 1)
-    /* ToDo: ICSSG doesnot fill rxPortNum correctly, so using the hRxLwip2Enet->flowIdx to map to netif*/
-    hLwip2Enet->mapRxPort2Netif[LWIP_RXFLOW_2_PORTIDX(hRxLwip2Enet->flowIdx)] = netif;
-#endif
-    /* For non-directed packets, we map both ports to the first netif*/
-    if(!isDirected)
-    {
-        for(uint32_t portIdx = 0U; portIdx < CPSW_STATS_MACPORT_MAX; portIdx++)
+        if (hLwip2Enet->interfaceInfo[ifIdx].pNetif == netif)
         {
-            if(portIdx < ENET_CFG_NETIF_MAX)
-            {
-            hLwip2Enet->mapRxPort2Netif[portIdx] = netif;
-            }
+            pInterface = &hLwip2Enet->interfaceInfo[ifIdx];
+            break;
+        }
+        else
+        {
+            continue;
         }
     }
+    return pInterface;
 }
+
 
 /*!
  *  @b Lwip2Enet_close
@@ -370,7 +448,7 @@ static void Lwip2Enet_mapNetif2Rx(struct netif *netif,
  *  \retval
  *      void
  */
-void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet)
+void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif)
 {
     Lwip2Enet_assert(NULL != hLwip2Enet);
 
@@ -378,7 +456,10 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet)
     ClockP_stop(&hLwip2Enet->pacingClkObj);
     ClockP_destruct(&hLwip2Enet->pacingClkObj);
 
-    Lwip2Enet_stopRxTx(hLwip2Enet);
+    Lwip2Enet_netif_t* pInterface = Lwip2Enet_getInterfaceObj(hLwip2Enet, netif);
+    Lwip2Enet_assert(pInterface != NULL);
+
+//    Lwip2Enet_stopRxTx(pInterface->hTx, pInterface->hRx);
 
     if (hLwip2Enet->allocPktInfo > 0U)
     {
@@ -386,154 +467,148 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet)
     }
 
     /* Deinit TX and RX objects, delete task, semaphore, etc */
-    Lwip2Enet_deinitTxObj(hLwip2Enet);
-    Lwip2Enet_deinitRxObj(hLwip2Enet);
+    for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
+    {
+        Lwip2Enet_deinitTxObj(pInterface->hEnet->enetPer->enetType, pInterface->hEnet->enetPer->instId, pInterface->hTx[idx]);
+        hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hTx[idx]->freePktInfoQ);
+        pInterface->hTx[idx] = NULL;
+    }
 
-    Lwip2Enet_putObj(hLwip2Enet);
+    for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
+    {
+        Lwip2Enet_deinitRxObj(pInterface->hEnet->enetPer->enetType, pInterface->hEnet->enetPer->instId, pInterface->hRx[idx]);
+
+        hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hRx[idx]->readyRxPktQ);
+        hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hRx[idx]->freeRxPktInfoQ);
+        pInterface->hRx[idx] = NULL;
+    }
+    pInterface->isActive = false;
+    return;
 }
 
-static Lwip2Enet_RxHandle Lwip2Enet_initRxObj(uint32_t rxCh,
-                                              Lwip2Enet_Handle hLwip2Enet)
+static void Lwip2Enet_initRxObj(Enet_Type enetType, uint32_t instId, uint32_t chEntryIdx, Lwip2Enet_RxHandle hRx)
 {
-    Lwip2Enet_RxHandle hRxHandle;
-    LwipifEnetAppIf_GetRxHandleInArgs inArgs;
-    LwipifEnetAppIf_RxHandleInfo outArgs;
 
-    if(hLwip2Enet->rx[rxCh].enabled == true)
+    if (hRx->refCount > 0)
     {
-        hLwip2Enet->rx[rxCh].refCount++;
-        hRxHandle = &hLwip2Enet->rx[rxCh];
+        hRx->refCount++;
     }
-    else{
+    else
+    {
+        LwipifEnetAppIf_GetRxHandleInArgs inArgs;
+        LwipifEnetAppIf_RxHandleInfo outArgs;
 
-        Lwip2Enet_initGetRxHandleInArgs(hLwip2Enet, rxCh, &inArgs);
+        inArgs.enetType        = enetType;
+        inArgs.instId          = instId;
+        inArgs.cbArg           = hRx;
+        inArgs.notifyCb        = &Lwip2Enet_notifyRxPackets;
+        inArgs.chId            = chEntryIdx;
+        inArgs.pFreePbufInfoQ  = &hRx->freePbufInfoQ;
+        inArgs.pReadyRxPktQ    = &hRx->readyRxPktQ;
+        inArgs.pFreeRxPktInfoQ = &hRx->freeRxPktInfoQ;
+
         LwipifEnetAppCb_getRxHandleInfo(&inArgs, &outArgs);
 
-        hLwip2Enet->rx[rxCh].numPackets = outArgs.numPackets;
+        hRx->numPackets = outArgs.numPackets;
+        hRx->flowIdx     = outArgs.rxFlowIdx;
+        hRx->flowStartIdx = outArgs.rxFlowStartIdx;
+        hRx->hFlow       = outArgs.hRxFlow;
+        Lwip2Enet_assert(hRx->hFlow != NULL);
+        hRx->disableEvent = outArgs.disableEvent;
 
-        hLwip2Enet->rx[rxCh].flowIdx     = outArgs.rxFlowIdx;
-        hLwip2Enet->rx[rxCh].flowStartIdx = outArgs.rxFlowStartIdx;
-        hLwip2Enet->rx[rxCh].hFlow       = outArgs.hRxFlow;
-        Lwip2Enet_assert(hLwip2Enet->rx[rxCh].hFlow != NULL);
-        hLwip2Enet->rx[rxCh].disableEvent = outArgs.disableEvent;
+        hRx->stats.freeAppPktEnq = outArgs.numPackets;
 
-        for (uint32_t i = 0U; i < hLwip2Enet->appInfo.maxNumNetif; i++)
+        hRx->refCount = 1U;
+        hRx->chEntryIdx = chEntryIdx;
+        for (uint32_t portIdx = 0; portIdx < CPSW_STATS_MACPORT_MAX; portIdx++)
         {
-            EnetUtils_copyMacAddr(&hLwip2Enet->macAddr[i][0U], &outArgs.macAddr[i][0U]);
+            hRx->mapPortToNetif[portIdx] = NULL;
         }
-
-        hLwip2Enet->rx[rxCh].stats.freeAppPktEnq = outArgs.numPackets;
-        hLwip2Enet->allocPktInfo += outArgs.numPackets;
-
-        hLwip2Enet->rx[rxCh].refCount = 1U;
-        hLwip2Enet->rx[rxCh].enabled = true;
-        hLwip2Enet->rx[rxCh].hLwip2Enet = hLwip2Enet;
-
-        hRxHandle = &hLwip2Enet->rx[rxCh];
     }
 
-    return hRxHandle;
+    return;
 }
 
 static void Lwip2Enet_saveAppIfCfg(Lwip2Enet_Handle hLwip2Enet,
                                      Lwip2Enet_AppInfo *appInfo)
 {
-    hLwip2Enet->numRxChannels = appInfo->numRxChannels;
-    hLwip2Enet->numTxChannels = appInfo->numTxChannels;
+
 }
 
-static void Lwip2Enet_deinitRxObj(Lwip2Enet_Handle hLwip2Enet)
+static void Lwip2Enet_deinitRxObj(Enet_Type enetType, uint32_t instId, Lwip2Enet_RxHandle hRx)
 {
-    LwipifEnetAppIf_ReleaseRxHandleInfo inArgs;
-
-    for (uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
+    if (Lwip2Enet_decrementRxRefCount(hRx))
     {
-        if( hLwip2Enet->rx[i].refCount != 0U)
-        {
-            hLwip2Enet->rx[i].refCount--;
-        }
-        else
-        {
-            Lwip2Enet_initReleaseRxHandleInArgs(hLwip2Enet,i,&inArgs);
-            LwipifEnetAppCb_releaseRxHandle(&inArgs);
-            hLwip2Enet->rx[i].hFlow = NULL;
-            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->rx[i].readyRxPktQ);
-            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->rx[i].freeRxPktInfoQ);
-        }
+        LwipifEnetAppIf_ReleaseRxHandleInfo inArgs;
+        inArgs.enetType        = enetType;
+        inArgs.instId          = instId;
+        inArgs.rxFreePktCb    = &Lwip2Enet_freeRxPktCb;
+        inArgs.rxFreePktCbArg = hRx;
+        inArgs.rxChNum        = hRx->refCount;
+        LwipifEnetAppCb_releaseRxHandle(&inArgs);
+        hRx->hFlow = NULL;
     }
 
 }
 
-static void Lwip2Enet_deinitTxObj(Lwip2Enet_Handle hLwip2Enet)
+static void Lwip2Enet_deinitTxObj(Enet_Type enetType, uint32_t instId, Lwip2Enet_TxHandle hTx)
 {
-    struct pbuf *pbuf;
-    LwipifEnetAppIf_ReleaseTxHandleInfo inArgs;
-
-    /*Deinit TX*/
-    for (uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
+    if (Lwip2Enet_decrementTxRefCount(hTx))
     {
-        if( hLwip2Enet->tx[i].refCount != 0U)
-        {
-            hLwip2Enet->tx[i].refCount--;
-        }
-        else
-        {
-            Lwip2Enet_initReleaseTxHandleInArgs(hLwip2Enet,i,&inArgs);
-            LwipifEnetAppCb_releaseTxHandle(&inArgs);
-            hLwip2Enet->tx[i].hCh = NULL;
+        LwipifEnetAppIf_ReleaseTxHandleInfo inArgs;
+        inArgs.enetType       = enetType;
+        inArgs.instId         = instId;
+        inArgs.txFreePktCb    = &Lwip2Enet_freeTxPktCb;
+        inArgs.txFreePktCbArg = hTx;
+        inArgs.txChNum        = hTx->refCount;
 
-            /* Free pbuf in ready queue */
-            while (pbufQ_count(&hLwip2Enet->tx[i].readyPbufQ) != 0U)
-            {
-                pbuf = pbufQ_deQ(&hLwip2Enet->tx[i].readyPbufQ);
-                Lwip2Enet_assert(NULL != pbuf);
-                pbuf_free(pbuf);
-            }
+        LwipifEnetAppCb_releaseTxHandle(&inArgs);
+        hTx->hCh = NULL;
 
-            hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&hLwip2Enet->tx[i].freePktInfoQ);
+        /* Free pbuf in ready queue */
+        while (pbufQ_count(&hTx->readyPbufQ) != 0U)
+        {
+            struct pbuf *pbuf = pbufQ_deQ(&hTx->readyPbufQ);
+            Lwip2Enet_assert(NULL != pbuf);
+            pbuf_free(pbuf);
         }
     }
-
 }
 
-static Lwip2Enet_TxHandle Lwip2Enet_initTxObj(uint32_t txCh,
-                                              Lwip2Enet_Handle hLwip2Enet)
+static void Lwip2Enet_initTxObj(Enet_Type enetType, uint32_t instId, uint32_t chEntryIdx, Lwip2Enet_TxObj* pTx)
 {
-    Lwip2Enet_TxHandle hTxHandle;
-    LwipifEnetAppIf_GetTxHandleInArgs inArgs;
-    LwipifEnetAppIf_TxHandleInfo outArgs;
-
-    if(hLwip2Enet->tx[txCh].enabled == true)
+    if(pTx->refCount > 0)
     {
-        hLwip2Enet->tx[txCh].refCount++;
-        hTxHandle = &hLwip2Enet->tx[txCh];
+        pTx->refCount++;
     }
-    else{
+    else
+    {
+        LwipifEnetAppIf_GetTxHandleInArgs inArgs;
+        LwipifEnetAppIf_TxHandleInfo outArgs;
 
-        Lwip2Enet_initGetTxHandleInArgs(hLwip2Enet, txCh, &inArgs);
+        inArgs.chId = chEntryIdx;
+        inArgs.cbArg = pTx;
+        inArgs.notifyCb = Lwip2Enet_notifyTxPackets;
+        inArgs.pktInfoQ = &pTx->freePktInfoQ;
+        inArgs.enetType = enetType;
+        inArgs.instId = instId;
         LwipifEnetAppCb_getTxHandleInfo(&inArgs, &outArgs);
 
-        hLwip2Enet->tx[txCh].numPackets = outArgs.numPackets;
-        hLwip2Enet->tx[txCh].hCh = outArgs.hTxChannel;
-        hLwip2Enet->tx[txCh].chNum = outArgs.txChNum;
-        Lwip2Enet_assert(hLwip2Enet->tx[txCh].hCh != NULL);
+        pTx->numPackets = outArgs.numPackets;
+        pTx->hCh = outArgs.hTxChannel;
+        Lwip2Enet_assert(pTx->hCh != NULL);
+        pTx->disableEvent = outArgs.disableEvent;
 
-        hLwip2Enet->tx[txCh].disableEvent = outArgs.disableEvent;
-
-        hLwip2Enet->tx[txCh].stats.freeAppPktEnq = outArgs.numPackets;
-        hLwip2Enet->allocPktInfo += outArgs.numPackets;
+        pTx->stats.freeAppPktEnq = outArgs.numPackets;
 
         /* Initialize the TX pbuf queues */
-        pbufQ_init(&hLwip2Enet->tx[txCh].readyPbufQ);
-        pbufQ_init(&hLwip2Enet->tx[txCh].unusedPbufQ);
+        pbufQ_init(&pTx->readyPbufQ);
+        pbufQ_init(&pTx->unusedPbufQ);
 
-        hLwip2Enet->tx[txCh].refCount = 1U;
-        hLwip2Enet->tx[txCh].enabled = true;
-        hLwip2Enet->tx[txCh].hLwip2Enet = hLwip2Enet;
-
-        hTxHandle = &hLwip2Enet->tx[txCh];
+        pTx->refCount = 1U;
+        pTx->chEntryIdx = chEntryIdx;
     }
-    return hTxHandle;
+    return;
 }
 
 static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx)
@@ -576,44 +651,38 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
  *  \retval
  *      void
  */
-void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort)
+void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort macPort)
 {
-    Lwip2Enet_Handle hLwip2Enet;
-    EnetDma_Pkt *pCurrDmaPacket;
-    struct pbuf *hPbufPkt;
-
-    hLwip2Enet = tx->hLwip2Enet;
-
     /* If link is not up, simply return */
-    if (hLwip2Enet->linkIsUp)
+    if (pInterface->isLinkUp)
     {
         EnetDma_PktQ txSubmitQ;
-
+        Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
         EnetQueue_initQ(&txSubmitQ);
 
-        if (pbufQ_count(&tx->unusedPbufQ))
+        if (pbufQ_count(&hTx->unusedPbufQ))
         {
             /* send any pending TX Q's */
-            Lwip2Enet_pbufQ2PktInfoQ(tx, &tx->unusedPbufQ, &txSubmitQ, macPort);
+            Lwip2Enet_pbufQ2PktInfoQ(hTx, &hTx->unusedPbufQ, &txSubmitQ, macPort);
         }
 
         /* Check if there is anything to transmit, else simply return */
-        while (pbufQ_count(&tx->readyPbufQ) != 0U)
+        while (pbufQ_count(&hTx->readyPbufQ) != 0U)
         {
             /* Dequeue one free TX Eth packet */
-            pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&tx->freePktInfoQ);
+            EnetDma_Pkt *pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&hTx->freePktInfoQ);
 
             if (pCurrDmaPacket == NULL)
             {
                 /* If we run out of packet info Q, retrieve packets from HW
                 * and try to dequeue free packet again */
-                Lwip2Enet_retrieveTxPkts(tx);
-                pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&tx->freePktInfoQ);
+                Lwip2Enet_retrieveTxPkts(hTx);
+                pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&hTx->freePktInfoQ);
             }
 
             if (NULL != pCurrDmaPacket)
             {
-                hPbufPkt = pbufQ_deQ(&tx->readyPbufQ);
+                struct pbuf *hPbufPkt = pbufQ_deQ(&hTx->readyPbufQ);
                 EnetDma_initPktInfo(pCurrDmaPacket);
 
                 Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
@@ -625,8 +694,8 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort)
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
 
-                LWIP2ENETSTATS_ADDONE(&tx->stats.freeAppPktDeq);
-                LWIP2ENETSTATS_ADDONE(&tx->stats.readyPbufPktDeq);
+                LWIP2ENETSTATS_ADDONE(&hTx->stats.freeAppPktDeq);
+                LWIP2ENETSTATS_ADDONE(&hTx->stats.readyPbufPktDeq);
             }
             else
             {
@@ -635,7 +704,7 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_TxObj *tx, const Enet_MacPort macPort)
         }
 
         /* Submit the accumulated packets to the hardware for transmission */
-        Lwip2Enet_submitTxPackets(tx, &txSubmitQ);
+        Lwip2Enet_submitTxPackets(hTx, &txSubmitQ);
     }
 }
 
@@ -699,56 +768,79 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
 
  void Lwip2Enet_periodicFxn(struct netif* netif)
 {
-    Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)netif->state;
+    Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
 
-    uint32_t prevLinkState     = hLwip2Enet->linkIsUp;
-    uint32_t prevLinkInterface = hLwip2Enet->currLinkedIf;
+    Lwip2Enet_assert(pInterface != NULL);
+    Lwip2Enet_assert(pInterface->hRx != NULL);
+    Lwip2Enet_assert(pInterface->hTx != NULL);
+    uint32_t prevLinkState = pInterface->isLinkUp;
 
 #if (1U == ENET_CFG_DEV_ERROR)
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
     int32_t status;
 #endif
 
-    for(uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
+    for(uint32_t i = 0U; i < pInterface->count_hTx; i++)
     {
-        EnetQueue_verifyQCount(&hLwip2Enet->tx[i].freePktInfoQ);
+        EnetQueue_verifyQCount(&pInterface->hTx[i]->freePktInfoQ);
 
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
-        status = EnetUdma_checkTxChSanity(hLwip2Enet->tx[i].hCh, 5U);
+        status = EnetUdma_checkTxChSanity(pInterface->hTx[i]->hCh, 5U);
         if (status != ENET_SOK)
         {
-            Lwip2Enet_print(hLwip2Enet, "EnetUdma_checkTxChSanity Failed\n");
+            Lwip2Enet_print(pInterface->hTx[i]->hLwip2Enet, "EnetUdma_checkTxChSanity Failed\n");
         }
 #endif
     }
 
-    for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
+    for(uint32_t i = 0U; i <  pInterface->count_hRx; i++)
     {
-        EnetQueue_verifyQCount(&hLwip2Enet->rx[i].readyRxPktQ);
+        EnetQueue_verifyQCount(&pInterface->hRx[i]->readyRxPktQ);
 
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
-        status = EnetUdma_checkRxFlowSanity(hLwip2Enet->rx[i].hFlow, 5U);
+        status = EnetUdma_checkRxFlowSanity(pInterface->hRx[i]->hFlow, 5U);
         if (status != ENET_SOK)
         {
-            Lwip2Enet_print(hLwip2Enet, "EnetUdma_checkRxFlowSanity Failed\n");
+            Lwip2Enet_print(pInterface->hRx[i]->hLwip2Enet, "EnetUdma_checkRxFlowSanity Failed\n");
         }
 #endif
     }
-
-
 #endif
 
     /*
      * Return the same DMA packets back to the DMA channel (but now
      * associated with a new PBUF Packet and buffer)
      */
-    for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
+
+    for (uint32_t idx = 0; idx < pInterface->count_hRx; idx++)
     {
-        if (EnetQueue_getQCount(&hLwip2Enet->rx[i].readyRxPktQ) != 0U)
+        if (EnetQueue_getQCount(&pInterface->hRx[idx]->readyRxPktQ) > 0U)
         {
-            Lwip2Enet_submitRxPktQ(&hLwip2Enet->rx[i]);
+            Lwip2Enet_submitRxPktQ(pInterface->hRx[idx]);
         }
     }
+
+    /* Get current link status as reported by the hardware driver */
+    pInterface->isLinkUp = pInterface->isPortLinkedFxn(pInterface->hEnet);
+    for (uint32_t idx = 0; idx < pInterface->count_hRx; idx++)
+    {
+        const uint32_t prevLinkInterface = pInterface->hRx[idx]->hLwip2Enet->currLinkedIf;
+        // get the linked interface details.
+        /* If the interface changed, discard any queue packets (since the MAC would now be wrong) */
+        if (prevLinkInterface != pInterface->hRx[idx]->hLwip2Enet->currLinkedIf)
+        {
+            /* ToDo: Discard all queued packets */
+        }
+    }
+
+    /* If link status changed from down->up, then send any queued packets */
+    if ((prevLinkState == 0U) && (pInterface->isLinkUp))
+    {
+        const Enet_MacPort macPort = pInterface->macPort;
+        Lwip2Enet_sendTxPackets(pInterface, macPort);
+    }
+
+
 #if 0 //The below CPU load profilling logic has to be re-worked for all OS variants
 #if defined(LWIPIF_INSTRUMENTATION_ENABLED)
     static uint32_t loadCount = 0U;
@@ -771,28 +863,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
     loadCount = (loadCount + 1U) & (HISTORY_CNT - 1U);
 #endif
 #endif
-    /* Get current link status as reported by the hardware driver */
-    hLwip2Enet->linkIsUp = hLwip2Enet->appInfo.isPortLinkedFxn(hLwip2Enet->appInfo.hEnet);
 
-    /* If the interface changed, discard any queue packets (since the MAC would now be wrong) */
-    if (prevLinkInterface != hLwip2Enet->currLinkedIf)
-    {
-        /* ToDo: Discard all queued packets */
-    }
-
-    for (uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
-    {
-        /* If link status changed from down->up, then send any queued packets */
-        if ((prevLinkState == 0U) && (hLwip2Enet->linkIsUp))
-        {
-            Lwip2Enet_TxHandle hTxHandle;
-            Enet_MacPort macPort;
-
-            hTxHandle  = hLwip2Enet->mapNetif2Tx[netif->num];
-            macPort    = hLwip2Enet->mapNetif2TxPortNum[netif->num];
-            Lwip2Enet_sendTxPackets(hTxHandle, macPort);
-        }
-    }
 
 }
 
@@ -944,110 +1015,93 @@ static void Lwip2Enet_freePbufPackets(EnetDma_PktQ *tempQueue)
 
 static void Lwip2Enet_notifyRxPackets(void *cbArg)
 {
-    Lwip2Enet_RxHandle hRxLwip2Enet = (Lwip2Enet_RxHandle)cbArg;
-    Lwip2Enet_Handle hLwip2Enet = hRxLwip2Enet->hLwip2Enet;
+    Lwip2Enet_RxHandle pRx = (Lwip2Enet_RxHandle)cbArg;
 
     /* do not post events if init not done or shutdown in progress */
-    if (hLwip2Enet->initDone)
+    if (pRx->refCount > 0)
     {
-        for(uint32_t i = 0U; i < hLwip2Enet->numRxChannels; i++)
+        if (pRx->disableEvent)
         {
-            if (hLwip2Enet->rx[i].enabled)
-            {
-                EnetDma_disableRxEvent(hLwip2Enet->rx[i].hFlow);
-            }
-            if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
-            {
-                hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
-            }
+            EnetDma_disableRxEvent(pRx->hFlow);
+        }
+        if (pRx->rxPktNotify.cbFxn != NULL)
+        {
+            pRx->rxPktNotify.cbFxn(pRx->rxPktNotify.cbArg);
         }
     }
 }
 
 static void Lwip2Enet_notifyTxPackets(void *cbArg)
 {
-    Lwip2Enet_TxHandle hTxLwip2Enet = (Lwip2Enet_TxHandle)cbArg;
-    Lwip2Enet_Handle hLwip2Enet = hTxLwip2Enet->hLwip2Enet;
+    Lwip2Enet_TxHandle pTx = (Lwip2Enet_TxHandle)cbArg;
 
     /* do not post events if init not done or shutdown in progress */
-    if ((hLwip2Enet->initDone) && (hLwip2Enet->txPktNotify.cbFxn != NULL))
+    if ((pTx->refCount > 0) && (pTx->txPktNotify.cbFxn != NULL))
     {
         /* Notify Callbacks to post event/semephore */
-        hLwip2Enet->txPktNotify.cbFxn(hLwip2Enet->txPktNotify.cbArg);
+        pTx->txPktNotify.cbFxn(pTx->txPktNotify.cbArg);
     }
 }
 
-void Lwip2Enet_rxPktHandler(Lwip2Enet_Handle hLwip2Enet)
+void Lwip2Enet_rxPktHandler(Lwip2Enet_RxHandle hRx)
 {
     EnetDma_PktQ tempQueue;
     int32_t retVal;
-    uint32_t pktCnt, rxChNum;
+    uint32_t pktCnt = 0U;
 
-    for(rxChNum = 0U; rxChNum < hLwip2Enet->numRxChannels; rxChNum++)
+    LWIP2ENETSTATS_ADDONE(&hRx->stats.pktStats.rawNotifyCnt);
+
+    /* Retrieve the used (filled) packets from the channel */
     {
-        pktCnt = 0U;
-        LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.rawNotifyCnt);
-
-        /* Retrieve the used (filled) packets from the channel */
+        EnetQueue_initQ(&tempQueue);
+        retVal = EnetDma_retrieveRxPktQ(hRx->hFlow, &tempQueue);
+        if (ENET_SOK != retVal)
         {
-            EnetQueue_initQ(&tempQueue);
-            retVal = EnetDma_retrieveRxPktQ(hLwip2Enet->rx[rxChNum].hFlow, &tempQueue);
-            if (ENET_SOK != retVal)
-            {
-                Lwip2Enet_print(hLwip2Enet,
-                                "Lwip2Enet_rxPacketTask: failed to retrieve RX pkts: %d\n",
-                                retVal);
-            }
-        }
-        if (tempQueue.count == 0U)
-        {
-            LWIP2ENETSTATS_ADDONE(&hLwip2Enet->rx[rxChNum].stats.pktStats.zeroNotifyCnt);
-        }
-
-        /*
-         * Call Lwip2Enet_prepRxPktQ() even if no packets were received.
-         * This allows new packets to be submitted if PBUF buffers became
-         * newly available and there were outstanding free packets.
-         */
-        {
-            /*
-             * Get all used Rx DMA packets from the hardware, then send the buffers
-             * of those packets on to the LwIP stack to be parsed/processed.
-             */
-            pktCnt = Lwip2Enet_prepRxPktQ(&hLwip2Enet->rx[rxChNum], &tempQueue);
-        }
-
-        /*
-         * We don't want to time the semaphore post used to notify the LwIP stack as that may cause a
-         * task transition. We don't want to time the semaphore pend, since that would time us doing
-         * nothing but waiting.
-         */
-        if (pktCnt != 0U)
-        {
-            Lwip2Enet_updateRxNotifyStats(&hLwip2Enet->rx[rxChNum].stats.pktStats, pktCnt, 0U);
-        }
-
-        // ClockP_start(&hLwip2Enet->pacingClkObj);
-
-        if (!hLwip2Enet->rx[rxChNum].disableEvent)
-        {
-            EnetDma_enableRxEvent(hLwip2Enet->rx[rxChNum].hFlow);
+            Lwip2Enet_print(hRx->hLwip2Enet,
+                    "Lwip2Enet_rxPacketTask: failed to retrieve RX pkts: %d\n",
+                    retVal);
         }
     }
+    if (tempQueue.count == 0U)
+    {
+        LWIP2ENETSTATS_ADDONE(&hRx->stats.pktStats.zeroNotifyCnt);
+    }
 
+    /*
+     * Call Lwip2Enet_prepRxPktQ() even if no packets were received.
+     * This allows new packets to be submitted if PBUF buffers became
+     * newly available and there were outstanding free packets.
+     */
+    {
+        /*
+         * Get all used Rx DMA packets from the hardware, then send the buffers
+         * of those packets on to the LwIP stack to be parsed/processed.
+         */
+        pktCnt = Lwip2Enet_prepRxPktQ(hRx, &tempQueue);
+    }
+
+    /*
+     * We don't want to time the semaphore post used to notify the LwIP stack as that may cause a
+     * task transition. We don't want to time the semaphore pend, since that would time us doing
+     * nothing but waiting.
+     */
+    if (pktCnt != 0U)
+    {
+        Lwip2Enet_updateRxNotifyStats(&hRx->stats.pktStats, pktCnt, 0U);
+    }
+
+    // ClockP_start(&hLwip2Enet->pacingClkObj);
+
+    if (!hRx->disableEvent)
+    {
+        EnetDma_enableRxEvent(hRx->hFlow);
+    }
 
 }
 
-void Lwip2Enet_txPktHandler(Lwip2Enet_Handle hLwip2Enet )
+void Lwip2Enet_txPktHandler(Lwip2Enet_TxHandle hTx)
 {
-    uint32_t txChNum;
-
-    for (txChNum = 0U; txChNum < hLwip2Enet->numTxChannels; txChNum++)
-    {
-        Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[txChNum]);
-    }
-
-
+    Lwip2Enet_retrieveTxPkts(hTx);
 }
 
 /*
@@ -1183,8 +1237,37 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
 
             if (!isChksumError)
             {
+                struct netif* netif = NULL;
                 /* Pass the received packet to the LwIP stack */
-                LWIPIF_LWIP_input(rx, rxPortNum, hPbufPacket);
+                switch (rx->mode)
+                {
+                case Lwip2Enet_RxMode_SwitchSharedChannel:
+                case Lwip2Enet_RxMode_MacSharedChannel:
+                {
+                    netif = rx->mapPortToNetif[rxPortNum];
+                    break;
+                }
+                case Lwip2Enet_RxMode_MacPort1Channel:
+                case Lwip2Enet_RxMode_SwitchPort1Channel:
+                {
+                    netif = rx->mapPortToNetif[ENET_MAC_PORT_1];
+                    break;
+                }
+                case Lwip2Enet_RxMode_MacPort2Channel:
+                case Lwip2Enet_RxMode_SwitchPort2Channel:
+                {
+                    Lwip2Enet_assert(LWIPIF_MAX_NUM_MAC_PORTS == 2);
+                    netif = rx->mapPortToNetif[LWIPIF_MAX_NUM_MAC_PORTS - 1];
+                    break;
+                }
+                default:
+                {
+                    Lwip2Enet_assert(false);
+                }
+                }
+
+                Lwip2Enet_assert(netif != NULL);
+                LWIPIF_LWIP_input(rx, netif, hPbufPacket);
                 packetCount++;
             }
             else
@@ -1328,29 +1411,25 @@ static void Lwip2Enet_print(Lwip2Enet_Handle hLwip2Enet,
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-static int32_t Lwip2Enet_startRxTx(Lwip2Enet_Handle hLwip2Enet)
+bool Lwip2Enet_decrementRxRefCount(Lwip2Enet_RxObj* pRx)
 {
-    int32_t status = ENET_SOK;
-    uint32_t i;
-
-    for(i = 0U; i< hLwip2Enet->numRxChannels; i++)
+    if (pRx->refCount > 0)
     {
-        Lwip2Enet_assert(NULL != hLwip2Enet->rx[i].hFlow);
+        pRx->refCount--;
     }
 
-    for(i = 0U; i< hLwip2Enet->numTxChannels; i++)
+    return (pRx->refCount > 0);
+}
+
+bool Lwip2Enet_decrementTxRefCount(Lwip2Enet_TxObj* pTx)
+{
+    if (pTx->refCount > 0)
     {
-        Lwip2Enet_assert(NULL != hLwip2Enet->tx[i].hCh);
-        status = EnetDma_enableTxEvent(hLwip2Enet->tx[i].hCh);
+        pTx->refCount--;
     }
 
-    for(i = 0U; i< hLwip2Enet->numRxChannels; i++)
-    {
-        /* Submit all allocated packets to DMA so it can use for packet RX */
-        Lwip2Enet_submitRxPktQ(&hLwip2Enet->rx[i]);
-    }
+    return (pTx->refCount > 0);
 
-    return status;
 }
 
 /*
@@ -1361,21 +1440,23 @@ static int32_t Lwip2Enet_startRxTx(Lwip2Enet_Handle hLwip2Enet)
  */
 
 
-static void Lwip2Enet_stopRxTx(Lwip2Enet_Handle hLwip2Enet)
+static void Lwip2Enet_stopRxTx(Lwip2Enet_TxObj* pTx, Lwip2Enet_RxObj* pRx)
 {
-	/* Stop RX packet task */
-    /* Post to rx packet task/event so that it will terminate (shutDownFlag flag is already set) */
-    if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
-    {
-        hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
-    }
 
     /* Stop TX packet task */
     /* Post to tx packet task/event so that it will terminate (shutDownFlag flag is already set) */
-    if (hLwip2Enet->txPktNotify.cbFxn != NULL)
+    if (pTx->txPktNotify.cbFxn != NULL)
     {
-        hLwip2Enet->txPktNotify.cbFxn(hLwip2Enet->txPktNotify.cbArg);
+        pTx->txPktNotify.cbFxn(pTx->txPktNotify.cbArg);
     }
+
+    /* Stop RX packet task */
+    /* Post to rx packet task/event so that it will terminate (shutDownFlag flag is already set) */
+    if (pRx->rxPktNotify.cbFxn != NULL)
+    {
+        pRx->rxPktNotify.cbFxn(pRx->rxPktNotify.cbArg);
+    }
+
 }
 
 static void Lwip2Enet_freeTxPktCb(void *cbArg,
@@ -1408,23 +1489,23 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
     LWIP2ENETSTATS_ADDNUM(&rx->stats.freeAppPktEnq, EnetQueue_getQCount(cqPktInfoQ));
 }
 
-void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
+void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx)
 {
     EnetDma_PktQ tempQueue;
     uint32_t packetCount = 0U;
     int32_t retVal;
 
-    LWIP2ENETSTATS_ADDONE(&tx->stats.pktStats.rawNotifyCnt);
+    LWIP2ENETSTATS_ADDONE(&hTx->stats.pktStats.rawNotifyCnt);
     packetCount = 0U;
 
     /* Retrieve the used (sent/empty) packets from the channel */
     {
         EnetQueue_initQ(&tempQueue);
         /* Retrieve all TX packets and keep them locally */
-        retVal = EnetDma_retrieveTxPktQ(tx->hCh, &tempQueue);
+        retVal = EnetDma_retrieveTxPktQ(hTx->hCh, &tempQueue);
         if (ENET_SOK != retVal)
         {
-            Lwip2Enet_print(tx->hLwip2Enet,
+            Lwip2Enet_print(hTx->hLwip2Enet,
                             "Lwip2Enet_retrieveTxPkts: Failed to retrieve TX pkts: %d\n",
                             retVal);
         }
@@ -1436,16 +1517,16 @@ void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxObj *tx)
          * Get all used Tx DMA packets from the hardware, then return those
          * buffers to the txFreePktQ so they can be used later to send with.
          */
-        packetCount = Lwip2Enet_prepTxPktQ(tx, &tempQueue);
+        packetCount = Lwip2Enet_prepTxPktQ(hTx, &tempQueue);
     }
     else
     {
-        LWIP2ENETSTATS_ADDONE(&tx->stats.pktStats.zeroNotifyCnt);
+        LWIP2ENETSTATS_ADDONE(&hTx->stats.pktStats.zeroNotifyCnt);
     }
 
     if (packetCount != 0U)
     {
-        Lwip2Enet_updateTxNotifyStats(&tx->stats.pktStats, packetCount, 0U);
+        Lwip2Enet_updateTxNotifyStats(&hTx->stats.pktStats, packetCount, 0U);
     }
 }
 
@@ -1455,20 +1536,27 @@ static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg)
     /* Post semaphore to rx handling task */
     Lwip2Enet_Handle hLwip2Enet = (Lwip2Enet_Handle)arg;
 
-    if (hLwip2Enet->initDone)
+    if (hLwip2Enet->isInitDone)
     {
-        for (uint32_t i = 0U; i < hLwip2Enet->numTxChannels; i++)
+        for (uint32_t txChIdx = 0U; txChIdx < LWIPIF_MAX_TX_CHANNELS; txChIdx++)
         {
-            if (hLwip2Enet->tx[i].enabled)
+            if (hLwip2Enet->lwip2EnetTxObj[txChIdx].refCount > 0)
             {
-                Lwip2Enet_retrieveTxPkts(&hLwip2Enet->tx[i]);
+                Lwip2Enet_retrieveTxPkts(&hLwip2Enet->lwip2EnetTxObj[txChIdx]);
             }
         }
 
-        if (hLwip2Enet->rxPktNotify.cbFxn != NULL)
+        for (uint32_t rxChIdx = 0U; rxChIdx < LWIPIF_MAX_RX_CHANNELS; rxChIdx++)
         {
-            hLwip2Enet->rxPktNotify.cbFxn(hLwip2Enet->rxPktNotify.cbArg);
+            if (hLwip2Enet->lwip2EnetRxObj[rxChIdx].refCount > 0)
+            {
+                if (hLwip2Enet->lwip2EnetRxObj[rxChIdx].rxPktNotify.cbFxn != NULL)
+                {
+                    hLwip2Enet->lwip2EnetRxObj[rxChIdx].rxPktNotify.cbFxn(hLwip2Enet->lwip2EnetRxObj[rxChIdx].rxPktNotify.cbArg);
+                }
+            }
         }
+
     }
 #endif
 }
@@ -1479,7 +1567,7 @@ static void Lwip2Enet_createTimer(Lwip2Enet_Handle hLwip2Enet)
     int32_t status;
 
     ClockP_Params_init(&clkPrms);
-    clkPrms.start  = true;
+    clkPrms.start  = false;
     clkPrms.timeout = ClockP_usecToTicks(hLwip2Enet->appInfo.timerPeriodUs);
     clkPrms.period = ClockP_usecToTicks(hLwip2Enet->appInfo.timerPeriodUs);
     clkPrms.callback = &Lwip2Enet_timerCb;
@@ -1489,56 +1577,65 @@ static void Lwip2Enet_createTimer(Lwip2Enet_Handle hLwip2Enet)
     Lwip2Enet_assert(status == SystemP_SUCCESS);
 }
 
-static void  Lwip2Enet_initGetTxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                             uint32_t chNum,
-                                             LwipifEnetAppIf_GetTxHandleInArgs *inArgs)
+#if ENET_ENABLE_PER_ICSSG
+static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, Enet_Handle hEnet, uint8_t macAddr[ENET_MAC_ADDR_LEN])
 {
-    inArgs->cbArg      = &hLwip2Enet->tx[chNum];
-    inArgs->notifyCb   = &Lwip2Enet_notifyTxPackets;
-    inArgs->chId       = chNum;
-    inArgs->pktInfoQ   = &hLwip2Enet->tx[chNum].freePktInfoQ;
-}
-
-static void Lwip2Enet_initGetRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                            uint32_t chNum,
-                                            LwipifEnetAppIf_GetRxHandleInArgs *inArgs)
-{
-    inArgs->cbArg           = &hLwip2Enet->rx[chNum];
-    inArgs->notifyCb        = &Lwip2Enet_notifyRxPackets;
-    inArgs->chId            = chNum;
-    inArgs->pFreePbufInfoQ      = &hLwip2Enet->rx[chNum].freePbufInfoQ;
-    inArgs->pReadyRxPktQ    = &hLwip2Enet->rx[chNum].readyRxPktQ;
-    inArgs->pFreeRxPktInfoQ   = &hLwip2Enet->rx[chNum].freeRxPktInfoQ;
-}
-
-static void Lwip2Enet_initReleaseTxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                              uint32_t chNum,
-                                              LwipifEnetAppIf_ReleaseTxHandleInfo *inArgs)
-{
-    inArgs->txFreePktCb  = &Lwip2Enet_freeTxPktCb;
-	inArgs->txFreePktCbArg = &hLwip2Enet->tx[chNum];
-    inArgs->txChNum       = chNum;
-}
-
-static void Lwip2Enet_initReleaseRxHandleInArgs(Lwip2Enet_Handle hLwip2Enet,
-                                              uint32_t chNum,
-                                              LwipifEnetAppIf_ReleaseRxHandleInfo *inArgs)
-{
-
-    if (hLwip2Enet->rx[chNum].enabled)
+    int32_t  status = ENET_SOK;
+    uint32_t coreId = EnetSoc_getCoreId();
+    /* Add port MAC entry in case of ICSSG dual MAC */
+    if (ENET_ICSSG_DUALMAC == enetType)
     {
-        inArgs->rxFreePktCb  = &Lwip2Enet_freeRxPktCb;
-        inArgs->rxFreePktCbArg = &hLwip2Enet->rx;
-        inArgs->rxChNum       = chNum;
+        Enet_IoctlPrms prms;
+        IcssgMacPort_SetMacAddressInArgs inArgs;
+
+        EnetUtils_copyMacAddr(&inArgs.macAddr[0U], &macAddr[0U]);
+        inArgs.macPort = Lwip2Enet_findMacPortFromEnet(enetType, instId);
+
+        ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+        ENET_IOCTL(hEnet, coreId, ICSSG_MACPORT_IOCTL_SET_MACADDR, &prms, status);
+
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print(
+                    "Lwip2Enet_setMacAddress() failed ICSSG_MACPORT_IOCTL_ADD_INTERFACE_MACADDR: %d\r\n",
+                    status);
+        }
+        EnetAppUtils_assert(status == ENET_SOK);
     }
+    else if (ENET_ICSSG_SWITCH == enetType)
+    {
+        Enet_IoctlPrms prms;
+        Icssg_MacAddr addr;
+
+        /* Set host port's MAC address */
+        EnetUtils_copyMacAddr(&addr.macAddr[0U], &macAddr[0U]);
+        ENET_IOCTL_SET_IN_ARGS(&prms, &addr);
+        {
+            ENET_IOCTL(hEnet, coreId, ICSSG_HOSTPORT_IOCTL_SET_MACADDR, &prms,
+                    status);
+            if (status != ENET_SOK)
+            {
+                EnetAppUtils_print(
+                        "EnetAppUtils_addHostPortEntry() failed ICSSG_HOSTPORT_IOCTL_SET_MACADDR: %d\r\n",
+                        status);
+            }
+            EnetAppUtils_assert(status == ENET_SOK);
+        }
+    }
+    else
+    {
+        EnetAppUtils_assert(false);
+    }
+    return status;
+}
+#endif
+
+void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_RxHandle hRx, Enet_notify_t *pRxPktNotify)
+{
+    hRx->rxPktNotify = *pRxPktNotify;
 }
 
-void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pRxPktNotify)
+void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_TxHandle hTx, Enet_notify_t *pTxPktNotify)
 {
-    hLwip2Enet->rxPktNotify = *pRxPktNotify;
-}
-
-void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_Handle hLwip2Enet, Enet_notify_t *pTxPktNotify)
-{
-    hLwip2Enet->txPktNotify = *pTxPktNotify;
+    hTx->txPktNotify = *pTxPktNotify;
 }

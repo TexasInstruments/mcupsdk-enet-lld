@@ -1607,7 +1607,7 @@ void EnetUdma_initRxFreeDescQ(EnetUdma_RxFlowObj *pRxFlow)
             pRxFlow->rxFlowPrms.dmaDescAllocFxn(pRxFlow->rxFlowPrms.cbArg, alignSize);
         if (dmaDesc == NULL)
         {
-            ENETTRACE_ERR("[Enet UDMA Error] Tx DMA descriptor memory allocation failed !!\n");
+            ENETTRACE_ERR("[Enet UDMA Error] Rx DMA descriptor memory allocation failed !!\n");
             Enet_assert(dmaDesc != NULL);
         }
         else if (!ENET_UTILS_IS_ALIGNED(dmaDesc, alignSize))

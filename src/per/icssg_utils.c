@@ -425,13 +425,11 @@ uint32_t IcssgUtils_getSliceNum(Icssg_Handle hIcssg,
         {
             case 0:
             case 2:
-            case 4:
                 slice = 0U;
                 break;
 
             case 1:
             case 3:
-            case 5:
                 slice = 1U;
                 break;
 

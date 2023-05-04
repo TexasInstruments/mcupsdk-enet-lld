@@ -161,6 +161,7 @@ int32_t EnetTxSG_txsgTest(void)
 
     /* Local core id */
     gEnetTxSG.coreId = EnetSoc_getCoreId();
+    EnetApp_driverInit();
     if (status == ENET_SOK)
     {
         /* Application should invoke EnetApp_driverOpen() which will internally do Enet_init/Enet_open etc */

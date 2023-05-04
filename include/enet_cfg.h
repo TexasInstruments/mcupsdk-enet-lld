@@ -99,7 +99,7 @@ extern "C" {
 #define ENET_CFG_RM_TX_CH_MAX                       (8U)
 
 /*! \brief Maximum number of RX channels allocated for Resource Manager */
-#define ENET_CFG_RM_RX_CH_MAX                       (4U)
+#define ENET_CFG_RM_RX_CH_MAX                       (8U)
 
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
 /*! \brief Overwrite UDMA config for ICSSG as we use more flows/channels for
@@ -125,15 +125,6 @@ extern "C" {
 #else
 #define ENET_CFG_TRACE_DISABLE_INFOSTRING           (ENET_ON)
 #endif
-
-/*Max number of netif enabled. */
-#define ENET_CFG_NETIF_MAX                   (2U)
-
-/*Max number of RX channels supported by lwipif*/
-#define LWIPIF_MAX_RX_CHANNELS               (2U)
-
-/*Max number of TX channels supported by lwipif */
-#define LWIPIF_MAX_TX_CHANNELS               (2U)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
