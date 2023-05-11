@@ -308,6 +308,8 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     /* Init internal bookkeeping fields */
     hLwip2Enet->oldMCastCnt = 0U;
 
+    /* set the mac address of netif as invalid, as we will set the valid address below */
+    netif->hwaddr_len = 0U;
     if (hLwip2Enet->isInitDone == false)
     {
         /* First init tasks, semaphores and clocks. This is required because
@@ -355,14 +357,17 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         const uint32_t rxChId = rxChIdList[rxChIdIdx];
         pInterface->hRx[rxChIdIdx] = Lwip2Enet_allocateRxHandle(hLwip2Enet, enetType, instId, rxChId);
         Lwip2Enet_initRxObj(enetType, instId, rxChId, pInterface->hRx[rxChIdIdx]);
-
         EnetApp_getMacAddress(rxChId, &macAddr);
-        Lwip2Enet_assert(macAddr.macAddressCnt >= pInterface->hRx[rxChIdIdx]->refCount);
-        EnetUtils_copyMacAddr(netif->hwaddr ,&macAddr.macAddr[rxChIdIdx][0U]);
-        netif->hwaddr_len = ENET_MAC_ADDR_LEN;
-        #if ENET_ENABLE_PER_ICSSG
-        Lwip2Enet_setMacAddress(enetType, instId, pInterface->hEnet, &macAddr.macAddr[rxChIdIdx][0U]);
-        #endif // ENET_ENABLE_PER_ICSSG
+        if (macAddr.macAddressCnt > 0)
+        {
+            /* fall here only for the Rx Channel that has valid mac address */
+            Lwip2Enet_assert(netif->hwaddr_len == 0);
+            EnetUtils_copyMacAddr(netif->hwaddr ,&macAddr.macAddr[rxChIdIdx][0U]);
+            netif->hwaddr_len = ENET_MAC_ADDR_LEN;
+            #if ENET_ENABLE_PER_ICSSG
+            Lwip2Enet_setMacAddress(enetType, instId, pInterface->hEnet, &macAddr.macAddr[rxChIdIdx][0U]);
+            #endif // ENET_ENABLE_PER_ICSSG
+        }
 
         /* Process netif related parameters*/
         pInterface->hRx[rxChIdIdx]->mode = LwipifEnetAppCb_getRxMode(enetType, instId);
@@ -407,7 +412,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     pInterface->pNetif   = netif;
 
     /* Updating the netif params */
-    netif->hwaddr_len = ENET_MAC_ADDR_LEN;
+    Lwip2Enet_assert(netif->hwaddr_len == ENET_MAC_ADDR_LEN);
     netif->state = (void *)pInterface;
 
     /* assert if clk period is not valid  */
