@@ -1771,6 +1771,7 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
     int32_t retVal = UDMA_SOK;
     Udma_RingHandle ringHandle;
 
+    EnetUtils_delayNs(1000);
 #if ENET_CFG_IS_ON(DEV_ERROR)
     if ((NULL == hTxCh) ||
         (NULL == pSubmitQ))
