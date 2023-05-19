@@ -1640,6 +1640,61 @@ int32_t EnetDma_retrieveRxPktQ(EnetDma_RxChHandle hRxFlow,
     return retVal;
 }
 
+int32_t EnetDma_retrieveRxPkt(EnetDma_RxChHandle hRxFlow,
+                               EnetDma_Pkt **ppPkt)
+{
+    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
+    int32_t retVal = UDMA_SOK;
+    EnetQ tempQ;
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+    if ((NULL == hRxFlow) ||
+        (NULL == ppPkt))
+    {
+        ENETTRACE_ERR_IF((NULL == hRxFlow), "[Enet UDMA] hRxFlow is NULL!!\n");
+        ENETTRACE_ERR_IF((NULL == ppPkt), "[Enet UDMA] ppPkt is NULL!!\n");
+        Enet_assert(FALSE);
+        retVal = UDMA_EBADARGS;
+    }
+    else
+#endif
+    {
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        uint32_t startTime, diffTime;
+        startTime = EnetOsal_timerRead();
+#endif
+        if(EnetQueue_getQCount(&hRxFlow->cqIsrQ) == 0)
+        {
+            EnetQueue_initQ(&tempQ);
+
+            /* EnetUdma_retrievePkts initializes the queue so cannot pass
+             * pRetrieveQ as it contains packets drained from isrq
+             */
+            retVal = EnetUdma_retrievePkts(hPer,
+                                           hRxFlow->cqRing,
+                                           &tempQ,
+                                           hRxFlow->hDmaDescPool,
+                                           hRxFlow->rxFlowPrms.disableCacheOpsFlag,
+                                           ENET_UDMA_DIR_RX);
+
+            if (ENET_SOK == retVal)
+            {
+                EnetQueue_append(&hRxFlow->cqIsrQ, &tempQ);
+            }
+
+        }
+
+        *ppPkt = (EnetUdma_PktInfo *)EnetQueue_deq(&hRxFlow->cqIsrQ);
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        EnetUdmaStats_addCnt(&hRxFlow->stats.rxRetrievePktDeq, 1U);
+        diffTime = EnetOsal_timerGetDiff(startTime);
+        EnetUdmaStats_updateNotifyStats(&hRxFlow->stats.retrievePktStats, 1U, diffTime);
+#endif
+    }
+
+    return retVal;
+}
+
 int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
                                 EnetDma_PktQ *pSubmitQ)
 {
@@ -1709,6 +1764,75 @@ int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
     return retVal;
 }
 
+int32_t EnetDma_submitRxPkt(EnetDma_RxChHandle hRxFlow,
+                            EnetDma_Pkt *pPkt)
+{
+    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
+    int32_t retVal = UDMA_SOK;
+    Udma_RingHandle ringHandle;
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+    if ((NULL == hRxFlow) ||
+        (NULL == pPkt))
+    {
+        ENETTRACE_ERR_IF((NULL == hRxFlow), "[Enet UDMA] hRxFlow is NULL!!\n");
+        ENETTRACE_ERR_IF((NULL == pPkt), "[Enet UDMA] pPkt is NULL!!\n");
+        Enet_assert(FALSE);
+        retVal = UDMA_EBADARGS;
+    }
+    else
+#endif
+    {
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        uint32_t startTime, diffTime;
+        uint32_t notifyCount;
+        startTime = EnetOsal_timerRead();
+#endif
+#if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
+        ringHandle = hRxFlow->fqRing;
+#else
+        ringHandle = hRxFlow->cqRing;
+#endif
+
+        /* Enqueue descs to fqRing regardless of caller's queue state */
+
+        retVal = EnetUdma_submitSingleRxPkt(hPer,
+                                          ringHandle,
+                                          pPkt,
+                                          hRxFlow->hDmaDescPool,
+                                          hRxFlow->rxFlowPrms.disableCacheOpsFlag
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                                          ,
+                                          hRxFlow->hUdmaProxy
+#endif
+                                          );
+
+        if (retVal == UDMA_EALLOC)
+        {
+            ENETTRACE_INFO("Descriptor unavailable. Please transmit again\n");
+            retVal = UDMA_SOK;
+        }
+
+        /* If fqRing ran out of space is not an error, packets will be re-submitted from application */
+        if (UDMA_ETIMEOUT == retVal)
+        {
+            ENETTRACE_INFO("RX FLOW FQ underflow had occurred\n");
+            retVal = UDMA_SOK;
+        }
+
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        EnetUdmaStats_addCnt(&hRxFlow->stats.rxSubmitPktUnderFlowCnt, 1U);
+        EnetUdmaStats_addCnt(&hRxFlow->stats.rxSubmitPktEnq, 1U);
+        diffTime = EnetOsal_timerGetDiff(startTime);
+        notifyCount = hRxFlow->stats.submitPktStats.dataNotifyCnt & (ENET_DMA_STATS_HISTORY_CNT - 1U);
+        hRxFlow->stats.submitPktStats.readyDmaDescQCnt[notifyCount] = EnetUdma_dmaDescQCount(hRxFlow->hDmaDescPool);
+        EnetUdmaStats_updateNotifyStats(&hRxFlow->stats.submitPktStats, 1U, diffTime);
+#endif
+    }
+
+    return retVal;
+}
+
 int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
                                    EnetDma_PktQ *pRetrieveQ)
 {
@@ -1763,6 +1887,62 @@ int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
     return retVal;
 }
 
+int32_t EnetDma_retrieveTxPkt(EnetDma_TxChHandle hTxCh,
+                              EnetDma_Pkt **ppPkt)
+{
+    EnetPer_Handle hPer = hTxCh->hDma->hPer;
+    int32_t retVal = UDMA_SOK;
+    EnetQ tempQ;
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+    if ((NULL == hTxCh) ||
+        (NULL == ppPkt))
+    {
+        ENETTRACE_ERR_IF((NULL == hTxCh), "[Enet UDMA] hTxCh is NULL!!\n");
+        ENETTRACE_ERR_IF((NULL == ppPkt), "[Enet UDMA] ppPkt is NULL!!\n");
+        Enet_assert(FALSE);
+        retVal = UDMA_EBADARGS;
+    }
+    else
+#endif
+    {
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        uint32_t startTime, diffTime;
+        startTime = EnetOsal_timerRead();
+#endif
+        if(EnetQueue_getQCount(&hTxCh->cqIsrQ) == 0)
+        {
+            EnetQueue_initQ(&tempQ);
+
+            /* EnetUdma_retrievePkts initializes the queue so cannot pass
+             * pRetrieveQ as it contains packets drained from isrq
+             */
+            retVal = EnetUdma_retrievePkts(hPer,
+                                           hTxCh->cqRing,
+                                           &tempQ,
+                                           hTxCh->hDmaDescPool,
+                                           hTxCh->txChPrms.disableCacheOpsFlag,
+                                           ENET_UDMA_DIR_TX);
+
+            if (ENET_SOK == retVal)
+            {
+                EnetQueue_append(&hTxCh->cqIsrQ, &tempQ);
+            }
+
+        }
+
+        *ppPkt = (EnetUdma_PktInfo *)EnetQueue_deq(&hTxCh->cqIsrQ);
+
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        EnetUdmaStats_addCnt(&hTxCh->stats.txRetrievePktDeq, 1U);
+        diffTime = EnetOsal_timerGetDiff(startTime);
+        EnetUdmaStats_updateNotifyStats(&hTxCh->stats.retrievePktStats, 1U, diffTime);
+#endif
+    }
+
+    return retVal;
+}
+
 int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
                                   EnetDma_PktQ *pSubmitQ)
 
@@ -1799,15 +1979,15 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
         {
             retVal = EnetUdma_submitPkts(hPer,
                                          ringHandle,
-                                        pSubmitQ,
-                                        hTxCh->hDmaDescPool,
-                                        hTxCh->txChPrms.disableCacheOpsFlag,
-                                        ENET_UDMA_DIR_TX
+                                         pSubmitQ,
+                                         hTxCh->hDmaDescPool,
+                                         hTxCh->txChPrms.disableCacheOpsFlag,
+                                         ENET_UDMA_DIR_TX
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                                        ,
-                                        hTxCh->hUdmaProxy
+                                         ,
+                                         hTxCh->hUdmaProxy
 #endif
-                                        );
+                                         );
         }
 
         /* If fqRing ran out of space it is not an error, packets will be re-submitted by application*/
@@ -1826,6 +2006,69 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
         hTxCh->stats.submitPktStats.readyDmaDescQCnt[notifyCount] = hTxCh->hDmaDescPool->count;
 
         EnetUdmaStats_updateNotifyStats(&hTxCh->stats.submitPktStats, pktCnt, diffTime);
+#endif
+    }
+
+    return retVal;
+}
+
+int32_t EnetDma_submitTxPkt(EnetDma_TxChHandle hTxCh,
+                                  EnetDma_Pkt *pPkt)
+
+{
+    EnetPer_Handle hPer = hTxCh->hDma->hPer;
+    int32_t retVal = UDMA_SOK;
+    Udma_RingHandle ringHandle;
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+    if ((NULL == hTxCh) ||
+        (NULL == pPkt))
+    {
+        ENETTRACE_ERR_IF((NULL == hTxCh), "[Enet UDMA] hTxCh is NULL!!\n");
+        ENETTRACE_ERR_IF((NULL == pPkt), "[Enet UDMA] pPkt is NULL!!\n");
+        Enet_assert(FALSE);
+        retVal = UDMA_EBADARGS;
+    }
+    else
+#endif
+    {
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        uint32_t startTime, diffTime;
+        uint32_t notifyCount;
+        startTime = EnetOsal_timerRead();
+#endif
+#if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
+        ringHandle = hTxCh->fqRing;
+#else
+        ringHandle = hTxCh->cqRing;
+#endif
+        /* Enqueue descs to fqRing regardless of caller's queue state */
+        retVal = EnetUdma_submitSingleTxPkt(hPer,
+                                            ringHandle,
+                                            pPkt,
+                                            hTxCh->hDmaDescPool,
+                                            hTxCh->txChPrms.disableCacheOpsFlag
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                                            ,
+                                            hTxCh->hUdmaProxy
+#endif
+                                            );
+
+        /* If fqRing ran out of space it is not an error, packets will be re-submitted by application*/
+        if (UDMA_ETIMEOUT == retVal)
+        {
+            ENETTRACE_INFO("TX Channel FQ underflow had occurred\n");
+            retVal = UDMA_SOK;
+        }
+
+#if defined(ENETDMA_INSTRUMENTATION_ENABLED)
+        EnetUdmaStats_addCnt(&hTxCh->stats.txSubmitPktOverFlowCnt, 1U);
+        EnetUdmaStats_addCnt(&hTxCh->stats.txSubmitPktEnq, 1U);
+        diffTime                                                  = EnetOsal_timerGetDiff(startTime);
+        notifyCount                                               = hTxCh->stats.submitPktStats.dataNotifyCnt & (ENET_DMA_STATS_HISTORY_CNT - 1U);
+        hTxCh->stats.submitPktStats.readyDmaDescQCnt[notifyCount] = hTxCh->hDmaDescPool->count;
+
+        EnetUdmaStats_updateNotifyStats(&hTxCh->stats.submitPktStats, 1U, diffTime);
 #endif
     }
 

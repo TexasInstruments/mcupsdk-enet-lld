@@ -671,6 +671,439 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     return retVal;
 }
 
+int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
+                                   Udma_RingHandle hUdmaRing,
+                                   EnetDma_Pkt *pPkt,
+                                   EnetUdma_DmaDescQ *pDmaDescQ,
+                                   bool disableCacheOpsFlag
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                                   ,
+                                   Udma_ProxyHandle hUdmaProxy
+#endif
+                           )
+{
+    int32_t retVal = UDMA_SOK;
+    EnetUdma_DmaDesc *pDmaDesc;
+    int32_t submitCnt = 0, i;
+    bool isExposedRing;
+    uint64_t *ringMemPtr = NULL, *currRingMemPtr = NULL;
+    uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
+    uint32_t totalPacketFilledLen = 0;
+    EnetUdma_SGListEntry *sgList;
+
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
+    isExposedRing = 0U;
+#endif
+    if (isExposedRing == true)
+    {
+        ringMemPtr = (uint64_t *)Udma_ringGetMemPtr(hUdmaRing);
+        ringWrIdx = Udma_ringGetWrIdx(hUdmaRing);
+        ringMemEleCnt = Udma_ringGetElementCnt(hUdmaRing);
+    }
+
+    /* Enqueue packets until fqRing is full */
+    if (NULL != pPkt)
+    {
+        /* Enqueue desc to fqRing */
+        pDmaDesc = EnetUdma_dmaDescDeque(pDmaDescQ);
+
+        if (NULL != pDmaDesc)
+        {
+            EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc*) pDmaDesc;
+            CSL_UdmapCppi5HMPD *pHostDesc = &pHpdDesc->hostDesc;
+
+            pDmaDesc->dmaPkt = pPkt;
+            sgList = pPkt->sgList.list;
+            EnetDma_checkPktState(&pDmaDesc->dmaPkt->pktState,
+                                  ENET_PKTSTATE_MODULE_DRIVER,
+                                  (uint32_t) ENET_PKTSTATE_DMA_NOT_WITH_HW,
+                                  (uint32_t) ENET_PKTSTATE_DMA_WITH_HW);
+
+            CSL_UdmapCppi5HMPD *pHDesc = pHostDesc;
+            CSL_UdmapCppi5HMPD *pHDescPrev = NULL;
+            for (i = 0; i < pPkt->sgList.numScatterSegments; i++)
+            {
+                if (ENET_UDMA_CPSW_IS_HBD_IDX(i))
+                {
+                    pHDesc = &pDmaDesc->hostBufDesc[i - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX].desc;
+                    /* Link the Descs */
+                    CSL_udmapCppi5LinkDesc(pHDescPrev, (uint64_t) pHDesc);
+                }
+                CSL_udmapCppi5SetBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                CSL_udmapCppi5SetBufferLen(pHDesc, sgList[i].segmentAllocLen);
+                CSL_udmapCppi5SetOrgBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                CSL_udmapCppi5SetOrgBufferLen(pHDesc, sgList[i].segmentAllocLen);
+                totalPacketFilledLen += sgList[i].segmentFilledLen;
+                pHDescPrev = pHDesc;
+            }
+            /* Link the last segment's Desc to NULL */
+            CSL_udmapCppi5LinkDesc(pHDesc, 0U);
+            CSL_udmapCppi5HostSetPktLen(pHostDesc, totalPacketFilledLen);
+
+            /* Check that the buffer pointer and length are correct */
+            retVal = EnetUdma_dmaDescCheck(pDmaDesc, ENET_UDMA_DIR_RX);
+
+            if (UDMA_SOK == retVal)
+            {
+                retVal = EnetUdma_ringEnqueue(hUdmaRing,
+                                             pDmaDesc,
+                                             disableCacheOpsFlag,
+                                             ENET_UDMA_DIR_RX
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                                             ,
+                                             hUdmaProxy
+#endif
+                                             );
+            }
+
+            /* Dequeue from toHwQ only if the packet was actually queued to the fqRing */
+            if (UDMA_SOK == retVal)
+            {
+                submitCnt++;
+            }
+            else
+            {
+                // TODO - based on error we should add back dmadesc and pktInfo to orig Queues
+                EnetDma_checkPktState(&pDmaDesc->dmaPkt->pktState,
+                                        ENET_PKTSTATE_MODULE_DRIVER,
+                                        (uint32_t)ENET_PKTSTATE_DMA_WITH_HW,
+                                        (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
+            }
+        }
+        else
+        {
+            /* Return dequeued packet buffer as couldn't get free dma desc to attach
+             *  packet to */
+            retVal = UDMA_EALLOC;
+        }
+    }
+
+    /* Wb the Ring memory cache before commiting to the ring in case of exposed ring mode */
+    if ((UDMA_SOK == retVal) && (isExposedRing == true))
+    {
+        if ((ringWrIdx + submitCnt) > ringMemEleCnt)
+        {
+            currRingMemPtr = ringMemPtr + ringWrIdx;
+            EnetOsal_cacheWb(currRingMemPtr,
+                             (ringMemEleCnt - ringWrIdx) * ENET_UDMA_RING_MEM_SIZE);
+            EnetOsal_cacheWb(ringMemPtr,
+                             (submitCnt - ringMemEleCnt + ringWrIdx) * ENET_UDMA_RING_MEM_SIZE);
+        }
+        else
+        {
+            EnetOsal_cacheWb(currRingMemPtr,
+                             submitCnt * ENET_UDMA_RING_MEM_SIZE);
+        }
+
+        /* Set Ring door bell register with count of number of descriptors queued */
+        Udma_ringSetDoorBell(hUdmaRing, submitCnt);
+    }
+
+    /* If fqRing ran out of space is not an error, packets will be re-submitted from toHwQ */
+    if (UDMA_ETIMEOUT == retVal)
+    {
+        retVal = UDMA_SOK;
+    }
+
+    return retVal;
+}
+
+int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
+                            Udma_RingHandle hUdmaRing,
+                           EnetDma_Pkt *pPkt,
+                           EnetUdma_DmaDescQ *pDmaDescQ,
+                           bool disableCacheOpsFlag
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                           ,
+                           Udma_ProxyHandle hUdmaProxy
+#endif
+                           )
+{
+    int32_t retVal = UDMA_SOK;
+    EnetUdma_DmaDesc *pDmaDesc;
+    uint32_t dstTag;
+    EnetUdma_CppiRxControl *cppiRxCntr;
+    uint32_t *iccsgTxTsId, *tsInfo;
+    int32_t submitCnt = 0;
+    bool isExposedRing;
+    uint64_t *ringMemPtr = NULL, *currRingMemPtr = NULL;
+    uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
+    uint32_t tosIndex, i;
+    uint8_t dscpIPv4En, tosVal;
+    uint32_t totalPacketFilledLen = 0;
+    EnetUdma_SGListEntry *sgList;
+
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
+    isExposedRing = 0U;
+#endif
+    if (isExposedRing == true)
+    {
+        ringMemPtr = (uint64_t *)Udma_ringGetMemPtr(hUdmaRing);
+        ringWrIdx = Udma_ringGetWrIdx(hUdmaRing);
+        ringMemEleCnt = Udma_ringGetElementCnt(hUdmaRing);
+    }
+
+    /* Enqueue sintgle packet */
+    if (NULL != pPkt)
+    {
+        /* Enqueue desc to fqRing */
+        pDmaDesc = EnetUdma_dmaDescDeque(pDmaDescQ);
+
+        if (NULL != pDmaDesc)
+        {
+            EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc*) pDmaDesc;
+            CSL_UdmapCppi5HMPD *pHostDesc = &pHpdDesc->hostDesc;
+
+            pDmaDesc->dmaPkt = pPkt;
+            sgList = pPkt->sgList.list;
+            EnetDma_checkPktState(&pDmaDesc->dmaPkt->pktState,
+                                  ENET_PKTSTATE_MODULE_DRIVER,
+                                  (uint32_t) ENET_PKTSTATE_DMA_NOT_WITH_HW,
+                                  (uint32_t) ENET_PKTSTATE_DMA_WITH_HW);
+
+            CSL_UdmapCppi5HMPD *pHDesc = pHostDesc;
+            CSL_UdmapCppi5HMPD *pHDescPrev = NULL;
+            for (i = 0; i < pPkt->sgList.numScatterSegments; i++)
+            {
+                if (ENET_UDMA_CPSW_IS_HBD_IDX(i))
+                {
+                    pHDesc = &pDmaDesc->hostBufDesc[i - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX].desc;
+                    /* Link the Descs */
+                    CSL_udmapCppi5LinkDesc(pHDescPrev, (uint64_t) pHDesc);
+                }
+                CSL_udmapCppi5SetBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                CSL_udmapCppi5SetBufferLen(pHDesc, sgList[i].segmentFilledLen);
+                CSL_udmapCppi5SetOrgBufferAddr(pHDesc, (uint64_t) sgList[i].bufPtr);
+                CSL_udmapCppi5SetOrgBufferLen(pHDesc, sgList[i].segmentAllocLen);
+                totalPacketFilledLen += sgList[i].segmentFilledLen;
+                pHDescPrev = pHDesc;
+            }
+            /* Link the last segment's Desc to NULL */
+            CSL_udmapCppi5LinkDesc(pHDesc, 0U);
+
+            CSL_udmapCppi5HostSetPktLen(pHostDesc, totalPacketFilledLen);
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+            /* For TX all defaults are set in EnetUdma_buffDescInit function. We just confirm those
+             * are not changed here */
+            Enet_assert(CSL_UDMAP_CPPI5_PD_DESCINFO_DTYPE_VAL_HOST == CSL_udmapCppi5GetDescType(pHostDesc));
+            Enet_assert(0U == CSL_udmapCppi5GetPsDataLoc(pHostDesc));
+            Enet_assert(true == CSL_udmapCppi5IsEpiDataPresent(pHostDesc));
+            Enet_assert(ENET_UDMA_PROTOCOL_SPECIFIC_INFO_BLOCK_SIZE ==
+                            CSL_udmapCppi5GetPsDataLen(pHostDesc));
+#endif
+            cppiRxCntr = (EnetUdma_CppiRxControl *)pHpdDesc->psInfo;
+
+            if (Enet_isIcssFamily(hPer->enetType))
+            {
+                cppiRxCntr->chkSumInfo = 0U;
+                tsInfo = (uint32_t *)&pHpdDesc->extendedPktInfo[4U];
+            }
+            else
+            {
+                cppiRxCntr->chkSumInfo = pPkt->chkSumInfo;
+                tsInfo = (uint32_t *)&cppiRxCntr->tsInfo;
+            }
+
+            if (pPkt->tsInfo.enableHostTxTs == true)
+            {
+                ENETUDMA_CPPIPSI_SET_TSEN(*tsInfo, 1U);
+
+                /* Below fields are only valid for CPSW. In ICSSG, whole tsInfo word is
+                 * used for enabling timestamp.
+                 * This is don't care/reserved word for ICSSG so we set without any check */
+                ENETUDMA_CPPIPSI_SET_DOMAIN(*tsInfo,
+                                           pPkt->tsInfo.txPktDomain);
+                ENETUDMA_CPPIPSI_SET_MSGTYPE(*tsInfo,
+                                            pPkt->tsInfo.txPktMsgType);
+                ENETUDMA_CPPIPSI_SET_SEQID(*tsInfo,
+                                          pPkt->tsInfo.txPktSeqId);
+
+                /* Set host Tx timestamp flag back to false. */
+                pPkt->tsInfo.enableHostTxTs = false;
+
+                /* For ICSSG psinfo word 0 is used for passing cookie to the firmwareiccsgTxTsId
+                 * This is don't care/reserved word for CPSW so we set without any check */
+                iccsgTxTsId = (uint32_t *)&pHpdDesc->extendedPktInfo[0U];
+                *iccsgTxTsId = pPkt->txTsId;
+            }
+            else
+            {
+                ENETUDMA_CPPIPSI_SET_TSEN(*tsInfo, 0U);
+            }
+
+            if (Enet_isIcssFamily(hPer->enetType))
+            {
+                uintptr_t baseAddr = (uintptr_t)hPer->virtAddr;
+
+                if (hPer->enetType == ENET_ICSSG_DUALMAC)
+                {
+                    if ((hPer->instId == 0) || (hPer->instId == 2))
+                    {
+                        baseAddr += CSL_ICSS_G_DRAM0_SLV_RAM_REGS_BASE;
+                    }
+                    else
+                    {
+                        /*DRAM1*/
+                        baseAddr += CSL_ICSS_G_DRAM1_SLV_RAM_REGS_BASE;
+                    }
+                }
+                else
+                {
+                    /* In switch mode expecting both ports have same dscp priorities
+                       If in case of undirected traffic dscp priorities are taken from
+                       Port1
+                    */
+                    /*DRAM0*/
+                    baseAddr += CSL_ICSS_G_DRAM0_SLV_RAM_REGS_BASE;
+                    if (pPkt->txPortNum == ENET_MAC_PORT_2)
+                    {
+                        /*DRAM1*/
+                        baseAddr += CSL_ICSS_G_DRAM1_SLV_RAM_REGS_BASE;
+                    }
+                }
+                baseAddr = baseAddr + DSCP_ENABLE_DISABLE_STATUS;
+                dscpIPv4En = CSL_REG8_RD(baseAddr);
+                if (dscpIPv4En == 1)
+                {
+                    pPkt->txPktTc = 0;
+                    Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 13);
+                    /*check for Vlan tagging*/
+                    if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[12] == 0x81U) &&
+                            (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[13] == 0x00U))
+                    {
+                        Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 17);
+                        /*Check for ipv4 ethertype*/
+                        if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[16] == 0x08U) &&
+                                (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[17] == 0x00U))
+                        {
+                            Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 19);
+                            /* upper 6 bits has the dscp index */
+                            tosIndex = ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[19] >> 2) & 0x3f);
+
+                            for (i = 0; i < ENET_PRI_NUM; i++)
+                            {
+                                tosVal = CSL_REG8_RD(baseAddr + (i+1));
+                                if(tosVal == tosIndex)
+                                {
+                                    break;
+                                }
+                            }
+                            pPkt->txPktTc = i;
+                        }
+                    }
+                    else
+                    {
+                        pPkt->txPktTc = 0;
+                        if ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[12] == 0x08U) &&
+                                (sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[13] == 0x00U))
+                        {
+                            /* upper 6 bits has the dscp index */
+                            Enet_assert(sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].segmentFilledLen > 15);
+                            tosIndex = ((sgList[ENET_UDMA_CPSW_HOSTPKTDESC_INDEX].bufPtr[15] >> 2) & 0x3f);
+                            for (i = 0; i < ENET_PRI_NUM; i++)
+                            {
+                                tosVal = CSL_REG8_RD(baseAddr + (i+1));
+                                if(tosVal == tosIndex)
+                                {
+                                    break;
+                                }
+                            }
+                            pPkt->txPktTc = i;
+                        }
+                    }
+                }
+            }
+
+            if (pPkt->txPortNum != ENET_MAC_PORT_INV)
+            {
+                dstTag = CPSW_ALE_MACPORT_TO_ALEPORT(pPkt->txPortNum);
+                /* Set txPortNum back to invalid to reset directed packet configuration */
+                pPkt->txPortNum = ENET_MAC_PORT_INV;
+            }
+            else
+            {
+                dstTag = 0U;
+            }
+
+            if (pPkt->txPktTc != ENET_TRAFFIC_CLASS_INV)
+            {
+                dstTag |= pPkt->txPktTc << 8U;
+            }
+
+            CSL_udmapCppi5SetDstTag(pHostDesc, dstTag);
+
+            /* Check that the buffer pointer and length are correct */
+            retVal = EnetUdma_dmaDescCheck(pDmaDesc, ENET_UDMA_DIR_TX);
+
+            if (UDMA_SOK == retVal)
+            {
+                retVal = EnetUdma_ringEnqueue(hUdmaRing,
+                                             pDmaDesc,
+                                             disableCacheOpsFlag,
+                                             ENET_UDMA_DIR_TX
+#if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
+                                             ,
+                                             hUdmaProxy
+#endif
+                                             );
+            }
+
+            /* Dequeue from toHwQ only if the packet was actually queued to the fqRing */
+            if (UDMA_SOK == retVal)
+            {
+                submitCnt++;
+            }
+            else
+            {
+                // TODO - based on error we should add back dmadesc and pktInfo to orig Queues
+                EnetDma_checkPktState(&pDmaDesc->dmaPkt->pktState,
+                                        ENET_PKTSTATE_MODULE_DRIVER,
+                                        (uint32_t)ENET_PKTSTATE_DMA_WITH_HW,
+                                        (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
+            }
+        }
+        else
+        {
+            /* Return dequeued packet buffer as couldn't get free dma desc to attach
+             *  packet to */
+            //TODO: surbhi handle this case
+            retVal = UDMA_EALLOC;
+        }
+    }
+
+    /* Wb the Ring memory cache before commiting to the ring in case of exposed ring mode */
+    if ((UDMA_SOK == retVal) && (isExposedRing == true))
+    {
+        if ((ringWrIdx + submitCnt) > ringMemEleCnt)
+        {
+            currRingMemPtr = ringMemPtr + ringWrIdx;
+            EnetOsal_cacheWb(currRingMemPtr,
+                             (ringMemEleCnt - ringWrIdx) * ENET_UDMA_RING_MEM_SIZE);
+            EnetOsal_cacheWb(ringMemPtr,
+                             (submitCnt - ringMemEleCnt + ringWrIdx) * ENET_UDMA_RING_MEM_SIZE);
+        }
+        else
+        {
+            EnetOsal_cacheWb(currRingMemPtr,
+                             submitCnt * ENET_UDMA_RING_MEM_SIZE);
+        }
+
+        /* Set Ring door bell register with count of number of descriptors queued */
+        Udma_ringSetDoorBell(hUdmaRing, submitCnt);
+    }
+
+    /* If fqRing ran out of space is not an error, packets will be re-submitted from toHwQ */
+    if (UDMA_ETIMEOUT == retVal)
+    {
+        retVal = UDMA_SOK;
+    }
+
+    return retVal;
+}
+
 int32_t EnetUdma_flushRxFlowRing(EnetDma_RxChHandle hRxFlow,
                                 Udma_RingHandle hUdmaRing,
                                 EnetDma_PktQ *pPktInfoQ)
