@@ -59,6 +59,8 @@
 #include <soc/awr294x/enet_soc.h>
 #elif defined(SOC_AM263X)
 #include <soc/am263x/enet_soc.h>
+#elif defined(SOC_AM263PX)
+#include <soc/am263px/enet_soc.h>
 #endif
 
 #ifdef __cplusplus

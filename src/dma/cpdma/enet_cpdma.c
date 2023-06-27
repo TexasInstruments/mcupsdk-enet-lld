@@ -59,7 +59,7 @@
 #include <include/core/enet_dma_pktutils.h>
 #include <src/dma/cpdma/enet_cpdma_priv.h>
 #include <priv/mod/cpsw_clks.h>
-#if defined (SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X)
+#if defined (SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #include <priv/per/cpsw_cpdma_priv.h>
 #endif
 
