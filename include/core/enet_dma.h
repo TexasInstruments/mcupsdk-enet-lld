@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -61,7 +61,7 @@
 #include <include/dma/udma/enet_udma_types.h>
 #include <include/dma/udma/enet_udma.h>
 #include <include/dma/udma/enet_udma_psi.h>
-#elif defined (SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
+#elif defined (SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #include <include/dma/cpdma/enet_cpdma.h>
 #else
 #error "SOC not supported"
@@ -77,7 +77,7 @@ extern "C" {
 
 
 
-#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 /*! * \brief Set to false as Cache is not coherent in AM273X, AWR294X SOC.*/
 #define Enet_isCacheCoherent()                  (false)
 #elif defined(SOC_AM64X) || defined(SOC_AM243X)

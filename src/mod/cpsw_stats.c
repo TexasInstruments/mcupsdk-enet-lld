@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -79,6 +79,12 @@
 #define CPSW_STATS_VER_REVRTL_AWR294X           (0x00000000U)
 #define CPSW_STATS_VER_ID_AWR294X               (0x00006B90U)
 
+/* Supported AWR2544 version */
+#define CPSW_STATS_VER_REVMAJ_AWR2544           (0x00000001U)
+#define CPSW_STATS_VER_REVMIN_AWR2544           (0x00000003U)
+#define CPSW_STATS_VER_REVRTL_AWR2544           (0x00000003U)
+#define CPSW_STATS_VER_ID_AWR2544               (0x00006B90U)
+
 #define CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT(x)    \
           {.cmd = x,                            \
            .fxn = &CpswStats_ioctl_handler_##x}
@@ -148,6 +154,12 @@ static CSL_CPSW_VERSION CpswStats_gSupportedVer[] =
         .minorVer = CPSW_STATS_VER_REVMIN_AWR294X,
         .rtlVer   = CPSW_STATS_VER_REVRTL_AWR294X,
         .id       = CPSW_STATS_VER_ID_AWR294X,
+    },
+    {   /* AWR2544 */
+        .majorVer = CPSW_STATS_VER_REVMAJ_AWR2544,
+        .minorVer = CPSW_STATS_VER_REVMIN_AWR2544,
+        .rtlVer   = CPSW_STATS_VER_REVRTL_AWR2544,
+        .id       = CPSW_STATS_VER_ID_AWR2544,
     },
 };
 

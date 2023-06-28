@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -108,7 +108,7 @@ extern "C" {
 #endif
 
 /*! \brief Enabling Optimized IRQ for critical section. */
-#if defined(SOC_AM273X) || defined(SOC_AWR294X)|| defined(SOC_AM263X) || defined(SOC_AM263PX)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #define ENET_CFG_USE_OPTIMIZED_IRQ_CRITICAL_SECTION  (1U)
 #else
 #define ENET_CFG_USE_OPTIMIZED_IRQ_CRITICAL_SECTION  (0U)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -75,12 +75,12 @@
 #define CPSW_ALE_VER_ID_AM263X                  (0x00000029U)
 
 /* Number of ALE table entries and policers per CPSW variant */
-#if defined(SOC_AM273X) || defined(SOC_AWR294X)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544)
 #define CPSW_ALE_2G_ALE_ENTRIES_MAX             (32U)
 #else
 #define CPSW_ALE_2G_ALE_ENTRIES_MAX             (64U)
 #endif
-#if defined(SOC_AM273X) || defined(SOC_AWR294X)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544)
 #define CPSW_ALE_2G_POLICERS_MAX                (4U)
 #else
 #define CPSW_ALE_2G_POLICERS_MAX                (8U)

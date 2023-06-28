@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -59,7 +59,7 @@
 #include <include/core/enet_dma_pktutils.h>
 #include <src/dma/cpdma/enet_cpdma_priv.h>
 #include <priv/mod/cpsw_clks.h>
-#if defined (SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
+#if defined (SOC_AM273X) || defined(SOC_AWR294X) || defined (SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #include <priv/per/cpsw_cpdma_priv.h>
 #endif
 

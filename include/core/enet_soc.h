@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -61,6 +61,8 @@
 #include <soc/am263x/enet_soc.h>
 #elif defined(SOC_AM263PX)
 #include <soc/am263px/enet_soc.h>
+#elif defined(SOC_AWR2544)
+#include <soc/awr2544/enet_soc.h>
 #endif
 
 #ifdef __cplusplus

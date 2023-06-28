@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2022
+ *  Copyright (c) Texas Instruments Incorporated 2022-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -46,7 +46,7 @@
 #include <csl_cpswitch.h>
 #include <enet_cfg.h>
 #include <include/core/enet_base.h>
-#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined (SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #include <priv/per/cpsw_cpdma_priv.h>
 #else
 #include <priv/per/cpsw_priv.h>

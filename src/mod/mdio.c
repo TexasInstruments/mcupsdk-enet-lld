@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2022
+ *  Copyright (c) Texas Instruments Incorporated 2022-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -68,6 +68,12 @@
 #define ICSSG_MDIO_VER_REVMIN_J7X             (0x00000007U)
 #define ICSSG_MDIO_VER_REVRTL_J7X             (0x00000000U)
 
+/*! \brief AWR2544 MDIO versions. */
+#define MDIO_VER_MODID_AWR2544                (0x00000007U)
+#define MDIO_VER_REVMAJ_AWR2544               (0x00000001U)
+#define MDIO_VER_REVMIN_AWR2544               (0x00000007U)
+#define MDIO_VER_REVRTL_AWR2544               (0x00000002U)
+
 /*! \brief Default MDIO bus frequency. */
 #define MDIO_MDIOBUS_DFLT_FREQ_HZ             (2200000U)
 
@@ -133,6 +139,12 @@ static CSL_MDIO_VERSION gMdio_supportedVer[] =
         .revMaj = ICSSG_MDIO_VER_REVMAJ_J7X,
         .revMin = ICSSG_MDIO_VER_REVMIN_J7X,
         .revRtl = ICSSG_MDIO_VER_REVRTL_J7X,
+    },
+    {   /* MDIO on AWR2544 devices */
+        .modId  = MDIO_VER_MODID_AWR2544,
+        .revMaj = MDIO_VER_REVMAJ_AWR2544,
+        .revMin = MDIO_VER_REVMIN_AWR2544,
+        .revRtl = MDIO_VER_REVRTL_AWR2544,
     },
 };
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -84,6 +84,12 @@
 #define CPSW_MACPORT_VER_REVMIN_AWR294X         (0x00000002U)
 #define CPSW_MACPORT_VER_REVRTL_AWR294X         (0x00000000U)
 #define CPSW_MACPORT_VER_ID_AWR294X             (0x00006B90U)
+
+/* Supported AWR2544 version */
+#define CPSW_MACPORT_VER_REVMAJ_AWR2544         (0x00000001U)
+#define CPSW_MACPORT_VER_REVMIN_AWR2544         (0x00000003U)
+#define CPSW_MACPORT_VER_REVRTL_AWR2544         (0x00000003U)
+#define CPSW_MACPORT_VER_ID_AWR2544             (0x00006B90U)
 
 /*! \brief Default value used for MAC port RX MTU (MRU). */
 #define CPSW_MACPORT_RX_MTU_DEFAULT           (1518U)
@@ -232,6 +238,12 @@ static CSL_CPSW_VERSION CpswMacPort_gSupportedVer[] =
         .minorVer = CPSW_MACPORT_VER_REVMIN_AWR294X,
         .rtlVer   = CPSW_MACPORT_VER_REVRTL_AWR294X,
         .id       = CPSW_MACPORT_VER_ID_AWR294X,
+    },
+    {   /* AWR2544 */
+        .majorVer = CPSW_MACPORT_VER_REVMAJ_AWR2544,
+        .minorVer = CPSW_MACPORT_VER_REVMIN_AWR2544,
+        .rtlVer   = CPSW_MACPORT_VER_REVRTL_AWR2544,
+        .id       = CPSW_MACPORT_VER_ID_AWR2544,
     },
 };
 

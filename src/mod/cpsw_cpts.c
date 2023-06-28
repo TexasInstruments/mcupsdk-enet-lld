@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -75,6 +75,12 @@
 #define CPSW_CPTS_VER_REVRTL_AM64X            (0x00000000U)
 #define CPSW_HOSTPORT_VER_ID_AM64X            (0x00004E8AU)
 
+/* Supported AWR2544 versions */
+#define CPSW_CPTS_VER_REVMAJ_AWR2544          (0x00000001U)
+#define CPSW_CPTS_VER_REVMIN_AWR2544          (0x0000000DU)
+#define CPSW_CPTS_VER_REVRTL_AWR2544          (0x00000000U)
+#define CPSW_HOSTPORT_VER_ID_AWR2544          (0x00004E8AU)
+
 
 #define CPSW_CPTS_IOCTL_HANDLER_ENTRY_INIT(x)    \
           {.cmd = x,                            \
@@ -140,6 +146,12 @@ static CSL_CPSW_VERSION CpswCpts_gSupportedVer[] =
         .minorVer = CPSW_CPTS_VER_REVMIN_AM64X,
         .rtlVer   = CPSW_CPTS_VER_REVRTL_AM64X,
         .id       = CPSW_HOSTPORT_VER_ID_AM64X,
+    },
+    {   /* AWR2544 CPSW_2G */
+        .majorVer = CPSW_CPTS_VER_REVMAJ_AWR2544,
+        .minorVer = CPSW_CPTS_VER_REVMIN_AWR2544,
+        .rtlVer   = CPSW_CPTS_VER_REVRTL_AWR2544,
+        .id       = CPSW_HOSTPORT_VER_ID_AWR2544,
     },
 };
 
@@ -225,7 +237,7 @@ static Enet_IoctlValidate gCpswCpts_privIoctlValidate[] =
 };
 #endif
 
-static CpswCptsIoctlHandlerRegistry_t CpswCptsIoctlHandlerRegistry[] = 
+static CpswCptsIoctlHandlerRegistry_t CpswCptsIoctlHandlerRegistry[] =
 {
     CPSW_CPTS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_GET_VERSION),
     CPSW_CPTS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_PRINT_REGS),
@@ -479,9 +491,9 @@ static int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_REGISTER_HANDLER(CpswCpts_
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status;
 
-    status = CpswCpts_setIoctlHandlerFxn(inArgs->cmd, 
-                                        (CpswCptsIoctlHandler *)inArgs->fxn, 
-                                        CpswCptsIoctlHandlerRegistry, 
+    status = CpswCpts_setIoctlHandlerFxn(inArgs->cmd,
+                                        (CpswCptsIoctlHandler *)inArgs->fxn,
+                                        CpswCptsIoctlHandlerRegistry,
                                         ENET_ARRAYSIZE(CpswCptsIoctlHandlerRegistry));
     return status;
 }

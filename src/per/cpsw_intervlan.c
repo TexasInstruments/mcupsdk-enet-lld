@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-23
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -53,7 +53,7 @@
 #include <priv/mod/cpsw_macport_priv.h>
 #include <priv/mod/cpsw_macport_ioctl_priv.h>
 #include <include/per/cpsw.h>
-#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AM263X) || defined(SOC_AM263PX)
+#if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined (SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 #include <priv/per/cpsw_cpdma_priv.h>
 #else
 #include <priv/per/cpsw_priv.h>
