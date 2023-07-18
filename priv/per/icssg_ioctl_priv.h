@@ -176,42 +176,48 @@ int32_t Icssg_ioctl_handler_ICSSG_HOSTPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE(EnetPer_Handle hPer,
-                                                            uint32_t cmd,
-                                                            Enet_IoctlPrms *prms);
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
+
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms);
+
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE(EnetPer_Handle hPer,
+                                                            uint32_t cmd,
+                                                            Enet_IoctlPrms *prms);
+
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS(EnetPer_Handle hPer,
+                                                                        uint32_t cmd,
+                                                                        Enet_IoctlPrms *prms);
 
 int32_t Icssg_ioctl_handler_ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW(EnetPer_Handle hPer,
                                                             uint32_t cmd,

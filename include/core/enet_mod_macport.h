@@ -554,20 +554,26 @@ typedef enum EnetMacPort_PreemptVerifyStatus_e
     /*! Unknown status */
     ENET_MAC_VERIFYSTATUS_UNKNOWN = 0U,
 
+    /*! Initial state */
+    ENET_MAC_VERIFYSTATE_INITIAL,
+
+    /*! Verifying state */
+    ENET_MAC_VERIFYSTATE_VERIFYING,
+
     /*! Verify Success */
     ENET_MAC_VERIFYSTATUS_SUCCEEDED,
 
     /*! Verify Failure */
     ENET_MAC_VERIFYSTATUS_FAILED,
 
+    /*! Verification Disabled */
+    ENET_MAC_VERIFYSTATUS_DISABLED,
+
     /*! Received Verify Packet with Errors */
     ENET_MAC_VERIFYSTATUS_RXRESPOND_ERROR,
 
     /*! Received Verify Packet with Errors */
     ENET_MAC_VERIFYSTATUS_RXVERIFY_ERROR,
-
-    /*! Verification Disabled */
-    ENET_MAC_VERIFYSTATUS_DISABLED,
 } EnetMacPort_PreemptVerifyStatus;
 
 /*!

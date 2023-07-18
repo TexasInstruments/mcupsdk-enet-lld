@@ -226,7 +226,7 @@ static int32_t Icssg_ioctlPreemptVerifyDisable(Icssg_Handle hIcssg,
 
 static int32_t Icssg_ioctlPreemptGetVerifyState(Icssg_Handle hIcssg,
                                                 Enet_MacPort macPort,
-                                                Icssg_PreemptVerifyState *status);
+                                                EnetMacPort_PreemptVerifyStatus *status);
 
 static int32_t Icssg_ioctlPreemptGetMinFragSizeLocal(Icssg_Handle hIcssg,
                                                      Enet_MacPort macPort,
@@ -445,41 +445,49 @@ static Enet_IoctlValidate gIcssg_ioctlValidate[] =
                           sizeof(IcssgMacPort_SetMacAddressInArgs),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPTION,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_DISABLE_PREEMPTION,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION,
                           sizeof(Enet_MacPort),
                           0U),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS,
                           sizeof(Enet_MacPort),
-                          sizeof(Icssg_PreemptVerifyState)),
+                          sizeof(EnetMacPort_PreemptVerifyStatus)),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE,
                           sizeof(Enet_MacPort),
                           sizeof(uint8_t)),
 
-    ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE,
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE,
                           sizeof(IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs),
                           0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE,
+                          sizeof(EnetMacPort_SetPreemptQueueInArgs),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE,
+                          sizeof(EnetMacPort_GenericInArgs),
+                          sizeof(uint8_t)),
 
     ENET_IOCTL_VALID_PRMS(ICSSG_HOSTPORT_IOCTL_SET_MACADDR,
                           sizeof(Icssg_MacAddr),
@@ -559,15 +567,6 @@ static IcssgInternalIoctlHandlerTableEntry_t IcssgInternalIoctlHandlerTable[] =
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_SET_MACADDR),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_HOSTPORT_IOCTL_SET_MACADDR),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL),
-    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW),
     ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_ATTACH_CORE),
@@ -596,7 +595,18 @@ static IcssgMacPortIoctlHandlerTableEntry_t IcssgMacPortIoctlHandlerTable[] =
     ICSSG_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_EGRESS_QOS_PRI_MAP), /*IOCTL Not supported*/
     ICSSG_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_PRI_REGEN_MAP), /*IOCTL Not supported*/
     ICSSG_MACPORT_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_INGRESS_DSCP_PRI_MAP), /*IOCTL Not supported*/
-    ICSSG_MACPORT_IOCTL_HANDLER_ENTRY_INIT(ICSSG_MACPORT_IOCTL_REGISTER_HANDLER)
+    ICSSG_MACPORT_IOCTL_HANDLER_ENTRY_INIT(ICSSG_MACPORT_IOCTL_REGISTER_HANDLER),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_ENABLE_PREEMPTION),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_DISABLE_PREEMPTION),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE),
+    ICSSG_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS)
 };
 
 #if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
@@ -774,27 +784,27 @@ static int32_t Icssg_disablePruss(Icssg_Handle hIcssg)
 
 static uint32_t Icssg_getFwIdx(uint32_t instId)
 {
-	uint32_t fwIdx;
+    uint32_t fwIdx;
 
-	switch(instId)
-	{
-	    case 0:
-	    	fwIdx = 0;
-	    	break;
+    switch(instId)
+    {
+        case 0:
+            fwIdx = 0;
+            break;
 
-	    case 1:
-	    	fwIdx = 1;
-	    	break;
+        case 1:
+            fwIdx = 1;
+            break;
 
-	    case 2:
-	    	fwIdx = 0;
-	    	break;
+        case 2:
+            fwIdx = 0;
+            break;
 
-	    case 3:
-	    	fwIdx = 1;
-	    	break;
-	}
-	return fwIdx;
+        case 3:
+            fwIdx = 1;
+            break;
+    }
+    return fwIdx;
 }
 
 static Enet_MacPort Icssg_getMacFromInstId(uint32_t instId)
@@ -2319,7 +2329,7 @@ static int32_t Icssg_ioctlPreemptVerifyDisable(Icssg_Handle hIcssg,
 
 static int32_t Icssg_ioctlPreemptGetVerifyState(Icssg_Handle hIcssg,
                                                 Enet_MacPort macPort,
-                                                Icssg_PreemptVerifyState *status)
+                                                EnetMacPort_PreemptVerifyStatus *status)
 {
     uintptr_t dram = Icssg_getDramAddr(hIcssg, macPort);
     int32_t retVal = ENET_EINVALIDPARAMS;
@@ -2327,7 +2337,7 @@ static int32_t Icssg_ioctlPreemptGetVerifyState(Icssg_Handle hIcssg,
     if ((macPort == ENET_MAC_PORT_1) ||
         (macPort == ENET_MAC_PORT_2))
     {
-        *status = (Icssg_PreemptVerifyState)(Icssg_rd8(hIcssg, dram + PRE_EMPTION_VERIFY_STATUS));
+        *status = (EnetMacPort_PreemptVerifyStatus)(Icssg_rd8(hIcssg, dram + PRE_EMPTION_VERIFY_STATUS));
         retVal = ENET_SOK;
     }
 
@@ -4358,7 +4368,7 @@ int32_t Icssg_ioctl_handler_ICSSG_HOSTPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(EnetPer_Handle hPer,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
@@ -4366,7 +4376,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE(EnetPer_Handle
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_ENABLE_PREEMPTION);
 
     if (!(hIcssg->isPremQueEnable))
     {
@@ -4383,7 +4393,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE(EnetPer_Handle
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(EnetPer_Handle hPer,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
@@ -4391,7 +4401,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE(EnetPer_Handl
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_DISABLE_PREEMPTION);
 
     status = Icssg_ioctlPreemptTxDisable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
@@ -4402,7 +4412,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE(EnetPer_Handl
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(EnetPer_Handle hPer,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms)
 {
@@ -4411,7 +4421,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS(Ene
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     bool *enabled = (bool *)prms->outArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS);
 
     status = Icssg_ioctlPreemptGetTxEnableStatus(hIcssg, macPort, enabled);
     ENETTRACE_ERR_IF((status != ENET_SOK),
@@ -4422,7 +4432,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS(Ene
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS(EnetPer_Handle hPer,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms)
 {
@@ -4431,7 +4441,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS(Ene
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     bool *active = (bool *)prms->outArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS);
 
     status = Icssg_ioctlPreemptGetTxActiveStatus(hIcssg, macPort, active);
     ENETTRACE_ERR_IF((status != ENET_SOK),
@@ -4442,7 +4452,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS(Ene
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
@@ -4450,7 +4460,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE(EnetPer_Ha
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION);
 
     status = Icssg_ioctlPreemptVerifyEnable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
@@ -4461,7 +4471,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE(EnetPer_Ha
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
@@ -4469,7 +4479,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE(EnetPer_H
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION);
 
     status = Icssg_ioctlPreemptVerifyDisable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
@@ -4479,16 +4489,16 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE(EnetPer_H
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS(EnetPer_Handle hPer,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
-    Icssg_PreemptVerifyState *outArgs = (Icssg_PreemptVerifyState *)prms->outArgs;
+    EnetMacPort_PreemptVerifyStatus *outArgs = (EnetMacPort_PreemptVerifyStatus *)prms->outArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS);
 
     status = Icssg_ioctlPreemptGetVerifyState(hIcssg, macPort, outArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
@@ -4497,7 +4507,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE(EnetPer
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms)
 {
@@ -4506,7 +4516,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL(
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     uint8_t *minFragSize = (uint8_t *)prms->outArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE);
 
     status = Icssg_ioctlPreemptGetMinFragSizeLocal(hIcssg, macPort, minFragSize);
     ENETTRACE_ERR_IF((status != ENET_SOK),
@@ -4516,7 +4526,7 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL(
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms)
 {
@@ -4525,12 +4535,39 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE
     IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *inArgs =
                 (IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *)prms->inArgs;
 
-    Enet_assert(cmd == ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE);
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE);
 
     status = Icssg_ioctlPreemptSetMinFragSizeRemote(hIcssg, inArgs);
-    ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
+    ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to verify preempt disable: %d\r\n",
                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(inArgs->macPort), status);
+    return status;
+}
+
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE(EnetPer_Handle hPer,
+                                                                 uint32_t cmd,
+                                                                 Enet_IoctlPrms *prms)
+{
+
+    int32_t status = ENET_SOK;
+
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS);
+
+    status = ENET_EINVALIDPARAMS;
+    Enet_assert(status != ENET_SOK);
+    return status;
+}
+
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS(EnetPer_Handle hPer,
+                                                                        uint32_t cmd,
+                                                                        Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_SOK;
+
+    Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS);
+
+    status = ENET_EINVALIDPARAMS;
+    Enet_assert(status != ENET_SOK);
     return status;
 }
 

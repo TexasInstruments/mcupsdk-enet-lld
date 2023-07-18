@@ -459,105 +459,6 @@ typedef enum Icssg_Ioctl_e
     ICSSG_MACPORT_IOCTL_SET_MACADDR = ICSSG_PUBLIC_IOCTL(10U),
 
     /*!
-     * \brief Enable preemption on TX.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: None
-     *
-     * Type: Asynchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_TX_ENABLE = ICSSG_PUBLIC_IOCTL(12U),
-
-    /*!
-     * \brief Disable preemption on TX.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: None
-     *
-     * Type: Asynchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_TX_DISABLE = ICSSG_PUBLIC_IOCTL(13U),
-
-    /*!
-     * \brief Get status of preemption on TX.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: bool
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ENABLE_STATUS = ICSSG_PUBLIC_IOCTL(14U),
-
-    /*!
-     * \brief Get status of whether preemption is active or not.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: bool
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_GET_TX_ACTIVE_STATUS = ICSSG_PUBLIC_IOCTL(15U),
-
-    /*!
-     * \brief Enable verify state machine.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: None
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_ENABLE = ICSSG_PUBLIC_IOCTL(16U),
-
-    /*!
-     * \brief Disable verify state machine.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: None
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_VERIFY_DISABLE = ICSSG_PUBLIC_IOCTL(17U),
-
-    /*!
-     * \brief Get current state of the verify state machine.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: #Icssg_PreemptVerifyState
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_GET_VERIFY_STATE = ICSSG_PUBLIC_IOCTL(18U),
-
-    /*!
-     * \brief Get minimum fragment size supported by firmware.
-     *
-     * IOCTL params:
-     * -  inArgs: #Enet_MacPort
-     * - outArgs: uint8_t
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_GET_MIN_FRAG_SIZE_LOCAL = ICSSG_PUBLIC_IOCTL(19U),
-
-    /*!
-     * \brief Add minimum fragment size.
-     *
-     * IOCTL params:
-     * -  inArgs: IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs
-     * - outArgs: None
-     *
-     * Type: Synchronous.
-     */
-    ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE = ICSSG_PUBLIC_IOCTL(20U),
-
-    /*!
      * \brief Add MAC address of the host port interface.
      *
      * IOCTL params:
@@ -566,31 +467,31 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_HOSTPORT_IOCTL_SET_MACADDR = ICSSG_PUBLIC_IOCTL(21U),
+    ICSSG_HOSTPORT_IOCTL_SET_MACADDR = ICSSG_PUBLIC_IOCTL(11U),
 
     /*!
      * \internal
      * \brief Execute TAS 'trigger' command. Legacy implementation.
      */
-    ICSSG_PER_IOCTL_TAS_TRIGGER = ICSSG_PUBLIC_IOCTL(22U),
+    ICSSG_PER_IOCTL_TAS_TRIGGER = ICSSG_PUBLIC_IOCTL(12U),
 
     /*!
      * \internal
      * \brief Execute TAS 'enable' command. Legacy implementation.
      */
-    ICSSG_PER_IOCTL_TAS_ENABLE = ICSSG_PUBLIC_IOCTL(23U),
+    ICSSG_PER_IOCTL_TAS_ENABLE = ICSSG_PUBLIC_IOCTL(13U),
 
     /*!
      * \internal
      * \brief Execute TAS 'disable' command. Legacy implementation.
      */
-    ICSSG_PER_IOCTL_TAS_DISABLE = ICSSG_PUBLIC_IOCTL(24U),
+    ICSSG_PER_IOCTL_TAS_DISABLE = ICSSG_PUBLIC_IOCTL(14U),
 
     /*!
      * \internal
      * \brief Execute TAS 'reset' command. Legacy implementation.
      */
-    ICSSG_PER_IOCTL_TAS_RESET = ICSSG_PUBLIC_IOCTL(25U),
+    ICSSG_PER_IOCTL_TAS_RESET = ICSSG_PUBLIC_IOCTL(15U),
 
     /*!
      * \brief Set the default VLAN ID and PCP bits for host port.
@@ -605,7 +506,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_PER_IOCTL_VLAN_SET_HOSTPORT_DFLT_VID = ICSSG_PUBLIC_IOCTL(26U),
+    ICSSG_PER_IOCTL_VLAN_SET_HOSTPORT_DFLT_VID = ICSSG_PUBLIC_IOCTL(16U),
 
     /*!
      * \brief Set the default VLAN ID and PCP bits for specified MAC port.
@@ -616,7 +517,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_PER_IOCTL_VLAN_SET_MACPORT_DFLT_VID = ICSSG_PUBLIC_IOCTL(27U),
+    ICSSG_PER_IOCTL_VLAN_SET_MACPORT_DFLT_VID = ICSSG_PUBLIC_IOCTL(17U),
 
     /*!
      * \brief Set the aging period of the FDB.
@@ -629,7 +530,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_FDB_IOCTL_SET_AGING_PERIOD = ICSSG_PUBLIC_IOCTL(28U),
+    ICSSG_FDB_IOCTL_SET_AGING_PERIOD = ICSSG_PUBLIC_IOCTL(18U),
 
     /*!
      * \brief Enable flooding of unicast packets to host port.
@@ -640,7 +541,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Asynchronous.
      */
-    ICSSG_MACPORT_IOCTL_ENABLE_UCAST_FLOOD = ICSSG_PUBLIC_IOCTL(29U),
+    ICSSG_MACPORT_IOCTL_ENABLE_UCAST_FLOOD = ICSSG_PUBLIC_IOCTL(19U),
 
     /*!
      * \brief Disable flooding of unicast packets to host port.
@@ -651,7 +552,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Asynchronous.
      */
-    ICSSG_MACPORT_IOCTL_DISABLE_UCAST_FLOOD = ICSSG_PUBLIC_IOCTL(30U),
+    ICSSG_MACPORT_IOCTL_DISABLE_UCAST_FLOOD = ICSSG_PUBLIC_IOCTL(20U),
 
     /*!
      * \brief Enable flooding of multicast packets to host port.
@@ -662,7 +563,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Asynchronous.
      */
-    ICSSG_MACPORT_IOCTL_ENABLE_MCAST_FLOOD = ICSSG_PUBLIC_IOCTL(31U),
+    ICSSG_MACPORT_IOCTL_ENABLE_MCAST_FLOOD = ICSSG_PUBLIC_IOCTL(21U),
 
     /*!
      * \brief Disable flooding of multicast packets to host port.
@@ -673,7 +574,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Asynchronous.
      */
-    ICSSG_MACPORT_IOCTL_DISABLE_MCAST_FLOOD = ICSSG_PUBLIC_IOCTL(32U),
+    ICSSG_MACPORT_IOCTL_DISABLE_MCAST_FLOOD = ICSSG_PUBLIC_IOCTL(22U),
 
     /*!
      * \brief Set the criteria for accepting VLAN tagged/untagged packets.
@@ -689,7 +590,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_MACPORT_IOCTL_SET_ACCEPT_FRAME_CHECK = ICSSG_PUBLIC_IOCTL(33U),
+    ICSSG_MACPORT_IOCTL_SET_ACCEPT_FRAME_CHECK = ICSSG_PUBLIC_IOCTL(23U),
 
     /*!
      * \brief Configure ingress rate limiting.
@@ -700,7 +601,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM = ICSSG_PUBLIC_IOCTL(34U),
+    ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM = ICSSG_PUBLIC_IOCTL(24U),
 
     /*!
      * \brief cut through or prempt select configuration.
@@ -711,7 +612,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT = ICSSG_PUBLIC_IOCTL(35U),
+    ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT = ICSSG_PUBLIC_IOCTL(25U),
 
     /*!
      * \brief special frame priority configuration.
@@ -722,7 +623,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO = ICSSG_PUBLIC_IOCTL(36U),
+    ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO = ICSSG_PUBLIC_IOCTL(26U),
 
     /*!
      * \brief Register Handler for the IOCTL CMD
@@ -733,7 +634,7 @@ typedef enum Icssg_Ioctl_e
      *
      * Type: Synchronous.
      */
-    ICSSG_INTERNAL_IOCTL_REGISTER_HANDLER = ICSSG_PUBLIC_IOCTL(37U),
+    ICSSG_INTERNAL_IOCTL_REGISTER_HANDLER = ICSSG_PUBLIC_IOCTL(27U),
 
 } Icssg_Ioctl;
 
@@ -960,30 +861,6 @@ typedef struct Icssg_FdbEntry_s
      *  from \ref IccsgFdb_EntryFields. Two entries for two ports */
     uint8_t fdbEntry[2];
 } Icssg_FdbEntry;
-
-/*!
- * \brief Preemption Verify State Machine states.
- */
-typedef enum Icssg_PreemptVerifyState_e
-{
-    /*! Unknown state */
-    ICSSG_VERIFYSTATE_UNKNOWN = 0U,
-
-    /*! Initial state */
-    ICSSG_VERIFYSTATE_INITIAL,
-
-    /*! Verifying state */
-    ICSSG_VERIFYSTATE_VERIFYING,
-
-    /*! Succeeded state */
-    ICSSG_VERIFYSTATE_SUCCEEDED,
-
-    /*! Failed state */
-    ICSSG_VERIFYSTATE_FAILED,
-
-    /*! Disabled state */
-    ICSSG_VERIFYSTATE_DISABLED,
-} Icssg_PreemptVerifyState;
 
 /*!
  * \brief Default VLAN configuration.
