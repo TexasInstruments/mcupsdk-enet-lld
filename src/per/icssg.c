@@ -233,7 +233,7 @@ static int32_t Icssg_ioctlPreemptGetMinFragSizeLocal(Icssg_Handle hIcssg,
                                                      uint8_t *minFragSizeLocal);
 
 static int32_t Icssg_ioctlPreemptSetMinFragSizeRemote(Icssg_Handle hIcssg,
-                                                      IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *minFragSizeRemoteArgs);
+                                                      EnetMacPort_SetPreemptMinFragSizeInArgs *minFragSizeRemoteArgs);
 
 static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
                                       const EnetPer_PortLinkCfg *portLinkCfg);
@@ -478,7 +478,7 @@ static Enet_IoctlValidate gIcssg_ioctlValidate[] =
                           sizeof(uint8_t)),
 
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE,
-                          sizeof(IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs),
+                          sizeof(EnetMacPort_SetPreemptMinFragSizeInArgs),
                           0U),
 
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE,
@@ -2364,7 +2364,7 @@ static int32_t Icssg_ioctlPreemptGetMinFragSizeLocal(Icssg_Handle hIcssg,
 }
 
 static int32_t Icssg_ioctlPreemptSetMinFragSizeRemote(Icssg_Handle hIcssg,
-                                                      IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *minFragSizeRemoteArgs)
+                                                     EnetMacPort_SetPreemptMinFragSizeInArgs *minFragSizeRemoteArgs)
 {
     uintptr_t dram = Icssg_getDramAddr(hIcssg, minFragSizeRemoteArgs->macPort);
     int32_t retVal = ENET_EINVALIDPARAMS;
@@ -2373,7 +2373,7 @@ static int32_t Icssg_ioctlPreemptSetMinFragSizeRemote(Icssg_Handle hIcssg,
         (minFragSizeRemoteArgs->macPort == ENET_MAC_PORT_2))
     {
         Icssg_wr16(hIcssg, dram + PRE_EMPTION_ADD_FRAG_SIZE_REMOTE,
-                   (minFragSizeRemoteArgs->preemptMinFrageSizeRemote + 1) * 64);
+                   (minFragSizeRemoteArgs->preemptMinFragSize + 1) * 64);
         retVal = ENET_SOK;
     }
 
@@ -4532,8 +4532,8 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(EnetPer
 {
     Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
-    IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *inArgs =
-                (IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs *)prms->inArgs;
+    EnetMacPort_SetPreemptMinFragSizeInArgs *inArgs =
+                (EnetMacPort_SetPreemptMinFragSizeInArgs *)prms->inArgs;
 
     Enet_assert(cmd == ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE);
 

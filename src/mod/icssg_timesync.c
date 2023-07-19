@@ -244,6 +244,7 @@ static IcssgTimeSyncIoctlHandlerTableEntry_t IcssgTimeSyncIoctlHandlerTable[] =
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE),
+    ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP),
     ICSSG_TIMESYNC_IOCTL_HANDLER_ENTRY_INIT(ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER)
 };
 
@@ -676,6 +677,70 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE);
 
     hTimeSync->setClockOngoing = false;
+
+    return status;
+
+}
+
+static int32_t IcssgTimeSync_getTxTs(IcssgTimeSync_Handle hTimeSync,
+                                     Enet_MacPort macPort,
+                                     uint32_t seqId,
+                                     uint64_t *ts)
+{
+    int32_t hwQLevel;
+    int32_t status = ENET_SOK;
+    Icssg_Handle hIcssg = (Icssg_Handle)hTimeSync->hIcssg;
+    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
+    uint32_t *pMgmtPkt = NULL;
+    uint32_t txTsId = 0;
+    uint64_t tsVal = 0;
+    uint32_t slice;
+
+    hwQLevel = IcssgUtils_hwqLevel(hIcssg, macPort, ICSSG_TXTS_RX_HWQA);
+    if (hwQLevel != 0)
+    {
+        pMgmtPkt = (uint32_t*)IcssgUtils_hwqPop(hIcssg, macPort, ICSSG_TXTS_RX_HWQA);
+        if (pMgmtPkt != NULL)
+        {
+             slice = ENET_GET_BIT(pMgmtPkt[0], 23);
+             txTsId = pMgmtPkt[2];
+             tsVal = pMgmtPkt[4];
+             tsVal = tsVal << 32U | pMgmtPkt[3];
+             tsVal = Icssg_convertTs(hPer, tsVal);
+
+             /* Pop from port-dependent HwQ, but push into specific HwQ as indicated
+              * by bit 23 of word 0, irrespective of port number */
+             IcssgUtils_hwqPushForSlice(hIcssg, slice, ICSSG_TXTS_FREE_HWQA, pMgmtPkt);
+        }
+        if (txTsId != seqId)
+        {
+            status = ENET_ENOTFOUND;
+        }
+        *ts = tsVal;
+    }
+    else
+    {
+         status = ENET_ENOTFOUND;
+    }
+    return status;
+}
+
+int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(EnetMod_Handle hMod,
+                                                                             uint32_t cmd,
+                                                                             Enet_IoctlPrms *prms)
+{
+    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
+    const EnetTimeSync_GetEthTimestampInArgs *inArgs =
+           (const EnetTimeSync_GetEthTimestampInArgs *)prms->inArgs;
+    uint64_t *ts = (uint64_t *)prms->outArgs;
+    int32_t status = ENET_SOK;
+
+    Enet_assert(cmd == ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP);
+    /* Pop the top entry in the entry in the queue and return.
+     * Driver is not maintaining any pool of timestamps, so application
+     * should makesure to call this ioctl in proper order of tx pkts.
+     * TODO: Driver to maintain the pool of timestamps using polling logic? */
+    status = IcssgTimeSync_getTxTs(hTimeSync, inArgs->portNum, inArgs->seqId, ts);
 
     return status;
 

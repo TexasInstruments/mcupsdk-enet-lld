@@ -141,7 +141,10 @@ typedef enum EnetTimeSync_Ioctl_e
     ENET_TIMESYNC_IOCTL_GET_ETH_RX_TIMESTAMP = ENET_TIMESYNC_PUBLIC_IOCTL(6U),
 
     /*!
-     * \brief Get Ethernet TX timestamp.
+     * \brief Get Ethernet TX timestamp. For CPSW the driver maintains a pool of the timestamps that
+     *  are captured by CPTS and gives back the matched entry. But, In case of ICSSG, Driver doesn't maintain
+     *  any software pool, it returns back the top entry in the queue if it matches the seq id passed.
+     *
      *
      * IOCTL parameters:
      * -  inArgs: #EnetTimeSync_GetEthTimestampInArgs

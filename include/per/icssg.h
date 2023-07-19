@@ -784,18 +784,6 @@ typedef struct IcssgMacPort_SetMacAddressInArgs_s
     uint8_t macAddr[ENET_MAC_ADDR_LEN];
 } IcssgMacPort_SetMacAddressInArgs;
 
-/*!
- * \brief Input args for #ICSSG_MACPORT_IOCTL_PREEMPT_SET_MIN_FRAG_SIZE_REMOTE
- *        command.
- */
-typedef struct IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs_s
-{
-    /*! Port number */
-    Enet_MacPort macPort;
-
-    /*! Specifies minimum fragment size to be configured */
-    uint16_t preemptMinFrageSizeRemote;
-} IcssgMacPort_PreemptSetMinFragSizeRemoteInArgs;
 
 /*!
  * \brief VLAN FID entry parameters.
