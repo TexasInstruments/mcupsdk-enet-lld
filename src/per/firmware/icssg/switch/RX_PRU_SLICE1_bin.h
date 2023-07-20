@@ -1,4 +1,4 @@
-/*
+/* 
  * RX_PRU_SLICE1_bin.h
  *
  *
@@ -21,7 +21,7 @@
  * code license limitations below) in the documentation and/or other materials provided
  * with the distribution
  *
- * Redistribution and use in binary form, without modification, are permitted provided
+ * Redistribution and use in binary form, without modification, are permitted provided 
  * that the following conditions are met:
  *       No reverse engineering, decompilation, or disassembly of this software is
  *       permitted with respect to any software provided in binary form.
@@ -36,19 +36,19 @@
  *       Any redistribution and use of any object code compiled from the source code and
  *   any resulting derivative works, are licensed by TI for use only with TI Devices.
  *
- * Neither the name of Texas Instruments Incorporated nor the names of its suppliers
- * may be used to endorse or  promote products derived from this software without
+ * Neither the name of Texas Instruments Incorporated nor the names of its suppliers 
+ * may be used to endorse or  promote products derived from this software without 
  * specific prior written permission.
  *
  * DISCLAIMER.
  *
  * THIS SOFTWARE IS PROVIDED BY TI AND TI'S LICENSORS "AS IS" AND ANY EXPRESS OR IMPLIED
  * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
- * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND
+ * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL TI AND 
  * TI'S LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
@@ -544,11 +544,11 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x24000601,
 0x2ec80061,
 0xcf0061ff,
-0x2f0f108a,
-0x2f480061,
+0x2f0f1082,
 0x51008a03,
 0x05018a8a,
-0x7f0000fc,
+0x7f0000fd,
+0x2f480061,
 0x7f0000d5,
 0x69010e4e,
 0x1091918a,
@@ -1255,15 +1255,12 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x240010df,
 0x24002f82,
 0x81240082,
-0xd1089e16,
-0xd1035d09,
-0xd1025d0d,
+0xd1089e13,
+0xd1035d06,
+0xd1025d0a,
 0x24007b01,
 0x814c0901,
-0x1f1febeb,
-0x2f0b006b,
-0xc9035f02,
-0x1f17ffff,
+0x1f12ffff,
 0x7b000086,
 0x2e8a1582,
 0xc9000b08,
@@ -1289,8 +1286,6 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x24000a8a,
 0x2f181082,
 0x2e8a9582,
-0x1f1febeb,
-0x2f0b006b,
 0x1d0b9e9e,
 0xd1031505,
 0x24318093,
@@ -1318,20 +1313,22 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x2f078007,
 0x24004101,
 0x814c0901,
-0xd3031550,
+0xd3031552,
 0x24002f01,
 0x2ec80061,
 0x2f480061,
 0x10d6d685,
 0x2f078085,
-0x7b00004a,
+0x7b00004c,
+0x1f1febeb,
+0x2f0b006b,
 0xd100152e,
 0x51021d03,
 0x51001d08,
 0x51011d06,
 0xc900eb03,
 0x2400031d,
-0x21055200,
+0x21054f00,
 0x2400001d,
 0x7900009d,
 0x2400031d,
@@ -1376,7 +1373,7 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x51011d06,
 0xc900eb03,
 0x2400031d,
-0x21055200,
+0x21054f00,
 0x2400001d,
 0x790000a9,
 0x2400031d,
@@ -1657,4 +1654,4 @@ const unsigned int RX_PRU_SLICE1_b00_Swt[]= {
 0x1d089e9e,
 0x2efe0060,
 0x2f85a980,
-0x21064200 };
+0x21063f00 };
