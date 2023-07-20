@@ -629,7 +629,7 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(EnetMod_H
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP);
 
     EnetTimeSync_setTimestamp *tsSet = (EnetTimeSync_setTimestamp *)prms->inArgs;
-    uint64_t tsLoadVal = tsSet->tsLoadVal;
+    const uint64_t tsLoadVal = tsSet->tsLoadVal;
     IcssgTimeSync_Timestamp clkTime;
     uint8_t clkMode = tsSet->clkMode; /* Absolute or relative setClock mode for WorkingClock*/
     uint8_t clkSign = tsSet->clkSign; // FIXME

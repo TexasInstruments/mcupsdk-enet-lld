@@ -239,13 +239,15 @@ typedef enum EnetTimeSync_AdjDir_e
  */
 typedef struct EnetTimeSync_setTimestamp_s
 {
-    /*! timestamp to set */
+    /*! timestamp value in nano seconds unit to set */
     uint64_t tsLoadVal;
 
-    /*! mode of the clock */
+    /*! mode of the clock. Applicable only to ICSSG peripheral.
+     * Says whether given value  tsLoadVal is absolute or related.
+     * 0: absolute, 1: relative */
     uint8_t clkMode;
 
-    /*! sign of the clock */
+    /*Sign of the clock. Applicable only to ICSSG peripheral. */
     uint8_t clkSign;
 } EnetTimeSync_setTimestamp;
 

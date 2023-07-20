@@ -198,7 +198,8 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(CpswCpt
 
 int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(CpswCpts_Handle hCpts, CSL_cptsRegs *regs, Enet_IoctlPrms *prms)
 {
-    uint64_t tsLoadVal = *(uint64_t *)prms->inArgs;
+    EnetTimeSync_setTimestamp *tsSet = (EnetTimeSync_setTimestamp *)prms->inArgs;
+    const uint64_t tsLoadVal = tsSet->tsLoadVal;
     uint32_t tsLoadValHi = 0U;
     uint32_t tsLoadValLo = 0U;
     int32_t status = ENET_SOK;
