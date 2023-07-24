@@ -734,13 +734,15 @@ int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(Ene
            (const EnetTimeSync_GetEthTimestampInArgs *)prms->inArgs;
     uint64_t *ts = (uint64_t *)prms->outArgs;
     int32_t status = ENET_SOK;
+    void *portNum = (void *) &(inArgs->portNum);
+    Enet_MacPort macPort = *(Enet_MacPort *)portNum;
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP);
     /* Pop the top entry in the entry in the queue and return.
      * Driver is not maintaining any pool of timestamps, so application
      * should makesure to call this ioctl in proper order of tx pkts.
      * TODO: Driver to maintain the pool of timestamps using polling logic? */
-    status = IcssgTimeSync_getTxTs(hTimeSync, inArgs->portNum, inArgs->seqId, ts);
+    status = IcssgTimeSync_getTxTs(hTimeSync, macPort, inArgs->seqId, ts);
 
     return status;
 
