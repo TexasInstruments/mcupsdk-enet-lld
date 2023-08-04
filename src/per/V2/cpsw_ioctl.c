@@ -225,6 +225,37 @@ int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_IS_PORT_LINK_UP(Cpsw_Handle hC
     return status;
 }
 
+int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_SET_ISOLATE_STATE(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    /* Assert if port number is not correct */
+    Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
+                "Invalid Port Id: %u\r\n", portNum);
+
+    hCpsw->hPhy[portNum]->phyCfg.isIsolateStateReq = true;
+    EnetPhy_tick(hCpsw->hPhy[portNum]);
+
+    return status;
+}
+
+int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_CLEAR_ISOLATE_STATE(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
+{
+    Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    int32_t status = ENET_SOK;
+
+    /* Assert if port number is not correct */
+    Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
+                "Invalid Port Id: %u\r\n", portNum);
+
+    hCpsw->hPhy[portNum]->phyCfg.isIsolateStateReq = false;
+
+    return status;
+}
+
 int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_GET_PORT_LINK_CFG(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
 {
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
@@ -417,8 +448,6 @@ int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKDOWN_EVENT(C
     return status;
 }
 
-
-
 static int32_t Cpsw_openPortLinkWithPhy(Cpsw_Handle hCpsw,
                                         Enet_MacPort macPort,
                                         const CpswMacPort_Cfg *macCfg,
@@ -596,7 +625,7 @@ static int32_t Cpsw_openPortLink(Cpsw_Handle hCpsw,
 
     ENETTRACE_VAR(portId);
     if ((portNum >= EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId)) ||
-        EnetMod_isOpen(hMacPort) ||
+        EnetMod_isOpen(hMacPort)||
         (hPhy != NULL))
     {
         ENETTRACE_ERR("Port %u: Failed to open port (MAC port %s, PHY %s)\r\n",

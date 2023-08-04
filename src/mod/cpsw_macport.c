@@ -446,6 +446,8 @@ int32_t CpswMacPort_open(EnetMod_Handle hMod,
     uint32_t portId = ENET_MACPORT_ID(macPort);
     int32_t status = ENET_SOK;
 
+    /* Saving macMode Cfg */
+    hPort->macModCfgCtxt = *((CpswMacPort_ModCfg *)(macModCfg));
     ENETTRACE_VAR(portId);
     Enet_devAssert(cfgSize == sizeof(CpswMacPort_ModCfg),
                    "Invalid MAC port config params size %u (expected %u)\n",
@@ -639,6 +641,21 @@ void CpswMacPort_close(EnetMod_Handle hMod)
     {
         CpswMacPort_disablePort(regs, hPort->macPort);
     }
+}
+
+void CpswMacPort_saveCtxt(EnetMod_Handle hMod)
+{
+    CpswMacPort_close(hMod);
+}
+
+int32_t CpswMacPort_restoreCtxt(EnetMod_Handle hMod, Enet_Type enetType,
+                             uint32_t instId, const void *cfg, uint32_t cfgSize)
+{
+    int32_t status = ENET_SOK;
+    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
+
+    status = CpswMacPort_open(hMod, enetType, instId, &hPort->macModCfgCtxt, sizeof(hPort->macModCfgCtxt));
+    return status;
 }
 
 int32_t CpswMacPort_ioctl(EnetMod_Handle hMod,

@@ -347,6 +347,24 @@ int32_t CpswCpts_rejoin(EnetMod_Handle hMod,
     return ENET_SOK;
 }
 
+void CpswCpts_saveCtxt(EnetMod_Handle hMod)
+{
+    CpswCpts_close(hMod);
+}
+
+int32_t CpswCpts_restoreCtxt(EnetMod_Handle hMod,
+                             Enet_Type enetType,
+                             uint32_t instId,
+                             const void *cfg,
+                             uint32_t cfgSize)
+{
+    int32_t status = ENET_SOK;
+
+    CpswCpts_open(hMod, enetType, instId, cfg, cfgSize);
+
+    return status;
+}
+
 void CpswCpts_close(EnetMod_Handle hMod)
 {
     CSL_cptsRegs *regs = (CSL_cptsRegs *)hMod->virtAddr;

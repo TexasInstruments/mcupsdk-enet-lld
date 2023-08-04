@@ -350,6 +350,24 @@ void Mdio_close(EnetMod_Handle hMod)
     }
 }
 
+void Mdio_saveCtxt(EnetMod_Handle hMod)
+{
+    Mdio_close(hMod);
+}
+
+int32_t Mdio_restoreCtxt(EnetMod_Handle hMod,
+                         Enet_Type enetType,
+                         uint32_t instId,
+                         const void *cfg,
+                         uint32_t cfgSize)
+{
+    int32_t status = ENET_SOK;
+
+    status = Mdio_open(hMod, enetType, instId, cfg, cfgSize);
+
+    return status;
+}
+
 int32_t Mdio_ioctl(EnetMod_Handle hMod,
                    uint32_t cmd,
                    Enet_IoctlPrms *prms)

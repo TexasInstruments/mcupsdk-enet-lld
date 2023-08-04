@@ -348,6 +348,16 @@ typedef struct EnetCpdma_DrvObj_s
     uint32_t        features;
     /*! coreId expected by cpdma module */
     uint32_t        cpdmaCoreId;
+    /*! RX buffer Offset */
+    uint32_t        rxBufOffset;
+    /*! RX Interrupt per Msec */
+    uint32_t        rxInterruptPerMSec;
+    /*! TX Interrupt per Msec */
+    uint32_t        txInterruptPerMSec;
+    /* Enable channel override flag */
+    uint32_t        enChOverrideFlag;
+    /* Reset ongoing flag */
+    uint32_t        isResetOngoing;
 } EnetCpdma_DrvObj;
 
 /* ========================================================================== */

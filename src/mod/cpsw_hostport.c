@@ -357,6 +357,32 @@ void CpswHostPort_close(EnetMod_Handle hMod)
     CSL_CPSW_disablePort0(regs);
 }
 
+void CpswHostPort_saveCtxt(EnetMod_Handle hMod)
+{
+    CpswHostPort_close(hMod);
+}
+
+int32_t CpswHostPort_restoreCtxt(EnetMod_Handle hMod,
+                             Enet_Type enetType,
+                             uint32_t instId,
+                             const void *cfg,
+                             uint32_t cfgSize)
+{
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    int32_t status = ENET_SOK;
+
+    /* Open the host port*/
+    status = CpswHostPort_open(hMod, enetType, instId, cfg, cfgSize);
+
+    if (status == ENET_SOK)
+    {
+        /* Enabling host port event */
+        CSL_CPSW_enablePort0(regs);
+    }
+
+    return status;
+}
+
 int32_t CpswHostPort_ioctl(EnetMod_Handle hMod,
                            uint32_t cmd,
                            Enet_IoctlPrms *prms)

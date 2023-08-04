@@ -308,6 +308,9 @@ typedef struct CpswMacPort_Obj_s
     /*! Config state machine status */
     EnetTas_ConfigStatus configStatus;
 #endif
+
+    /*! Saving Macport config before reset */
+    CpswMacPort_ModCfg macModCfgCtxt;
 } CpswMacPort_Obj;
 
 /*!
@@ -374,6 +377,30 @@ int32_t CpswMacPort_ioctl(EnetMod_Handle hMod,
  * \param hMod         Enet Module handle
  */
 void CpswMacPort_close(EnetMod_Handle hMod);
+
+/*!
+ * \brief Saves and Close CPSW MAC port.
+ *
+ * \param hMod         Enet Module handle
+ */
+void CpswMacPort_saveCtxt(EnetMod_Handle hMod);
+
+/*!
+ * \brief Restores and Open CPSW MAC port.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t CpswMacPort_restoreCtxt(EnetMod_Handle hMod,
+                                Enet_Type enetType,
+                                uint32_t instId,
+                                const void *cfg,
+                                uint32_t cfgSize);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

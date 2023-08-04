@@ -256,6 +256,8 @@ typedef struct Cpsw_Obj_s
      */
     bool disablePhyDriver;
 
+    /* Saving Cpsw_Cfg before resetting */
+    Cpsw_Cfg context;
 } Cpsw_Obj;
 
 /*!
@@ -340,6 +342,34 @@ int32_t Cpsw_rejoin(EnetPer_Handle hPer,
  */
 void Cpsw_close(EnetPer_Handle hPer);
 
+/*!
+ * \brief Saves and Close the CPSW peripheral.
+ *
+ * Closes the CPSW peripheral.
+ *
+ * \param hPer        Enet Peripheral handle
+ */
+void Cpsw_saveCtxt(EnetPer_Handle hPer);
+
+/*!
+ * \brief Restores and Open the CPSW Peripheral.
+ *
+ * Opens and initializes the CPSW peripheral with the configuration parameters
+ * provided by the caller.
+ *
+ * \param hPer      Enet Peripheral handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters to be initialized.  The config
+ *                  is of type #Cpsw_Cfg.
+ * \param cfgSize   Size of the configuration parameters.  It must be the size
+ *                  of #Cpsw_Cfg config structure.
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t Cpsw_restoreCtxt(EnetPer_Handle hPer,
+                         Enet_Type enetType,
+                         uint32_t instId);
 /*!
  * \brief Issue an operation on the CPSW peripheral.
  *

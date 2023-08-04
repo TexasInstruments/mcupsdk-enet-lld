@@ -393,6 +393,44 @@ uint32_t Enet_getMacPortCnt(Enet_Handle hEnet);
 void Enet_close(Enet_Handle hEnet);
 
 /*!
+ * \brief  Save  and closes the context of the Enet peripheral.
+ *
+ * Save the Ethernet Peripheral.
+ *
+ * \param hEnet        Enet driver handle
+ * 
+ * \return status as ENET_SOK if successful
+ */
+int32_t Enet_saveCtxt(Enet_Handle hEnet);
+
+/*!
+ * \brief Restore and open the context of the Enet peripheral.
+ *
+ * Restore the Ethernet Peripheral.
+ *
+ * \param enetType        Enet Peripheral type
+ * \param instId          Enet Peripheral instance id
+ * 
+ * \return status as ENET_SOK if successful
+ */
+int32_t Enet_restoreCtxt(Enet_Type enetType,
+                             uint32_t instId);
+
+/*!
+ * \brief Hard reset CPSW peripheral
+ *
+ * Restore the Ethernet Peripheral.
+ *
+ * \param hEnet                Enet Handle
+ * \param enetType             Enet Peripheral type
+ * \param instId               Enet Peripheral instance id
+ * \param pCpswTriggerResetCb  CPSW Reset SOC specific callback function
+ */
+int32_t Enet_hardResetCpsw(Enet_Handle hEnet,
+                        Enet_Type enetType,
+                        uint32_t instId,
+                        Enet_notify_t *pCpswTriggerResetCb);
+/*!
  * \brief Get enetType and instId info from the enet handle.
  *
  * Returns the enetType and instance id associated with Enet_Handle.

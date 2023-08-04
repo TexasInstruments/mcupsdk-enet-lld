@@ -153,7 +153,6 @@ typedef struct Mdio_Callbacks_s
     void *cbArgs;
 } Mdio_Callbacks;
 
-
 /*!
  * \brief MDIO port object.
  */
@@ -240,6 +239,30 @@ int32_t Mdio_ioctl(EnetMod_Handle hMod,
  * \param hMod         Enet Module handle
  */
 void Mdio_close(EnetMod_Handle hMod);
+
+/*!
+ * \brief Saves and Close MDIO.
+ *
+ * \param hMod         Enet Module handle
+ */
+void Mdio_saveCtxt(EnetMod_Handle hMod);
+
+/*!
+ * \brief Restores and Open MDIO.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t Mdio_restoreCtxt(EnetMod_Handle hMod,
+                         Enet_Type enetType,
+                         uint32_t instId,
+                         const void *cfg,
+                         uint32_t cfgSize);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

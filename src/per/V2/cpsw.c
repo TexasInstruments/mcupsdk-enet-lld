@@ -69,6 +69,7 @@
 #include <include/common/enet_phymdio_dflt.h>
 #include <include/phy/enetphy.h>
 #include <priv/per/cpsw_est_ioctl_priv.h>
+#include <kernel/dpl/ClockP.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -121,6 +122,13 @@ static int32_t Cpsw_openInternal(Cpsw_Handle hCpsw,
 
 static void Cpsw_closeInternal(Cpsw_Handle hCpsw);
 
+static void Cpsw_saveInternalCtxt(Cpsw_Handle hCpsw);
+
+static int32_t Cpsw_restoreInternalCtxt(Cpsw_Handle hCpsw,
+                                        Enet_Type enetType,
+                                        uint32_t instId,
+                                        const Cpsw_Cfg *cfg);
+
 static int32_t Cpsw_ioctlInternal(EnetPer_Handle hPer,
                                   uint32_t cmd,
                                   Enet_IoctlPrms *prms);
@@ -152,8 +160,6 @@ static Cpsw_PortLinkState *Cpsw_getPortLinkState(Cpsw_Handle hCpsw,
                                                  uint32_t phyAddr);
 static int32_t Cpsw_handleLinkUp(Cpsw_Handle hCpsw,
                                  Enet_MacPort macPort);
-
-
 
 static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
                                          Enet_IoctlPrms *prms);
@@ -238,6 +244,8 @@ static CpswIoctlHandlerRegistry_t CpswIoctlHandlerRegistry[] =
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_OPEN_PORT_LINK),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_CLOSE_PORT_LINK),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_IS_PORT_LINK_UP),
+    CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_SET_ISOLATE_STATE),
+    CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_CLEAR_ISOLATE_STATE),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_GET_PORT_LINK_CFG),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_ATTACH_CORE),
     CPSW_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_PER_IOCTL_DETACH_CORE),
@@ -326,6 +334,9 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     uint32_t i;
     int32_t status = ENET_SOK;
 
+    /* Saving CpswCfg context */
+    hCpsw->context = *cpswCfg;
+    
     Enet_devAssert(cfgSize == sizeof(Cpsw_Cfg),
                    "Invalid CPSW peripheral config params size %u (expected %u)\r\n",
                    cfgSize, sizeof(Cpsw_Cfg));
@@ -345,6 +356,7 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
 
     /* Open DMA */
     hCpsw->hDma = EnetHostPortDma_open(hPer, cpswCfg->dmaCfg, &(cpswCfg->resCfg));
+    
     if (NULL == hCpsw->hDma)
     {
         ENETTRACE_ERR("Failed to open CPSW DMA\r\n");
@@ -763,6 +775,7 @@ EnetDma_Handle Cpsw_getDmaHandle(const Enet_Handle hEnet)
     return(hCpsw->hDma);
 }
 
+
 static int32_t Cpsw_openInternal(Cpsw_Handle hCpsw,
                                  Enet_Type enetType,
                                  uint32_t instId,
@@ -807,6 +820,7 @@ static int32_t Cpsw_openInternal(Cpsw_Handle hCpsw,
     /* Open host port */
     if (status == ENET_SOK)
     {
+        
         status = EnetMod_open(hCpsw->hHostPort, enetType, instId, &cfg->hostPortCfg, sizeof(cfg->hostPortCfg));
         ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open host port: %d\r\n", status);
     }
@@ -876,6 +890,298 @@ static void Cpsw_closeInternal(Cpsw_Handle hCpsw)
     EnetHostPortDma_close(hCpsw->hDma);
     hCpsw->hDma = NULL;
     EnetMod_close(hCpsw->hRm);
+}
+
+static void Cpsw_isolatePhy(Cpsw_Handle hCpsw)
+{
+    uint32_t portNum = 0;
+    bool linked;
+    Enet_MacPort macPort;
+
+    for(portNum = 0; portNum < hCpsw->macPortNum; portNum++)
+    {
+        if(hCpsw->hPhy[portNum] != NULL)
+        {
+            linked = hCpsw->portLinkState[portNum].isLinkUp;
+
+            if (linked)
+            {
+                macPort = ENET_MACPORT_DENORM(portNum);
+                /* Force link-down handling to undo settings done for this port link
+                 * i.e. ALE port state, MAC port disable, etc */
+                Cpsw_handleLinkDown(hCpsw, macPort);
+
+                /* Requesting for PHY Isolation */
+                hCpsw->hPhy[portNum]->phyCfg.isIsolateStateReq = true;
+
+                /* PHY tick to ensure isolation state take place without waiting for Cpsw_periodicTick*/
+                EnetPhy_tick(hCpsw->hPhy[portNum]);
+            }
+        }
+    }
+}
+
+void Cpsw_saveCtxt(EnetPer_Handle hPer)
+{
+    Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
+    Enet_IoctlPrms prms;
+    uintptr_t key;
+    int32_t status;
+
+    key = EnetOsal_disableAllIntr();
+
+    /* Isolating PHY */
+    Cpsw_isolatePhy(hCpsw);
+
+    /* Disable CPTS interrupt */
+    ENET_IOCTL_SET_NO_ARGS(&prms);
+    CPSW_CPTS_PRIV_IOCTL(hCpsw->hCpts, CPSW_CPTS_IOCTL_DISABLE_INTR, &prms, status);
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to disable CPTS Interrupt: %d\r\n", status);
+
+    /* Unregister interrupts */
+    if (status == ENET_SOK)
+    {
+        Cpsw_unregisterIntrs(hCpsw);
+        Cpsw_saveInternalCtxt(hCpsw);
+    }
+
+#if ENET_CFG_IS_ON(CPSW_EST)
+    /* Disable EST global control */
+    if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
+    {
+        Cpsw_disableEst(hPer);
+    }
+#endif
+
+   EnetOsal_restoreAllIntr(key);
+}
+
+int32_t Cpsw_restoreCtxt(EnetPer_Handle hPer,
+                         Enet_Type enetType,
+                         uint32_t instId)
+{
+    Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
+    Cpsw_Cfg *cpswCfg = &hCpsw->context;
+    Enet_IoctlPrms prms;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_CPSW_PTYPE pType;
+    uintptr_t key;
+    uint32_t i;
+    int32_t status = ENET_SOK;
+
+    Enet_devAssert(sizeof(hCpsw->context) == sizeof(Cpsw_Cfg),
+                   "Invalid CPSW peripheral config params size %u (expected %u)\r\n",
+                   hCpsw->context, sizeof(Cpsw_Cfg));
+
+    /* Save EnetMod handles for easy access */
+    for (i = 0U; i < hCpsw->macPortNum; i++)
+    {
+        hCpsw->hMacPort[i] = ENET_MOD(&hCpsw->macPortObj[i]);
+    }
+
+    hCpsw->hHostPort = ENET_MOD(&hCpsw->hostPortObj);
+    hCpsw->hStats    = ENET_MOD(&hCpsw->statsObj);
+    hCpsw->hAle      = ENET_MOD(&hCpsw->aleObj);
+    hCpsw->hCpts     = ENET_MOD(&hCpsw->cptsObj);
+    hCpsw->hMdio     = ENET_MOD(&hCpsw->mdioObj);
+    hCpsw->hRm       = ENET_MOD(&hCpsw->rmObj);
+
+    /* Open DMA */
+    hCpsw->hDma = EnetHostPortDma_restoreCtxt(hPer, &(cpswCfg->resCfg));
+    if (NULL == hCpsw->hDma)
+    {
+        ENETTRACE_ERR("Failed to open CPSW DMA\r\n");
+        status = ENET_EFAIL;
+    }
+
+    if (status == ENET_SOK)
+    {
+
+        /* Set escalate priority value (number of higher priority packets to be sent
+        * before next lower priority is allowed to send a packet */
+        CSL_CPSW_getPTypeReg(regs, &pType);
+        pType.escPriLoadVal = cpswCfg->escalatePriorityLoadVal;
+        CSL_CPSW_setPTypeReg(regs, &pType);
+
+        /* Set VLAN config: aware/non-aware, inner/outer tag */
+        if (cpswCfg->vlanCfg.vlanAware)
+        {
+            CSL_CPSW_enableVlanAware(regs);
+        }
+        else
+        {
+            CSL_CPSW_disableVlanAware(regs);
+        }
+
+        CSL_CPSW_setVlanType(regs, (uint32_t)cpswCfg->vlanCfg.vlanSwitch);
+        CSL_CPSW_setVlanLTypeReg(regs, cpswCfg->vlanCfg.innerVlan, cpswCfg->vlanCfg.outerVlan);
+
+#if ENET_CFG_IS_ON(CPSW_EST)
+        /* Enable EST global control */
+        if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
+        {
+            Cpsw_enableEst(hPer);
+        }
+#endif
+
+        /* Set port global config */
+        for (i = 0U; i < ENET_PRI_NUM; i++)
+        {
+            CSL_CPSW_setTxMaxLenPerPriority(regs, i, cpswCfg->txMtu[i]);
+
+            /* Save largest of per priority port egress MTUs to check against
+             * host port and MAC port RX MTUs */
+            if (cpswCfg->txMtu[i] > hCpsw->maxPerPrioMtu)
+            {
+                hCpsw->maxPerPrioMtu = cpswCfg->txMtu[i];
+            }
+        }
+
+        /* Initialize all CPSW modules */
+		status = Cpsw_restoreInternalCtxt(hCpsw, enetType, instId, cpswCfg);
+		ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open CPSW modules: %d\r\n", status);
+
+    }
+
+
+
+    key = EnetOsal_disableAllIntr();
+
+    /* Register interrupts */
+    if (status == ENET_SOK)
+    {
+        status = Cpsw_registerIntrs(hCpsw, cpswCfg);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to register interrupts: %d\r\n", status);
+    }
+
+    /* Enable CPTS interrupt */
+    if (status == ENET_SOK)
+    {
+        ENET_IOCTL_SET_NO_ARGS(&prms);
+        CPSW_CPTS_PRIV_IOCTL(hCpsw->hCpts, CPSW_CPTS_IOCTL_ENABLE_INTR, &prms, status);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to enable CPTS Interrupt: %d\r\n", status);
+    }
+
+    /* All initialization is complete */
+    if (status == ENET_SOK)
+    {
+        hCpsw->selfCoreId = cpswCfg->resCfg.selfCoreId;
+#if ENET_CFG_IS_ON(CPSW_EST)
+        hCpsw->cptsRftClkFreq = cpswCfg->cptsCfg.cptsRftClkFreq;
+#endif
+    }
+    else if (status != ENET_EALREADYOPEN)
+    {
+        /* Rollback if any error other than trying to open while already open */
+        Cpsw_unregisterIntrs(hCpsw);
+        Cpsw_closeInternal(hCpsw);
+    }
+    else
+    {
+        ENETTRACE_ERR("Unexpected status: %d\r\n", status);
+    }
+
+    /* Moving the PHY from Isolation state to deIsolation state */
+    for (i = 0U; i < hCpsw->macPortNum; i++)
+    {
+        if(hCpsw->hPhy[i] != NULL)
+        {
+            hCpsw->hPhy[i]->phyCfg.isIsolateStateReq = false;
+            hCpsw->portLinkState[i].isTickEnabled = true;
+            if (status == ENET_SOK)
+            {
+                /* Restoring Macport post Reset */
+                status = EnetMod_restoreCtxt(hCpsw->hMacPort[i], enetType, instId, NULL, 0U);
+                ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open Macport: %d\r\n", status);
+            }
+        }
+    }
+    EnetOsal_restoreAllIntr(key);
+
+
+    return status;
+}
+
+static void Cpsw_saveInternalCtxt(Cpsw_Handle hCpsw)
+{
+    uint32_t portNum;
+
+    /* Resetting DMA */
+    Enet_assert(hCpsw->hDma != NULL);
+    EnetHostPortDma_saveCtxt(hCpsw->hDma);
+    hCpsw->hDma = NULL;
+
+    /* Save Host Port Context */
+    EnetMod_saveCtxt(hCpsw->hHostPort);
+
+    /* Save Macport Context */
+
+    for(portNum = 0; portNum < hCpsw->macPortNum; portNum++)
+    {
+        EnetMod_saveCtxt(hCpsw->hMacPort[portNum]);
+    }
+
+    /* Save ALE Context */
+    EnetMod_saveCtxt(hCpsw->hAle);
+
+    /* Save CPTS Context */
+    EnetMod_saveCtxt(hCpsw->hCpts);
+
+    /* Save MDIO Context */
+    EnetMod_saveCtxt(hCpsw->hMdio);
+
+    /* Save Stats Context */
+    EnetMod_saveCtxt(hCpsw->hStats);
+}
+
+static int32_t Cpsw_restoreInternalCtxt(Cpsw_Handle hCpsw,
+                                        Enet_Type enetType,
+                                        uint32_t instId,
+                                        const Cpsw_Cfg *cfg)
+{
+    int32_t status = ENET_SOK;
+
+    /* Restore hostport DMA */
+	if (status == ENET_SOK)
+	{
+		status = EnetMod_restoreCtxt(hCpsw->hHostPort, enetType, instId, &cfg->hostPortCfg, sizeof(cfg->hostPortCfg));
+		ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open host port: %d\r\n", status);
+	}
+
+    /* Open ALE */
+    if (status == ENET_SOK)
+    {
+        status = EnetMod_restoreCtxt(hCpsw->hAle, enetType, instId, &cfg->aleCfg, sizeof(cfg->aleCfg));
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open ALE: %d\r\n", status);
+    }
+
+    /* Open CPTS */
+    if (status == ENET_SOK)
+    {
+        status = EnetMod_restoreCtxt(hCpsw->hCpts, enetType, instId, &cfg->cptsCfg, sizeof(cfg->cptsCfg));
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open CPTS: %d\r\n", status);
+    }
+
+    /* Open MDIO */
+    if (status == ENET_SOK)
+    {
+        status = EnetMod_restoreCtxt(hCpsw->hMdio, enetType, instId, &cfg->mdioCfg, sizeof(cfg->mdioCfg));
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open MDIO: %d\r\n", status);
+    }
+
+    /* Open statistics */
+    if (status == ENET_SOK)
+    {
+        status = EnetMod_restoreCtxt(hCpsw->hStats, enetType, instId, NULL, 0U);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to open stats: %d\r\n", status);
+    }
+
+    if (status != ENET_SOK)
+    {
+        Cpsw_closeInternal(hCpsw);
+    }
+
+    return status;
 }
 
 static int32_t Cpsw_ioctlInternal(EnetPer_Handle hPer,

@@ -131,6 +131,34 @@ typedef int32_t (* const EnetMod_Ioctl)(EnetMod_Handle hMod,
 typedef void (* const EnetMod_Close)(EnetMod_Handle hMod);
 
 /*!
+ * \brief Saves and closes the Enet Module context before resetting
+ *
+ * Saves the Enet Module.
+ *
+ * \param hMod        Enet Module opaque handle
+ */
+typedef void (* const EnetMod_SaveCtxt)(EnetMod_Handle hMod);
+
+/*!
+ * \brief Restores and opens the Enet Module after reset
+ *
+ * Restores and opens the Enet Module with the configuration parameters
+ * provided by the caller.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+typedef int32_t (* const EnetMod_RestoreCtxt)(EnetMod_Handle hMod,
+                                              Enet_Type enetType,
+                                              uint32_t instId,
+                                              const void *cfg,
+                                              uint32_t cfgSize);
+/*!
  * \brief Ethernet Module object.
  */
 typedef struct EnetMod_Obj_s
@@ -170,6 +198,12 @@ typedef struct EnetMod_Obj_s
 
     /*! Pointer to the EnetMod close function */
     EnetMod_Close close;
+
+    /*! Pointer to the EnetMod saveCtxt function */
+    EnetMod_SaveCtxt saveCtxt;
+
+    /*! Pointer to the EnetMod restoreCtxt function */
+    EnetMod_RestoreCtxt restoreCtxt;
 } EnetMod_Obj;
 
 /* ========================================================================== */
@@ -263,6 +297,29 @@ int32_t EnetMod_ioctlFromIsr(EnetMod_Handle hMod,
  */
 void EnetMod_close(EnetMod_Handle hMod);
 
+/*!
+ * \brief Wrapper function to save and close Enet Module.
+ *
+ * \param hMod         Enet Module handle
+ */
+void EnetMod_saveCtxt(EnetMod_Handle hMod);
+
+/*!
+ * \brief Wrapper to retore and open Enet Module.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetMod_restoreCtxt(EnetMod_Handle hMod,
+                            Enet_Type enetType,
+                            uint32_t instId,
+                            const void *cfg,
+                           uint32_t cfgSize);
 /*!
  * \brief Check if Enet Module is open or not.
  *

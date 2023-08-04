@@ -583,6 +583,7 @@ void Cpsw_close(EnetPer_Handle hPer)
    EnetOsal_restoreAllIntr(key);
 }
 
+
 int32_t Cpsw_ioctl(EnetPer_Handle hPer,
                    uint32_t cmd,
                    Enet_IoctlPrms *prms)

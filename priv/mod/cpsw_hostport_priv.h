@@ -94,7 +94,6 @@ typedef enum CpswHostPort_PrivIoctls_e
 
 } CpswHostPort_PrivIoctls;
 
-
 /*!
  * \brief CPSW host port object.
  */
@@ -174,6 +173,30 @@ int32_t CpswHostPort_ioctl(EnetMod_Handle hMod,
  * \param hMod         Enet Module handle
  */
 void CpswHostPort_close(EnetMod_Handle hMod);
+
+/*!
+ * \brief Saves and Close CPSW host port.
+ *
+ * \param hMod         Enet Module handle
+ */
+void CpswHostPort_saveCtxt(EnetMod_Handle hMod);
+
+/*!
+ * \brief Restores and Open CPSW host port.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t CpswHostPort_restoreCtxt(EnetMod_Handle hMod,
+                             Enet_Type enetType,
+                             uint32_t instId,
+                             const void *cfg,
+                             uint32_t cfgSize);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

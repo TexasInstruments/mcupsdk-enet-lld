@@ -473,6 +473,20 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
                               uint32_t appCoreId);
 
 /*!
+ * \brief Open DMA with default data path parameters.
+ *
+ * \param enetType    [IN] Enet Peripheral type
+ * \param instId      [IN] Enet Peripheral instance id
+ * \param appCoreId   [IN] Application core Id
+ *
+ * \retval Enet DMA handle if opened. Otherwise, NULL.
+ *
+ */
+EnetDma_Handle EnetCpdma_restoreCtxt(Enet_Type enetType,
+                            uint32_t instId,
+                            uint32_t appCoreId);
+
+/*!
  * \brief Close Enet DMA (data path).
  *
  * \param hEnetDma     [IN] DMA handle
@@ -480,6 +494,15 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
  * \return \ref Enet_ErrorCodes
  */
 int32_t EnetCpdma_close(EnetDma_Handle hEnetDma);
+
+/*!
+ * \brief Saves and closes Enet DMA (data path).
+ *
+ * \param hEnetDma     [IN] DMA handle
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetCpdma_saveCtxt(EnetDma_Handle hEnetDma);
 
 /*!
  * \brief ENET CPDMA Rx Threshold interrupt service routine

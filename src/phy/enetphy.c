@@ -181,6 +181,10 @@ static void EnetPhy_showLinkPartnerCompat(EnetPhy_Handle hPhy,
                                           EnetPhy_Speed speed,
                                           EnetPhy_Duplexity duplexity);
 
+static void EnetPhy_setIsolateState(EnetPhy_Handle hPhy);
+
+static void EnetPhy_isolateState (EnetPhy_Handle hPhy);
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -205,6 +209,7 @@ static const char *gEnetPhyStateNames[] =
     "LINK_WAIT",
     "LINKED",
     "LOOPBACK",
+    "ISOLATE"
 };
 #endif
 
@@ -230,6 +235,7 @@ void EnetPhy_initCfg(EnetPhy_Cfg *phyCfg)
     phyCfg->nwayCaps = ENETPHY_LINK_CAP_ALL;
     phyCfg->mdixEn = true;
     phyCfg->isStrapped = false;
+    phyCfg->isIsolateStateReq = false;
     phyCfg->loopbackEn = false;
     phyCfg->masterMode = false;
     phyCfg->extClkSource = false;
@@ -439,6 +445,10 @@ EnetPhy_LinkStatus EnetPhy_tick(EnetPhy_Handle hPhy)
             EnetPhy_loopbackState(hPhy);
             break;
 
+        case ENETPHY_FSM_STATE_ISOLATE:
+            ENETTRACE_VERBOSE("PHY %u: ISOLATE\r\n", hPhy->addr);
+            EnetPhy_isolateState(hPhy);
+
         default:
             ENETTRACE_VERBOSE("PHY %u: DEFAULT\r\n", hPhy->addr);
             EnetPhy_defaultState(hPhy);
@@ -466,6 +476,14 @@ EnetPhy_LinkStatus EnetPhy_tick(EnetPhy_Handle hPhy)
             else
             {
                 status = ENETPHY_LINK_UP;
+            }
+            break;
+
+        case ENETPHY_FSM_STATE_ISOLATE:
+            /*if ((prevFsmState == ENETPHY_FSM_STATE_LINKED) ||
+                (prevFsmState == ENETPHY_FSM_STATE_FOUND))*/
+            {
+                status =  ENETPHY_LINK_DOWN;
             }
             break;
 
@@ -830,7 +848,7 @@ static const char *EnetPhy_getModeString(EnetPhy_Speed speed,
 }
 #endif
 
-static EnetPhy_Handle EnetPhy_getHandle(void)
+EnetPhy_Handle EnetPhy_getHandle(void)
 {
     EnetPhy_Handle hPhy = NULL;
     uint32_t i;
@@ -1008,7 +1026,15 @@ static void EnetPhy_foundState(EnetPhy_Handle hPhy)
 
     EnetPhy_resetPhy(hPhy);
 
-    EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_RESET_WAIT);
+    if(hPhy->phyCfg.isIsolateStateReq)
+    {
+        EnetPhy_setIsolateState(hPhy);
+        EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_ISOLATE);
+    }
+    else
+    {
+        EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_RESET_WAIT);
+    }
 }
 
 static void EnetPhy_resetWaitState(EnetPhy_Handle hPhy)
@@ -1300,6 +1326,57 @@ static void EnetPhy_loopbackState(EnetPhy_Handle hPhy)
     }
 }
 
+static void EnetPhy_clearIsolateState(EnetPhy_Handle hPhy)
+{
+    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
+    uint32_t phyGroup = hPhy->group;
+    uint32_t phyAddr = hPhy->addr;
+    int32_t status;
+    uint32_t reg = PHY_BMCR;
+    uint16_t data = 0U;
+
+    status = hMdio->readC22(phyGroup, phyAddr, reg, &data, hPhy->mdioArgs);
+    ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                     "PHY %u: Failed to read reg %u: %d\r\n", phyAddr, reg, status);
+    ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
+                         "PHY %u: read reg %u val 0x%04x\r\n", phyAddr, reg, data);
+
+    if (status == ENETPHY_SOK)
+    {
+        data &= ~BMCR_ISOLATE;
+
+        status = hMdio->writeC22(phyGroup, phyAddr, reg, data, hPhy->mdioArgs);
+        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                         "PHY %u: Failed to write reg %u: %d\r\n", phyAddr, reg, status);
+        ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
+                             "PHY %u: write reg %u val 0x%04x\r\n", phyAddr, reg, data);
+    }
+}
+static void EnetPhy_isolateState (EnetPhy_Handle hPhy)
+{
+    bool linked;
+
+    if(!hPhy->phyCfg.isIsolateStateReq)
+    {
+        EnetPhy_clearIsolateState(hPhy);
+        linked = EnetPhy_isPhyLinked(hPhy);
+        if (!linked)
+        {
+            if (hPhy->phyCfg.isStrapped)
+            {
+                EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_LINK_WAIT);
+            }
+            else
+            {
+                EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_FOUND);
+            }
+        }
+        else
+        {
+            EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_LINKED);
+        }
+    }
+}
 static void EnetPhy_nwayStartState(EnetPhy_Handle hPhy)
 {
     EnetPhy_State *state = &hPhy->state;
@@ -1430,8 +1507,42 @@ static void EnetPhy_linkedState(EnetPhy_Handle hPhy)
             EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_FOUND);
         }
     }
+    else
+    {
+        if(hPhy->phyCfg.isIsolateStateReq)
+        {
+            EnetPhy_setIsolateState(hPhy);
+            EnetPhy_setNextState(hPhy, ENETPHY_FSM_STATE_ISOLATE);
+        }
+    }
 }
 
+static void EnetPhy_setIsolateState(EnetPhy_Handle hPhy)
+{
+    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
+    uint32_t phyGroup = hPhy->group;
+    uint32_t phyAddr = hPhy->addr;
+    int32_t status;
+    uint32_t reg  = PHY_BMCR;
+    uint16_t data = 0U;
+
+    status = hMdio->readC22(phyGroup, phyAddr, reg, &data, hPhy->mdioArgs);
+    ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                     "PHY %u: Failed to read reg %u: %d\r\n", phyAddr, reg, status);
+    ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
+                         "PHY %u: read reg %u val 0x%04x\r\n", phyAddr, reg, data);
+
+    if (status == ENETPHY_SOK)
+    {
+        data |= BMCR_ISOLATE;
+
+        status = hMdio->writeC22(phyGroup, phyAddr, reg, data, hPhy->mdioArgs);
+        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                         "PHY %u: Failed to write reg %u: %d\r\n", phyAddr, reg, status);
+        ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
+                             "PHY %u: write reg %u val 0x%04x\r\n", phyAddr, reg, data);
+    }
+}
 
 static bool EnetPhy_isNwayCapable(EnetPhy_Handle hPhy)
 {

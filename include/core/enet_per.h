@@ -251,6 +251,28 @@ enum EnetPer_Ioctl_e
      */
     ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER = ENET_PER_PUBLIC_IOCTL(16U),
 
+    /*!
+     * \brief Setting PHY ISOLATE mode
+     *
+     * Settting the PHY to ISOLATE mode
+     *
+     * IOCTL parameters:
+     * -  inArgs: None
+     * - outArgs: None
+     */
+    ENET_PER_IOCTL_SET_ISOLATE_STATE = ENET_PER_PUBLIC_IOCTL(17U),
+
+    /*!
+     * \brief Clear PHY ISOLATE mode
+     *
+     * Clear the PHY ISOLATE mode
+     *
+     * IOCTL parameters:
+     * -  inArgs: None
+     * - outArgs: None
+     */
+    ENET_PER_IOCTL_CLEAR_ISOLATE_STATE = ENET_PER_PUBLIC_IOCTL(17U),
+
 };
 
 /*!
@@ -515,6 +537,31 @@ typedef void (* const EnetPer_UnregisterEventCb)(EnetPer_Handle hPer,
 typedef void (* const EnetPer_Close)(EnetPer_Handle hPer);
 
 /*!
+ * \brief Save and close the Enet Peripheral.
+ *
+ * Saves and Closes the Enet Peripheral.
+ *
+ * \param hPer        Enet Peripheral handle
+ */
+typedef void (* const EnetPer_SaveCtxt)(EnetPer_Handle hPer);
+
+/*!
+ * \brief Restores and Opens the Enet Peripheral.
+ *
+ * Restores and opens the Enet Peripheral with the configuration parameters
+ * provided by the caller.
+ *
+ * \param hPer      Enet Peripheral handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+typedef int32_t (* const EnetPer_RestoreCtxt)(EnetPer_Handle hPer,
+                                              Enet_Type enetType,
+                                              uint32_t instId);
+
+/*!
  * \brief Ethernet Peripheral object.
  */
 typedef struct EnetPer_Obj_s
@@ -582,6 +629,12 @@ typedef struct EnetPer_Obj_s
 
     /*! Pointer to the EnetPer close function */
     EnetPer_Close close;
+
+    /*! Pointer to the EnetPer saveCtxt function */
+    EnetPer_SaveCtxt saveCtxt;
+
+    /*! Pointer to the EnetPer restoreCtxt function */
+    EnetPer_RestoreCtxt restoreCtxt;
 } EnetPer_Obj;
 
 /* ========================================================================== */

@@ -238,6 +238,8 @@ typedef struct Cpsw_Obj_s
      */
     bool disablePhyDriver;
 
+    /* Saving CpswCfg before resetting */
+    Cpsw_Cfg context;
 } Cpsw_Obj;
 
 /*!
@@ -362,6 +364,31 @@ void Cpsw_poll(EnetPer_Handle hPer,
  * \param hPer        Enet Peripheral handle
  */
 void Cpsw_periodicTick(EnetPer_Handle hPer);
+
+/*!
+ * \brief Saves and Close the CPSW peripheral.
+ *
+ * Closes the CPSW peripheral.
+ *
+ * \param hPer        Enet Peripheral handle
+ */
+void Cpsw_saveCtxt(EnetPer_Handle hPer);
+
+/*!
+ * \brief Restoes and Open the CPSW Peripheral.
+ *
+ * Opens and initializes the CPSW peripheral with the configuration parameters
+ * provided by the caller.
+ *
+ * \param hPer      Enet Peripheral handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t Cpsw_restoreCtxt(EnetPer_Handle hPer,
+                         Enet_Type enetType,
+                         uint32_t instId);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -103,6 +103,17 @@ EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
     return hDma;
 }
 
+EnetDma_Handle EnetHostPortDma_restoreCtxt(EnetPer_Handle hPer,
+                                    const EnetRm_ResCfg *resCfg)
+{
+    EnetDma_Handle hDma = NULL;
+
+    hDma = EnetCpdma_restoreCtxt(hPer->enetType, hPer->instId, resCfg->selfCoreId);
+    ENETTRACE_ERR_IF(NULL == hDma, "Failed to open Hostport DMA\n");
+
+    return hDma;
+}
+
 void EnetHostPortDma_close(EnetDma_Handle hDma)
 {
     int32_t status;
@@ -111,6 +122,18 @@ void EnetHostPortDma_close(EnetDma_Handle hDma)
     {
         /* Close dma module */
         status = EnetCpdma_close(hDma);
+        Enet_assert(status == ENET_SOK);
+    }
+}
+
+void EnetHostPortDma_saveCtxt(EnetDma_Handle hDma)
+{
+    int32_t status;
+
+    if (hDma->initFlag)
+    {
+        /* Close dma module */
+        status = EnetCpdma_saveCtxt(hDma);
         Enet_assert(status == ENET_SOK);
     }
 }

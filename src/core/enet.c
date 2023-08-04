@@ -60,6 +60,7 @@
 #include <priv/core/enet_trace_priv.h>
 #include <include/common/enet_osal_dflt.h>
 #include <include/common/enet_utils_dflt.h>
+#include <drivers/soc.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -96,6 +97,12 @@ static int32_t EnetPer_open(EnetPer_Handle hPer,
 static int32_t EnetPer_rejoin(EnetPer_Handle hPer,
                               Enet_Type enetType,
                               uint32_t instId);
+
+static void  EnetPer_saveCtxt(EnetPer_Handle hPer);
+
+static int32_t  EnetPer_restoreCtxt(EnetPer_Handle hPer,
+                                    Enet_Type enetType,
+                                    uint32_t instId);
 
 static int32_t EnetPer_ioctl(EnetPer_Handle hPer,
                              uint32_t cmd,
@@ -152,6 +159,14 @@ static Enet_IoctlValidate gEnetPer_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_PER_IOCTL_IS_PORT_LINK_UP,
                           sizeof(Enet_MacPort),
                           sizeof(bool)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_PER_IOCTL_SET_ISOLATE_STATE,
+                          sizeof(Enet_MacPort),
+                          0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_PER_IOCTL_CLEAR_ISOLATE_STATE,
+                          sizeof(Enet_MacPort),
+                          0U),
 
     ENET_IOCTL_VALID_PRMS(ENET_PER_IOCTL_GET_PORT_LINK_CFG,
                           sizeof(Enet_MacPort),
@@ -671,6 +686,56 @@ void Enet_initUtilsCfg(EnetUtils_Cfg *cfg)
 #endif
 }
 
+static void  EnetPer_saveCtxt(EnetPer_Handle hPer)
+{
+    Enet_devAssert(hPer->saveCtxt != NULL, "%s: Invalid saveCtxt function\n", hPer->name);
+
+    ENETTRACE_VERBOSE("%s: Save and close peripheral\n", hPer->name);
+
+    if (hPer->magic == ENET_MAGIC)
+    {
+        hPer->saveCtxt(hPer);
+        hPer->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Peripheral is now closed\n", hPer->name);
+    }
+}
+
+static int32_t  EnetPer_restoreCtxt(EnetPer_Handle hPer,
+                                    Enet_Type enetType,
+                                    uint32_t instId)
+{
+    int32_t status;
+
+    Enet_devAssert(hPer->open != NULL, "%s: Invalid restoreCtxt function\n", hPer->name);
+
+    ENETTRACE_VERBOSE("%s: Restore and Open peripheral\n", hPer->name);
+
+    if (hPer->magic == ENET_NO_MAGIC)
+    {
+        hPer->virtAddr  = (void *)EnetUtils_physToVirt(hPer->physAddr, NULL);
+        hPer->virtAddr2 = (void *)EnetUtils_physToVirt(hPer->physAddr2, NULL);
+
+        status = hPer->restoreCtxt(hPer, enetType, instId);
+        if (status == ENET_SOK)
+        {
+            hPer->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Peripheral is now open\n", hPer->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hPer->name, status);
+            hPer->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Peripheral is already open\n", hPer->name);
+        status = ENET_EALREADYOPEN;
+    }
+
+    return status;
+}
+
 void Enet_initCfg(Enet_Type enetType,
                   uint32_t instId,
                   void *cfg,
@@ -1162,6 +1227,102 @@ static int32_t EnetPer_rejoin(EnetPer_Handle hPer,
     return status;
 }
 
+int32_t Enet_saveCtxt(Enet_Handle hEnet)
+{
+    EnetPer_Handle hPer = NULL;
+    int32_t status = ENET_SOK;
+
+    /* Close the Enet peripheral */
+    if (hEnet != NULL)
+    {
+        EnetOsal_lockMutex(hEnet->lock);
+
+        hPer = Enet_getPerHandle(hEnet);
+        Enet_devAssert(hPer != NULL, "Invalid EnetPer handle\n");
+
+        EnetPer_saveCtxt(hPer);
+
+        /* Set driver open state */
+        hEnet->magic = ENET_NO_MAGIC;
+
+        EnetOsal_unlockMutex(hEnet->lock);
+    }
+    else
+    {
+        status = ENET_EFAIL;
+        ENETTRACE_ERR("Trying to close an invalid Enet handle, ignoring...\n");
+    }
+
+    return status;
+}
+
+int32_t Enet_restoreCtxt(Enet_Type enetType,
+                             uint32_t instId)
+{
+    Enet_Handle hEnet = NULL;
+    EnetPer_Handle hPer = NULL;
+    int32_t status = ENET_SOK;
+
+    /* Get Enet and EnetPer handles */
+    status = Enet_getHandles(enetType, instId, &hEnet, &hPer);
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+                     "Failed get handles for %u.%u: %d\n", enetType, instId, status);
+
+    if (status == ENET_SOK)
+    {
+        EnetOsal_lockMutex(hEnet->lock);
+
+#if ENET_CFG_IS_ON(SANITY_CHECKS)
+        /* Print enabled configurable features and applicable erratas */
+        ENETTRACE_DBG("%s: features: 0x%08x\n", hPer->name, hPer->features);
+        ENETTRACE_DBG("%s: errata  : 0x%08x\n", hPer->name, hPer->errata);
+#endif
+
+        /* Open the Enet peripheral */
+        status = EnetPer_restoreCtxt(hPer, enetType, instId);
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                         "%s: Failed to open: %d\n", hPer->name, status);
+
+        /* Set driver open state */
+        hEnet->magic = (status == ENET_SOK) ? ENET_MAGIC : ENET_NO_MAGIC;
+
+        EnetOsal_unlockMutex(hEnet->lock);
+    }
+
+    if(hEnet == NULL)
+    {
+        status = ENET_EFAIL;
+    }
+
+    return status;
+}
+
+int32_t Enet_hardResetCpsw(Enet_Handle hEnet, Enet_Type enetType, uint32_t instId, Enet_notify_t *pCpswTriggerResetCb)
+{
+    int32_t status = ENET_SOK;
+
+    /* Close the Enet peripheral */
+    if (hEnet != NULL)
+    {
+        status = Enet_saveCtxt(hEnet);
+
+        if(status == ENET_SOK)
+        {
+            if(pCpswTriggerResetCb->cbFxn != NULL)
+            {
+                /* CPSW hard reset*/
+                pCpswTriggerResetCb->cbFxn(pCpswTriggerResetCb->cbArg);
+            }
+        }
+
+        /* Restoring Enet handle and opening it*/
+        status = Enet_restoreCtxt(enetType, instId);
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                         "Failed to Reset CPSW peripheral:%d\r\n", status);
+    }
+
+    return status;
+}
 static int32_t EnetPer_ioctl(EnetPer_Handle hPer,
                              uint32_t cmd,
                              Enet_IoctlPrms *prms)
@@ -1453,6 +1614,64 @@ void EnetMod_close(EnetMod_Handle hMod)
     {
         ENETTRACE_ERR("%s: Module is not open\n", hMod->name);
     }
+}
+
+void EnetMod_saveCtxt(EnetMod_Handle hMod)
+{
+    /* close() function is mandatory */
+    Enet_devAssert(hMod->close != NULL, "%s: Invalid close function\n", hMod->name);
+
+    ENETTRACE_VERBOSE("%s: Close module\n", hMod->name);
+
+    if (hMod->magic == ENET_MAGIC)
+    {
+        hMod->close(hMod);
+        hMod->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hMod->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hMod->name);
+    }
+}
+
+int32_t EnetMod_restoreCtxt(EnetMod_Handle hMod,
+                            Enet_Type enetType,
+                            uint32_t instId,
+                            const void *cfg,
+                           uint32_t cfgSize)
+{
+    int32_t status;
+
+    /* open() function is mandatory */
+    Enet_devAssert(hMod->open != NULL, "%s: Invalid open function\n", hMod->name);
+
+    ENETTRACE_VERBOSE("%s: Open module\n", hMod->name);
+
+    if (hMod->magic == ENET_NO_MAGIC)
+    {
+        hMod->virtAddr  = (void *)EnetUtils_physToVirt(hMod->physAddr, NULL);
+        hMod->virtAddr2 = (void *)EnetUtils_physToVirt(hMod->physAddr2, NULL);
+
+        status = hMod->restoreCtxt(hMod, enetType, instId, cfg, cfgSize);
+        if (status == ENET_SOK)
+        {
+            hMod->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hMod->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hMod->name, status);
+            hMod->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hMod->name);
+        status = ENET_EALREADYOPEN;
+    }
+
+    return status;
 }
 
 #if ENET_CFG_IS_ON(DEV_ERROR)

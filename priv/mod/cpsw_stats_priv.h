@@ -189,6 +189,30 @@ int32_t CpswStats_ioctl(EnetMod_Handle hMod,
  */
 void CpswStats_close(EnetMod_Handle hMod);
 
+/*!
+ * \brief Saves and Close CPSW stats.
+ *
+ * \param hMod         Enet Module handle
+ */
+void CpswStats_saveCtxt(EnetMod_Handle hMod);
+
+/*!
+ * \brief Restores and Open CPSW stats.
+ *
+ * \param hMod      Enet Module handle
+ * \param enetType  Enet Peripheral type
+ * \param instId    Enet Peripheral instance id
+ * \param cfg       Configuration parameters
+ * \param cfgSize   Size of the configuration parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t CpswStats_restoreCtxt(EnetMod_Handle hMod,
+                              Enet_Type enetType,
+                              uint32_t instId,
+                              const void *cfg,
+                              uint32_t cfgSize);
+
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

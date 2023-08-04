@@ -752,6 +752,31 @@ void CpswAle_close(EnetMod_Handle hMod)
 
 }
 
+void CpswAle_saveCtxt(EnetMod_Handle hMod)
+{
+    CpswAle_close(hMod);
+}
+
+int32_t CpswAle_restoreCtxt(EnetMod_Handle hMod,
+                            Enet_Type enetType,
+                            uint32_t instId,
+                            const void *cfg,
+                            uint32_t cfgSize)
+{
+    int32_t status = ENET_SOK;
+
+    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+
+    status = CpswAle_open(hMod, enetType, instId, cfg, cfgSize);
+    if(status == ENET_SOK)
+    {
+        /* Setting ALE host port to Forward state */
+        status = CpswAle_setAlePortState(regs, CPSW_ALE_HOST_PORT_NUM, CSL_ALE_PORTSTATE_FORWARD);
+    }
+
+    return status;
+}
+
 int32_t CpswAle_ioctl(EnetMod_Handle hMod,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms)

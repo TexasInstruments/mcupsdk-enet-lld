@@ -371,6 +371,9 @@ typedef struct EnetPhy_Cfg_s
      *  link to be established */
     bool isStrapped;
 
+    /*! Whether Isolate state is requested from the application */
+    bool isIsolateStateReq;
+
     /*! Enable loopback once PHY is found */
     bool loopbackEn;
 
@@ -556,6 +559,9 @@ typedef enum EnetPhy_FsmState_e
 
     /*! \brief LOOPBACK state */
     ENETPHY_FSM_STATE_LOOPBACK,
+
+    /*! \brief ISOLATE state*/
+    ENETPHY_FSM_STATE_ISOLATE
 } EnetPhy_FsmState;
 
 /*!

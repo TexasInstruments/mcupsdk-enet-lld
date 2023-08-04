@@ -333,6 +333,55 @@ static int32_t EnetCpdma_initTxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo
     return (retVal);
 }
 
+static int32_t EnetCpdma_restoreTxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo *chInfo);
+static int32_t EnetCpdma_restoreTxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo *chInfo)
+{
+    int32_t retVal = ENET_SOK ;
+    EnetCpdma_cppiDesc    *pDesc;
+
+    Enet_assert(hEnetDma != NULL);
+    EnetCpdma_DescCh* txChan = &hEnetDma->txCppi[chInfo->chNum];
+
+    /* store pointer to channel info structure */
+    txChan->chInfo = chInfo;
+
+    /*
+     * Setup Transmit Buffer Descriptors
+     */
+    /* Pointer to first descriptor to use on this channl */
+    pDesc = (EnetCpdma_cppiDesc *)hEnetDma->cppiRamBase;
+    pDesc += hEnetDma->numBdsAllocated; /* advance to next free BD */
+
+    if ((hEnetDma->numBdsAllocated + chInfo->numBD) > hEnetDma->maxBds)
+    {
+        /* not enough room for the requested number of BDs, fail request */
+        ENETTRACE_ERR("InitTx Channel : Unable to allocate %d BDs for channel %d. %d BDs already in use\n",
+                      chInfo->numBD,chInfo->chNum,hEnetDma->numBdsAllocated);
+        retVal = ENET_EBADARGS;
+    }
+    else
+    {
+        /* Setup Transmit Buffers */
+        txChan->hEnetDma   = hEnetDma;
+        txChan->descMax    = chInfo->numBD;
+        /*Pointer for first TX desc = pointer to RX + num of RX desc.*/
+        txChan->pDescFirst = pDesc;
+        txChan->pDescLast  = pDesc + (chInfo->numBD - 1);
+        txChan->pDescRead  = pDesc;
+        txChan->pDescWrite = pDesc;
+        txChan->descFreeCount = chInfo->numBD;
+        txChan->pDescTail     = NULL;
+        txChan->descHistory.descHistoryCount = 0U;
+        txChan->unackedCpDescCount = 0U;
+        /* clear the teardown pending flag */
+        hEnetDma->tdPending[ENET_CPDMA_DIR_TX][chInfo->chNum] = false;
+        /* update the Bd allocation count */
+        hEnetDma->numBdsAllocated += chInfo->numBD;
+        hEnetDma->chIsInit[ENET_CPDMA_DIR_TX][chInfo->chNum] = true;
+    }
+    return (retVal);
+}
+
 /** ============================================================================
  *  @n@b EnetCpdma_initRxChannel()
  *
@@ -411,6 +460,56 @@ static int32_t EnetCpdma_initRxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo
     return (retVal);
 }
 
+static int32_t EnetCpdma_restoreRxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo *chInfo);
+static int32_t EnetCpdma_restoreRxChannel(EnetDma_Handle hEnetDma, EnetCpdma_ChInfo *chInfo)
+{
+    int32_t retVal = ENET_SOK;
+    EnetCpdma_cppiDesc *pDesc;
+
+    Enet_assert(hEnetDma != NULL);
+    EnetCpdma_DescCh* rxChan = &hEnetDma->rxCppi[chInfo->chNum];
+
+    /* store pointer to channel info structure */
+    rxChan->chInfo = chInfo;
+
+    /*
+     * Setup Receive Buffers
+     */
+    /* Pointer to first descriptor to use on RX */
+    pDesc = (EnetCpdma_cppiDesc *)hEnetDma->cppiRamBase;
+    if (retVal == ENET_SOK)
+    {
+        //pDesc += hEnetDma->numBdsAllocated; /* advance to next free BD */
+
+        if ((hEnetDma->numBdsAllocated + chInfo->numBD) >  hEnetDma->maxBds)
+        {
+            /* not enough room for the requested number of BDs, fail request */
+            ENETTRACE_ERR("InitRx Channel : Unable to allocate %d BDs for channel %d.%d BDs already in use\n",
+                          chInfo->numBD,chInfo->chNum,hEnetDma->numBdsAllocated);
+            retVal =  ENET_EBADARGS;
+        }
+        else
+        {
+            /* Init the Rx channel */
+            rxChan->hEnetDma   = hEnetDma;
+            rxChan->descMax    = chInfo->numBD;
+            rxChan->pDescFirst = pDesc;
+            rxChan->pDescLast  = pDesc + (chInfo->numBD - 1);
+            rxChan->pDescRead  = pDesc;
+            rxChan->pDescWrite = pDesc;
+            rxChan->pDescTail     = NULL;
+            rxChan->descHistory.descHistoryCount = 0U;
+            rxChan->unackedCpDescCount = 0U;
+            rxChan->descFreeCount = chInfo->numBD;
+
+            /* clear the teardown pending flag */
+            hEnetDma->tdPending[ENET_CPDMA_DIR_RX][chInfo->chNum] = false;
+            hEnetDma->numBdsAllocated += chInfo->numBD;
+            hEnetDma->chIsInit[ENET_CPDMA_DIR_RX][chInfo->chNum] = true;
+        }
+    }
+    return (retVal);
+}
 
 /** ============================================================================
  *  @n@b EnetCpdma_unInitTxChannel()
@@ -602,6 +701,19 @@ static int32_t EnetCpdma_netChClose(EnetDma_Handle hEnetDma, const EnetCpdma_ChI
             EnetCpdma_unInitRxChannel(hEnetDma, chInfo);
         }
     }
+    return (retVal);
+}
+
+static int32_t EnetCpdma_netChReset(EnetDma_Handle hEnetDma, const EnetCpdma_ChInfo *chInfo, uint32_t cpdmaCoreId)
+{
+
+    int32_t retVal = ENET_SOK;
+
+    if(hEnetDma->chIsOpen[chInfo->chDir][chInfo->chNum]  == true)
+    {
+        EnetCpdma_disableChannel(hEnetDma, chInfo->chNum, chInfo->chDir, cpdmaCoreId);
+    }
+
     return (retVal);
 }
 
@@ -1198,7 +1310,7 @@ void EnetCpdma_enqueueRx(EnetCpdma_DescCh *pDescCh)
 
             scatterSegmentIndex++;
         }
-        EnetDma_initPktInfo(pPkt);
+
         EnetQueue_enq(&pDescCh->descQueue, &pPkt->node);
         if (exit)
         {
@@ -1300,6 +1412,7 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
         {
             pPkt = (EnetCpdma_PktInfo*) EnetQueue_deq(&pDescCh->descQueue);
             Enet_assert(pPkt != NULL);
+            EnetDma_initPktInfo(pPkt);
             numScatterSegments = 0;
             totalLenReceived = 0;
             totalPktLen = (sopPktFlgLen & ENET_CPDMA_DESC_PSINFO_RX_PACKET_LEN_MASK);
@@ -1537,11 +1650,20 @@ int32_t EnetCpdma_rxIsrProc(EnetDma_Handle hEnetDma, uint32_t cpdmaCoreId)
                     EnetCpdma_cppiDesc * cpDesc;
                     bool descMatch;
 
-                    cpDesc = ENET_CPDMA_SOC2VIRTADDR((EnetCpdma_cppiDesc *)desc);
-                    descMatch = EnetCpdma_dequeueRx(rxChan, cpDesc);
-                    Enet_assert(descMatch == true);
-					EnetCpdma_enqueueRx(rxChan);
-                    CSL_CPSW_setCpdmaRxCp(hEnetDma->cpdmaRegs, chNum, desc);
+                    if(hEnetDma->isResetOngoing == false)
+                    {
+                        cpDesc = ENET_CPDMA_SOC2VIRTADDR((EnetCpdma_cppiDesc *)desc);
+                        descMatch = EnetCpdma_dequeueRx(rxChan, cpDesc);
+                        if(descMatch == false)
+                        {
+                            EnetCpdma_enqueueRx(rxChan);
+                            CSL_CPSW_setCpdmaRxCp(hEnetDma->cpdmaRegs, chNum, desc);
+                        }
+                        else
+                        {
+                            Enet_assert(descMatch == true);
+                        }
+                    }
                 }
 
                 /* Invoke callback function */
@@ -1664,12 +1786,15 @@ int32_t EnetCpdma_txIsr(EnetDma_Handle hEnetDma)
                     EnetCpdma_cppiDesc * cpDesc;
                     bool descMatch;
 
-                    cpDesc = ENET_CPDMA_SOC2VIRTADDR(((EnetCpdma_cppiDesc *)desc));
-                    descMatch = EnetCpdma_dequeueTx(txChan, cpDesc);
-                    Enet_assert(descMatch == true);
-                    EnetCpdma_enqueueTx(txChan);
-                    /* Ack Tx completion interrupt */
-                    CSL_CPSW_setCpdmaTxCp(hEnetDma->cpdmaRegs, chNum, desc);
+                    if(hEnetDma->isResetOngoing == false)
+                    {
+                        cpDesc = ENET_CPDMA_SOC2VIRTADDR(((EnetCpdma_cppiDesc *)desc));
+                        descMatch = EnetCpdma_dequeueTx(txChan, cpDesc);
+                        Enet_assert(descMatch == true);
+                        EnetCpdma_enqueueTx(txChan);
+                        /* Ack Tx completion interrupt */
+                        CSL_CPSW_setCpdmaTxCp(hEnetDma->cpdmaRegs, chNum, desc);
+                    }
                 }
 
                 /* Invoke callback function */
@@ -1872,6 +1997,13 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
         ENETTRACE_ERR_IF(retVal, "[ENET DMA Error] pDmaCfg Invalid params !!\n");
     }
 
+    /* Saving the Context for DMA cfg */
+    pEnetDmaObj->rxBufOffset = pDmaCfg->rxChInitPrms.rxBufferOffset;
+    pEnetDmaObj->rxInterruptPerMSec = pDmaCfg->rxInterruptPerMSec;
+    pEnetDmaObj->txInterruptPerMSec = pDmaCfg->txInterruptPerMSec;
+    pEnetDmaObj->enChOverrideFlag = pDmaCfg->enChOverrideFlag;
+    pEnetDmaObj->isResetOngoing = false;
+
     if (ENET_SOK == retVal)
     {
         if (EnetAppUtils_isDescCached() == true)
@@ -1961,6 +2093,96 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
     return pEnetDmaObj;
 }
 
+EnetDma_Handle EnetCpdma_restoreCtxt(Enet_Type enetType,
+                            uint32_t instId,
+                            uint32_t appCoreId)
+{
+    EnetCpdma_DrvObj *pEnetDmaObj = NULL;
+    uint32_t status;
+    int32_t retVal = ENET_SOK;
+    uint32_t pacingBitMask = 0;
+
+    if (ENET_SOK == retVal)
+    {
+        /* TODO: error check */
+        pEnetDmaObj = EnetSoc_getDmaHandle(enetType, instId);
+
+        Enet_assert(pEnetDmaObj != NULL);
+
+        CSL_CPSW_resetCpdma(pEnetDmaObj->cpdmaRegs);
+        status = CSL_CPSW_isCpdmaResetDone(pEnetDmaObj->cpdmaRegs);
+        while (status == ((uint32_t)false))
+        {
+            status = CSL_CPSW_isCpdmaResetDone(pEnetDmaObj->cpdmaRegs);
+        }
+
+        CSL_CPSW_setCpdmaRxBufOffset(pEnetDmaObj->cpdmaRegs,
+                pEnetDmaObj->rxBufOffset);
+
+        /* TODO: why channel 0 only? Assume one channel for now */
+        CSL_CPSW_disableCpdmaTxInt(pEnetDmaObj->cpdmaRegs, 0);
+        CSL_CPSW_disableCpdmaRxInt(pEnetDmaObj->cpdmaRegs, 0);
+
+        /* Acknowledge receive and transmit interrupts for proper interrupt pulsing */
+        CSL_CPSW_setCpdmaTxEndOfIntVector(pEnetDmaObj->cpdmaRegs, pEnetDmaObj->cpdmaCoreId);
+        CSL_CPSW_setCpdmaRxEndOfIntVector(pEnetDmaObj->cpdmaRegs, pEnetDmaObj->cpdmaCoreId);
+
+        CSL_CPSW_enableCpdmaTx(pEnetDmaObj->cpdmaRegs);
+        CSL_CPSW_enableCpdmaRx(pEnetDmaObj->cpdmaRegs);
+
+        /* Enable Miscellaneous interrupts - stats and host error interupt */
+        CSL_CPSW_enableCpdmaDmaInt(pEnetDmaObj->cpdmaRegs, CSL_CPDMA_DMA_INTMASK_SET_STAT_INT_MASK_MASK |
+                                                           CSL_CPDMA_DMA_INTMASK_SET_HOST_ERR_INT_MASK_MASK);
+        /* enable host,stats interrupt in cpsw_ss_s wrapper */
+        /* TODO: should we enable CPTS/MDIO interrupt here */
+        CSL_CPSW_enableWrMiscInt(pEnetDmaObj->cpswSsRegs, pEnetDmaObj->cpdmaCoreId,
+                                 CPSW_MISC_INT_MDIO_USERINT_MASK |
+                                 CPSW_MISC_INT_MDIO_LINKINT_MASK |
+                                 CPSW_MISC_INT_HOSTERR_MASK |
+                                 CPSW_MISC_INT_STAT_OVERFLOW_MASK |
+                                 CPSW_MISC_INT_CPTS_EVENT_MASK);
+
+        if (pEnetDmaObj->rxInterruptPerMSec != 0U)
+        {
+            /* enable Interrupt Pacing Logic in the Wrapper */
+            CSL_CPSW_setWrRxIntPerMSec(pEnetDmaObj->cpswSsRegs, pEnetDmaObj->cpdmaCoreId, pEnetDmaObj->rxInterruptPerMSec);
+            pacingBitMask |= CPSW_INT_CONTROL_INT_PACE_EN_C0_RX;
+        }
+        if (pEnetDmaObj->txInterruptPerMSec != 0U)
+        {
+            /* enable Interrupt Pacing Logic in the Wrapper */
+            CSL_CPSW_setWrTxIntPerMSec(pEnetDmaObj->cpswSsRegs, pEnetDmaObj->cpdmaCoreId, pEnetDmaObj->txInterruptPerMSec);
+            pacingBitMask |= CPSW_INT_CONTROL_INT_PACE_EN_C0_TX;
+        }
+        if ((pEnetDmaObj->rxInterruptPerMSec != 0U) || (pEnetDmaObj->txInterruptPerMSec != 0U))
+        {
+            CSL_CPSW_setWrIntPacingControl(pEnetDmaObj->cpswSsRegs,  pacingBitMask);
+            /* int_prescale Interrupt Counter Prescaler –  The number of  VBUSP_CLK periods in 4us. */
+            CSL_CPSW_setWrIntPrescaler(pEnetDmaObj->cpswSsRegs, ENET_CPDMA_CONV_SEC2PRESCALER(EnetSoc_getClkFreq(enetType,0U /* instId */,CPSW_CPPI_CLK)));
+        }
+
+#if ENET_CFG_IS_ON(CPDMA_CH_OVERRIDE)
+        /* Set the thost_ch_override bit if set by application and if soc supports override feature */
+        if((pEnetDmaObj->enChOverrideFlag == true) && (ENET_FEAT_IS_EN(pEnetDmaObj->features, ENET_CPDMA_CHANNEL_OVERRIDE)))
+        {
+            CSL_CPSW_enableCpdmaChOverride(pEnetDmaObj->cpdmaRegs);
+        }
+#endif
+
+        EnetCpdma_restoreRxChannel(pEnetDmaObj, pEnetDmaObj->rxCppi[0].chInfo);
+        EnetCpdma_enableChannel(pEnetDmaObj, pEnetDmaObj->rxCppi[0].chInfo->chNum, pEnetDmaObj->rxCppi[0].chInfo->chDir, pEnetDmaObj->cpdmaCoreId);
+        EnetCpdma_enqueueRx(&pEnetDmaObj->rxCppi[0]);
+
+        EnetCpdma_restoreTxChannel(pEnetDmaObj, pEnetDmaObj->txCppi[0].chInfo);
+        EnetCpdma_enableChannel(pEnetDmaObj, pEnetDmaObj->txCppi[0].chInfo->chNum, pEnetDmaObj->txCppi[0].chInfo->chDir, pEnetDmaObj->cpdmaCoreId);
+        EnetCpdma_enqueueTx(&pEnetDmaObj->txCppi[0]);
+
+        pEnetDmaObj->initFlag = true;
+        pEnetDmaObj->isResetOngoing = false;
+    }
+    return pEnetDmaObj;
+}
+
 int32_t EnetCpdma_close(EnetDma_Handle hEnetDma)
 {
     int32_t retVal = ENET_SOK;
@@ -2009,7 +2231,7 @@ int32_t EnetCpdma_close(EnetDma_Handle hEnetDma)
         /* Disable host,stats interrupt in cpsw_3gss_s wrapper */
         CSL_CPSW_disableWrMiscInt(hEnetDma->cpswSsRegs, hEnetDma->cpdmaCoreId,
                                   CPSW_MISC_INT_MDIO_USERINT_MASK |
-                                  CPSW_MISC_INT_MDIO_LINKINT_MASK |
+                                   CPSW_MISC_INT_MDIO_LINKINT_MASK |
                                   CPSW_MISC_INT_HOSTERR_MASK |
                                   CPSW_MISC_INT_STAT_OVERFLOW_MASK |
                                   CPSW_MISC_INT_CPTS_EVENT_MASK);
@@ -2029,6 +2251,72 @@ int32_t EnetCpdma_close(EnetDma_Handle hEnetDma)
     return retVal;
 }
 
+int32_t EnetCpdma_saveCtxt(EnetDma_Handle hEnetDma)
+{
+    int32_t retVal = ENET_SOK;
+
+    // TODO check whether all Rx & Tx channels are closed
+    /* Error check */
+    if (hEnetDma == NULL)
+    {
+        ENETTRACE_ERR("[Enet CPDMA] Enet CPDMA handle is NULL!! \n");
+        retVal = ENET_EBADARGS;
+    }
+
+    if (ENET_SOK == retVal)
+    {
+        if (hEnetDma->initFlag == false)
+        {
+            ENETTRACE_ERR("[Enet CPDMA] DMA is not initialized before save !! \n");
+            retVal = ENET_EFAIL;
+        }
+    }
+
+    if (ENET_SOK == retVal)
+    {
+        hEnetDma->isResetOngoing = true;
+        uint32_t channel;
+        uint32_t status;
+
+        /* TODO: uninit/disable active channel */
+        /* Error condition, the application needs to close both rx/tx channel prior to close */
+        /* Close TX Channels */
+        for (channel = 0; channel < hEnetDma->numTxChans; channel++)
+        {
+            EnetCpdma_netChClose(hEnetDma, hEnetDma->txCppi[channel].chInfo, hEnetDma->cpdmaCoreId);
+        }
+
+        /* Close RX Channels */
+        for (channel = 0; channel < hEnetDma->numRxChans; channel++)
+        {
+            EnetCpdma_netChClose(hEnetDma, hEnetDma->rxCppi[channel].chInfo, hEnetDma->cpdmaCoreId);
+        }
+
+        /* Disable Adapter check interrupts - Disable stats interupt */
+        CSL_CPSW_disableCpdmaDmaInt(hEnetDma->cpdmaRegs, CSL_CPDMA_DMA_INTMASK_CLEAR_STAT_INT_MASK_MASK |
+                                                         CSL_CPDMA_DMA_INTMASK_CLEAR_HOST_ERR_INT_MASK_MASK);
+
+        /* Disable host,stats interrupt in cpsw_3gss_s wrapper */
+        CSL_CPSW_disableWrMiscInt(hEnetDma->cpswSsRegs, hEnetDma->cpdmaCoreId,
+                                  CPSW_MISC_INT_MDIO_USERINT_MASK |
+                                  CPSW_MISC_INT_MDIO_LINKINT_MASK |
+                                  CPSW_MISC_INT_HOSTERR_MASK |
+                                  CPSW_MISC_INT_STAT_OVERFLOW_MASK |
+                                  CPSW_MISC_INT_CPTS_EVENT_MASK);
+
+        /* soft reset */
+        CSL_CPSW_resetCpdma(hEnetDma->cpdmaRegs);
+        status = CSL_CPSW_isCpdmaResetDone(hEnetDma->cpdmaRegs);
+        while (status == ((uint32_t)false))
+        {
+            status = CSL_CPSW_isCpdmaResetDone(hEnetDma->cpdmaRegs);
+        }
+
+        hEnetDma->initFlag = false;
+    }
+
+    return retVal;
+}
 
 void EnetDma_initRxChParams(void *pRxChCfg)
 {
@@ -2174,7 +2462,7 @@ int32_t EnetDma_closeRxCh(EnetDma_RxChHandle hRxCh,
                 hRxCh->initFlag = false;
                 EnetQueue_append(fq, &pRxDescCh->freeQueue);
                 EnetQueue_append(cq, &pRxDescCh->waitQueue);
-                /* Free Tx channel driver object memory */
+                /* Free Rx channel driver object memory */
                 EnetCpdma_memMgrFreeRxChObj(hRxCh);
             }
         }
@@ -2376,9 +2664,12 @@ int32_t EnetDma_retrieveRxPktQ(EnetDma_RxChHandle hRxCh,
         if (ENET_SOK == retVal)
         {
             key = EnetOsal_disableAllIntr();
-            EnetCpdma_dequeueRx(pDescCh, NULL);
-            EnetQueue_append(pRetrieveQ, &pDescCh->waitQueue);
-            EnetQueue_initQ(&pDescCh->waitQueue);
+            if(hRxCh->hEnetDma->isResetOngoing == false)
+            {
+                EnetCpdma_dequeueRx(pDescCh, NULL);
+                EnetQueue_append(pRetrieveQ, &pDescCh->waitQueue);
+                EnetQueue_initQ(&pDescCh->waitQueue);
+            }
             EnetOsal_restoreAllIntr(key);
         }
 
@@ -2472,7 +2763,10 @@ int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxCh,
         {
             EnetQueue_append(&pDescCh->freeQueue, pSubmitQ);
             EnetQueue_initQ(pSubmitQ);
-            EnetCpdma_enqueueRx(pDescCh);
+            if(hRxCh->hEnetDma->isResetOngoing == false)
+            {
+                EnetCpdma_enqueueRx(pDescCh);
+            }
         }
 
 #if defined(ENETDMA_INSTRUMENTATION_ENABLED)
@@ -2553,9 +2847,12 @@ int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
 
         EnetQueue_initQ(pRetrieveQ);
         key = EnetOsal_disableAllIntr();
-        EnetCpdma_dequeueTx(pDescCh, NULL);
-        EnetQueue_append(pRetrieveQ, &pDescCh->freeQueue);
-        EnetQueue_initQ(&pDescCh->freeQueue);
+        if(hTxCh->hEnetDma->isResetOngoing == false)
+        {
+            EnetCpdma_dequeueTx(pDescCh, NULL);
+            EnetQueue_append(pRetrieveQ, &pDescCh->freeQueue);
+            EnetQueue_initQ(&pDescCh->freeQueue);
+        }
         EnetOsal_restoreAllIntr(key);
 
 #if defined(ENETDMA_INSTRUMENTATION_ENABLED)
@@ -2646,7 +2943,10 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
             key = EnetOsal_disableAllIntr();
             EnetQueue_append(&pDescCh->waitQueue, pSubmitQ);
             EnetQueue_initQ(pSubmitQ);
-            EnetCpdma_enqueueTx(pDescCh);
+            if(hTxCh->hEnetDma->isResetOngoing == false)
+            {
+                EnetCpdma_enqueueTx(pDescCh);
+            }
             EnetOsal_restoreAllIntr(key);
         }
 

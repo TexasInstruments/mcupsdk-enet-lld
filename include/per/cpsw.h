@@ -486,9 +486,6 @@ typedef struct Cpsw_Cfg_s
      *  removal */
     uint32_t txMtu[ENET_PRI_NUM];
 
-    // /*! Configuration of the CPSW DMA */
-    // EnetDma_Cfg dmaCfg;
-
     /*! Configuration of the host (CPPI) port */
     CpswHostPort_Cfg hostPortCfg;
 
@@ -539,7 +536,6 @@ typedef struct Cpsw_Cfg_s
      *  MDIO peripheral
      */
     bool disablePhyDriver;
-
 } Cpsw_Cfg;
 
 

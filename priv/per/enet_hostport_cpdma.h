@@ -77,7 +77,12 @@ EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
                                     const void *dmaCfg,
                                     const EnetRm_ResCfg *resCfg);
 
+EnetDma_Handle EnetHostPortDma_restoreCtxt(EnetPer_Handle hPer,
+                                    const EnetRm_ResCfg *resCfg);
+
 void EnetHostPortDma_close(EnetDma_Handle hDma);
+
+void EnetHostPortDma_saveCtxt(EnetDma_Handle hDma);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -313,6 +313,21 @@ void CpswStats_close(EnetMod_Handle hMod)
     /* Nothing to do */
 }
 
+void CpswStats_saveCtxt(EnetMod_Handle hMod)
+{
+    CpswStats_close(hMod);
+}
+
+int32_t CpswStats_restoreCtxt(EnetMod_Handle hMod,
+                              Enet_Type enetType,
+                              uint32_t instId,
+                              const void *cfg,
+                              uint32_t cfgSize)
+{
+    int32_t status = ENET_SOK;
+    status = CpswStats_open(hMod, enetType, instId, cfg, cfgSize);
+    return status;
+}
 int32_t CpswStats_ioctl(EnetMod_Handle hMod,
                         uint32_t cmd,
                         Enet_IoctlPrms *prms)
