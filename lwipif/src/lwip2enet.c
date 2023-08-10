@@ -506,7 +506,7 @@ static void Lwip2Enet_initRxObj(Enet_Type enetType, uint32_t instId, uint32_t ch
     else
     {
         LwipifEnetAppIf_GetRxHandleInArgs inArgs;
-        LwipifEnetAppIf_RxHandleInfo outArgs;
+        LwipifEnetAppIf_RxHandleInfo outArgs = {0};
 
         inArgs.enetType        = enetType;
         inArgs.instId          = instId;
@@ -908,7 +908,7 @@ static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
     retVal = EnetDma_submitRxPktQ(rx->hFlow, pSubmitQ);
     if (ENET_SOK != retVal)
     {
-		Lwip2Enet_print(rx->hLwip2Enet,
+        Lwip2Enet_print(rx->hLwip2Enet,
                         "EnetDma_submitRxPktQ: failed to submit pkts: %d\n",
                         retVal);
     }
@@ -1194,6 +1194,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                     /* store the head of the pbuf */
                     hPbufPacket = &(cPbuf->p.pbuf);
                 }
+                Lwip2Enet_assert(hPbufPacket != NULL);
                 /* Fill the pbuf with the sg list data */
                 if (Lwip2Enet_setCustomPbuf(PBUF_RAW, list->segmentFilledLen, PBUF_POOL, &(cPbuf->p), list->bufPtr, list->segmentAllocLen) == NULL)
                 {
@@ -1254,6 +1255,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 case Lwip2Enet_RxMode_SwitchSharedChannel:
                 case Lwip2Enet_RxMode_MacSharedChannel:
                 {
+                    Lwip2Enet_assert(rxPortNum < LWIPIF_MAX_NUM_MAC_PORTS);
                     netif = rx->mapPortToNetif[rxPortNum];
                     break;
                 }
