@@ -223,9 +223,12 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_ENABLE_INGRESS_TRAFFIC_SH
     uint32_t cppiClkFreqHz;
 
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
-
-    status = CpswHostPort_setTrafficShaping(regs, shapingCfg, cppiClkFreqHz);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set traffic shaping: %d\n", status);
+    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
+    {
+        status = CpswHostPort_setTrafficShaping(regs, shapingCfg, cppiClkFreqHz);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set traffic shaping: %d\n", status);
+    }
 #else
     status = ENET_ENOTSUPPORTED;
 #endif
@@ -317,15 +320,19 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING(
     EnetPort_TrafficShapingCfg trafficShapingCfg;
 
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
-
-    for (i = 0U; i < ENET_PRI_NUM; i++)
+    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
     {
-        trafficShapingCfg.rates[i].committedRateBitsPerSec = inArgs->idleSlope[i];
-        trafficShapingCfg.rates[i].excessRateBitsPerSec = 0U;
+        for (i = 0U; i < ENET_PRI_NUM; i++)
+        {
+            trafficShapingCfg.rates[i].committedRateBitsPerSec = inArgs->idleSlope[i];
+            trafficShapingCfg.rates[i].excessRateBitsPerSec = 0U;
+        }
+
+        status = CpswHostPort_setTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
     }
 
-    status = CpswHostPort_setTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
 #else
      status = ENET_ENOTSUPPORTED;
 #endif

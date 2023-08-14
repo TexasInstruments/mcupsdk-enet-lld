@@ -914,6 +914,7 @@ static void CpswAle_setAleCfg(CpswAle_Handle hAle,
     uint32_t i = 0;
 
     hAle->aleFreqHz = EnetSoc_getClkFreq(hAle->enetType, hAle->instId, CPSW_CPPI_CLK);
+    Enet_assert(hAle->aleFreqHz != 0,"Invalid ALE Frequency");
 
     CpswAle_initAleRegs(regs);
 

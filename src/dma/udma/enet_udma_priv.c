@@ -1757,11 +1757,12 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
     bool isExposedRing;
     void *virtBufPtr;
     uint64_t physDescPtr;
-    EnetDma_Pkt *dmaPkt = pDmaDesc->dmaPkt;
-    uint32_t numScatterSegments = dmaPkt->sgList.numScatterSegments;
 
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
+        EnetDma_Pkt *dmaPkt = pDmaDesc->dmaPkt;
+        uint32_t numScatterSegments = dmaPkt->sgList.numScatterSegments;
+
         EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
         CSL_UdmapCppi5HMPD *pHDesc = &pHpdDesc->hostDesc;
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);

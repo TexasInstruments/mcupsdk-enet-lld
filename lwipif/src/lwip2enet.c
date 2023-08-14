@@ -468,6 +468,8 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif)
 
     Lwip2Enet_netif_t* pInterface = Lwip2Enet_getInterfaceObj(hLwip2Enet, netif);
     Lwip2Enet_assert(pInterface != NULL);
+    Lwip2Enet_assert(pInterface->count_hTx <= LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL);
+    Lwip2Enet_assert(pInterface->count_hRx <= LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL);
 
 //    Lwip2Enet_stopRxTx(pInterface->hTx, pInterface->hRx);
 

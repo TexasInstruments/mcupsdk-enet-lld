@@ -784,7 +784,7 @@ static int32_t Icssg_disablePruss(Icssg_Handle hIcssg)
 
 static uint32_t Icssg_getFwIdx(uint32_t instId)
 {
-    uint32_t fwIdx;
+    uint32_t fwIdx = 0;
 
     switch(instId)
     {
@@ -808,7 +808,8 @@ static uint32_t Icssg_getFwIdx(uint32_t instId)
 }
 
 static Enet_MacPort Icssg_getMacFromInstId(uint32_t instId)
-{ Enet_MacPort macPort;
+{
+    Enet_MacPort macPort = ENET_MAC_PORT_FIRST;
 
         switch(instId) { case 0: macPort = ENET_MAC_PORT_1; break; case 2: macPort = ENET_MAC_PORT_1; break;
 

@@ -766,7 +766,7 @@ int32_t EnetDma_closeRxCh(EnetDma_RxChHandle hRxFlow,
 
 void EnetDma_initTxChParams(void *pTxChCfg)
 {
-    Udma_ChTxPrms txPrms;
+    Udma_ChTxPrms txPrms = {0};
     EnetUdma_OpenTxChPrms *pTxChPrms = (EnetUdma_OpenTxChPrms *)pTxChCfg;
 
     UdmaChTxPrms_init(&txPrms, UDMA_CH_TYPE_TX);

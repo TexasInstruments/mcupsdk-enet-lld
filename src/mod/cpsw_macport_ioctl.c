@@ -374,9 +374,13 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_EGRESS_TRAFFIC_SHAPI
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
+    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
+    {
+        status = CpswMacPort_setTrafficShaping(regs, macPort, &inArgs->trafficShapingCfg, cppiClkFreqHz);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set traffic shaping: %d\n", status);
+    }
 
-    status = CpswMacPort_setTrafficShaping(regs, macPort, &inArgs->trafficShapingCfg, cppiClkFreqHz);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set traffic shaping: %d\n", status);
 #else
      status = ENET_ENOTSUPPORTED;
 #endif
@@ -1031,15 +1035,19 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING(Cp
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
-
-    for (i = 0U; i < ENET_PRI_NUM; i++)
+    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
     {
-        trafficShapingCfg.rates[i].committedRateBitsPerSec = inArgs->cbsCfg.idleSlope[i];
-        trafficShapingCfg.rates[i].excessRateBitsPerSec = 0U;
+        for (i = 0U; i < ENET_PRI_NUM; i++)
+        {
+            trafficShapingCfg.rates[i].committedRateBitsPerSec = inArgs->cbsCfg.idleSlope[i];
+            trafficShapingCfg.rates[i].excessRateBitsPerSec = 0U;
+        }
+
+        status = CpswMacPort_setTrafficShaping(regs, macPort, &trafficShapingCfg, cppiClkFreqHz);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
     }
 
-    status = CpswMacPort_setTrafficShaping(regs, macPort, &trafficShapingCfg, cppiClkFreqHz);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
 #else
      status = ENET_ENOTSUPPORTED;
 #endif
