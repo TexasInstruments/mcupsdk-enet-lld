@@ -336,7 +336,10 @@ typedef enum EnetMdio_C45Mmd_e
  */
 typedef struct EnetMdio_C22ReadInArgs_s
 {
-    /*! User channel to be used to perform the register access */
+    /*! User channel to be used to perform the register access.
+     * Simultaneous access from same group is not allowed.
+     * Not applicable in manual mode.
+     */
     EnetMdio_Group group;
 
     /*! PHY address */
@@ -353,7 +356,10 @@ typedef struct EnetMdio_C22ReadInArgs_s
  */
 typedef struct EnetMdio_C45ReadInArgs_s
 {
-    /*! User channel to be used to perform the register access */
+    /*! User channel to be used to perform the register access.
+     * Simultaneous access from same group is not allowed.
+     * Not applicable in manual mode.
+     */
     EnetMdio_Group group;
 
     /*! PHY address */
@@ -373,7 +379,10 @@ typedef struct EnetMdio_C45ReadInArgs_s
  */
 typedef struct EnetMdio_C22WriteInArgs_s
 {
-    /*! User channel to be used to perform the register access */
+    /*! User channel to be used to perform the register access.
+     * Simultaneous access from same group is not allowed.
+     * Not applicable in manual mode.
+     */
     EnetMdio_Group group;
 
     /*! PHY address */
@@ -393,7 +402,10 @@ typedef struct EnetMdio_C22WriteInArgs_s
  */
 typedef struct EnetMdio_C45WriteInArgs_s
 {
-    /*! User channel to be used to perform the register access */
+    /*! User channel to be used to perform the register access.
+     * Simultaneous access from same group is not allowed.
+     * Not applicable in manual mode.
+     */
     EnetMdio_Group group;
 
     /*! PHY address */

@@ -116,7 +116,7 @@ typedef struct Mdio_PhyStatus_s
  * Callback for the MDIO link state change interrupt (MDIO_LINKINT).  This
  * callback is invoked from interrupt context.
  *
- * \param group        User channel or group
+ * \param group        User channel or group. Not applicable for Manual mode
  * \param phyStatus    PHY status: alive and linked masks
  * \param cbArgs       Callback function arguments
  */
@@ -127,7 +127,7 @@ typedef void (*Mdio_LinkStateCallback)(EnetMdio_Group group,
 /*!
  * \brief MDIO user access completion callback function.
  *
- * \param group        User channel or group
+ * \param group        User channel or group. Not applicable for Manual mode
  * \param phyAddr      Address of the PHY that completed access
  * \param cbArgs       Callback function arguments
  */
