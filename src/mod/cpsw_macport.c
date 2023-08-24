@@ -259,7 +259,7 @@ static Enet_IoctlValidate gCpswMacPort_ioctlValidate[] =
                           0U),
 
     ENET_IOCTL_VALID_PRMS(CPSW_MACPORT_IOCTL_DISABLE_CPTS_EVENT,
-                          sizeof(CpswMacPort_EnableTsEventInArgs),
+                          sizeof(EnetMacPort_GenericInArgs),
                           0U),
     ENET_IOCTL_VALID_PRMS(CPSW_MACPORT_IOCTL_EST_ENABLE_TIMESTAMP,
                           sizeof(CpswMacPort_EstTimestampCfg),
