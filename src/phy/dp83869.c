@@ -56,6 +56,7 @@
 #define DP83869_OUI                           (0x080028U)
 #define DP83869_MODEL                         (0x0FU)
 #define DP83869_REV                           (0x01U)
+#define DP83869_REV_V3                        (0x03U)
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -172,7 +173,7 @@ static bool Dp83869_isPhyDevSupported(EnetPhy_Handle hPhy,
 
     if ((version->oui == DP83869_OUI) &&
         (version->model == DP83869_MODEL) &&
-        (version->revision == DP83869_REV))
+        ((version->revision == DP83869_REV) || (version->revision == DP83869_REV_V3)))
     {
         supported = true;
     }

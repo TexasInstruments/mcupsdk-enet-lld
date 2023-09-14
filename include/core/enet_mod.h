@@ -226,6 +226,23 @@ int32_t EnetMod_ioctl(EnetMod_Handle hMod,
                       Enet_IoctlPrms *prms);
 
 /*!
+ * \brief Wrapper function to register IOCTL for Macport Module.
+          This function is defined for the cases when ONLY second
+          macport module is opened without opening the first Macport
+          module.
+ *
+ * \param hMod         Enet Module handle
+ * \param cmdBase      IOCTL command Base
+ * \param cmd          IOCTL command Id
+ * \param prms         IOCTL parameters
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetMod_registerMacportIoctlHandler(EnetMod_Handle hMod,
+                                            uint32_t cmdBase,
+                                            uint32_t cmd,
+                                            Enet_IoctlPrms *prms);
+/*!
  * \brief Wrapper function to issue an operation on an Enet Module
  *        from ISR context.
  *

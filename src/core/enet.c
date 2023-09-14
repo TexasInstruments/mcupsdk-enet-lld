@@ -1398,6 +1398,30 @@ int32_t EnetMod_ioctl(EnetMod_Handle hMod,
     return status;
 }
 
+int32_t EnetMod_registerMacportIoctlHandler(EnetMod_Handle hMod,
+                                            uint32_t cmdBase,
+                                            uint32_t cmd,
+                                            Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_EFAIL;
+
+    /* ioctl() function is mandatory */
+    Enet_devAssert(hMod->ioctl != NULL, "%s: Invalid ioctl function\n", hMod->name);
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hMod->name, cmd, prms);
+
+    if(cmdBase == ENET_IOCTL_MACPORT_BASE)
+    {
+        status = hMod->ioctl(hMod, cmd, prms);
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hMod->name, cmd, status);
+        }
+    }
+
+    return status;
+}
+
 int32_t EnetMod_ioctlFromIsr(EnetMod_Handle hMod,
                              uint32_t cmd,
                              Enet_IoctlPrms *prms)

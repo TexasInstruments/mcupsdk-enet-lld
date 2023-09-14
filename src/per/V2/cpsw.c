@@ -1534,7 +1534,10 @@ static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
 
             if (portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId))
             {
-                status = EnetMod_ioctl(hCpsw->hMacPort[portNum], CPSW_MACPORT_IOCTL_REGISTER_HANDLER, prms);
+                status = EnetMod_registerMacportIoctlHandler(hCpsw->hMacPort[portNum],
+                                                             ENET_IOCTL_MACPORT_BASE,
+                                                             CPSW_MACPORT_IOCTL_REGISTER_HANDLER,
+                                                             prms);
             }
             else
             {
