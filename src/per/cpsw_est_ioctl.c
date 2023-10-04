@@ -293,7 +293,7 @@ static int32_t Cpsw_setupEstf(Cpsw_Handle hCpsw,
     setGenFInArgs.compare = baseTimeNs;
     setGenFInArgs.polarityInv = false;
     setGenFInArgs.ppmVal  = 0U;
-    setGenFInArgs.ppmDir  = ENET_TIMESYNC_ADJDIR_INCREASE;
+    setGenFInArgs.ppmDir  = CPSW_CPTS_GENF_PPM_ADJDIR_DECREASE;
     setGenFInArgs.ppmMode = ENET_TIMESYNC_ADJMODE_DISABLE;
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &setGenFInArgs);

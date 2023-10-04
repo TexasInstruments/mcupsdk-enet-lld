@@ -395,6 +395,18 @@ typedef enum CpswCpts_HwPush_e
 #define CPSW_CPTS_HWPUSH_NORM(x)              ((uint32_t)((x) - CPSW_CPTS_HWPUSH_FIRST))
 
 /*!
+ * \brief Genf adjustment direction.
+ */
+typedef enum CpswCpts_FxnGenAdjDir_e
+{
+    /*! Decrease the Genf frequency with adjustment value */
+    CPSW_CPTS_GENF_PPM_ADJDIR_DECREASE = 0U,
+
+    /*! Increase the Genf frequency with adjustment value */
+    CPSW_CPTS_GENF_PPM_ADJDIR_INCREASE,
+} CpswCpts_FxnGenAdjDir;
+
+/*!
  * \brief CPTS event.
  */
 typedef struct CpswCpts_Event_s
@@ -548,7 +560,7 @@ typedef struct CpswCpts_SetFxnGenInArgs_s
     uint64_t ppmVal;
 
     /*! Direction of parts-per-million correction value */
-    EnetTimeSync_AdjDir ppmDir;
+    CpswCpts_FxnGenAdjDir ppmDir;
 
     /*! Mode of correction value for GENF PPM: parts-per-million or parts-per-hour.
      *  If the ppmMode is set to CPSW_CPTS_PPM_DISABLE, the ppm value will be

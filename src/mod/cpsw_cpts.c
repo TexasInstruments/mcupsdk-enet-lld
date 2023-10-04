@@ -277,7 +277,7 @@ void CpswCpts_initCfg(CpswCpts_Cfg *cptsCfg)
     cptsCfg->hostRxTsEn     = true;
     cptsCfg->tsCompPolarity = true;
     cptsCfg->tsRxEventsDis  = false;
-    cptsCfg->tsGenfClrEn    = false;
+    cptsCfg->tsGenfClrEn    = true;
     cptsCfg->cptsRftClkFreq = CPSW_CPTS_RFTCLK_FREQ_200MHZ;
 }
 
