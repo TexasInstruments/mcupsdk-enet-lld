@@ -310,6 +310,14 @@ typedef struct EnetCpdma_PktInfo_s
      *  This value is obtained from the Source Tag – Low bits of packet descriptor. */
     Enet_MacPort rxPortNum;
 
+    /*! TX packet traffic class indicates which TX port queue. This is not used for CPDMA.
+     *  Keeping this to maintain same pktInfo structure across CPDMA and UDMA. */
+    uint32_t txPktTc;
+
+    /*! Transmit timestamp id. Used to correlate request with response. This is not used for CPDMA.
+     *  Keeping this to maintain same pktInfo structure across CPDMA and UDMA. */
+    uint32_t txTsId;
+
     /*! Scatter Gather list information for packets to be transmitted.
      *  A single tx packet can be fragmented across multiple chunks,
      *  the bufPtrs and filled len of each segment are contained here.

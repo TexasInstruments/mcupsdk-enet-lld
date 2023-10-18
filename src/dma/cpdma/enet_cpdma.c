@@ -1405,6 +1405,7 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
          * packet in receive queue */
         /* This should be a SOP descriptor */
         const uint32_t sopPktFlgLen = (pDesc->pktFlgLen) & ((uint32_t)~ENET_CPDMA_DESC_PSINFO_PASSCRC_FLAG);
+        void *appPriv = NULL;
 
         /* Check the ownership of the packet. Ownership is only valid for SOP descs */
         if ( ((sopPktFlgLen & ENET_CPDMA_DESC_PKT_FLAG_OWNER) == 0U)
@@ -1412,7 +1413,9 @@ bool EnetCpdma_dequeueRx(EnetCpdma_DescCh *pDescCh, EnetCpdma_cppiDesc *pDescCp)
         {
             pPkt = (EnetCpdma_PktInfo*) EnetQueue_deq(&pDescCh->descQueue);
             Enet_assert(pPkt != NULL);
+            appPriv = pPkt->appPriv;
             EnetDma_initPktInfo(pPkt);
+            pPkt->appPriv = appPriv;
             numScatterSegments = 0;
             totalLenReceived = 0;
             totalPktLen = (sopPktFlgLen & ENET_CPDMA_DESC_PSINFO_RX_PACKET_LEN_MASK);
