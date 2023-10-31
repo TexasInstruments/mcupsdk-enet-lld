@@ -63,13 +63,13 @@ extern "C" {
 #define LWIPIF_MAX_NUM_MAC_PORTS             (CPSW_STATS_MACPORT_MAX)
 
 /*Max number of netif enabled. */
-#define LWIPIF_MAX_NETIFS_SUPPORTED          (LWIPIF_MAX_NUM_MAC_PORTS)
+#define LWIPIF_MAX_NETIFS_SUPPORTED          (LWIPIF_MAX_NUM_MAC_PORTS * LWIPIF_MAX_NUM_PERIPHERALS)
 
 /*Max number of RX channels supported by lwipif*/
-#define LWIPIF_MAX_RX_CHANNELS               (CPSW_STATS_MACPORT_MAX)
+#define LWIPIF_MAX_RX_CHANNELS               (LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL * LWIPIF_MAX_NUM_PERIPHERALS)
 
 /*Max number of TX channels supported by lwipif */
-#define LWIPIF_MAX_TX_CHANNELS               (CPSW_STATS_MACPORT_MAX)
+#define LWIPIF_MAX_TX_CHANNELS               (LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL * LWIPIF_MAX_NETIFS_SUPPORTED)
 
 
 /* Maximum number of ENET Peripheral instances supported

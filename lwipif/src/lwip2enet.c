@@ -248,6 +248,7 @@ static Lwip2Enet_RxHandle Lwip2Enet_allocateRxHandle(Lwip2Enet_Handle hLwip2Enet
 {
     uintptr_t key = EnetOsal_disableAllIntr();
     Lwip2Enet_RxHandle hRx = NULL;
+    Lwip2Enet_assert(objIdx < LWIPIF_MAX_RX_CHANNELS);
     if (objIdx < LWIPIF_MAX_RX_CHANNELS)
     {
         hRx = &hLwip2Enet->lwip2EnetRxObj[objIdx];
@@ -262,6 +263,7 @@ static Lwip2Enet_TxHandle Lwip2Enet_allocateTxHandle(Lwip2Enet_Handle hLwip2Enet
 {
     uintptr_t key = EnetOsal_disableAllIntr();
     Lwip2Enet_TxHandle hTx = NULL;
+    Lwip2Enet_assert(objIdx < LWIPIF_MAX_TX_CHANNELS);
     if (objIdx < LWIPIF_MAX_TX_CHANNELS)
     {
         hTx = &hLwip2Enet->lwip2EnetTxObj[objIdx];

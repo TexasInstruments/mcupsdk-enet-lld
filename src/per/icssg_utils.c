@@ -1693,9 +1693,7 @@ void IcssgUtils_configSwtFw(Icssg_Handle hIcssg,
 int32_t IcssgUtils_createPruss(Icssg_Handle hIcssg)
 {
     PRUICSS_Handle hPruss;
-#if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
     uint32_t inst = hIcssg->pruss->instance;
-#endif
     int32_t status = ENET_SOK;
 
     EnetOsal_lockMutex(hIcssg->pruss->lock);
@@ -1704,8 +1702,8 @@ int32_t IcssgUtils_createPruss(Icssg_Handle hIcssg)
     if (!hIcssg->pruss->initialized)
     {
         /* PRU-ICSS instances are 1-relative */
-        // hPruss = PRUICSS_open(inst); //till sysconfig is integrated
-        hPruss = PRUICSS_open(0U);
+        hPruss = PRUICSS_open(inst); //till sysconfig is integrated
+
         if (hPruss != NULL)
         {
             PRUICSS_initMemory(hPruss, PRUICSS_SHARED_RAM);
