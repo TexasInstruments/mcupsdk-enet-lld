@@ -100,16 +100,16 @@ extern "C" {
 #define ICSSG_MAX_NUM_BUFFER_POOLS          (24U)
 
 /*! \brief Number of TX channels per slice in Dual-MAC mode. */
-#define ICSSG_DUALMAC_TX_CH_NUM             (8U)
+#define ICSSG_DUALMAC_TX_CH_NUM             (ENET_CFG_RM_TX_CH_MAX)
 
 /*! \brief Number of RX flows per slice in Dual-MAC mode. */
-#define ICSSG_DUALMAC_RX_FLOW_NUM           (8U)
+#define ICSSG_DUALMAC_RX_FLOW_NUM           (ENET_CFG_RM_RX_CH_MAX / 2)
 
 /*! \brief Number of TX channels in Switch mode. */
-#define ICSSG_SWITCH_TX_CH_NUM              (8U)
+#define ICSSG_SWITCH_TX_CH_NUM              (ENET_CFG_RM_TX_CH_MAX)
 
 /*! \brief Number of RX flows in Switch mode. */
-#define ICSSG_SWITCH_RX_FLOW_NUM            (8U)
+#define ICSSG_SWITCH_RX_FLOW_NUM            (ENET_CFG_RM_RX_CH_MAX)
 
 /*! \brief Number of port buffer pools required for Dual-MAC. */
 #define ICSSG_DUALMAC_PORT_BUFFER_POOL_NUM  (0U)

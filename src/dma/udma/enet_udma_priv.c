@@ -201,7 +201,15 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
                 }
 
                 srcTag = CSL_udmapCppi5GetSrcTag(&pHpdDesc->hostDesc) & ENET_UDMA_HPD_SRC_TAG_LOW_MASK;
-                dmaPkt->rxPortNum = CPSW_ALE_ALEPORT_TO_MACPORT(srcTag);
+                if ((hPer->enetType == ENET_ICSSG_DUALMAC) || (hPer->enetType == ENET_ICSSG_SWITCH))
+                {
+                    dmaPkt->rxPortNum = CPSW_ALE_ALEPORT_TO_MACPORT(srcTag + 1);
+                }
+                else
+                {
+                    dmaPkt->rxPortNum = CPSW_ALE_ALEPORT_TO_MACPORT(srcTag);
+                }
+
             }
 
 #if ENET_CFG_IS_ON(DEV_ERROR)

@@ -95,17 +95,6 @@ extern "C" {
 /*! \brief Resource Manager support */
 #define ENET_CFG_RM_PRESENT                         (ENET_ON)
 
-/*! \brief Maximum number of TX channels allocated for Resource Manager */
-#define ENET_CFG_RM_TX_CH_MAX                       (8U)
-
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
-/*! \brief Maximum number of RX flows/channels allocated for Resource Manager */
-#define ENET_CFG_RM_RX_CH_MAX                       (16U)
-#else
-/*! \brief Maximum number of RX channels allocated for Resource Manager */
-#define ENET_CFG_RM_RX_CH_MAX                       (8U)
-#endif
-
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
 /*! \brief Overwrite UDMA config for ICSSG as we use more flows/channels for
  *         multiport testNumber of TX channels. */
