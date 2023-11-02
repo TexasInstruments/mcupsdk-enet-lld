@@ -662,6 +662,7 @@ static int32_t EnetRm_validateResPartInfo(const EnetRm_Cfg *rmCfg,
     const EnetRm_ResPrms *resPartInfo = &rmCfg->resPartInfo;
     uint32_t txChCnt = 0U;
     uint32_t rxFlowCnt = 0U;
+    uint32_t rmRxFlowCnt = 0U;
     uint32_t macAddrCnt = 0U;
     uint32_t socTxChCnt;
     uint32_t i;
@@ -684,13 +685,18 @@ static int32_t EnetRm_validateResPartInfo(const EnetRm_Cfg *rmCfg,
             macAddrCnt += resPartInfo->coreDmaResInfo[i].numMacAddress;
         }
 
+        for (i = 0U; i < ENET_RM_NUM_RXCHAN_MAX; i++)
+        {
+            rmRxFlowCnt += rmCfg->rxFlowIdxCnt[i];
+        }
+
         if ((txChCnt > socTxChCnt) ||
             (txChCnt > maxTxResCnt))
         {
             status = ENET_EINVALIDPARAMS;
         }
 
-        if ((rxFlowCnt > rmCfg->rxFlowIdxCnt[0U]) ||
+        if ((rxFlowCnt > rmRxFlowCnt) ||
             (rxFlowCnt > maxRxResCnt))
         {
             status = ENET_EINVALIDPARAMS;
