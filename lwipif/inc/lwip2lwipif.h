@@ -88,7 +88,7 @@ err_t LWIPIF_LWIP_init(struct netif *netif);
  *
  * \return Return 0 if successful. else negative values.
  */
-int LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx);
+int32_t LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx);
 
 /*!
  *  This API shall set the notification callbacks when the packets are received (along Rx direction)

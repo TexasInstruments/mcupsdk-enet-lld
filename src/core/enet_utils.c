@@ -49,16 +49,12 @@
 #include <include/core/enet_osal.h>
 #include <kernel/nortos/dpl/common/printf.h>
 #include <kernel/dpl/CycleCounterP.h>
-#ifdef __ARM_ACLE
-#include <arm_acle.h>
-#endif
+#include <cmsis/Core/Include/cmsis_compiler.h>
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define __NOP  __nop()
-
-#define NOP5   do { __NOP; __NOP; __NOP; __NOP; __NOP; } while (0)
+#define NOP5   do { __NOP(); __NOP(); __NOP(); __NOP(); __NOP(); } while (0)
 
 #define NOP10  NOP5; \
                NOP5
