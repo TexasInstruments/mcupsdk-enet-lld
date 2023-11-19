@@ -145,6 +145,7 @@ static uint32_t  Mdio_manualModePhyRegRead22(EnetMod_Handle hMod,
 
     CSL_MDIO_setMdoOutputEnable(hMdioRegs); /* Enable our drive capability */
 
+    Mdio_manualModeFieldSend(hMod, 0x80000000, 0xFFFFFFFF); /* Send MDIO preamble */
     Mdio_manualModeFieldSend(hMod, 0x8, 0x6); /* Issue clause 22 MII read function {0,1,1,0}*/
     Mdio_manualModeFieldSend(hMod, 0x10, phyAddr); /* Send the device number MSB first */
     Mdio_manualModeFieldSend(hMod, 0x10, regNum); /* Send the register number MSB first */
@@ -196,6 +197,7 @@ static void Mdio_manualModePhyRegWrite22(EnetMod_Handle hMod,
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Disable Phy Interrupt driver */
     CSL_MDIO_setMdoOutputEnable(hMdioRegs);          /* Enable our drive capability */
 
+    Mdio_manualModeFieldSend(hMod, 0x80000000, 0xFFFFFFFF); /* Send 32-bit MDIO preamble */
     Mdio_manualModeFieldSend(hMod, 0x8,0x5);     /* Issue clause 22 MII write function {0,1,0,1}*/
     Mdio_manualModeFieldSend(hMod, 0x10,phyAddr);    /* Send the device number MSB first */
     Mdio_manualModeFieldSend(hMod, 0x10,regNum);    /* Send the register number MSB first */
