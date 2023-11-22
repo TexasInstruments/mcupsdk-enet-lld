@@ -392,7 +392,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
     uint32_t tosIndex, i;
     uint8_t dscpIPv4En, tosVal;
-    uint32_t totalPacketFilledLen = 0;
+    uint32_t totalPacketFilledLen = 0U;
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
@@ -412,6 +412,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     {
         /* Enqueue desc to fqRing */
         pDmaDesc = EnetUdma_dmaDescDeque(pDmaDescQ);
+        totalPacketFilledLen = 0U;
 
         if (NULL != pDmaDesc)
         {
