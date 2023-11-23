@@ -345,6 +345,14 @@
 #define NRT_HOST_RX_BYTE_COUNT_PASTATID                    0x0000
 /*Number of valid bytes copied by RTU0 to Tx queues. Currently disabled*/
 #define NRT_HOST_TX_BYTE_COUNT_PASTATID                    0x0002
+/*Number of valid bytes sent by Rx PRU to Host on PSI. Currently disabled*/
+#define NRT_HOST_RX_BYTE_COUNT_MAC_SLICE0_PASTATID         0x0004
+/*Number of valid bytes sent by Rx PRU to Host on PSI. Currently disabled*/
+#define NRT_HOST_RX_BYTE_COUNT_MAC_SLICE1_PASTATID         0x0006
+/*Number of valid bytes sent by Rx PRU to Host on PSI. Currently disabled*/
+#define NRT_HOST_TX_BYTE_COUNT_MAC_SLICE0_PASTATID         0x0008
+/*Number of valid bytes sent by Rx PRU to Host on PSI. Currently disabled*/
+#define NRT_HOST_TX_BYTE_COUNT_MAC_SLICE1_PASTATID         0x000A
 /*Start of 32 bits PA_STAT counters*/
 #define PA_STAT_32b_START_OFFSET                           0x0080
 /*Number of valid packets sent by Rx PRU to Host on PSI*/
@@ -499,5 +507,21 @@
 #define RX_FIFO_OVERRUN_SLICE0_PASTATID                    0x0240
 /*RX fifo overrun for slice 1*/
 #define RX_FIFO_OVERRUN_SLICE1_PASTATID                    0x0244
+/*Number of valid packets sent by Rx PRU to Host on PSI*/
+#define NRT_HOST_RX_PKT_COUNT_MAC_SLICE0_PASTATID          0x0248
+/*Number of valid packets sent by Rx PRU to Host on PSI*/
+#define NRT_HOST_RX_PKT_COUNT_MAC_SLICE1_PASTATID          0x024C
+/*Number of valid packets copied by RTU0 to Tx queues*/
+#define NRT_HOST_TX_PKT_COUNT_MAC_SLICE0_PASTATID          0x0250
+/*Number of valid packets copied by RTU0 to Tx queues*/
+#define NRT_HOST_TX_PKT_COUNT_MAC_SLICE1_PASTATID          0x0254
+/*Host Egress Q (Pre-emptible) Overflow Counter*/
+#define NRT_HOST_EGRESS_Q_PRE_OVERFLOW_MAC_SLICE0_PASTATID 0x0258
+/*Host Egress Q (Pre-emptible) Overflow Counter*/
+#define NRT_HOST_EGRESS_Q_PRE_OVERFLOW_MAC_SLICE1_PASTATID 0x025C
+/*Host Egress Q (Pre-emptible) Overflow Counter*/
+#define NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE0_PASTATID 0x0260
+/*Host Egress Q (Pre-emptible) Overflow Counter*/
+#define NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE1_PASTATID 0x0264
 
 #endif /* ____fw_mem_map_h*/
