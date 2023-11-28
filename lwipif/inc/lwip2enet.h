@@ -377,7 +377,7 @@ Lwip2Enet_Obj, *Lwip2Enet_Handle;
 /*
  * Functions Provided by our translation layer code
  */
-extern Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif);
+extern Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx);
 
 extern void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif);
 

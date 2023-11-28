@@ -346,13 +346,13 @@ void LWIPIF_LWIP_periodic_polling(struct netif *netif)
         }
 }
 
-int32_t LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif)
+int32_t LWIPIF_LWIP_start(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx)
 {
     int32_t retVal = 0U;
     Lwip2Enet_Handle hLwip2Enet;
 
     /* Open the translation layer, which itself opens the hardware driver */
-    hLwip2Enet = Lwip2Enet_open(enetType, instId, netif);
+    hLwip2Enet = Lwip2Enet_open(enetType, instId, netif, netifIdx);
 
     if (NULL == hLwip2Enet)
     {

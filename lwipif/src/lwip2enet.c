@@ -186,9 +186,9 @@ bool Lwip2Enet_decrementRxRefCount(Lwip2Enet_RxObj* pRx);
 
 bool Lwip2Enet_decrementTxRefCount(Lwip2Enet_TxObj* pTx);
 
-void LwipifEnetApp_getRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL]);
+void LwipifEnetApp_getRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL]);
 
-void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t* pTxChIdCount, uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL]);
+void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId,  uint32_t netifIdx, uint32_t* pTxChIdCount, uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL]);
 
 uint32_t LwipifEnetAppCb_getMacPort(const Enet_Type enetType, const uint32_t instId);
 
@@ -285,7 +285,7 @@ Enet_MacPort Lwip2Enet_findMacPortFromEnet(Enet_Type enetType, uint32_t instId) 
     return macPort;
 }
 
-Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif)
+Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx)
 {
     uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL];
     uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];
@@ -296,8 +296,8 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     uint32_t txChIdCount = 0, rxChIdCount = 0;
 
     /* get TxChID & RxChID and the corresponding channel counts */
-    LwipifEnetApp_getTxChIDs(enetType, instId, &txChIdCount, &txChIdList[0]);
-    LwipifEnetApp_getRxChIDs(enetType, instId, &rxChIdCount, &rxChIdList[0]);
+    LwipifEnetApp_getTxChIDs(enetType, instId, netifIdx, &txChIdCount, &txChIdList[0]);
+    LwipifEnetApp_getRxChIDs(enetType, instId, netifIdx, &rxChIdCount, &rxChIdList[0]);
 
 
     EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
