@@ -1722,7 +1722,29 @@ static int32_t CpswMacPort_enablePort(CSL_Xge_cpswRegs *regs,
     CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_IFCTL_A, 0U);
     CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_IFCTL_B, 0U);
 
-    if (EnetMacPort_isRmii(mii))
+    if (EnetMacPort_isMii(mii))
+    {
+#if ENET_CFG_IS_ON(CPSW_MACPORT_MII)
+        /* In RMII mode, ifctl_a bit determines the RMII link speed (0=10mbps, 1=100mbps) */
+        if ((linkCfg->speed == ENET_SPEED_100MBIT) ||
+            (linkCfg->speed == ENET_SPEED_10MBIT))
+        {
+            CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_GMII_EN, 1U);
+            status = ENET_SOK;
+        }
+        else
+        {
+            ENETTRACE_ERR("MAC %u: Invalid speed for MII mode\n", portId);
+            status = ENET_EINVALIDPARAMS;
+        }
+
+        forced = true;
+#else
+        status = ENET_ENOTSUPPORTED;
+#endif
+
+    }
+    else if (EnetMacPort_isRmii(mii))
     {
         /* In RMII mode, ifctl_a bit determines the RMII link speed (0=10mbps, 1=100mbps) */
         if ((linkCfg->speed == ENET_SPEED_100MBIT) ||

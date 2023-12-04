@@ -251,15 +251,6 @@ static int32_t Icssg_configMacPortDfltVlanId(Icssg_Handle hIcssg,
                                              Enet_MacPort macPort,
                                              const EnetPort_VlanCfg *vlanCfg);
 
-static void Icssg_setDfltThreadCfg(Icssg_Handle hIcssg,
-                                   Enet_MacPort macPort,
-                                   uint32_t flowId);
-
-static int32_t Icssg_validateDfltFlow(Icssg_Handle hIcssg,
-                                      Enet_MacPort macPort,
-                                      Enet_DfltFlowInfo *dfltFlowInfo,
-                                      uint32_t flowId);
-
 static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
                                     Enet_MacPort macPort,
                                     uint32_t coreKey,
@@ -2695,15 +2686,6 @@ static int32_t Icssg_configMacPortDfltVlanId(Icssg_Handle hIcssg,
     return status;
 }
 
-static void Icssg_setDfltThreadCfg(Icssg_Handle hIcssg,
-                                   Enet_MacPort macPort,
-                                   uint32_t flowId)
-{
-    uintptr_t dram = Icssg_getDramAddr(hIcssg, macPort);
-
-    Icssg_wr8(hIcssg, dram + QUEUE_NUM_UNTAGGED, flowId);
-}
-
 static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
                                     Enet_MacPort macPort,
                                     uint32_t coreKey,
@@ -2731,39 +2713,6 @@ static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
 
         ENET_IOCTL_SET_IN_ARGS(&prms, &rmInArgs);
         ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_VALIDATE_RX_FLOW, &prms, status);
-    }
-
-    return status;
-}
-
-static int32_t Icssg_validateDfltFlow(Icssg_Handle hIcssg,
-                                      Enet_MacPort macPort,
-                                      Enet_DfltFlowInfo *dfltFlowInfo,
-                                      uint32_t flowId)
-{
-    uintptr_t dram = Icssg_getDramAddr(hIcssg, macPort);
-    int32_t status;
-
-    status = Icssg_validateFlowId(hIcssg,
-                                  macPort,
-                                  dfltFlowInfo->coreKey,
-                                  dfltFlowInfo->startIdx,
-                                  dfltFlowInfo->flowIdx);
-
-    if (status == ENET_SOK)
-    {
-        /* In ICSSG we use port priority as thread ID based there is no classifier match (no match thread) */
-        uint32_t dfltflowId;
-
-        dfltflowId = Icssg_rd8(hIcssg, dram + QUEUE_NUM_UNTAGGED);
-        if (dfltflowId == flowId)
-        {
-            status = ENET_SOK;
-        }
-        else
-        {
-            status = ENET_EINVALIDPARAMS;
-        }
     }
 
     return status;
@@ -4576,55 +4525,16 @@ int32_t Icssg_ioctl_handler_ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW(EnetPer_Handle h
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    int32_t status = ENET_SOK;
-    Enet_DfltFlowInfo *dfltFlowInfo = (Enet_DfltFlowInfo *)prms->inArgs;
-    uint32_t chIdx = dfltFlowInfo->chIdx;
-
     Enet_assert(cmd == ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW);
-
-    status = Icssg_validateDfltFlow(hIcssg,
-                                    ENET_MACPORT_DENORM(chIdx),
-                                    dfltFlowInfo,
-                                    hIcssg->rsvdFlowId[chIdx]);
-    ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: invalid default flow: %d\r\n",
-                        ENET_PER_NAME(hIcssg), dfltFlowInfo->flowIdx);
-
-    if (status == ENET_SOK)
-    {
-        Icssg_setDfltThreadCfg(hIcssg,
-                                ENET_MACPORT_DENORM(chIdx),
-                                dfltFlowInfo->flowIdx);
-    }
-    return status;
+    return ENET_ENOTSUPPORTED;
 }
 
 int32_t Icssg_ioctl_handler_ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW(EnetPer_Handle hPer,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    int32_t status = ENET_SOK;
-    Enet_DfltFlowInfo *dfltFlowInfo = (Enet_DfltFlowInfo *)prms->inArgs;
-    uint32_t chIdx = dfltFlowInfo->chIdx;
-
     Enet_assert(cmd == ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW);
-
-    status = Icssg_validateDfltFlow(hIcssg,
-                                    ENET_MACPORT_DENORM(chIdx),
-                                    dfltFlowInfo,
-                                    dfltFlowInfo->flowIdx);
-    ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: Invalid Default Flow: %d\r\n",
-                        ENET_PER_NAME(hIcssg), dfltFlowInfo->flowIdx);
-    if (status == ENET_SOK)
-    {
-        Icssg_setDfltThreadCfg(hIcssg,
-                                ENET_MACPORT_DENORM(chIdx),
-                                hIcssg->rsvdFlowId[chIdx]);
-    }
-    return status;
+    return ENET_ENOTSUPPORTED;
 }
 
 int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,

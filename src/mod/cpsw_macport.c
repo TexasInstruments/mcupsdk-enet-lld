@@ -130,10 +130,10 @@ typedef struct CpswMacPortIoctlHandlerRegistry_s
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
 static int32_t CpswMacPort_isSupported(CSL_Xge_cpswRegs *regs);
-
+#endif
 static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
                                           const EnetMacPort_Interface *mii);
-#endif
+
 
 static int32_t CpswMacPort_checkSocCfg(Enet_Type enetType,
                                        uint32_t instId,
@@ -465,26 +465,30 @@ int32_t CpswMacPort_open(EnetMod_Handle hMod,
     Enet_devAssert(status == ENET_SOK, "MAC %u: version is not supported\n", portId);
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII))
+    if ((status == ENET_SOK) && (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII)))
     {
         status = CpswMacPort_isSgmiiSupported(sgmiiRegs, macPort);
         Enet_devAssert(status == ENET_SOK, "MAC %u: SGMII version is not supported\n", portId);
     }
-#endif
+#endif /*#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII) */
+
+#endif /*#if ENET_CFG_IS_ON(DEV_ERROR) */
 
     /* Check if MII is supported */
     status = CpswMacPort_isMiiSupported(hMod, mii);
-    Enet_devAssert(status == ENET_SOK, "MAC %u: MII not supported\n", portId);
-#endif
+    ENETTRACE_ERR_IF(status != ENET_SOK,  "MAC %u: MII not supported\n", portId);
 
     /* Save peripheral info to use it later to query SoC parameters */
     hPort->enetType = enetType;
     hPort->instId = instId;
     hPort->enabled = true;
 
-    /* Check if SoC settings (if any) matches the requested MII config */
-    status = CpswMacPort_checkSocCfg(enetType, instId, macPort, mii);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: MII mismatch with SoC settings\n", portId);
+    if (status == ENET_SOK)
+    {
+        /* Check if SoC settings (if any) matches the requested MII config */
+        status = CpswMacPort_checkSocCfg(enetType, instId, macPort, mii);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: MII mismatch with SoC settings\n", portId);
+    }
 
     /* Soft-reset the Ethernet MAC logic and SGMII port */
     if (status == ENET_SOK)
@@ -728,13 +732,19 @@ static int32_t CpswMacPort_isSupported(CSL_Xge_cpswRegs *regs)
 
     return status;
 }
-
+#endif
 static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
                                           const EnetMacPort_Interface *mii)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
-    if (EnetMacPort_isRmii(mii))
+    if (EnetMacPort_isMii(mii))
+   {
+#if ENET_CFG_IS_ON(CPSW_MACPORT_MII)
+        status = ENET_SOK;
+#endif
+   }
+    else if (EnetMacPort_isRmii(mii))
     {
         status = ENET_SOK;
     }
@@ -759,7 +769,7 @@ static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
 
     return status;
 }
-#endif
+
 
 static int32_t CpswMacPort_checkSocCfg(Enet_Type enetType,
                                        uint32_t instId,
@@ -797,12 +807,12 @@ static void CpswMacPort_reset(CSL_Xge_cpswRegs *regs,
 {
     CSL_CPGMAC_SL_MACSTATUS macStatus = {0};
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
-    uint32_t gmiiEn;
+    uint32_t gmiiEn = 0;
     uint32_t done;
 
-    gmiiEn = CSL_CPGMAC_SL_isGMIIEnabled(regs, portNum);
+   gmiiEn = CSL_CPGMAC_SL_isGMIIEnabled(regs, portNum);
 
-    /* Idle MAC port */
+   /* Idle MAC port */
     CSL_CPGMAC_SL_enableIdleMode(regs, portNum);
     do
     {
@@ -941,6 +951,14 @@ static int32_t CpswMacPort_setInterface(CSL_Xge_cpswRegs *regs,
     if (EnetMacPort_isRmii(mii))
     {
         status = ENET_SOK;
+    }
+    else if (EnetMacPort_isMii(mii))
+    {
+#if ENET_CFG_IS_ON(CPSW_MACPORT_MII)
+        status = ENET_SOK;
+#else
+        status = ENET_ENOTSUPPORTED;
+#endif
     }
     else if (EnetMacPort_isRgmii(mii))
     {
