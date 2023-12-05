@@ -1693,7 +1693,7 @@ void IcssgUtils_configSwtFw(Icssg_Handle hIcssg,
 int32_t IcssgUtils_createPruss(Icssg_Handle hIcssg)
 {
     PRUICSS_Handle hPruss;
-    uint32_t inst = hIcssg->pruss->instance;
+    uint32_t index = hIcssg->pruss->name;
     int32_t status = ENET_SOK;
 
     EnetOsal_lockMutex(hIcssg->pruss->lock);
@@ -1702,18 +1702,22 @@ int32_t IcssgUtils_createPruss(Icssg_Handle hIcssg)
     if (!hIcssg->pruss->initialized)
     {
         /* PRU-ICSS instances are 1-relative */
-        hPruss = PRUICSS_open(inst); //till sysconfig is integrated
+        /* Index of required PRU instance in PRU module of syscfg */
+        hPruss = PRUICSS_open(index);
 
         if (hPruss != NULL)
         {
             PRUICSS_initMemory(hPruss, PRUICSS_SHARED_RAM);
             hIcssg->pruss->hPruss = hPruss;
             hIcssg->pruss->initialized = true;
+            Enet_assert((hPruss->hwAttrs->instance == hIcssg->pruss->instance),
+                         "%s: Mismatched PRUSS instance %u\n",
+                         ENET_PER_NAME(hIcssg), index);
         }
         else
         {
             ENETTRACE_ERR("%s: failed to create PRUICSS instance %u\n",
-                          ENET_PER_NAME(hIcssg), inst);
+                          ENET_PER_NAME(hIcssg), index);
             status = ENET_EFAIL;
         }
     }

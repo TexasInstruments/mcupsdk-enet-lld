@@ -171,6 +171,10 @@ typedef struct Icssg_evtCbInfo_s
  */
 typedef struct Icssg_Pruss_s
 {
+    /*! PRUICSS Obj index in gPruIcssConfig
+     * Expected to carry the name shown in PRUICSS syscfg-gui */
+    uint32_t name;
+
     /*! Handle to PRUICSS driver */
     PRUICSS_Handle hPruss;
 
