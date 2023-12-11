@@ -2000,13 +2000,6 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
         ENETTRACE_ERR_IF(retVal, "[ENET DMA Error] pDmaCfg Invalid params !!\n");
     }
 
-    /* Saving the Context for DMA cfg */
-    pEnetDmaObj->rxBufOffset = pDmaCfg->rxChInitPrms.rxBufferOffset;
-    pEnetDmaObj->rxInterruptPerMSec = pDmaCfg->rxInterruptPerMSec;
-    pEnetDmaObj->txInterruptPerMSec = pDmaCfg->txInterruptPerMSec;
-    pEnetDmaObj->enChOverrideFlag = pDmaCfg->enChOverrideFlag;
-    pEnetDmaObj->isResetOngoing = false;
-
     if (ENET_SOK == retVal)
     {
         if (EnetAppUtils_isDescCached() == true)
@@ -2020,8 +2013,15 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
     {
         /* TODO: more error check */
         pEnetDmaObj = EnetSoc_getDmaHandle(enetType, 0U /* instId */);
-
         Enet_assert(pEnetDmaObj != NULL);
+
+
+        /* Saving the Context for DMA cfg */
+        pEnetDmaObj->rxBufOffset = pDmaCfg->rxChInitPrms.rxBufferOffset;
+        pEnetDmaObj->rxInterruptPerMSec = pDmaCfg->rxInterruptPerMSec;
+        pEnetDmaObj->txInterruptPerMSec = pDmaCfg->txInterruptPerMSec;
+        pEnetDmaObj->enChOverrideFlag = pDmaCfg->enChOverrideFlag;
+        pEnetDmaObj->isResetOngoing = false;
 
         pEnetDmaObj->cpdmaCoreId = EnetCpdma_mapApp2CpdmaCoreId(appCoreId);
 

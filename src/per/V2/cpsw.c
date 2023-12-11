@@ -900,6 +900,7 @@ static void Cpsw_isolatePhy(Cpsw_Handle hCpsw)
 
     for(portNum = 0; portNum < hCpsw->macPortNum; portNum++)
     {
+        Enet_assert(portNum <= CPSW_MAC_PORT_NUM);
         if(hCpsw->hPhy[portNum] != NULL)
         {
             linked = hCpsw->portLinkState[portNum].isLinkUp;

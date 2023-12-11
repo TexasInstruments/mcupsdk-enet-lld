@@ -235,6 +235,7 @@ int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_SET_ISOLATE_STATE(Cpsw_Handle 
     Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
                 "Invalid Port Id: %u\r\n", portNum);
 
+    Enet_assert(portNum <= CPSW_MAC_PORT_NUM);
     hCpsw->hPhy[portNum]->phyCfg.isIsolateStateReq = true;
     EnetPhy_tick(hCpsw->hPhy[portNum]);
 
@@ -251,6 +252,7 @@ int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_CLEAR_ISOLATE_STATE(Cpsw_Handl
     Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
                 "Invalid Port Id: %u\r\n", portNum);
 
+    Enet_assert(portNum <= CPSW_MAC_PORT_NUM);
     hCpsw->hPhy[portNum]->phyCfg.isIsolateStateReq = false;
 
     return status;
