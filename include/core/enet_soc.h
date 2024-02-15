@@ -53,6 +53,10 @@
 #include <soc/k3/am64x_am243x/enet_soc.h>
 #include <soc/k3/k3_soc.h>
 #include <drivers/udma/soc/am64x_am243x/udma_soc.h>
+#elif defined(SOC_AM62AX)
+#include <soc/k3/am62ax/enet_soc.h>
+#include <soc/k3/k3_soc.h>
+#include <drivers/udma/soc/am62ax/udma_soc.h>
 #elif defined (SOC_AM273X)
 #include <soc/am273x/enet_soc.h>
 #elif defined(SOC_AWR294X)

@@ -56,7 +56,7 @@
 #include <include/core/enet_queue.h>
 #include <include/core/enet_dma_pktutils.h>
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
 #include <drivers/udma.h>
 #include <include/dma/udma/enet_udma_types.h>
 #include <include/dma/udma/enet_udma.h>
@@ -80,7 +80,7 @@ extern "C" {
 #if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544) || defined(SOC_AM263X) || defined(SOC_AM263PX)
 /*! * \brief Set to false as Cache is not coherent in AM273X, AWR294X SOC.*/
 #define Enet_isCacheCoherent()                  (false)
-#elif defined(SOC_AM64X) || defined(SOC_AM243X)
+#elif defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
 /*! * \brief Use cache coherent macro from UDMA driver */
 #define Enet_isCacheCoherent()                  (Udma_isCacheCoherent())
 #else

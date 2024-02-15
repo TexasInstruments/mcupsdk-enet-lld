@@ -258,7 +258,7 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
 
     EnetQueue_initQ(pFromHwQueue);
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
     isExposedRing = 0U;
 #endif
 
@@ -390,13 +390,16 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     bool isExposedRing;
     uint64_t *ringMemPtr = NULL, *currRingMemPtr = NULL;
     uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
-    uint32_t tosIndex, i;
+    uint32_t i;
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
+    uint32_t tosIndex;
     uint8_t dscpIPv4En, tosVal;
+#endif
     uint32_t totalPacketFilledLen = 0U;
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -505,7 +508,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                 {
                     ENETUDMA_CPPIPSI_SET_TSEN(*tsInfo, 0U);
                 }
-
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
                 if (Enet_isIcssFamily(hPer->enetType))
                 {
                     uintptr_t baseAddr = (uintptr_t)hPer->virtAddr;
@@ -588,7 +591,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                         }
                     }
                 }
-
+#endif
                 if (dmaPkt->txPortNum != ENET_MAC_PORT_INV)
                 {
                     dstTag = CPSW_ALE_MACPORT_TO_ALEPORT(dmaPkt->txPortNum);
@@ -701,7 +704,7 @@ int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -838,13 +841,16 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
     bool isExposedRing;
     uint64_t *ringMemPtr = NULL, *currRingMemPtr = NULL;
     uint32_t ringWrIdx = 0U, ringMemEleCnt = 0U;
-    uint32_t tosIndex, i;
+    uint32_t i;
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
+    uint32_t tosIndex;
     uint8_t dscpIPv4En, tosVal;
+#endif
     uint32_t totalPacketFilledLen = 0;
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -943,6 +949,7 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
                 ENETUDMA_CPPIPSI_SET_TSEN(*tsInfo, 0U);
             }
 
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
             if (Enet_isIcssFamily(hPer->enetType))
             {
                 uintptr_t baseAddr = (uintptr_t)hPer->virtAddr;
@@ -1025,6 +1032,7 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
                     }
                 }
             }
+#endif
 
             if (pPkt->txPortNum != ENET_MAC_PORT_INV)
             {
@@ -1775,7 +1783,7 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
         EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
         CSL_UdmapCppi5HMPD *pHDesc = &pHpdDesc->hostDesc;
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
         isExposedRing = 0U;
 #endif
         physDescPtr = (uint64_t)EnetUtils_virtToPhys((void *)&pHpdDesc->hostDesc, NULL);
@@ -1868,7 +1876,7 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX)
         isExposedRing = 0U;
 #endif
         if (isExposedRing == true)
@@ -2270,11 +2278,19 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
      * (i.e. large number of RX flows and/or TX channels) */
     if (pUdmaInfo->useGlobalEvt)
     {
+#if defined(SOC_AM62AX)
+        evtPrms.masterEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
+#else
         evtPrms.controllerEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
+#endif
     }
     else
     {
+#if defined(SOC_AM62AX)
+        evtPrms.masterEventHandle = NULL;
+#else
         evtPrms.controllerEventHandle = NULL;
+#endif
     }
 
     evtPrms.eventCb           = eventCb;

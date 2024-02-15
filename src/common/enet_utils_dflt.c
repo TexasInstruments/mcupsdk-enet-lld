@@ -111,13 +111,21 @@ static void EnetUtilsDflt_print(const char *fmt, ...)
 static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
                                              void *appData)
 {
+#if defined(SOC_AM62AX)
+    /*!TODO: have SOC_virtToPhy function for AM62AX */
+    return ((uint64_t)(virtAddr));
+#else
     return ((uint64_t)SOC_virtToPhy((void *)virtAddr));
+#endif
 }
 
 static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
                                           void *appData)
 {
-
+#if defined(SOC_AM62AX)
+    /*!TODO: have SOC_phyToVirt function for AM62AX */
+    return ((void*)(phyAddr));
+#else
     return ((void*) SOC_phyToVirt(phyAddr));
-
+#endif
 }

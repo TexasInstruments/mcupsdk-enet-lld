@@ -2566,6 +2566,7 @@ static uint32_t EnetUdma_getMappedRxChNum(Enet_Type enetType,
     {
         chNum = CSL_DMSS_PKTDMA_RX_CHANS_CPSW_START;
     }
+#if defined(SOC_AM243X) || defined(SOC_AM64X)
     else if (enetType == ENET_ICSSG_SWITCH)
     {
         if (0U == instId)
@@ -2638,6 +2639,7 @@ static uint32_t EnetUdma_getMappedRxChNum(Enet_Type enetType,
             Enet_assert(false);
         }
     }
+#endif
     else
     {
         Enet_assert(false);
@@ -2659,7 +2661,12 @@ uint32_t EnetUdma_getMappedRxChStartIdx(EnetUdma_RxChObj *pRxCh)
     /* Calculate index by subtracting the start idx of mapped channels
      * (For AM64x, mapped channel starts with CPSW channel.) */
     index = chNum - CSL_DMSS_PKTDMA_RX_CHANS_CPSW_START;
+#if defined(SOC_AM62AX)
+    /*TODO!: Remove hard coding of numbers */
+    chStartIdx = (gUdmaRxMappedChRingAttributes[index].startFreeRing - 99U);
+#else
     chStartIdx = (gUdmaRxMappedChRingAttributes[index].startFreeRing - 112U);
+#endif
 
     return chStartIdx;
 }
