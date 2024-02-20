@@ -220,11 +220,17 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
 {
     const EnetTimeSync_TimestampAdj *tsAdj = (const EnetTimeSync_TimestampAdj *)prms->inArgs;
     CSL_CPTS_TS_PPM_DIR ppmDir;
+    CSL_CPTS_ESTF_PPM_DIR estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_DECREASE;
     uint32_t adjOffset;
     uint64_t adjVal;
     uint32_t tsPpmValHi;
     uint32_t tsPpmValLo;
     int32_t status = ENET_SOK;
+    uint32_t idx = 0U;
+    uint32_t estfIdxMask = 0U;
+    uint64_t estfAdjVal = 0U;
+    uint32_t estfPpmValHi = 0U;
+    uint32_t estfPpmValLo = 0U;
 
     if (tsAdj->intervalInNsecs == 0U)
     {
@@ -232,22 +238,32 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
         status = ENET_EINVALIDPARAMS;
     }
 
+    estfIdxMask = hCpts->activeEstfIdxMask;
     if (status == ENET_SOK)
     {
         if (tsAdj->adjValInNsecs == 0)
         {
             CSL_CPTS_setTSPpm(regs, 0U, 0U, CSL_CPTS_TS_PPM_DIR_INCREASE);
+            for(idx = 0U; idx < 8U; idx++)
+            {
+                if ((estfIdxMask & ((uint8_t)ENET_BIT(idx))) != 0U)
+                {
+                    CSL_CPTS_setESTFnPpm(regs, idx, 0U, 0U, 0U);
+                }
+            }
         }
         else
         {
             if (tsAdj->adjValInNsecs > 0)
             {
                 ppmDir = CSL_CPTS_TS_PPM_DIR_INCREASE;
+                estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_INCREASE;
                 adjOffset = tsAdj->adjValInNsecs;
             }
             else
             {
                 ppmDir = CSL_CPTS_TS_PPM_DIR_DECREASE;
+                estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_DECREASE;
                 adjOffset = (uint64_t)(-1 * tsAdj->adjValInNsecs);
             }
 
@@ -261,7 +277,28 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
 
             tsPpmValHi = (uint32_t)(adjVal >> 32U);
             tsPpmValLo = (uint32_t)(adjVal & 0xFFFFFFFFU);
+
+            if(estfIdxMask != 0U)
+            {
+                /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
+                 * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
+                 * need to be corrected.
+                 */
+                estfAdjVal = adjVal * (hCpts->tsAddVal + 1U);
+                estfPpmValHi = (uint32_t)(estfAdjVal >> 32U);
+                estfPpmValLo = (uint32_t)(estfAdjVal & 0xFFFFFFFFU);
+            }
             CSL_CPTS_setTSPpm(regs, tsPpmValLo, tsPpmValHi, ppmDir);
+            if (estfIdxMask != 0U)
+            {
+               for(idx = 0U; idx < ENET_CFG_CPSW_ESTF_NUM; idx++)
+               {
+                   if ((estfIdxMask & ENET_BIT(idx)) != 0U)
+                   {
+                       CSL_CPTS_setESTFnPpm(regs, idx, estfPpmValLo, estfPpmValHi, estfPpmDir);
+                   }
+               }
+            }
         }
     }
     return status;
@@ -567,6 +604,18 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_GENF(CpswCpts_Handle hCpts, C
                                      inArgs->polarityInv,
                                      adjVal,
                                      inArgs->ppmDir);
+        if (status == ENET_SOK)
+        {
+            if (inArgs->length != 0U)
+            {
+                hCpts->activeGenfIdxMask |= ENET_BIT(inArgs->index);
+            }
+            else
+            {
+                /* Zero length means Genf is disabled */
+                hCpts->activeGenfIdxMask &= (~(ENET_BIT(inArgs->index)));
+            }
+        }
         ENETTRACE_ERR_IF(status != ENET_SOK, "Wrong GENFn index value, error: %d\n", status);
     }
     return status;
@@ -624,6 +673,19 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_ESTF(CpswCpts_Handle hCpts, C
                                      inArgs->polarityInv,
                                      adjVal,
                                      inArgs->ppmDir);
+        if (status == ENET_SOK)
+        {
+            if (inArgs->length != 0U)
+            {
+                hCpts->activeEstfIdxMask |= ENET_BIT(inArgs->index);
+            }
+            else
+            {
+                /* Zero length means Estfn is disabled */
+                hCpts->activeEstfIdxMask &= (~(ENET_BIT(inArgs->index)));
+            }
+        }
+
         ENETTRACE_ERR_IF(status != ENET_SOK, "Wrong ESTFn index value, error: %d\n", status);
     }
     return status;

@@ -307,6 +307,9 @@ int32_t CpswCpts_open(EnetMod_Handle hMod,
 #endif
 
     hCpts->tsPushInFifo = false;
+    hCpts->activeGenfIdxMask = 0U;
+    hCpts->activeEstfIdxMask = 0U;
+    hCpts->tsAddVal = cptsCfg->cptsRftClkFreq;
 
     memset(&control, 0, sizeof(CSL_CPTS_CONTROL));
 

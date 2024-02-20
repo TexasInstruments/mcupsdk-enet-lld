@@ -195,6 +195,15 @@ typedef struct CpswCpts_Obj_s
     /*! Current time stamp value maintained by driver, gets updated at every TS_PUSH_EVENT */
     uint64_t tsVal;
 
+    /*! Mask of the active Genf index */
+    uint32_t activeGenfIdxMask;
+
+    /*! Mask of the active Estf index */
+    uint32_t activeEstfIdxMask;
+
+    /*! Store the tsAddVal set during open. */
+    uint8_t tsAddVal;
+
     /*! Notify callback function for registered stack */
     CpswCpts_EventNotifyCb eventNotifyCb;
 
