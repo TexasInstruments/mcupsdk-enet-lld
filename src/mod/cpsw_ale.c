@@ -488,6 +488,10 @@ static Enet_IoctlValidate gCpswAle_ioctlValidate[] =
                           sizeof(CpswAle_SetPolicerEntryInArgs),
                           sizeof(CpswAle_SetPolicerEntryOutArgs)),
 
+    ENET_IOCTL_VALID_PRMS(CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION,
+                          sizeof(CpswAle_SetPolicerEntryInPartitionInArgs),
+                          sizeof(CpswAle_SetPolicerEntryOutArgs)),
+
     ENET_IOCTL_VALID_PRMS(CPSW_ALE_IOCTL_GET_POLICER,
                           sizeof(CpswAle_PolicerMatchParams),
                           sizeof(CpswAle_PolicerEntryOutArgs)),
@@ -589,6 +593,7 @@ static CpswAleIoctlHandlerRegistry_t CpswAleIoctlHandlerRegistry[] =
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_GET_BCAST_MCAST_LIMIT),
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_DISABLE_BCAST_MCAST_LIMIT),
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_SET_POLICER),
+    CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION),
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_GET_POLICER),
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_DEL_POLICER),
     CPSW_ALE_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(CPSW_ALE_IOCTL_DUMP_POLICER_ENTRIES),
@@ -1009,6 +1014,9 @@ static void CpswAle_setAleCfg(CpswAle_Handle hAle,
     /* By default disable default thread enable */
     CpswAle_setPolicerDefaultThreadCfg(hAle, regs, false, 0U, false, false);
 
+    /* Set policer partition levels */
+    CpswAle_setPolicerPartitionLevel(hAle, aleCfg);
+
     /* Configure ALE port control register */
     for (i = 0U; i < hAle->numPorts; i++)
     {
@@ -1194,6 +1202,67 @@ int32_t CpswAle_setPolicerControl(CSL_AleRegs *regs,
         policerControl.policeMatchMode  = (CSL_CPSW_ALE_POLICER_CONTROL_POLICING_MATCH_MODE)policerMatchMode;
 
         CSL_CPSW_setAlePolicerControlReg(regs, &policerControl);
+    }
+
+    return status;
+}
+
+static int32_t CpswAle_setPolicerPartitionLevel(CpswAle_Handle hAle,
+                                                const CpswAle_Cfg *aleCfg)
+{
+    uint32_t i;
+    uint32_t idx;
+    int32_t status = ENET_SOK;
+
+    switch (hAle->enetType)
+    {
+        case ENET_CPSW_9G:
+            idx = CPSW_ALE_9G_POLICERS_MAX;
+            break;
+
+        case ENET_CPSW_5G:
+            idx = CPSW_ALE_5G_POLICERS_MAX;
+            break;
+
+        case ENET_CPSW_3G:
+            idx = CPSW_ALE_3G_POLICERS_MAX;
+            break;
+
+        case ENET_CPSW_2G:
+            idx = CPSW_ALE_2G_POLICERS_MAX;
+            break;
+
+        default:
+            status = ENET_EFAIL;
+            ENETTRACE_ERR("Invalid Ethernet type %u", hAle->enetType);
+            break;
+    }
+
+    if (status == ENET_SOK)
+    {
+        for (i = 0U; i < ENET_ARRAYSIZE(aleCfg->policerTablePartSize); i++)
+        {
+            /* Application gave a partition segment */
+            if (aleCfg->policerTablePartSize[i] != 0U)
+            {
+                hAle->policerTablePartInfo[i].endIdx = idx - 1U;
+                if (idx < aleCfg->policerTablePartSize[i])
+                {
+                    status = ENET_EFAIL;
+                    ENETTRACE_ERR("Invalid ALE policer partition size, out of bounds %u",
+                                  aleCfg->policerTablePartSize[i]);
+                    break;
+                }
+                idx -= aleCfg->policerTablePartSize[i];
+                hAle->policerTablePartInfo[i].startIdx = idx;
+            }
+            else
+            {
+                /* Assign rest of the policer partition as default */
+                hAle->policerTablePartInfo[i].startIdx = 0U;
+                hAle->policerTablePartInfo[i].endIdx = idx - 1U;
+            }
+        }
     }
 
     return status;
@@ -1420,7 +1489,7 @@ void CpswAle_getVlanMcastPortMask(CSL_AleRegs *regs,
         *unregMcastFloodMask = vlanEntry->unRegMcastFloodMask;
         *regMcastFloodMask = vlanEntry->regMcastFloodMask;
     }
-#endif	
+#endif
 }
 
 int32_t CpswAle_setVlanMcastPortMask(CpswAle_Handle hAle,

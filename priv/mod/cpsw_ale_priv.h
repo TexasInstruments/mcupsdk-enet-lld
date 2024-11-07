@@ -62,6 +62,12 @@ extern "C" {
 /*! \brief IP header white-list feature mask. */
 #define CPSW_ALE_FEATURE_IP_HDR_WHITELIST     (ENET_BIT(1U))
 
+/*! \brief Number of words in an ALE Table Entry. */
+#define CPSW_ALE_ENTRY_WORDS                  (3U)
+
+/*! \brief Number of words in an ALE Policer Table Entry. */
+#define CPSW_ALE_POL_ENTRY_WORDS              (8U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -94,6 +100,19 @@ typedef enum CpswAle_AddrType_e
     /*! Destination address type */
     CPSW_ALE_ADDR_TYPE_DST
 } CpswAle_AddrType;
+
+
+/*!
+* \brief Structure to define start and end index of a partition in policer
+*/
+typedef struct CpswAle_PolicerPartInfo_s
+{
+   /*! Partition start index */
+   uint16_t startIdx;
+
+   /*! Partition end index */
+   uint16_t endIdx;
+} CpswAle_PolicerPartInfo;
 
 /*!
  * \brief CPSW ALE object.
@@ -135,6 +154,9 @@ typedef struct CpswAle_Obj_s
 
     /*! Default Port VLAN ID */
     CpswAle_PortVlanCfg pvid[CPSW_ALE_NUM_PORTS];
+
+    /*! ALE policer partition table */
+    CpswAle_PolicerPartInfo policerTablePartInfo[CPSW_ALE_POLICER_TABLE_PART_MAX];
 } CpswAle_Obj;
 
 /*!

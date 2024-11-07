@@ -134,6 +134,12 @@ extern "C" {
 /*! \brief ALE invalid thread id. */
 #define CPSW_ALE_THREADID_INVALID             (~0U)
 
+/*! \brief Max number of ALE Table entries saved. */
+#define CPSW_ALE_MAX_TABLE_ENTRY_SAVED         50U
+
+/*! \brief Max number of ALE Policer Table entries saved. */
+#define CPSW_ALE_MAX_POLICER_ENTRY_SAVED       64U
+
 /*!
  * \name ALE configuration definitions.
  *
@@ -151,6 +157,9 @@ extern "C" {
 
 /*! \brief Enable Unknown unicast packet flooding to host port. */
 #define CPSW_ALE_CFG_UNKNOWN_UCAST_FLOOD2HOST (ENET_BIT(2U))
+
+/*! \brief Enable multihost mode in supported devices. */
+#define CPSW_ALE_CFG_MULTIHOST                (ENET_BIT(3U))
 
 /*! @} */
 
@@ -193,6 +202,9 @@ extern "C" {
 
 /*! \brief Enable classifier match with IPv4/IPv6 destination address. */
 #define CPSW_ALE_POLICER_MATCH_IPDST          (ENET_BIT(9U))
+
+/*! Maximum number of partition levels policer table can be divided into */
+#define CPSW_ALE_POLICER_TABLE_PART_MAX        (5U)
 
 /*! @} */
 
@@ -765,6 +777,19 @@ typedef enum CpswAle_Ioctl_e
      */
     CPSW_ALE_IOCTL_GET_INTERVLAN_CFG = CPSW_ALE_PUBLIC_IOCTL(45U),
 
+    /*!
+     * \brief Sets policer/classifier entry in a specified policer partition.
+     * See \ref CpswAle_Cfg::policerTablePartSize for details about policer
+     * table partition configuration.
+     *
+     * IOCTL params:
+     * -  inArgs: #CpswAle_SetPolicerEntryInPartitionInArgs
+     * - outArgs: #CpswAle_SetPolicerEntryOutArgs
+     *
+     * Calling context: Task
+     */
+    CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION = CPSW_ALE_PUBLIC_IOCTL(46U),
+
 } CpswAle_Ioctl;
 
 
@@ -834,6 +859,23 @@ typedef enum CpswAle_RxFilter_e
     /*! Receive filter set to All */
     CPSW_ALE_RXFILTER_ALL,
 } CpswAle_RxFilter;
+
+/*!
+ * \brief Policer partition types
+ */
+typedef enum CpswAle_PolicerPartLevel_e
+{
+    /*! Policer partition level 1 */
+    CPSW_ALE_POLICER_PARTITION_LEVEL_1 = 0U,
+    /*! Policer partition level 2 */
+    CPSW_ALE_POLICER_PARTITION_LEVEL_2,
+    /*! Policer partition level 3 */
+    CPSW_ALE_POLICER_PARTITION_LEVEL_3,
+    /*! Policer partition level 4 */
+    CPSW_ALE_POLICER_PARTITION_LEVEL_4,
+    /*! Policer partition level default */
+    CPSW_ALE_POLICER_PARTITION_DEFAULT
+} CpswAle_PolicerPartLevel;
 
 /*!
  * \brief MAC address and VLAN Id.
@@ -1472,6 +1514,30 @@ typedef struct CpswAle_SetPolicerEntryInArgs_s
 } CpswAle_SetPolicerEntryInArgs;
 
 /*!
+ * \brief Input args for #CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION command.
+ */
+typedef struct CpswAle_SetPolicerEntryInPartitionInArgs_s
+{
+    /*! Policer match config */
+    CpswAle_PolicerMatchParams policerMatch;
+
+    /*! Enable threadid setting for this policer entry */
+    bool threadIdEn;
+
+    /*! Thread Id which will be enabled for this policer match */
+    uint32_t threadId;
+
+    /*! Peak rate in bits per second. 0 indicates rate limit is disabled */
+    uint32_t peakRateInBitsPerSec;
+
+    /*! Commit rate in bits per second. 0 indicates rate limit is disabled */
+    uint32_t commitRateInBitsPerSec;
+
+    /*! Priority of the entry in policer table */
+    CpswAle_PolicerPartLevel policerPartLevel;
+} CpswAle_SetPolicerEntryInPartitionInArgs;
+
+/*!
  * \brief Input args for #CPSW_ALE_IOCTL_SET_POLICER command
  */
 typedef struct CpswAle_SetPolicerEntryOutArgs_s
@@ -2039,6 +2105,13 @@ typedef struct CpswAle_Cfg_s
 
     /*! ALE Port configs */
     CpswAle_PortCfg portCfg[CPSW_ALE_NUM_PORTS];
+
+    /*! Policer table partition into levels. Partition configuration
+     *  must be provided from high priority level (\ref CPSW_ALE_POLICER_PARTITION_LEVEL_1)
+     *  to lowest (\ref CPSW_ALE_POLICER_PARTITION_DEFAULT).
+     *  Unused partitions should be set to 0, in which case, they are clubbed to
+     *  default partition. */
+    uint32_t policerTablePartSize[CPSW_ALE_POLICER_TABLE_PART_MAX];
 } CpswAle_Cfg;
 
 /* ========================================================================== */

@@ -509,7 +509,8 @@ static int32_t CpswAle_setPortTrunkConfig(CpswAle_Handle hAle,
                                           const CpswAle_TrunkCfg *trunkCfg);
 
 static int32_t CpswAle_allocPolicerEntry(CSL_AleRegs *regs,
-                                         uint32_t *freePolicerEntry);
+                                         uint32_t *freePolicerEntry,
+                                         const CpswAle_PolicerPartInfo* policerPartInfo);
 
 static int32_t CpswAle_setPortBcastMcastLimit(CSL_AleRegs *regs,
                                               uint32_t aleFreqHz,
@@ -529,6 +530,8 @@ static int32_t CpswAle_getPortBcastMcastLimit(CSL_AleRegs *regs,
 
 static void CpswAle_dumpPolicerEntries(CpswAle_Handle hAle,
                                        CSL_AleRegs *regs);
+
+static void CpswAle_dumpPolicerPartitionLevel(const CpswAle_Handle hAle);
 
 static int32_t CpswAle_delOuiAddr(CpswAle_Handle hAle,
                                   CSL_AleRegs *regs,
@@ -556,7 +559,8 @@ static int32_t CpswAle_setPolicer(CpswAle_Handle hAle,
                                   uint32_t aleFreqHz,
                                   bool threadIdEn,
                                   uint32_t threadId,
-                                  CpswAle_SetPolicerEntryOutArgs *outArgs);
+                                  CpswAle_SetPolicerEntryOutArgs *outArgs,
+                                  CpswAle_PolicerPartLevel policerPartLevel);
 
 static int32_t CpswAle_setIPSrcDstPolicerEntry(CpswAle_Handle hAle,
                                                CSL_AleRegs *regs,
@@ -2805,15 +2809,19 @@ static int32_t CpswAle_setPortTrunkConfig(CpswAle_Handle hAle,
 }
 
 static int32_t CpswAle_allocPolicerEntry(CSL_AleRegs *regs,
-                                         uint32_t *freePolicerEntry)
+                                         uint32_t *freePolicerEntry,
+                                         const CpswAle_PolicerPartInfo* policerPartInfo)
 {
     CSL_CPSW_ALE_POLICER_ENTRY policerEntry;
-    uint32_t numPolicerEntries;
     int32_t status;
     uint32_t i;
+    uint32_t policerStartIndex;
+    uint32_t policerEndIndex;
 
-    CSL_CPSW_getAleStatusNumPolicers(regs, &numPolicerEntries);
-    for (i = 0U; i < numPolicerEntries; i++)
+    policerStartIndex = policerPartInfo->startIdx;
+    policerEndIndex = policerPartInfo->endIdx;
+
+    for (i = policerStartIndex; i < policerEndIndex; i++)
     {
         CSL_CPSW_getAlePolicerEntry(regs, i, &policerEntry);
         if (policerEntry.validBitmap == 0)
@@ -2822,7 +2830,7 @@ static int32_t CpswAle_allocPolicerEntry(CSL_AleRegs *regs,
         }
     }
 
-    if (i < numPolicerEntries)
+    if (i < policerEndIndex)
     {
         *freePolicerEntry = i;
         status = ENET_SOK;
@@ -3058,6 +3066,19 @@ static void CpswAle_dumpPolicerEntries(CpswAle_Handle hAle,
     EnetUtils_printf("%d Free Entries \r\n", freeEntries);
 }
 
+static void CpswAle_dumpPolicerPartitionLevel(const CpswAle_Handle hAle)
+{
+    uint32_t i;
+
+    for (i = 0U; i < ENET_ARRAYSIZE(hAle->policerTablePartInfo); i++)
+    {
+        ENETTRACE_INFO("Level %d:  startIdx:%d endIdx:%d",
+                         i + 1U,
+                         hAle->policerTablePartInfo[i].startIdx,
+                         hAle->policerTablePartInfo[i].endIdx);
+    }
+}
+
 static int32_t CpswAle_delOuiAddr(CpswAle_Handle hAle,
                                   CSL_AleRegs *regs,
                                   const CpswAle_OuiAddrType ouiAddr)
@@ -3132,18 +3153,23 @@ static int32_t CpswAle_setPolicer(CpswAle_Handle hAle,
                                   uint32_t aleFreqHz,
                                   bool threadIdEn,
                                   uint32_t threadId,
-                                  CpswAle_SetPolicerEntryOutArgs *outArgs)
+                                  CpswAle_SetPolicerEntryOutArgs *outArgs,
+                                  CpswAle_PolicerPartLevel policerPartLevel)
 {
     uint32_t policerEntryIdx = (uint32_t)ENET_EALLOC;
     uint32_t aleFreeEntryMask;
     bool policerAlloced;
     int32_t status = ENET_SOK;
+    CpswAle_PolicerPartInfo policerPartInfo;
+
+    policerPartInfo.startIdx = hAle->policerTablePartInfo[policerPartLevel].startIdx;
+    policerPartInfo.endIdx = hAle->policerTablePartInfo[policerPartLevel].endIdx;
 
     policerAlloced = FALSE;
     aleFreeEntryMask = 0;
     if (NOT_ZERO(policerMatchParams->policerMatchEnMask))
     {
-        status = CpswAle_allocPolicerEntry(regs, &policerEntryIdx);
+        status = CpswAle_allocPolicerEntry(regs, &policerEntryIdx, &policerPartInfo);
         if (status == ENET_SOK)
         {
             outArgs->policerEntryIdx = policerEntryIdx;
@@ -4477,7 +4503,8 @@ static int32_t CpswAle_setInterVlanConfig(CpswAle_Handle hAle,
                                     aleFreqHz,
                                     FALSE,
                                     CPSW_ALE_THREADID_INVALID,
-                                    &policerSetOutArgs);
+                                    &policerSetOutArgs,
+	                                CPSW_ALE_POLICER_PARTITION_DEFAULT);
         if (status == ENET_SOK)
         {
             policerIdx = policerSetOutArgs.policerEntryIdx;
@@ -4529,7 +4556,8 @@ static int32_t CpswAle_configThreadPolicer(CpswAle_Handle hAle,
                                     aleFreqHz,
                                     FALSE,
                                     CPSW_ALE_THREADID_INVALID,
-                                    &policerSetOutArgs);
+                                    &policerSetOutArgs,
+	                                CPSW_ALE_POLICER_PARTITION_DEFAULT);
         if (status == ENET_SOK)
         {
             policerIdx = policerSetOutArgs.policerEntryIdx;
@@ -5720,10 +5748,29 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_POLICER(CpswAle_Handle hAle, CS
                                 hAle->aleFreqHz,
                                 inArgs->threadIdEn,
                                 inArgs->threadId,
-                                outArgs);
+                                outArgs,
+                                CPSW_ALE_POLICER_PARTITION_DEFAULT);
     return status;
 }
 
+int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
+{
+    const CpswAle_SetPolicerEntryInPartitionInArgs *inArgs = (const CpswAle_SetPolicerEntryInPartitionInArgs *)prms->inArgs;
+    CpswAle_SetPolicerEntryOutArgs *outArgs = (CpswAle_SetPolicerEntryOutArgs *)prms->outArgs;
+    int32_t status = ENET_SOK;
+
+    status = CpswAle_setPolicer(hAle,
+                                regs,
+                                &inArgs->policerMatch,
+                                inArgs->peakRateInBitsPerSec,
+                                inArgs->commitRateInBitsPerSec,
+                                hAle->aleFreqHz,
+                                inArgs->threadIdEn,
+                                inArgs->threadId,
+                                outArgs,
+                                inArgs->policerPartLevel);
+    return status;
+}
 
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_GET_POLICER(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
 {
@@ -5749,6 +5796,7 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DUMP_POLICER_ENTRIES(CpswAle_Handle
     int32_t status = ENET_SOK;
 
     CpswAle_dumpPolicerEntries(hAle, regs);
+    CpswAle_dumpPolicerPartitionLevel(hAle);
     return status;
 }
 

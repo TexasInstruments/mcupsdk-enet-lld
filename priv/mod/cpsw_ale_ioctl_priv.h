@@ -162,6 +162,9 @@ int32_t CpswAle_setPolicerControl(CSL_AleRegs *regs,
                                   CpswAle_PolicerNoMatchMode policerMatchMode,
                                   const CpswAle_UnregulatedTrafficPolicer *noMatchPolicer);
 
+static int32_t CpswAle_setPolicerPartitionLevel(CpswAle_Handle hAle,
+                                                const CpswAle_Cfg *aleCfg);
+
 
 int32_t CpswAle_ioctl_handler_ENET_FDB_IOCTL_GET_VERSION(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_ENET_FDB_IOCTL_PRINT_REGS(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
@@ -200,6 +203,7 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_BCAST_MCAST_LIMIT(CpswAle_Handl
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_GET_BCAST_MCAST_LIMIT(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DISABLE_BCAST_MCAST_LIMIT(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_POLICER(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
+int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_POLICER_IN_PARTITION(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_GET_POLICER(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DEL_POLICER(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DUMP_POLICER_ENTRIES(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms);
