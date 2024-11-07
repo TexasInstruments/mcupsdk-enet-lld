@@ -632,7 +632,7 @@ void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
     EnetAppUtils_setDeviceState(moduleId, TISCI_MSG_VALUE_DEVICE_SW_STATE_AUTO_OFF, appFlags);
 }
 
-int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t input, uint32_t output)
+int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint32_t input, uint32_t output)
 {
     int32_t  status = ENET_SOK;
 

@@ -215,43 +215,6 @@ static int EnetApp_initTsn(void)
     return res;
 }
 
-static bool IsMacAddrSet(uint8_t *mac)
-{
-    return ((mac[0]|mac[1]|mac[2]|mac[3]|mac[4]|mac[5]) != 0);
-}
-
-uint32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr, uint32_t vlanId,
-                                    uint32_t ethType, uint32_t rxFlowIdx)
-{
-    Enet_IoctlPrms prms;
-    CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
-    CpswAle_SetPolicerEntryInArgs setPolicerEntryInArgs;
-    int32_t status;
-
-    if (IsMacAddrSet(dstMacAddr) == true)
-    {
-        status = EnetAppUtils_addAllPortMcastMembership(hEnet, dstMacAddr);
-        if (status != ENET_SOK) {
-            EnetAppUtils_print("EnetAppUtils_addAllPortMcastMembership failed: %d\r\n", status);
-        }
-    }
-    memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-
-    if (ethType > 0) {
-        setPolicerEntryInArgs.policerMatch.policerMatchEnMask |=
-            CPSW_ALE_POLICER_MATCH_ETHERTYPE;
-        setPolicerEntryInArgs.policerMatch.etherType = ethType;
-    }
-    setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
-    setPolicerEntryInArgs.threadIdEn = true;
-    setPolicerEntryInArgs.threadId = rxFlowIdx;
-
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerEntryInArgs, &setPolicerEntryOutArgs);
-    ENET_IOCTL(hEnet, coreId,
-            CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
-    return status;
-}
-
 static void EnetApp_enableTsSync()
 {
     Enet_IoctlPrms prms;
@@ -552,25 +515,4 @@ static void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
     EnetAppUtils_print("MAC Port %u: link %s\r\n",
                        ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
     notify_linkchange();
-}
-
-int32_t EnetApp_filterPriorityPacketsCfg(Enet_Handle hEnet, uint32_t coreId)
-{
-    EnetMacPort_SetPriorityRegenMapInArgs params;
-    Enet_IoctlPrms prms;
-    int32_t retVal = ENET_SOK;
-
-    params.macPort = ENET_MAC_PORT_1;
-
-    params.priorityRegenMap.priorityMap[0] =0U;
-    for (int i = 1; i < 8U; i++)
-    {
-        params.priorityRegenMap.priorityMap[i] =1U;  // Map all priorities from (1 to 7) to priority 1, these packets will be received on DMA channel 1.
-    }
-
-    ENET_IOCTL_SET_IN_ARGS(&prms, &params);
-
-    ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_SET_PRI_REGEN_MAP, &prms, retVal);
-
-    return retVal;
 }

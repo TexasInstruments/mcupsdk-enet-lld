@@ -445,6 +445,14 @@ void LWIPIF_LWIP_rxPktHandler(struct netif *netif)
     {
         Lwip2Enet_rxPktHandler(pInterface->hRx[idx]);
     }
+    if(pInterface->hRxProxyArp != NULL)
+    {
+        Lwip2Enet_rxPktHandler(pInterface->hRxProxyArp);
+    }
+    if(pInterface->hRxVepa != NULL)
+    {
+        Lwip2Enet_rxPktHandler(pInterface->hRxVepa);
+    }
 }
 
 void LWIPIF_LWIP_txPktHandler(struct netif *netif)

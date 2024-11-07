@@ -57,13 +57,14 @@
 
 #include <drivers/uart.h>
 #include <kernel/dpl/CacheP.h>
+#include <kernel/dpl/ClockP.h>
+#include <kernel/dpl/CycleCounterP.h>
+#include <kernel/nortos/dpl/common/printf.h>
 
 #include "include/enet_apputils.h"
 #include "include/enet_appboardutils.h"
 #include "include/enet_appsoc.h"
 #include "include/enet_apprm.h"
-#include <kernel/dpl/CacheP.h>
-#include <kernel/nortos/dpl/common/printf.h>
 
 
 
@@ -71,7 +72,21 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* None */
+#define __NOP  asm (" NOP ")
+
+#define NOP5   do { __NOP; __NOP; __NOP; __NOP; __NOP; } while (0)
+
+#define NOP10  NOP5; \
+               NOP5
+
+#define NOP50  NOP10; \
+               NOP10; \
+               NOP10; \
+               NOP10; \
+               NOP10
+
+/* Second to microsecs conversion factor */
+#define ENET_APPUTILS_SEC2MICROSEC           (1000000ULL)
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -1266,6 +1281,21 @@ int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
     status = ENET_ENOTSUPPORTED;
 #endif
     return status;
+}
+
+void EnetAppUtils_delayInUsec(uint32_t delayInUsecs)
+{
+   uint32_t delayTicks = ClockP_usecToTicks(delayInUsecs);
+   uint32_t startTick = CycleCounterP_getCount32();
+   uint32_t currentTick = 0U;
+   uint32_t elapsedTicks = 0U;
+
+   while (elapsedTicks < delayTicks)
+   {
+       NOP50;
+       currentTick = CycleCounterP_getCount32();
+       elapsedTicks = currentTick - startTick;
+   }
 }
 
 /* end of file */

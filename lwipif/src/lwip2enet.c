@@ -57,7 +57,7 @@
 #include "lwip/inet_chksum.h"
 #include "lwip/prot/ip.h"
 #include <lwip/netif.h>
-#include <networking/enet/core/lwipif/inc/lwipif2enet_AppIf.h>
+#include <networking/enet/core/lwipif/inc/lwipif2enet_appif.h>
 
 /**
  * Enet device specific header files
@@ -152,7 +152,7 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
 static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
                                      EnetDma_PktQ *pSubmitQ);
 
-void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx);
+uint32_t Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx);
 
 static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg);
 
@@ -191,6 +191,10 @@ void LwipifEnetApp_getRxChIDs(const Enet_Type enetType, const uint32_t instId, u
 void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId,  uint32_t netifIdx, uint32_t* pTxChIdCount, uint32_t txChIdList[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL]);
 
 uint32_t LwipifEnetAppCb_getMacPort(const Enet_Type enetType, const uint32_t instId);
+
+void LwipifEnetApp_getProxyArpRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL]);
+
+void LwipifEnetApp_setupProxyArphandler(const Enet_Type enetType, const uint32_t instId, Lwip2Enet_RxHandle hRx);
 
 /*---------------------------------------------------------------------------*\
  |                         Local Variable Declarations                         |
@@ -284,6 +288,7 @@ Enet_MacPort Lwip2Enet_findMacPortFromEnet(Enet_Type enetType, uint32_t instId) 
     }
     return macPort;
 }
+Lwip2Enet_netif_t*  gInterface;
 
 Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct netif *netif, uint32_t netifIdx)
 {
@@ -293,6 +298,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     EnetApp_HandleInfo                 handleInfo;
     Lwip2Enet_Handle    hLwip2Enet = Lwip2Enet_allocateObj();
     Lwip2Enet_netif_t*  pInterface = &(hLwip2Enet->interfaceInfo[hLwip2Enet->numOpenedNetifs++]);
+    gInterface = pInterface;
     uint32_t txChIdCount = 0, rxChIdCount = 0;
 
     /* get TxChID & RxChID and the corresponding channel counts */
@@ -301,7 +307,8 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
 
 
     EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
-    Lwip2Enet_assert(handleInfo.hEnet != NULL);
+    /* LwIP need to work without underlying Enet layer as well. Cleaner way has to be implemented. */
+    /* Lwip2Enet_assert(handleInfo.hEnet != NULL); */
     pInterface->hEnet = handleInfo.hEnet;
 
     /* MCast List is EMPTY */
@@ -393,7 +400,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
             pInterface->macPort = macPort;
         }
 
-        // MAC address allocation for the Netifs
+        /* MAC address allocation for the Netifs */
         EnetApp_getMacAddress(rxChId, &macAddr);
         if (macAddr.macAddressCnt > 0)
         {
@@ -417,6 +424,33 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         }
     }
     pInterface->count_hRx = rxChIdCount;
+
+    uint32_t proxyArpRxChIdCount = 0U;
+    uint32_t proxyArpRxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    LwipifEnetApp_getProxyArpRxChIDs(enetType, instId, netifIdx, &proxyArpRxChIdCount, &proxyArpRxChIdList[0]);
+
+    if(proxyArpRxChIdCount == 0U)
+    {
+        pInterface->hRxProxyArp = NULL;
+    }
+    else if(proxyArpRxChIdCount == 1U)
+    {
+        const uint32_t rxChId = proxyArpRxChIdList[0U];
+        pInterface->hRxProxyArp = Lwip2Enet_allocateRxHandle(hLwip2Enet, enetType, instId, rxChId);
+        Lwip2Enet_initRxObj(enetType, instId, rxChId, pInterface->hRxProxyArp);
+        LwipifEnetApp_setupProxyArphandler(enetType, instId, pInterface->hRxProxyArp);
+
+        pInterface->hRxProxyArp->hLwip2Enet = hLwip2Enet;
+        for(uint32_t macPort = 0U; macPort < LWIPIF_MAX_NUM_MAC_PORTS; macPort++)
+        {
+            pInterface->hRxProxyArp->mapPortToNetif[macPort] = netif;
+        }
+        pInterface->hRxProxyArp->mapPortToNetif[1U] = netif;
+    }
+    else
+    {
+        Lwip2Enet_assert(false);
+    }
 
     /* Get initial link/interface status from the driver */
     pInterface->isLinkUp = hLwip2Enet->appInfo.isPortLinkedFxn(pInterface->hEnet);
@@ -1291,10 +1325,24 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                     Lwip2Enet_assert(false);
                 }
                 }
+                bool handled = FALSE;
+                if (rx->handlePktFxn != NULL)
+                {
+                    handled = rx->handlePktFxn(netif, hPbufPacket);
+                }
 
-                Lwip2Enet_assert(netif != NULL);
-                LWIPIF_LWIP_input(rx, netif, hPbufPacket);
-                packetCount++;
+                if (!handled)
+                {
+                    /* Pass the received packet to the LwIP stack */
+                    Lwip2Enet_assert(netif != NULL);
+                    LWIPIF_LWIP_input(rx, netif, hPbufPacket);
+                    packetCount++;
+                }
+                else
+                {
+                    /* Free old pbuf, allocate a fresh new one. Can we recycle same as is? */
+                    pbuf_free(hPbufPacket);
+                }
             }
             else
             {
@@ -1515,7 +1563,7 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
     LWIP2ENETSTATS_ADDNUM(&rx->stats.freeAppPktEnq, EnetQueue_getQCount(cqPktInfoQ));
 }
 
-void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx)
+uint32_t Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx)
 {
     EnetDma_PktQ tempQueue;
     uint32_t packetCount = 0U;
@@ -1554,6 +1602,7 @@ void Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx)
     {
         Lwip2Enet_updateTxNotifyStats(&hTx->stats.pktStats, packetCount, 0U);
     }
+    return packetCount;
 }
 
 static void Lwip2Enet_timerCb(ClockP_Object *hClk, void * arg)

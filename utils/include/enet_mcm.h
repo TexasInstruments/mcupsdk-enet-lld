@@ -66,6 +66,9 @@ extern "C" {
 /*                                 Macros                                     */
 /* ========================================================================== */
 
+typedef void (*EnetMcm_setPortLinkCfg)(EnetPer_PortLinkCfg *linkArgs,
+                                       Enet_MacPort macPort);
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -74,6 +77,14 @@ typedef struct EnetMcm_InitConfig_s
     Enet_Type enetType;
 
     uint32_t instId;
+
+    void *perCfg;
+
+    EnetMcm_setPortLinkCfg setPortLinkCfg;
+
+    Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
+
+    uint8_t numMacPorts;
 
     uint32_t periodicTaskPeriod;
 
@@ -106,27 +117,42 @@ typedef struct EnetMcm_CmdIf_s
 
 int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg);
 
-void  EnetMcm_getCmdIf(Enet_Type enetType,
-                       EnetMcm_CmdIf *hMcmCmdIf);
+void EnetMcm_getCmdIf(Enet_Type enetType,
+                      EnetMcm_CmdIf *hMcmCmdIf);
 
-void     EnetMcm_acquireHandleInfo(const EnetMcm_CmdIf *hMcmCmdIf,
-                                   EnetMcm_HandleInfo *handleInfo);
+void EnetMcm_releaseCmdIf(Enet_Type enetType,
+                          EnetMcm_CmdIf *hMcmCmdIf);
 
-void     EnetMcm_coreAttach(const EnetMcm_CmdIf *hMcmCmdIf,
-                            uint32_t coreId,
-                            EnetPer_AttachCoreOutArgs *attachInfo);
+void EnetMcm_acquireHandleInfo(const EnetMcm_CmdIf *hMcmCmdIf,
+                               EnetMcm_HandleInfo *handleInfo);
 
-void     EnetMcm_coreDetach(const EnetMcm_CmdIf *hMcmCmdIf,
-                            uint32_t coreId,
-                            uint32_t coreKey);
+void EnetMcm_coreAttach(const EnetMcm_CmdIf *hMcmCmdIf,
+                        uint32_t coreId,
+                        EnetPer_AttachCoreOutArgs *attachInfo);
+
+void EnetMcm_coreDetach(const EnetMcm_CmdIf *hMcmCmdIf,
+                        uint32_t coreId,
+                        uint32_t coreKey);
 
 int32_t EnetMcm_ioctl(const EnetMcm_CmdIf *hMcmCmdIf,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms);
 
-void            EnetMcm_releaseHandleInfo(const EnetMcm_CmdIf *hMcmCmdIf);
+void EnetMcm_releaseHandleInfo(const EnetMcm_CmdIf *hMcmCmdIf);
 
-void            EnetMcm_deInit(Enet_Type enetType);
+void EnetMcm_deInit(Enet_Type enetType);
+
+void EnetMcm_saveCtxt(const EnetMcm_CmdIf *hMcmCmdIf);
+
+int32_t EnetMcm_restoreCtxt(const EnetMcm_CmdIf *hMcmCmdIf);
+
+int32_t EnetMcm_closeMacPorts(const EnetMcm_CmdIf *hMcmCmdIf);
+
+int32_t EnetMcm_openMacPorts(const EnetMcm_CmdIf *hMcmCmdIf);
+
+void EnetMcm_stopPeriodicTick(const EnetMcm_CmdIf *hMcmCmdIf);
+
+void EnetMcm_startPeriodicTick(const EnetMcm_CmdIf *hMcmCmdIf);
 
 #ifdef __cplusplus
 }

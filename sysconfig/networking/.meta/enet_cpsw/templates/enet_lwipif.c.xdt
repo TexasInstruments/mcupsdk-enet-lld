@@ -78,6 +78,7 @@
 
 #include <lwip2lwipif.h>
 #include <custom_pbuf.h>
+#include <lwip/prot/ieee.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -264,6 +265,14 @@ static void LwipifEnetApp_postPollEvent(ClockP_Object *obj, void* pArg);
 static void LwipifEnetApp_postRxPktEvent(void* pArg);
 
 static void LwipifEnetApp_postTxPktEvent(void* pArg);
+%}
+
+%if (module.getNetifConfig(instance,0).enableProxyArp == true){
+extern bool EthFwCallbacks_handleArpRxPktFxn(struct netif *netif, struct pbuf *pbuf);
+%}
+
+%if (module.getNetifConfig(instance,0).enableVepa == true){
+extern bool EthFwCallbacks_handlePacketDuplicationRxPktFxn(struct netif *netif, struct pbuf *pbuf);
 %}
 
 LwipifEnetApp_Handle LwipifEnetApp_getHandle()
@@ -702,6 +711,7 @@ void LwipifEnetApp_startSchedule(LwipifEnetApp_Handle handle, struct netif *neti
     uint32_t status = ENET_SOK;
     const uint32_t netifIdx = LwipifEnetApp_getNetifIdx(handle, netif);
 
+    EnetAppUtils_assert(netif != NULL);
     EnetAppUtils_assert(netifIdx < LWIPIF_NUM_TX_PACKET_TASKS);
     EnetAppUtils_assert(netifIdx < LWIPIF_NUM_RX_PACKET_TASKS);
 
@@ -742,7 +752,7 @@ void LwipifEnetApp_startSchedule(LwipifEnetApp_Handle handle, struct netif *neti
     if (netifIdx == 0)
     {
         pObj->task.pollTask.shutDownFlag =false;
-        pObj->task.pollTask.netif = &pObj->gNetif[0]; // link to the first in the list
+        pObj->task.pollTask.netif = netif; // link to the first in the list
         /* Initialize Polling task*/
         LwipifEnetApp_createPollTask(&pObj->task.pollTask);
     }
@@ -856,6 +866,107 @@ void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId, u
     return;
 }
 
+void LwipifEnetApp_getProxyArpRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL])
+{
+%if(soc == "am62px")
+%{
+    int32_t netif2ChMap[ENET_SYSCFG_NETIF_COUNT][LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL] = `netifScript.getNetifProxyArpRxCh()`;
+    uint32_t chCount;
+    
+    EnetAppUtils_assert(netifIdx < ENET_SYSCFG_NETIF_COUNT);
+    
+    for (chCount = 0U; ((chCount < LWIPIF_MAX_RX_CHANNELS_PROXYARP) && (netif2ChMap[netifIdx][chCount] != -1)); chCount++)
+    {
+        rxChIdList[chCount] = netif2ChMap[netifIdx][chCount];
+    }
+    
+    EnetAppUtils_assert(chCount <= 1);
+    *pRxChIdCount = chCount;
+    return;
+%}
+}
+
+void LwipifEnetApp_getVepaRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL])
+{
+%if(soc == "am62px")
+%{
+    int32_t netif2ChMap[ENET_SYSCFG_NETIF_COUNT][LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL] = `netifScript.getNetifVepaRxCh()`;
+    uint32_t chCount;
+    
+    EnetAppUtils_assert(netifIdx < ENET_SYSCFG_NETIF_COUNT);
+    
+    for (chCount = 0U; ((chCount < LWIPIF_MAX_RX_CHANNELS_PROXYARP) && (netif2ChMap[netifIdx][chCount] != -1)); chCount++)
+    {
+        rxChIdList[chCount] = netif2ChMap[netifIdx][chCount];
+    }
+    
+    EnetAppUtils_assert(chCount <= 1);
+    *pRxChIdCount = chCount;
+    return;
+%}
+}
+
+void LwipifEnetApp_setupProxyArphandler(const Enet_Type enetType, const uint32_t instId, Lwip2Enet_RxHandle hRx)
+{
+%if (module.getNetifConfig(instance,0).enableProxyArp == true){
+    const uint8_t bcastAddr[ENET_MAC_ADDR_LEN] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    EnetApp_HandleInfo handleInfo;
+    CpswAle_SetPolicerEntryInArgs polInArgs;
+    CpswAle_SetPolicerEntryOutArgs polOutArgs;
+    Enet_IoctlPrms prms;
+    int32_t status = ENET_SOK;
+
+    uint32_t coreId = EnetSoc_getCoreId();
+    EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
+
+    /* Set policer params for ARP EtherType matching */
+    polInArgs.policerMatch.policerMatchEnMask = CPSW_ALE_POLICER_MATCH_ETHERTYPE;
+    polInArgs.policerMatch.etherType = ETHTYPE_ARP;
+    polInArgs.policerMatch.portIsTrunk = BFALSE;
+
+    /* Set policer params for broadcast address matching
+     * Note that policer IOCTL takes a port number not a port mask which is what
+     * we really need (mask = CPSW_ALE_ALL_PORTS_MASK).  So, we would have to
+     * amend the ALE broadcast entry with another IOCTL, but the EthFw library
+     * creates such broadcast entry (see EthFw_setAleBcastEntry(), so we
+     * intentionally won't do it here. */
+    polInArgs.policerMatch.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_MACDST;
+    polInArgs.policerMatch.dstMacAddrInfo.portNum = CPSW_ALE_HOST_PORT_NUM;
+    polInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = 0U;
+    EnetUtils_copyMacAddr(&polInArgs.policerMatch.dstMacAddrInfo.addr.addr[0], &bcastAddr[0]);
+
+    polInArgs.threadIdEn = BTRUE;
+    polInArgs.threadId   = hRx->flowIdx;
+    polInArgs.peakRateInBitsPerSec   = 0U;
+    polInArgs.commitRateInBitsPerSec = 0U;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &polInArgs, &polOutArgs);
+
+    ENET_IOCTL(handleInfo.hEnet, coreId, CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
+    EnetAppUtils_assert((status == ENET_SOK));
+
+    hRx->handlePktFxn = EthFwCallbacks_handleArpRxPktFxn;
+%}
+}
+
+void LwipifEnetApp_setupPacketDuplicationRoute(const Enet_Type enetType, const uint32_t instId, Lwip2Enet_RxHandle hRx)
+{
+%if (module.getNetifConfig(instance,0).enableVepa == true){
+    EnetApp_HandleInfo handleInfo;
+    int32_t status = ENET_SOK;
+
+    EnetApp_acquireHandleInfo(enetType, instId, &handleInfo);
+
+    /* Set packet duplication flow id */
+    if (status == ENET_SOK)
+    {
+        status = EthFwVepa_setPacketDuplicationFlowIdx(hRx->flowIdx);
+        EnetAppUtils_assert((status == ENET_SOK));
+    }
+
+    hRx->handlePktFxn = EthFwCallbacks_handlePacketDuplicationRxPktFxn;
+%}
+}
 
 Lwip2Enet_RxMode_t LwipifEnetAppCb_getRxMode(Enet_Type enetType, uint32_t instId)
 {

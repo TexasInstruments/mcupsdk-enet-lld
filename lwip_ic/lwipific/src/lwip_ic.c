@@ -125,7 +125,7 @@ __attribute__ ((section (".ipc_data_buffer"), aligned (8)));
 /*                    API/Public Function Definitions                         */
 /* ========================================================================== */
 
-void LwipIc_printf(const char *fmt,
+void LwipIc_printf(char *fmt,
                       ...)
 {
     DebugP_log(fmt);

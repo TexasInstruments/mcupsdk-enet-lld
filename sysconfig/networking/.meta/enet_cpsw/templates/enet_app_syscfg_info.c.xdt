@@ -39,13 +39,16 @@
 #include <utils/include/enet_appsoc.h>
 
 /* Maximum number of MAC address to be set per CPSW peripheral.
-Since CPSW_3G can support upto two MACs, this is set to 2 here */
-#define MAC_ADDR_LIST_LEN_SHARED_PER_PER (2U)
+CPSW_3G can support upto two MACs. But for multicore applications,
+each core needs one MAC address. So, this is set to 5 here.
+2 addresses for MAC, and 3 addresses for remote cores */
+#define MAC_ADDR_LIST_LEN_SHARED_PER_PER (5U)
 % if (instance.macAddrConfig === "Auto Assign") {
 #define ENET_MAX_NUM_MAC_ADDR_STORED (5U)
 % } else {
 #define ENET_MAX_NUM_MAC_ADDR_STORED (`instance.macAddrList.split(",").length`U)
 %}
+
 typedef struct EnetApp_MacAddrElem_s
 {
     EnetQ_Node node;
@@ -231,9 +234,9 @@ bool EnetApp_isPortLinked(Enet_Handle hEnet)
 }
 %}
 
-static int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
-                                  uint32_t maxMacEntries,
-                                  uint32_t *pAvailMacEntries)
+int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
+                                   uint32_t maxMacEntries,
+                                   uint32_t *pAvailMacEntries)
 {
     uint32_t numEfusedMacAddrs;
     uint32_t numBoardMacAddrs;

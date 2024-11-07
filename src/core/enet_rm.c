@@ -176,7 +176,7 @@ static Enet_IoctlValidate gEnetRm_ioctlValidate[] =
 
     ENET_IOCTL_VALID_PRMS(ENET_RM_IOCTL_ALLOC_TX_CH_PEERID,
                           sizeof(uint32_t),
-                          sizeof(uint32_t )),
+                          sizeof(uint32_t)),
 
     ENET_IOCTL_VALID_PRMS(ENET_RM_IOCTL_FREE_TX_CH_PEERID,
                           sizeof(EnetRm_FreeTxChInArgs),

@@ -62,7 +62,7 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define ENETMCM_TSK_STACK_MAIN              (3 * 1024)
+#define ENETMCM_TSK_STACK_MAIN              (4 * 1024)
 #define ENETMCM_PERIODIC_TICK_TSK_STACK     (3 * 1024)
 #define ENETMCM_ASYNC_IOCTL_TSK_STACK       (2 * 1024)
 
@@ -70,12 +70,23 @@
 #define ENETMCM_TSK_PRIORITY                (2U)
 #define ENETMCM_PERIODICTSK_PRIORITY        (7U)
 #define ENETMCM_ASYNCIOCTLTASK_PRIORITY     (9U)
+#define ENETMCM_MAX_CLIENTS                 (12U)
+#define ENETMCM_INTERNAL_CLIENT_IDX         (ENETMCM_MAX_CLIENTS)
 
 #ifdef NULL_PTR
 #undef NULL_PTR
 #endif
 
 #define NULL_PTR                            ((void *)NULL)
+
+/*! \brief Get the index of the given element within an array */
+#define ENETMCM_UTILS_GETARRAYINDEX(member, array)   (member - &array[0])
+
+/*! \brief Macro to determine if a member is part of an array */
+#define ENETMCM_UTILS_ARRAYISMEMBER(member, array)                              \
+    (((((uintptr_t)member - (uintptr_t) & array[0]) % sizeof(array[0])) == 0)   \
+     && (member >= &array[0])                                                   \
+     && (ENETMCM_UTILS_GETARRAYINDEX(member, array) < ENET_ARRAYSIZE(array)))
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -112,8 +123,19 @@ typedef struct EnetMcm_Obj_s
 
     Enet_Handle hEnet;
 
+    Udma_DrvHandle hUdmaDrv;
+
+    Cpsw_Cfg cpswCfg;
+
+    EnetUdma_Cfg dmaCfg;
 
     uint32_t selfCoreId;
+
+    EnetMcm_setPortLinkCfg setPortLinkCfg;
+
+    Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
+
+    uint8_t numMacPorts;
 
     TaskP_Object taskObj;
 
@@ -186,6 +208,27 @@ typedef enum EnetMcm_Command_e
     /*! SHUTDOWN MCM */
     MCM_SHUTDOWN,
 
+    /*! Disconnecting client */
+    MCM_CLIENT_DISCONNECT,
+
+    /*! Save Context of Enet Peripheral */
+    MCM_SAVE_CTXT,
+
+    /*! Restore Context of Enet Peripheral */
+    MCM_RESTORE_CTXT,
+
+    /*! Open MAC Ports */
+    MCM_OPEN_PORT,
+
+    /*! Close MAC Ports */
+    MCM_CLOSE_PORT,
+
+    /*! Stop periodic ticks */
+    MCM_STOP_CLOCK,
+
+    /*! Start periodic ticks */
+    MCM_START_CLOCK,
+
     /*! Response to MCM_GET_HANDLE command */
     MCM_RESPONSE_GET_HANDLE,
 
@@ -203,19 +246,41 @@ typedef enum EnetMcm_Command_e
 
     /*! Response to SHUTDOWN MCM */
     MCM_RESPONSE_SHUTDOWN,
+
+    /*! Response to Client Disconnect */
+    MCM_RESPONSE_CLIENT_DISCONNECT,
+
+    /*! Save Context of Enet Peripheral */
+    MCM_RESPONSE_SAVE_CTXT,
+
+    /*! Response to Restore Context of Enet Peripheral */
+    MCM_RESPONSE_RESTORE_CTXT,
+
+    /*! Response to Open MAC Ports */
+    MCM_RESPONSE_OPEN_PORT,
+
+    /*! Response to Close MAC Ports */
+    MCM_RESPONSE_CLOSE_PORT,
+
+    /*! Response to Stop periodic ticks */
+    MCM_RESPONSE_STOP_CLOCK,
+
+    /*! Response to Start periodic ticks */
+    MCM_RESPONSE_START_CLOCK,
 }
 EnetMcm_Command;
 
 typedef struct EnetMcm_mailboxObj_s
 {
     EnetMcm_Command cmd;
+    QueueHandle_t response;
 
     struct EnetMcm_mailboxMsgs_s
     {
         uint32_t coreId;
         uint32_t coreKey;
-        uint32_t ioctlStatus;
         uint32_t ioctlCmd;
+        uint32_t status;
         Enet_IoctlPrms *ioctlPrms;
         EnetMcm_HandleInfo handleInfo;
         EnetPer_AttachCoreOutArgs attachInfo;
@@ -226,11 +291,19 @@ typedef struct EnetMcm_mailboxObj_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static int32_t  EnetMcm_open(EnetMcm_Handle hMcm);
+static int32_t EnetMcm_open(EnetMcm_Handle hMcm);
 
-static void     EnetMcm_close(EnetMcm_Handle hMcm);
+static void EnetMcm_close(EnetMcm_Handle hMcm);
 
-static void     EnetMcm_serverTask(void * hMcm);
+static void EnetMcm_serverTask(void * hMcm);
+
+static int32_t EnetMcm_enablePorts(EnetMcm_Handle hMcm);
+
+static void EnetMcm_shutdown(Enet_Type enetType,
+                             EnetMcm_CmdIf *hMcmCmdIf);
+
+/* ToDo: Using this call is a bad design choice. Fix it to use Enet_open instead */
+extern int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -238,7 +311,7 @@ static void     EnetMcm_serverTask(void * hMcm);
 
 static EnetMcm_Obj gMcmObj[] =
 {
-    [0U] =
+    [ENET_CPSW_3G] =
     {
         .isInitDone             = false,
         .timerTaskShutDownFlag  = false,
@@ -410,6 +483,8 @@ int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg)
     uintptr_t key;
     Enet_Type enetType  = pMcmInitCfg->enetType;
     EnetMcm_Handle hMcm;
+    Cpsw_Cfg *cpswCfg;
+    EnetUdma_Cfg *dmaCfg = NULL;
 
     key = HwiP_disable();
 
@@ -431,11 +506,18 @@ int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg)
 
         if (status == ENET_SOK)
         {
-            hMcm->selfCoreId = pMcmInitCfg->selfCoreId;
+            cpswCfg = (Cpsw_Cfg *)pMcmInitCfg->perCfg;
+            dmaCfg = (typeof(dmaCfg))cpswCfg->dmaCfg;
+
+            hMcm->selfCoreId         = pMcmInitCfg->selfCoreId;
+            hMcm->cpswCfg            = *cpswCfg;
+            hMcm->dmaCfg             = *dmaCfg;
             hMcm->refCnt             = 0U;
             hMcm->enetType           = enetType;
             hMcm->instId             = pMcmInitCfg->instId;
-            hMcm->hEnet              = (Enet_Handle)NULL_PTR;
+            hMcm->hEnet              = NULL;
+            hMcm->hUdmaDrv           = NULL;
+            hMcm->setPortLinkCfg     = pMcmInitCfg->setPortLinkCfg;
             hMcm->periodicTaskPeriod = pMcmInitCfg->periodicTaskPeriod;
             hMcm->disablePeriodicFxn = pMcmInitCfg->disablePeriodicFxn;
 
@@ -446,6 +528,9 @@ int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg)
             }
 
             EnetMcm_initAttachTable(&hMcm->coreAttachTable);
+
+            memcpy(&hMcm->macPortList[0U], &pMcmInitCfg->macPortList[0U],
+                   sizeof(pMcmInitCfg->macPortList));
 
             EnetMcm_initMbox(hMcm);
 
@@ -529,6 +614,86 @@ void EnetMcm_deInit(Enet_Type enetType)
     SemaphoreP_post(hMcm->hMutex);
 }
 
+static int32_t EnetMcm_enablePorts(EnetMcm_Handle hMcm)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    Enet_Handle hEnet = hMcm->hEnet;
+    uint32_t coreId   = hMcm->selfCoreId;
+    uint32_t i;
+    bool alive;
+
+    /* Show alive PHYs */
+    for (i = 0U; i < ENET_MDIO_PHY_CNT_MAX; i++)
+    {
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &i, &alive);
+        ENET_IOCTL(hEnet, coreId,
+                   ENET_MDIO_IOCTL_IS_ALIVE,
+                   &prms, status);
+        if (status == ENET_SOK)
+        {
+            if (alive == BTRUE)
+            {
+                hMcm->print("PHY %d is alive\n", i);
+            }
+        }
+        else
+        {
+            hMcm->print("Failed to get PHY %d alive status: %d\n", i, status);
+        }
+    }
+
+    for (i = 0U; i < hMcm->numMacPorts; i++)
+    {
+        EnetPer_PortLinkCfg linkArgs;
+        CpswMacPort_Cfg cpswMacCfg;
+
+        linkArgs.macCfg = &cpswMacCfg;
+        linkArgs.macPort = hMcm->macPortList[i];
+        hMcm->setPortLinkCfg(&linkArgs, hMcm->macPortList[i]);
+
+        ENET_IOCTL_SET_IN_ARGS(&prms, &linkArgs);
+        ENET_IOCTL(hEnet, coreId,
+                   ENET_PER_IOCTL_OPEN_PORT_LINK,
+                   &prms, status);
+        if (status != ENET_SOK)
+        {
+            hMcm->print("EnetMcm_enablePorts() failed to open MAC port: %d\n", status);
+        }
+    }
+
+    if (status == ENET_SOK)
+    {
+        CpswAle_SetPortStateInArgs setPortStateInArgs;
+
+        setPortStateInArgs.portNum   = CPSW_ALE_HOST_PORT_NUM;
+        setPortStateInArgs.portState = CPSW_ALE_PORTSTATE_FORWARD;
+        ENET_IOCTL_SET_IN_ARGS(&prms, &setPortStateInArgs);
+        prms.outArgs = NULL;
+        ENET_IOCTL(hEnet, coreId,
+                   CPSW_ALE_IOCTL_SET_PORT_STATE,
+                   &prms, status);
+        if (status != ENET_SOK)
+        {
+            hMcm->print("EnetMcm_enablePorts() failed CPSW_ALE_IOCTL_SET_PORT_STATE: %d\n", status);
+        }
+
+        if (status == ENET_SOK)
+        {
+            ENET_IOCTL_SET_NO_ARGS(&prms);
+            ENET_IOCTL(hEnet, coreId,
+                       ENET_HOSTPORT_IOCTL_ENABLE,
+                       &prms, status);
+            if (status != ENET_SOK)
+            {
+                hMcm->print("EnetMcm_enablePorts() Failed to enable host port: %d\n", status);
+            }
+        }
+    }
+
+    return status;
+}
+
 static void EnetMcm_timerCb(ClockP_Object *clkInst, void * arg)
 {
     SemaphoreP_Object * timerSem = (SemaphoreP_Object *)arg;
@@ -599,11 +764,25 @@ static void EnetMcm_createClock(EnetMcm_Handle hMcm)
 static int32_t EnetMcm_open(EnetMcm_Handle hMcm)
 {
     int32_t status = ENET_SOK;
-
+    void *perCfg = NULL;
+    EnetUdma_Cfg *udmaCfg = &hMcm->dmaCfg;
+    uint32_t cfgSize = 0U;
     TaskP_Params tskParams;
 
+    perCfg = &hMcm->cpswCfg;
+    hMcm->cpswCfg.dmaCfg = &hMcm->dmaCfg;
+    cfgSize = sizeof(hMcm->cpswCfg);
+
+    hMcm->hUdmaDrv = udmaCfg->hUdmaDrv;
+
+    status = EnetApp_driverOpen(hMcm->enetType, hMcm->instId);
+
     hMcm->hEnet = Enet_getHandle(hMcm->enetType, hMcm->instId);
-    EnetAppUtils_assert(NULL != hMcm->hEnet);
+    if(hMcm->hEnet == NULL)
+    {
+        EnetAppUtils_print("Enet_open failed\n");
+        EnetAppUtils_assert(hMcm->hEnet != NULL);
+    }
 
     status = SemaphoreP_constructCounting(&hMcm->asyncIoctlSemObj, 0, 128);
     EnetAppUtils_assert(SystemP_SUCCESS == status);
@@ -805,7 +984,7 @@ static void EnetMcm_serverTask(void * McmHandle)
 
             case MCM_IOCTL:
                 EnetAppUtils_assert(hMcm->hEnet != NULL);
-                msg.msgBody.ioctlStatus = EnetMcm_ioctlHandler(hMcm, msg.msgBody.ioctlCmd, msg.msgBody.ioctlPrms);
+                msg.msgBody.status = EnetMcm_ioctlHandler(hMcm, msg.msgBody.ioctlCmd, msg.msgBody.ioctlPrms);
                 msg.cmd = MCM_RESPONSE_IOCTL;
                 break;
 
@@ -1026,7 +1205,7 @@ int32_t EnetMcm_ioctl(const EnetMcm_CmdIf *hMcmCmdIf,
         qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
         EnetAppUtils_assert(pdPASS == qStatus);
         EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_IOCTL);
-        status = msg.msgBody.ioctlStatus;
+        status = msg.msgBody.status;
     }
     else
     {
@@ -1035,4 +1214,153 @@ int32_t EnetMcm_ioctl(const EnetMcm_CmdIf *hMcmCmdIf,
     }
 
     return status;
+}
+
+static void EnetMcm_shutdown(Enet_Type enetType, EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    msg.cmd = MCM_SHUTDOWN;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_SHUTDOWN);
+}
+
+void EnetMcm_saveCtxt(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_SAVE_CTXT;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_SAVE_CTXT);
+}
+
+int32_t EnetMcm_restoreCtxt(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_RESTORE_CTXT;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_RESTORE_CTXT);
+
+    return msg.msgBody.status;
+}
+
+int32_t EnetMcm_openMacPorts(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_OPEN_PORT;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_OPEN_PORT);
+
+    return msg.msgBody.status;
+}
+
+int32_t EnetMcm_closeMacPorts(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_CLOSE_PORT;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_CLOSE_PORT);
+
+    return msg.msgBody.status;
+}
+
+void EnetMcm_stopPeriodicTick(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_STOP_CLOCK;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_STOP_CLOCK);
+}
+
+void EnetMcm_startPeriodicTick(const EnetMcm_CmdIf *hMcmCmdIf)
+{
+    EnetMcm_mailboxObj msg;
+    BaseType_t  qStatus;
+
+    EnetAppUtils_assert(hMcmCmdIf != NULL);
+
+    memset(&msg, 0, sizeof(msg));
+    msg.cmd = MCM_START_CLOCK;
+    msg.response = hMcmCmdIf->hMboxResponse;
+
+    qStatus = xQueueSendToBack(hMcmCmdIf->hMboxCmd, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    qStatus = xQueueReceive(hMcmCmdIf->hMboxResponse, &msg, portMAX_DELAY);
+    EnetAppUtils_assert(pdPASS == qStatus);
+
+    EnetAppUtils_assert(msg.cmd == MCM_RESPONSE_START_CLOCK);
+}
+
+void  EnetMcm_releaseCmdIf(Enet_Type enetType,
+                           EnetMcm_CmdIf *hMcmCmdIf)
+{
+
 }

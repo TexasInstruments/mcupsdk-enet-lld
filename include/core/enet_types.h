@@ -188,6 +188,9 @@ extern "C" {
 /*! \brief RX MAX MTU. */
 #define ENET_RX_MTU_MAX                      (2016U)
 
+/*! \brief EtherType value for Customer VLAN type (IEEE 802.1Q). */
+#define ENET_ETHERTYPE_CUSTOMER_VLAN          (0x8100U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */

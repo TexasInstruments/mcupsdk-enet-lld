@@ -62,6 +62,10 @@ extern "C" {
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
+int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
+                                   uint32_t maxMacEntries,
+                                   uint32_t *pAvailMacEntries);
+
 int32_t EnetAppSoc_getMacAddrList(Enet_Type enetType,
                                   uint32_t instId,
                                   uint8_t macAddr[][ENET_MAC_ADDR_LEN],

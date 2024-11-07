@@ -58,7 +58,7 @@ extern "C" {
 #include <kernel/dpl/DebugP.h>
 
 /* Project dependency headers */
-#include "lwipif2enet_AppIf.h"
+#include "lwipif2enet_appif.h"
 #include <enet.h>
 #include <enet_cfg.h>
 #include <enet_types.h>
@@ -188,7 +188,7 @@ typedef enum Lwip2Enet_RxMode_t
     Lwip2Enet_RxMode_SwitchSharedChannel, /* appicable for CPSW and ICSSG in SW mode */
     Lwip2Enet_RxMode_MacSharedChannel, /* appicable for CPSW in MAC mode */
     Lwip2Enet_RxMode_MacPort1Channel, /* appicable for ICSSG in MAC mode */
-    Lwip2Enet_RxMode_MacPort2Channel, /* appicable for ICSSG in MAC mode */ 
+    Lwip2Enet_RxMode_MacPort2Channel, /* appicable for ICSSG in MAC mode */
     Lwip2Enet_RxMode_SwitchPort1Channel, /* appicable for ICSSG in SW mode */
     Lwip2Enet_RxMode_SwitchPort2Channel, /* appicable for ICSSG in SW mode */
     Lwip2Enet_RxMode_NumModes, /* max value for iteration- invalid */
@@ -241,6 +241,8 @@ typedef struct Lwip2Enet_RxObj_s
 
     Enet_notify_t rxPktNotify;
 
+    /*! Pointer for function that lets application handle packet locally */
+    LwipifEnetAppIf_HandleRxPktFxn handlePktFxn;
     /*! Whether RX event should be disabled or not. When disabled, it relies on pacing timer
      *  to retrieve packets from RX channel/flow */
     bool disableEvent;
@@ -300,6 +302,8 @@ typedef struct
     uint8_t count_hTx;
     Lwip2Enet_RxHandle hRx[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];
     Lwip2Enet_TxHandle hTx[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL];
+    Lwip2Enet_RxHandle hRxProxyArp;
+    Lwip2Enet_RxHandle hRxVepa;
     Enet_MacPort macPort;
     uint8_t macAddr[ENET_MAC_ADDR_LEN];
     LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;

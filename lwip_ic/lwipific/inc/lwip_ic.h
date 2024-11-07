@@ -116,7 +116,7 @@ extern "C" {
  */
 typedef void (*LwipIc_Print)(const char *fmt, ...);
 
-void LwipIc_printf(const char *fmt,
+void LwipIc_printf(char *fmt,
                       ...);
 
 #define ICETH_RPMSG_MSG_SIZE        (496U + 32U)

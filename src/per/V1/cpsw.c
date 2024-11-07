@@ -956,6 +956,8 @@ static int32_t Cpsw_openInternal(Cpsw_Handle hCpsw,
         rmCfg.numRxCh               = CPSW_UDMA_NUM_RX_CH;
         rmCfg.rxStartFlowIdx[0U]    = hCpsw->dmaResInfo.rxStartIdx;
         rmCfg.rxFlowIdxCnt[0U]      = hCpsw->dmaResInfo.rxIdxCnt;
+        /* Since CPSW only has one channel. To avoid errors in validation checks*/
+        rmCfg.rxFlowIdxCnt[1U]      = 0U;
         /* TODO - move this inside ALE */
         Enet_assert(rmCfg.rxFlowIdxCnt[0U] <= (CSL_ALE_THREADMAPVAL_THREADVAL_MAX + 1));
 

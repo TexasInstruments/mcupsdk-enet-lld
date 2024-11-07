@@ -593,6 +593,8 @@ void EnetApp_getNonPtpTxDmaInfo(Enet_Type enetType,
                                 uint32_t nonPtpTxFlowId[],
                                 uint8_t *nonPtpTxFlowNum);
 
+void EnetAppUtils_delayInUsec(uint32_t delayInUsecs);
+
 int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
                                      uint32_t coreKey,
                                      uint32_t coreId,

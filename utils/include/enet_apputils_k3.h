@@ -118,6 +118,7 @@ void EnetAppUtils_enableClkOut(Enet_Type enetType,
                                EnetAppUtils_ClkOutFreqType clkOut);
 
 int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType,
+                                       uint32_t instId,
                                        uint32_t input,
                                        uint32_t output);
 /*!

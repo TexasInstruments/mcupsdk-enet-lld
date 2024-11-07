@@ -741,6 +741,16 @@ void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId, u
     return;
 }
 
+void LwipifEnetApp_getProxyArpRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL])
+{
+    /* This is not supported by ICSSG */
+}
+
+void LwipifEnetApp_setupProxyArphandler(const Enet_Type enetType, const uint32_t instId, Lwip2Enet_RxHandle hRx)
+{
+    /* This is not supported by ICSSG */
+}
+
 Lwip2Enet_RxMode_t LwipifEnetAppCb_getRxMode(Enet_Type enetType, uint32_t instId)
 {
     const bool hasSwitchModeEnabled = `(module.getNetifCount(instance) == 1)`; 

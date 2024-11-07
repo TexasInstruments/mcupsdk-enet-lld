@@ -36,6 +36,9 @@
  * \brief Rx Custom Pbuf for LwIP.
  */
 
+#ifndef CUSTOM_PBUF_H_
+#define CUSTOM_PBUF_H_
+
 #include <stdint.h>
 #include <enet.h>
 #include <pbufQ.h>
@@ -69,3 +72,5 @@ typedef struct Rx_CustomPbuf_s
     /*! Original Buffer allocated length */
     uint32_t orgBufLen;
 } Rx_CustomPbuf;
+
+#endif /* CUSTOM_PBUF_H_ */

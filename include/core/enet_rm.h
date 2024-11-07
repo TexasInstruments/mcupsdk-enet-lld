@@ -182,6 +182,44 @@ typedef enum EnetRm_Ioctls_e
 } EnetRm_Ioctls;
 
 /*!
+ * \brief RM tx channel.
+ *
+ * This enum holds the number of tx channel.
+ */
+typedef enum EnetRm_TxCh_e
+{
+    /*! Channel no 0 */
+    ENET_RM_TX_CH_0 = 0U,
+
+    /*! Channel no 1 */
+    ENET_RM_TX_CH_1,
+
+    /*! Channel no 2 */
+    ENET_RM_TX_CH_2,
+
+    /*! Channel no 3 */
+    ENET_RM_TX_CH_3,
+
+    /*! Channel no 4 */
+    ENET_RM_TX_CH_4,
+
+    /*! Channel no 5 */
+    ENET_RM_TX_CH_5,
+
+    /*! Channel no 6 */
+    ENET_RM_TX_CH_6,
+
+    /*! Channel no 7 */
+    ENET_RM_TX_CH_7,
+
+    /*! Max number of tx channels available */
+    ENET_RM_TX_CH_LAST = ENET_RM_TX_CH_7,
+
+    /*! Default Channel */
+    ENET_RM_TX_CH_ANY = 0xFF,
+} EnetRm_TxCh;
+
+/*!
  * \brief Enet RM resource information.
  *
  * This structure holds the number of TX channels, RX flows and MAC addresses
@@ -194,6 +232,9 @@ typedef struct EnetRm_ResourceInfo_s
 
     /*! Number of TX channels */
     uint32_t numTxCh;
+
+    /*! Array of TX channels allocated for a given core */
+    EnetRm_TxCh txCh[ENET_CFG_RM_TX_CH_MAX];
 
     /*! Number of RX channels */
     uint32_t numRxCh;
@@ -226,6 +267,9 @@ typedef struct EnetRm_ResPrms_s
 
     /*! DMA Resource Information of all cores */
     EnetRm_ResourceInfo coreResInfo[ENET_CFG_REMOTE_CLIENT_CORES_MAX];
+
+    /*! Application has allocated absolute tx channels */
+    bool isStaticTxChanAllocated;
 } EnetRm_ResPrms;
 
 /*!

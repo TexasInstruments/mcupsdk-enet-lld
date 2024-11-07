@@ -356,7 +356,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         ringAllocInfo.ringNum         = UDMA_RING_ANY;
         ringAllocInfo.enetType        = hDma->enetType;
         ringAllocInfo.instId          = hDma->instId;
-        ringAllocInfo.mappedChNum     = Udma_chGetNum(&hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj);
+        ringAllocInfo.mappedChNum     = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
         ringAllocInfo.transferDir     = ENET_UDMA_DIR_RX;
 
         retVal = EnetUdma_allocRing(pRxFlow->hUdmaDrv,
@@ -445,8 +445,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
                                  1U /* flowCnt */);
 #elif (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
         Udma_FlowAllocMappedPrms flowAllocMappedPrms;
-
-        flowAllocMappedPrms.mappedChNum = Udma_chGetNum(&hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj);
+        flowAllocMappedPrms.mappedChNum = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
         if (Enet_isCpswFamily(hDma->enetType))
         {
             flowAllocMappedPrms.mappedFlowGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
@@ -2701,10 +2700,11 @@ uint32_t EnetUdma_getRxFlowCnt(EnetDma_Handle hEnetUdma,
     /* Pass RX channel number in case of AM64x
      * Note - In AM64x/AM243x, UDMA allocates 16 flows for CPSW and 64 flows for
      * ICSSG(each instance), which are split into 16 for each of 4 RX channels in
-     * udma_soc (gUdmaRxMappedChRingAttributes). So we can have upto 16 flows per channel
-     * but as ICSSG_DUALMAC_RX_FLOW_NUM is set to 8 and we know we won't use more than
-     * 8 flows for CPSW as well */
-    flowCnt = 8U;
+     * udma_soc (gUdmaRxMappedChRingAttributes). So we can have upto 16 flows per channel.
+     * For AM62PX usecase, all 16 flows of CPSW can be used in multihost scenarios.
+     * So, even if ICSSG DualMac usecase uses 8 flows per channel,
+     * we set this to 16 as this particular function is not used by ICSSG */
+    flowCnt = 16U;
 #endif
 
     return flowCnt;
