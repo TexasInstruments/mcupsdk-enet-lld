@@ -167,6 +167,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(CpswCpt
     if (hCpts->tsPushInFifo == false)
     {
         hCpts->tsPushInFifo = true;
+         CSL_CPTS_disableInterrupt(regs);
         CSL_CPTS_TSEventPush(regs);
 
         /* Poll until the Time stamp event occurs */
@@ -178,9 +179,11 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(CpswCpt
                 break;
             }
 
+             CpswCpts_handleEvents(hCpts ,regs);
             loop--;
         }
 
+         CSL_CPTS_enableInterrupt(regs);
         if (loop == 0U)
         {
             ENETTRACE_ERR("Timed out retrieving current timestamp event\n");
@@ -190,7 +193,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(CpswCpt
     }
     else
     {
-        ENETTRACE_WARN("Timestamp push event already in FIFO, try again later...\n");
+        // ENETTRACE_WARN("Timestamp push event already in FIFO, try again later...\n");
         status = ENET_EBUSY;
     }
     return status;

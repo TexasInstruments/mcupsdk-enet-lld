@@ -264,6 +264,8 @@ static CpswIoctlHandlerRegistry_t CpswIoctlHandlerRegistry[] =
     CPSW_IOCTL_HANDLER_ENTRY_INIT(ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER),
 };
 
+//volatile uint64_t gRxIsrCount = 0;
+//uint64_t gRxIsrProfile[5000];
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -1238,7 +1240,7 @@ static int32_t Cpsw_registerIntrs(Cpsw_Handle hCpsw,
         ENETTRACE_ERR("Failed to register rx thresh intr\r\n");
         status = ENET_EFAIL;
     }
-
+#if 0
     /* Register Rx interrupt */
     if (status == ENET_SOK)
     {
@@ -1255,7 +1257,7 @@ static int32_t Cpsw_registerIntrs(Cpsw_Handle hCpsw,
             status = ENET_EFAIL;
         }
     }
-
+#endif
      /* Register Tx interrupt */
     if (status == ENET_SOK)
     {
@@ -1404,9 +1406,10 @@ static void Cpsw_mdioIsr(uintptr_t arg)
      * ("Failed to handle MDIO intr: %d\r\n", status); */
     ENET_UNUSED(status);
 }
-
+//extern uint64_t ub_mt_gettime64(void);
 static void Cpsw_cptsIsr(uintptr_t arg)
 {
+//    uint64_t timeEntered = ub_mt_gettime64();
     Cpsw_Handle hCpsw = (Cpsw_Handle)arg;
     EnetMod_Handle hCpts = hCpsw->hCpts;
     Enet_IoctlPrms prms;
@@ -1418,6 +1421,22 @@ static void Cpsw_cptsIsr(uintptr_t arg)
     /* TODO: Add ISR safe error:
      * ("Failed to handle CPTS intr: %d\r\n", status); */
     ENET_UNUSED(status);
+#if 0
+    uint64_t currentTime = ub_mt_gettime64();
+    if(gRxIsrCount < 5000)
+    {
+		if(currentTime > timeEntered)
+		{
+			gRxIsrProfile[gRxIsrCount] = currentTime-timeEntered;
+		}
+		else
+		{
+//					gTimerArray[gTimerDebugIndex] = (uint32_t)(((1ULL<<32) -1) + gCurrentTimeDiff-gPrevTimeCb)&(0xFFFFFFFF);
+			gRxIsrProfile[gRxIsrCount] = (UINT64_MAX -timeEntered + currentTime+1);
+		}
+        gRxIsrCount++;
+    }
+#endif
 }
 
 static void Cpsw_dmaRxThreshIsr(uintptr_t arg)
@@ -1435,7 +1454,7 @@ static void Cpsw_dmaRxThreshIsr(uintptr_t arg)
     ENET_UNUSED(status);
 }
 
-static void Cpsw_dmaRxIsr(uintptr_t arg)
+void Cpsw_dmaRxIsr(uintptr_t arg)
 {
     Cpsw_Handle hCpsw = (Cpsw_Handle)arg;
     EnetDma_Handle hEnetDma = hCpsw->hDma;
@@ -1497,7 +1516,7 @@ static void Cpsw_dmaMiscIsr(uintptr_t arg)
         ||
         ((statusMask & CPSW_MISC_INT_HOSTERR_MASK) != 0U))
     {
-        Cpsw_statsIsr((uintptr_t)hCpsw->hStats);
+//        Cpsw_statsIsr((uintptr_t)hCpsw->hStats);
     }
 
     status = EnetCpdma_ackMiscIsr(hEnetDma);

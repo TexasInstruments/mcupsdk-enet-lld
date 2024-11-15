@@ -317,6 +317,15 @@ void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo);
  */
 void EtherRing_periodicTick(void *hEtherRing);
 
+/*!
+ * \brief Creates a polling task to clear the lookup table.
+ *
+ * \param void
+ *
+ *  \return \ref Enet_ErrorCodes
+ */
+void EtherRing_clearLookupPollTask();
+
 #ifdef __cplusplus
 }
 #endif

@@ -228,9 +228,10 @@ int32_t EtherRing_submitTxPktQ(void *hEtherRing,
         EnetQueue_enq(&txSubmitQ, &pktInfo->node);
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(pSubmitQ);
     }
+    gEtherRingTxStaticPoints[1]  = (CycleCounterP_getCount32() - startTime)/400;
     retVal = EnetDma_submitTxPktQ(pRingHandle->hTxCh,
                                   &txSubmitQ);
-
+    gEtherRingTxStaticPoints[2]  = (CycleCounterP_getCount32() - startTime)/400;
     return retVal;
 }
 
@@ -249,7 +250,7 @@ int32_t EtherRing_retrieveTxPktQ(void *hEtherRing,
 
     retVal = EnetDma_retrieveTxPktQ(pRingHandle->hTxCh,
                                     &retrieveQ);
-
+    gEtherRingTxStaticPoints[3] = (CycleCounterP_getCount32() - startTime)/400;
     while(EnetQueue_getQCount(&retrieveQ))
     {
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&retrieveQ);
@@ -257,7 +258,7 @@ int32_t EtherRing_retrieveTxPktQ(void *hEtherRing,
         EtherRing_removeCBLikeHeader(pktInfo);
         EnetQueue_enq(pRetrieveQ, &pktInfo->node);
     }
-
+    gEtherRingTxStaticPoints[4] = (CycleCounterP_getCount32() - startTime)/400;
     return retVal;
 }
 
@@ -415,6 +416,12 @@ void EtherRing_addCBLikeHeader(EnetDma_Pkt *pktInfo,
     Enet_assert(headerWithCB != NULL);
     Enet_assert(pktInfo != NULL);
 
+    if (EnetQueue_getQCount(&gEtherRingPool.etherRingFreeQueue) > 0)
+    {
+        headerWithCB = (uint8_t*)EnetQueue_deq(&gEtherRingPool.etherRingFreeQueue);
+    }
+
+    // Enet_assert(headerWithCB != NULL);
     pktInfo->sgList.list[1] = pktInfo->sgList.list[0];
     pktInfo->sgList.list[1].bufPtr += ETHERRING_VLAN_HEADER_SIZE;
     pktInfo->sgList.list[1].segmentFilledLen -= ETHERRING_VLAN_HEADER_SIZE;
