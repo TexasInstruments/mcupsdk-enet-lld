@@ -123,7 +123,6 @@ static EtherRingPool gEtherRingPool = {
 EtherRingRxTs_obj gEtherRingRxTs =
 {
         .etherRingRxClassATsIndex = 0,
-        .etherRingRxClassDTsIndex = 0,
 };
 
 static EtherRing_Cfg *gEtherRingCfg;
@@ -335,30 +334,16 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
                             < ETHERRING_MAX_RX_TIMESTAMPS_STORED) && (streamId == ETHERRING_MIN_STREAMID_CLASSA))
                     {
                         /* Storing the rxTs for current packet*/
-                        gEtherRingRxTs.etherRingTimeStampsRx[0][gEtherRingRxTs.etherRingRxClassATsIndex] =
+                        gEtherRingRxTs.etherRingTimeStampsRx[gEtherRingRxTs.etherRingRxClassATsIndex] =
                                 pktInfo->tsInfo.rxPktTs;
 
                         currTimeStampPtr = pktInfo->sgList.list[0].bufPtr + ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH;
                         currTimeStampValue = *(uint64_t*)currTimeStampPtr;
 
                         /* Storing the current timestamp received with CB packet*/
-                        gEtherRingRxTs.etherRingCurrentTimeStamps[0][gEtherRingRxTs.etherRingRxClassATsIndex] = currTimeStampValue;
+                        gEtherRingRxTs.etherRingCurrentTimeStamps[gEtherRingRxTs.etherRingRxClassATsIndex] = currTimeStampValue;
 
                         gEtherRingRxTs.etherRingRxClassATsIndex++;
-                    }
-                    else if ((gEtherRingRxTs.etherRingRxClassDTsIndex
-                            < ETHERRING_MAX_RX_TIMESTAMPS_STORED) && (streamId == ETHERRING_MIN_STREAMID_CLASSD))
-                    {
-                        /* Storing the rxTs for current packet*/
-                        gEtherRingRxTs.etherRingTimeStampsRx[1][gEtherRingRxTs.etherRingRxClassDTsIndex] =
-                                pktInfo->tsInfo.rxPktTs;
-
-                        currTimeStampPtr = pktInfo->sgList.list[0].bufPtr + ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH;
-                        currTimeStampValue = *(uint64_t*)currTimeStampPtr;
-                        /* Storing the current timestamp received with CB packet*/
-                        gEtherRingRxTs.etherRingCurrentTimeStamps[1][gEtherRingRxTs.etherRingRxClassDTsIndex] = currTimeStampValue;
-
-                        gEtherRingRxTs.etherRingRxClassDTsIndex++;
                     }
                 }
 

@@ -164,16 +164,10 @@ EtherRing_Obj, *EtherRing_Handle;
 typedef struct
 {
     /*! Rx Timestamp Array for Class A and D streams */
-    uint64_t etherRingTimeStampsRx[2][ETHERRING_MAX_RX_TIMESTAMPS_STORED];
-
-    /*! Current Timestamp Array for Class A and D streams */
-    uint64_t etherRingCurrentTimeStamps[2][ETHERRING_MAX_RX_TIMESTAMPS_STORED];
+    uint64_t etherRingTimeStampsRx[ETHERRING_MAX_RX_TIMESTAMPS_STORED];
 
     /*! Array Index for ClassA stream*/
     int16_t etherRingRxClassATsIndex;
-
-    /*! Array Index for ClassD stream*/
-    int16_t etherRingRxClassDTsIndex;
 }EtherRingRxTs_obj;
 
 typedef EnetQ EtherRing_pktQ;
