@@ -50,11 +50,11 @@
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase
-            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stacktsn_gptp/tilld
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_combase/tilld/sitara
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/gptpconf
             -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf
-            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stacktsn_uniconf/yangs
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf/yangs
             -mcpu=cortex-a53+fp+simd
             -mabi=lp64
             -mcmodel=large
@@ -83,6 +83,7 @@
             -L${MCU_PLUS_SDK_PATH}/source/board/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -L$(CGT_GCC_AARCH64_PATH)/lib
             -Wl,-Map=gptp_app.${ConfigName}.map
             -Wl,-static
@@ -117,6 +118,7 @@
                 -ltsn_unibase-freertos.am62x.a53.gcc-aarch64.debug.lib
                 -ltsn_gptp-freertos.am62x.a53.gcc-aarch64.debug.lib
                 -ltsn_uniconf-freertos.am62x.a53.gcc-aarch64.debug.lib
+                -lyangemb-freertos.am62x.a53.gcc-aarch64.lib
             "
         ></configuration>
         <configuration name="Release"
@@ -133,6 +135,7 @@
                 -ltsn_unibase-freertos.am62x.a53.gcc-aarch64.release.lib
                 -ltsn_gptp-freertos.am62x.a53.gcc-aarch64.release.lib
                 -ltsn_uniconf-freertos.am62x.a53.gcc-aarch64.release.lib
+                -lyangemb-freertos.am62x.a53.gcc-aarch64.lib
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />

@@ -38,7 +38,6 @@
 
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_gptp/gptpman.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
@@ -119,22 +118,17 @@ static int EnetApp_uniconfInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbar
 {
 #ifdef DISABLE_FAT_FS
     EnetApp_Ctx_t *appCtx = modCtx->appCtx;
-    char buffer[MAX_KEY_SIZE]={0};
-    int res=-1;
     int i;
 
     for (i = 0; i < appCtx->netdevSize; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 "/ietf-interfaces/interfaces/interface|name:%s|/enabled",
-                 appCtx->netdev[i]);
-        res=yang_db_runtime_put_oneline(dbargs->ydrd, buffer, (char*)"true",
-                                        YANG_DB_ONHW_NOACTION);
-        if (res != 0) {
-            DPRINT("%s: yang_db_runtime_put_oneline failed=%d", __func__, res);
-        }
+        uint8_t up=1;
+		UB_LOG(UBL_DEBUG, "use network device:%s\n", appCtx->netdev[i]);
+		YDBI_SET_ITEM(ifk1vk0, (char*)appCtx->netdev[i],
+			      IETF_INTERFACES_ENABLED, YDBI_CONFIG,
+			      &up, 1, YDBI_PUSH_NOTICE);
     }
-    return res;
+    return 0;
 #else
     TSNAPP_UNUSED_ARG(dbargs);
     return 0;
@@ -171,13 +165,6 @@ static int EnetApp_initDb(void)
             res = -1;
             break;
         }
-        dbargs.ydrd = yang_db_runtime_init(dbargs.dbald, NULL);
-        if (!dbargs.ydrd)
-        {
-            DPRINT("Failed to init yang db runtime");
-            res = -1;
-            break;
-        }
 
         for (i = 0; i < ENETAPP_MAX_TASK_IDX; i++)
         {
@@ -189,10 +176,6 @@ static int EnetApp_initDb(void)
         }
 
     } while (0);
-    if (dbargs.ydrd)
-    {
-        yang_db_runtime_close(dbargs.ydrd);
-    }
     if (dbargs.dbald)
     {
         uc_dbal_close(dbargs.dbald, UC_CALLMODE_THREAD);

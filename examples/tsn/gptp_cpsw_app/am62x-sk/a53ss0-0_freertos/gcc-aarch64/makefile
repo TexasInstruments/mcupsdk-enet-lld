@@ -95,11 +95,11 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stacktsn_gptp/tilld \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_combase/tilld/sitara \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/gptpconf \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stacktsn_uniconf/yangs \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf/yangs \
 	-Igenerated \
 
 DEFINES_common := \
@@ -144,6 +144,7 @@ LIBS_PATH_common = \
 	-L${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-L$(CGT_GCC_AARCH64_PATH)/lib \
 
 LIBS_common = \
@@ -155,6 +156,7 @@ LIBS_common = \
 	-l:tsn_unibase-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_gptp-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_uniconf-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:yangemb-freertos.am62x.a53.gcc-aarch64.lib \
 
 LFLAGS_common = \
 	-Wl,-static \
@@ -178,6 +180,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_gptp-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_uniconf-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
+	yangemb-freertos.am62x.a53.gcc-aarch64.lib \
 
 LIBS_PATH_NAME = \
 	generated \
@@ -186,6 +189,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	$(CGT_GCC_AARCH64_PATH)/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))

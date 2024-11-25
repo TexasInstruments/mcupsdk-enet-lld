@@ -56,11 +56,6 @@
 #define TRAFFIC_CLASS_DATA_NODE  TRAFFIC_CLASS_NODE"/tc-data"
 #define PHYSICAL_QUEUE_MAP_NODE  TRAFFIC_CLASS_NODE"/pqueue-map"
 
-#define YANGDB_RUNTIME_WRITE(key,val) do {                              \
-        err = yang_db_runtime_put_oneline(ydrd, key, val, YANG_DB_ONHW_NOACTION); \
-        DebugP_assert(err == 0);                                        \
-    } while (0)
-
 UB_ABIT32_FIELD(cmsh_sv, 23, 0x1) // cmsh_sv_bit_field, cmsh_sv_set_bit_field
 
 typedef struct QoSAppCommonParam

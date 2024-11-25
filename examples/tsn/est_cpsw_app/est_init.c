@@ -41,10 +41,10 @@
 #include <tsn_combase/cb_tmevent.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
+#include <tsn_uniconf/yangs/cores/ieee1588-ptp-tt_access.h>
 
 #ifdef GPTP_ENABLED
 #include <tsn_gptp/gptpmasterclock.h>
@@ -54,6 +54,9 @@
 #include "tsninit.h"
 #include "common.h"
 #include "qosapp_misc.h"
+
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
 
 typedef struct TimeSlot
 {
@@ -106,20 +109,6 @@ UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 #define ENETEST_TX_PKT_PAYLOAD_LEN (1200U)
 #define EST_INTERVAL_NS            (62000U)
 #define ADMIN_DELAY_OFFSET_FACTOR  (100000)
-
-/*! Base path of admin list parameters in yang file of Qbv */
-#define GATE_PARAM_TABLE_NODE "/ietf-interfaces/interfaces/interface|name:%s|" \
-    "/bridge-port/gate-parameter-table"
-#define GATE_CONTROL_ENTRY_NODE GATE_PARAM_TABLE_NODE   \
-    "/admin-control-list/gate-control-entry"
-
-/*! Base path of clock-state node in  yang file for checking PTP synchronized */
-#define IEEE1588_PTP_TT_CLOCKSTATE_NODE  "/ieee1588-ptp-tt/ptp/instances" \
-    "/instance|instance-index:0,0|/clock-state"
-
-/*! Base path of port-state node in  yang file for checking PTP synchronized */
-#define IEE1588_PTP_PORT_STATE_NODE  "/ieee1588-ptp-tt/ptp/instances" \
-    "/instance|instance-index:0,0|/ports/port|port-index:%d|/port-ds"
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
@@ -250,78 +239,130 @@ static void EnetEstApp_printAdminControlList(EnetTas_ControlList *list)
 }
 
 static int EnetEstApp_setAdminControlList(EnetTas_ControlList *list, char *ifname,
-                                          yang_db_runtime_dataq_t *ydrd,
                                           uc_notice_data_t *ucntd)
 {
-    int i, err = 0;
-    char buffer[MAX_KEY_SIZE];
-    char val[MAX_VAL_SIZE];
+    int i, err;
 
     EnetEstApp_printAdminControlList(list);
 
+    uint8_t kn_traffic_sched[5] = {
+		[0] = IETF_INTERFACES_BRIDGE_PORT,
+		[1] = IETF_INTERFACES_GATE_PARAMETER_TABLE,
+	};
+    uint8_t kn_traffic_sched_size = 0;
+
+    //ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
     if (list->cycleTime > 0)
     {
         /* Expected unit is mircosecond. */
         uint32_t cycletime_numerator = list->cycleTime/1000U;
         uint32_t cycletime_denominator = 1000000UL;
-        snprintf(buffer, sizeof(buffer),
-                 GATE_PARAM_TABLE_NODE"/admin-cycle-time/numerator",
-                 ifname);
-        snprintf(val, sizeof(val), "%d", cycletime_numerator);
-        YANGDB_RUNTIME_WRITE(buffer, val);
 
-        snprintf(buffer, sizeof(buffer),
-                 GATE_PARAM_TABLE_NODE"/admin-cycle-time/denominator",
-                 ifname);
-        snprintf(val, sizeof(val), "%d", cycletime_denominator);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        kn_traffic_sched[2]=IETF_INTERFACES_ADMIN_CYCLE_TIME;
+	    kn_traffic_sched[3]=IETF_INTERFACES_NUMERATOR;
+        kn_traffic_sched_size = 4;
+        err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&cycletime_numerator, sizeof(cycletime_numerator), 
+                YDBI_NO_NOTICE);
+        DebugP_assert(err == 0);
+
+        kn_traffic_sched[3]=IETF_INTERFACES_DENOMINATOR;
+        err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&cycletime_denominator, sizeof(cycletime_denominator), 
+                YDBI_NO_NOTICE);
+        DebugP_assert(err == 0);
     }
 
     uint32_t second = list->baseTime/1000000000ULL;
     uint32_t nanosecond = list->baseTime%1000000000ULL;
-    snprintf(buffer, sizeof(buffer),
-             GATE_PARAM_TABLE_NODE"/admin-base-time/seconds",
-             ifname);
-    snprintf(val, sizeof(val), "%d", second);
-    YANGDB_RUNTIME_WRITE(buffer, val);
 
-    snprintf(buffer, sizeof(buffer),
-             GATE_PARAM_TABLE_NODE"/admin-base-time/nanoseconds",
-             ifname);
-    snprintf(val, sizeof(val), "%d", nanosecond);
-    YANGDB_RUNTIME_WRITE(buffer, val);
+    kn_traffic_sched[2]=IETF_INTERFACES_ADMIN_BASE_TIME;
+	kn_traffic_sched[3]=IETF_INTERFACES_SECONDS;
+    err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&second, sizeof(second), 
+                YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
 
+    kn_traffic_sched[3]=IETF_INTERFACES_NANOSECONDS;
+    err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&nanosecond, sizeof(nanosecond), 
+                YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
+
+    //ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-control-list/gate-control-entry
     for (i = 0; i < list->listLength; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 GATE_CONTROL_ENTRY_NODE"|index:%d|/operation-name",
-                 ifname, i);
-        strcpy(val, "set-gate-states");
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        kn_traffic_sched[2]=IETF_INTERFACES_ADMIN_CONTROL_LIST;
+        kn_traffic_sched[3]=IETF_INTERFACES_GATE_CONTROL_ENTRY;
+        kn_traffic_sched[4]=IETF_INTERFACES_OPERATION_NAME;
+        kn_traffic_sched_size=5u;
+        uint32_t gate_operation=0x0; // {"dot1q-types", "set-gate-states"       , 0x0}
+        err=YDBI_SET_ITEM(ifknvk1, ifname, i, 4u,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG, (void*)&gate_operation, sizeof(gate_operation), YDBI_NO_NOTICE);
+        DebugP_assert(err == 0);
 
-        snprintf(buffer, sizeof(buffer),
-                 GATE_CONTROL_ENTRY_NODE"|index:%d|/time-interval-value",
-                 ifname, i);
-        snprintf(val, sizeof(val), "%d",
-                 list->gateCmdList[i].timeInterval);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        kn_traffic_sched[4]=IETF_INTERFACES_TIME_INTERVAL_VALUE;
+        err=YDBI_SET_ITEM(ifknvk1, ifname, i, 4u,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG, 
+                (void*)&list->gateCmdList[i].timeInterval, sizeof(list->gateCmdList[i].timeInterval),
+                YDBI_NO_NOTICE);
+        DebugP_assert(err == 0);
 
-        snprintf(buffer, sizeof(buffer),
-                 GATE_CONTROL_ENTRY_NODE"|index:%d|/gate-states-value",
-                 ifname, i);
-        snprintf(val, sizeof(val), "%d",
-                 list->gateCmdList[i].gateStateMask);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        kn_traffic_sched[4]=IETF_INTERFACES_GATE_STATES_VALUE;
+        err=YDBI_SET_ITEM(ifknvk1, ifname, i, 4u,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG, 
+                (void*)&list->gateCmdList[i].gateStateMask, sizeof(list->gateCmdList[i].gateStateMask),
+                YDBI_NO_NOTICE);
+        DebugP_assert(err == 0);
     }
 
-    snprintf(buffer, sizeof(buffer), GATE_PARAM_TABLE_NODE"/gate-enabled", ifname);
-    strcpy(val, "true");
-    YANGDB_RUNTIME_WRITE(buffer, val);
+    // /ietf-interfaces/interfaces/interface|name:%s|/bridge-port/gate-parameter-table/gate-enabled
+    kn_traffic_sched[2]=IETF_INTERFACES_GATE_ENABLED;
+    kn_traffic_sched_size=3u;
+    bool enable=1;
+    err=YDBI_SET_ITEM(ifk3vk0, ifname,
+			    IETF_INTERFACES_BRIDGE_PORT,
+                IETF_INTERFACES_GATE_PARAMETER_TABLE,
+                IETF_INTERFACES_GATE_ENABLED,
+			    YDBI_CONFIG,
+                (void *)&enable, sizeof(enable), 
+                YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
 
     /* Trigger the uniconf to write parameters from DB to HW */
-    err = yang_db_runtime_askaction(ydrd, ucntd);
+    uc_dbald * dbald = ydbi_access_handle()->dbald;
+    void *kvs[]={(void*)ifname, NULL, NULL};
+	uint8_t kss[]={strlen(ifname)+1, 0};
+    uint8_t aps[]={IETF_INTERFACES_RW,
+		IETF_INTERFACES_INTERFACES,
+		IETF_INTERFACES_INTERFACE,
+		IETF_INTERFACES_BRIDGE_PORT,
+		IETF_INTERFACES_GATE_PARAMETER_TABLE,
+        IETF_INTERFACES_GATE_ENABLED,
+        255u,
+	};
+    err=uc_nc_askaction_push(ucntd, dbald, aps, kvs, kss);
+    if (err!=0)
+    {
+        DPRINT("uc_nc_askaction_push failed. err=%d\n", err);
+    } 
+    else 
+    {
+        DPRINT("%s: succeeded \n", __func__);
+    }
 
-    return err;
+    return 0;
 }
 
 static int EnetApp_estAppDbInit(EnetApp_ModuleCtx_t* mdctx,
@@ -348,43 +389,30 @@ static bool EnetEstApp_isPTPClockStateSync(EnetQoSApp_AppCtx_t *ctx,
     {
         do
         {
-            char buffer[MAX_KEY_SIZE];
             void *val = NULL;
-            uint32_t vsize;
-            uint8_t portState = 0;
+            uint8_t portState = 0; // 6: master port, 9: slave port
+            uint32_t gmState=0; //0: no sync, 1: sync, 2: sync stable
+            bool asCapable=false;
             int8_t portIdx = EnetQoSApp_getPortIdx(ctx, netdev);
             DebugP_assert(portIdx >= 0 && portIdx < ctx->netdevSize);
 
-            snprintf(buffer, sizeof(buffer),
-                     IEEE1588_PTP_TT_CLOCKSTATE_NODE"/gmstate");
-            err = yang_db_runtime_get_oneline(dbarg.ydrd, buffer, &val, &vsize);
-            if (err == -1)
-            {
-                DPRINT("Failed to read %s from the DB!", buffer);
-                break;
-            }
+            int gdi=ydbi_gptpinstdomain2dbinst_pt(ydbi_access_handle(), 0, 0);
+            YDBI_GET_ITEM_INTSUBST(ptk3vk0, gmState, val, gdi,
+			       IEEE1588_PTP_TT_CLOCK_STATE, IEEE1588_PTP_TT_GMSTATE, 255,
+			       YDBI_STATUS);
 
-            syncFlag = *(uint8_t *)val == 2? true: false;
-            UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
-            val  = NULL;
-
+            syncFlag = (gmState == 1 || gmState==2) ? BTRUE: BFALSE;
             if (!syncFlag)
             {
                 break;
             }
             syncFlag = false;
             /* gPTP port index in the DB started from 1 */
-            snprintf(buffer, sizeof(buffer),
-                     IEE1588_PTP_PORT_STATE_NODE"/port-state", portIdx+1);
-            err = yang_db_runtime_get_oneline(dbarg.ydrd, buffer, &val, &vsize);
-            if (err == -1)
-            {
-                DPRINT("Failed to read %s ", buffer);
-                break;
-            }
-            portState =  *(uint8_t *)val;
-            UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
-            val  = NULL;
+            portIdx+=1;
+            YDBI_GET_ITEM_INTSUBST(ptk4vk1, portState, val, gdi,
+                    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
+                    IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_PORT_STATE,
+                    &portIdx, sizeof(uint16_t), YDBI_STATUS);
 
             /* check ieee1588-ptp-tt.yang for description of portState */
             if (portState != 6 && portState != 9)
@@ -393,21 +421,15 @@ static bool EnetEstApp_isPTPClockStateSync(EnetQoSApp_AppCtx_t *ctx,
                 break;
             }
 
-            snprintf(buffer, sizeof(buffer), IEE1588_PTP_PORT_STATE_NODE"/as-capable", portIdx+1);
-            err = yang_db_runtime_get_oneline(dbarg.ydrd, buffer, &val, &vsize);
-            if (err == -1)
-            {
-                DPRINT("Failed to read %s ", buffer);
-                break;
-            }
-            bool asCapable = *(uint8_t *)val? true: false;
-            UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
+            asCapable=ydbi_get_asCapable(ydbi_access_handle(), 0, 0, portIdx);
             if ((portState == 6 || portState == 9) && asCapable)
             {
+                DPRINT("ptpSync-ed: %d ", portState);
                 syncFlag = true;
             }
             else if (portState == 9 && !asCapable)
             {
+                DPRINT("ptpSync-ed: %d ", portState);
                 syncFlag = true;
             }
         } while (0);
@@ -501,8 +523,8 @@ static int EnetEstApp_runSchedule(EnetQoSApp_AppCtx_t *ctx,
             ctx->adminDelayOffset = offset/1000; /* Convert to microsecond */
         }
         err = EnetEstApp_setAdminControlList(adminList,
-                                             netdev,
-                                             dbarg.ydrd, dbarg.ucntd);
+                                             netdev, 
+                                             dbarg.ucntd);
         if (err)
         {
             DPRINT("Failed to set admin control list for %s",

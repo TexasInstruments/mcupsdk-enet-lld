@@ -37,6 +37,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -83,6 +84,7 @@ const libs_freertos_r5f = {
         "tsn_unibase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "yangemb-freertos.am64x.r5f.ti-arm-clang.lib",
     ],
 };
 
@@ -101,6 +103,7 @@ const defines_r5f = {
         'GPTP_ENABLED',
         'EST_APP_ENABLED',
         'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:66,lldp:45,avtp:45,nconf:45\\\"'
+        
     ],
 };
 
@@ -118,7 +121,7 @@ const lflags_r5f = {
     common: [
         "--zero_init=on",
         "--use_memset=fast",
-        "--use_memcpy=fast"
+        "--use_memcpy=fast",
     ],
 };
 

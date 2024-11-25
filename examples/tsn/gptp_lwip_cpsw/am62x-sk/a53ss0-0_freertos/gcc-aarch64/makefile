@@ -150,6 +150,7 @@ LIBS_PATH_common = \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-L$(CGT_GCC_AARCH64_PATH)/lib \
 
 LIBS_common = \
@@ -164,6 +165,7 @@ LIBS_common = \
 	-l:lwipif-cpsw-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:lwip-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:lwip-contrib-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:yangemb-freertos.am62x.a53.gcc-aarch64.lib \
 
 LFLAGS_common = \
 	-Wl,-static \
@@ -190,6 +192,7 @@ LIBS_NAME = \
 	lwipif-cpsw-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	lwip-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
 	lwip-contrib-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib \
+	yangemb-freertos.am62x.a53.gcc-aarch64.lib \
 
 LIBS_PATH_NAME = \
 	generated \
@@ -199,6 +202,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	$(CGT_GCC_AARCH64_PATH)/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))

@@ -345,7 +345,7 @@ static void EnetApp_rxTask(void *args)
                 txPktInfo->sgList.numScatterSegments = 1;
                 txPktInfo->chkSumInfo = 0U;
                 txPktInfo->appPriv = &gEnetAppCfg;
-                txPktInfo->tsInfo.enableHostTxTs = false;
+                txPktInfo->tsInfo.enableHostTxTs = BFALSE;
 
                 EnetDma_checkPktState(&txPktInfo->pktState,
                                         ENET_PKTSTATE_MODULE_APP,

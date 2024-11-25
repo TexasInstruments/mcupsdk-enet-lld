@@ -151,6 +151,7 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
@@ -169,6 +170,7 @@ LIBS_common = \
 	-ltsn_unibase-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_gptp-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
+	-lyangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -205,6 +207,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_gptp-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib \
+	yangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -221,6 +224,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))

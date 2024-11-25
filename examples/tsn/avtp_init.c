@@ -35,7 +35,6 @@
 /* ========================================================================== */
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_l2/tilld/frtos_avtp_include.h>
 #include <tsn_uniconf/ucman.h>
@@ -101,8 +100,10 @@ extern int AVTPD_MAIN(int argc, char *argv[]);
 extern int avtp_testclient(int argc, char *argv[]);
 extern int crf_testclient(int argc, char *argv[]);
 extern int acf_testclient(int argc, char *argv[]);
+extern int uc_dbal_setproc(uc_dbald *dbald, const char *name, int64_t pvalue);
 static void *EnetApp_avtpdTask(void *arg)
 {
+    EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
     char *argv[]={"avtpd", "-n", NULL};
     int timeout_ms = 3000;
     int res;
@@ -114,6 +115,8 @@ static void *EnetApp_avtpdTask(void *arg)
     }
     else
     {
+        int64_t tid=(int64_t)&modCtx->hTaskHandle;
+        uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
         AVTPD_MAIN(2, argv);
     }
     return NULL;
@@ -170,11 +173,13 @@ static void waitGptpReady()
 static void *EnetApp_runAvtpTalker(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 {
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
+    int64_t tid=(int64_t)&mdctx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
     char *argv[]={"avtp_testclient", "-d", &ctx->netdev[0][0],
         "-m", "t", "-B", "1000", "-v", "110", "-C", "-c",
         "-S", stream_id, "-b", "5", "-i", "-u", NULL}; /* '-u' must be the last opt */
 
-    DPRINT("avtp_testclient:talker sid=%s start", stream_id);
+    DPRINT("avtp_testclient:talker sid=%s start, tid=%" PRId64 "", stream_id, tid);
     avtp_testclient(GetArgc(argv), argv);
     return NULL;
 }
@@ -241,11 +246,13 @@ static void *EnetApp_runAvtpListener(EnetApp_ModuleCtx_t *mdctx, char *stream_id
 {
     /* To have the -B 10000 works, CB_NOIPCSHMEM_DFNUM=200 is needed */
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
+    int64_t tid=(int64_t)&mdctx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
     char *argv[]={"avtp_testclient", "-d", &ctx->netdev[0][0],
         "-m", "l", "-B", "10000", "-v", "110", "-C", "-c", "-F", "-N",
         "-S", stream_id, "-i", "-u", NULL}; /* '-u' must be the last opt */
 
-    DPRINT("avtp_testclient:listener sid=%s", stream_id);
+    DPRINT("avtp_testclient:listener sid=%s, tid=%" PRId64 "", stream_id, tid);
     avtp_testclient(GetArgc(argv), argv);
     return NULL;
 }
@@ -311,10 +318,12 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 static void *EnetApp_runCrfTalker(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 {
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
+    int64_t tid=(int64_t)&mdctx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
     char *argv[]={"crf_testclient", "-d", &ctx->netdev[0][0],
         "-m", "t", "-v", "110", "-s", stream_id, "-i", "-u", NULL}; /* '-u' must be the last */
 
-    DPRINT("crf_testclient:talker sid=%s", stream_id);
+    DPRINT("crf_testclient:talker sid=%s, tid=%" PRId64 "", stream_id, tid);
     crf_testclient(GetArgc(argv), argv);
     return NULL;
 }
@@ -348,10 +357,12 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 static void *EnetApp_runCrfListener(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 {
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
+    int64_t tid=(int64_t)&mdctx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
     char *argv[]={"crf_testclient", "-d", &ctx->netdev[0][0],
         "-m", "l", "-v", "110", "-s", stream_id, "-i", "-u", NULL}; /* '-u' must be the last */
 
-    DPRINT("crf_testclient:listener sid=%s", stream_id);
+    DPRINT("crf_testclient:listener sid=%s, tid=%" PRId64 "", stream_id, tid);
     crf_testclient(GetArgc(argv), argv);
     return NULL;
 }
@@ -384,10 +395,12 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 static void *EnetApp_runAcf(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 {
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
+    int64_t tid=(int64_t)&mdctx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
     char *argv[]={"acf_testclient", "-d", &ctx->netdev[0][0],
         "-m", "t", "-v", "110", "-s", stream_id, "-I", "-R", "-n", NULL}; /* '-n' must be the last */
 
-    DPRINT("acf_testclient:sid=%s", stream_id);
+    DPRINT("acf_testclient:sid=%s, tid=%" PRId64 "", stream_id, tid);
     acf_testclient(GetArgc(argv), argv);
     return NULL;
 }
@@ -425,7 +438,9 @@ static void *EnetApp_dolbyTask(void *arg)
     waitGptpReady();
 #endif // HAVE_GPTP_READY_NOTICE
 #endif // AVTP_DIRECT_MODE
-
+    EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
+    int64_t tid=(int64_t)&modCtx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
 #ifdef DOLBYEC3_TALKER_ENABLE
     start_aaf_dolby_ec3_talker("tilld0");
 #else
@@ -463,6 +478,9 @@ static void *EnetApp_aafpcmTask(void *arg)
 #endif // HAVE_GPTP_READY_NOTICE
 #endif // AVTP_DIRECT_MODE
 
+    EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
+    int64_t tid=(int64_t)&modCtx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
 #ifdef AAF_PCM_TALKER_ENABLE
     start_aaf_pcm_talker("tilld0");
 #else

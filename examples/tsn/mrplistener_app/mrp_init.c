@@ -33,10 +33,11 @@
 /* ========================================================================== */
 /*                              Include Files                                 */
 /* ========================================================================== */
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/yangs/yang_db_access.h>
 #include <tsn_uniconf/yangs/ietf-interfaces_access.h>
+#include <tsn_uniconf/yangs/cores/ieee802-dot1q-bridge_access.h>
+#include <tsn_uniconf/yangs/cores/ieee1588-ptp-tt_access.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
 #include <xmrpd/xmrpdconf/mrpgcfg.h>
@@ -68,52 +69,33 @@
 #define MSRP_DOMAINS_NO         1
 #define MSRP_TA_NO              1
 
-#define PROTOCOL_ENABLE_STR "/excelfore-tsn-remote/tsn-remote/instances/instance|instance-index:%d|/external-control-man/control-objects|port:%s|protocol:%s/mrp-protocol|/external-control"
-#define TC_CLASS_NODE       "/ietf-interfaces/interfaces/interface|name:%s|/bridge-port/traffic-class/"
-#define TC_NUM_STR          TC_CLASS_NODE"traffic-class-table/number-of-traffic-classes"
-#define TC_PRIORITY_STR     TC_CLASS_NODE"traffic-class-table/priority%d"
-#define TC_LQUEUE_STR       TC_CLASS_NODE"tc-data|tc:%d|/lqueue"
-#define TC_PQUEUE_NO_STR    TC_CLASS_NODE"number-of-pqueues"
-#define TC_PQUEUE_MAP_STR   TC_CLASS_NODE"pqueue-map|pqueue:%d|/lqueue"
-#define TC_MAX_FRAME_SZ_STR TC_CLASS_NODE"tc-data|tc:%d|/max-frame-size"
-#define TC_CBS_ENABLED_STR  TC_CLASS_NODE"cbs-enabled"
-#define TC_AD_SLOPE_STR     TC_CLASS_NODE"tc-data|tc:%d|/admin-idleslope"
-
-#define DOT1Q_BRIDGE_COMPONENT "/ieee802-dot1q-bridge/bridges/bridge|name:%s|/component|name:%s|/"
-#define DOT1Q_BRIDGE_PORTS_NO_STR DOT1Q_BRIDGE_COMPONENT"ports"
-#define DOT1Q_BRIDGE_PORTS_BRPORT_STR DOT1Q_BRIDGE_COMPONENT"bridge-port"
-
-/*! Base path of clock-state node in  yang file for checking PTP synchronized */
-#define IEEE1588_PTP_TT_CLOCKSTATE_NODE  "/ieee1588-ptp-tt/ptp/instances" \
-    "/instance|instance-index:0,0|/clock-state"
-
-/*! Base path of port-state node in  yang file for checking PTP synchronized */
-#define IEE1588_PTP_PORT_STATE_NODE  "/ieee1588-ptp-tt/ptp/instances" \
-    "/instance|instance-index:0,0|/ports/port|port-index:%d|/port-ds"
-
 #define BASE_VID 100
 #define XMRPD_LINKSEMNAME "/xmrplinksem"
 
 #define TESTING_PORT_INDEX 0 // Corresponding to tilld0
+
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
 typedef struct
 {
-    char* tcNum;                  // traffic-class/traffic-class-table/number-of-traffic-classes
-    char* priorityToTcMap[8];          // traffic-class/traffic-class-table/priority0
-    char* tcToLqMap[8];            // traffic-class/tc-data|tc:0|/lqueue
-    char* pQueueNum;              // traffic-class/number-of-pqueues
-    char* pqToLqMap[8];           // traffic-class/pqueue-map|pqueue:0|/lqueue
-    char* tcMaxFrameSize[8];      // traffic-class/tc-data|tc:1|/max-frame-size
-    char* cbsEnable;              // traffic-class/cbs-enabled
-    char* tcToAdminIdleSlopeMap[8];    // traffic-class/tc-data|tc:2|/admin-idleslope
+    uint8_t tcNum;                  // traffic-class/traffic-class-table/number-of-traffic-classes
+    int8_t priorityToTcMap[8];          // traffic-class/traffic-class-table/priority0
+    int8_t tcToLqMap[8];            // traffic-class/tc-data|tc:0|/lqueue
+    uint8_t pQueueNum;              // traffic-class/number-of-pqueues
+    int8_t pqToLqMap[8];           // traffic-class/pqueue-map|pqueue:0|/lqueue
+    uint32_t tcMaxFrameSize[8];      // traffic-class/tc-data|tc:1|/max-frame-size
+    bool cbsEnable;              // traffic-class/cbs-enabled
+    int64_t tcToAdminIdleSlopeMap[8];    // traffic-class/tc-data|tc:2|/admin-idleslope
 } EnetApp_TrafficClassCfg_t;
 /* ========================================================================== */
 /*                            Local Variables                                */
 /* ========================================================================== */
 extern EnetApp_Ctx_t gAppCtx;
+extern int uc_dbal_setproc(uc_dbald *dbald, const char *name, int64_t pvalue);
 
 static uint8_t gAvtpdStackBuf[TSN_TSK_STACK_SIZE] __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 static uint8_t gMrpdStackBuf[TSN_TSK_STACK_SIZE] __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
@@ -121,16 +103,16 @@ static uint8_t gMrpCliStackBuf[TSN_TSK_STACK_SIZE] __attribute__ ((aligned(TSN_T
 
 EnetApp_TrafficClassCfg_t gTcCfg =
 {
-    .tcNum = "8",
+    .tcNum = 8,
     // Priority-TC-Map      0         1          2         3         4      5       6       7 <- priority
     // For ex: priority 2 (class B) is mapping with TC 1
-    .priorityToTcMap = {    "0",      "3"      , "1",      "2",      "4",   "5",    "6",    "7"}, // <- tc
-    .tcToLqMap =     {      "0",      "1",       "2",       "3",     "4",   "5",    "6",    "7"}, // <- Logical queue
-    .pQueueNum = "8",
-    .pqToLqMap =      {     "0",       "1",       "2",       "3",     "4",    "5",    "6",   "7"}, // <- Logical Queue
-    .tcMaxFrameSize = {"1500",  "1500",     "1500",     "1500", "1500", "1500", "1500", "1500"},
-    .cbsEnable = "1",
-    .tcToAdminIdleSlopeMap = {"1024",    "1024",     "1024",   "1024",    "1024", "1024", "1024", "4096000"} // last item is for ptp
+    .priorityToTcMap = {    0,        3,       1,        2,        4,     5,      6,      7}, // <- tc
+    .tcToLqMap =       {    0,        1,       2,        3,        4,     5,      6,      7}, // <- Logical queue
+    .pQueueNum = 8,
+    .pqToLqMap =       {    0,        1,       2,        3,        4,     5,      6,      7}, // <- Logical Queue
+    .tcMaxFrameSize =  {   1500,      1500,    1500,    1500,     1500,  1500,   1500,   1500},
+    .cbsEnable = true,
+    .tcToAdminIdleSlopeMap = {1024,   1024,    1024,    1024,     1024,  1024,   1024,  4096000} // last item is for ptp
 };
 // This example, is to send data with priority 2 (class B) -> it should map with TC "1"
 // This data should be map to LQ#1 <-> PQ#1
@@ -228,189 +210,315 @@ int EnetApp_addMrpconfModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
     return 0;
 }
 
-#define YANGDB_RUNTIME_WRITE(key,val) do {                              \
-        err = yang_db_runtime_put_oneline(ydrd, key, val, YANG_DB_ONHW_NOACTION); \
-        DebugP_assert(err == 0);                                        \
-    } while (0)
-
-/// Register idle initial idelSlope 
-void EnetApp_registerIdleSlope(uc_dbald *dbald, yang_db_runtime_dataq_t *ydrd, uc_notice_data_t* ucntd, const char* ndev)
+static int EnetCbsApp_registerAdminIdleSlope(uc_dbald *dbald, uc_notice_data_t *ucntd,
+                                                char *ifname, int8_t tc,
+                                                int64_t idleSlope)
 {
-    char buffer[MAX_KEY_SIZE];
-    int err;
     char sem_name[64];
-    UC_NOTICE_SIG_T *sem = NULL;
+    int err;
     uint32_t ksize;
     char key[UC_MAX_KEYSIZE];
+    UC_NOTICE_SIG_T *sem = NULL;
+    uint8_t aps[]={IETF_INTERFACES_RW, IETF_INTERFACES_INTERFACES,
+                IETF_INTERFACES_INTERFACE, IETF_INTERFACES_BRIDGE_PORT,
+                IETF_INTERFACES_TRAFFIC_CLASS, IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_ADMIN_IDLESLOPE,
+                255u};
+    /*
+    * We want to register a semaphore for a notification
+    * on completing of admin-idleslope seeting at HW side
+    * before going to the next TC's idle slope to make sure
+    * the idleSlope of highest priority queue must be configured
+    * first before going for the lower priority queue.
+    * This restriction is only required at the initial time.
+    * In the run time configuration, since all priority queues
+    * have been configured, setting idle slope of any queue will
+    * work fine.
+    */
+    snprintf(sem_name, sizeof(sem_name), "/cbs_wait_sem_%d", tc);
+    void *kvs[]={(void*)ifname, (void*)&tc, sem_name, NULL};
+    uint8_t kss[]={strlen(ifname)+1, sizeof(tc), strlen(sem_name)+1};
+    if(uc_nc_notice_register(ucntd, dbald, aps, kvs, kss, UC_NOTICE_DBVAL_ADD, &sem))
+    {
+        DPRINT("%s: uc_nc_notice_register failure. tc=%d\n", __func__, tc);
+        return -1;
+    }
+    
+    err=YDBI_SET_ITEM(ifk4vk1, ifname, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_ADMIN_IDLESLOPE,
+                255,
+                &tc, sizeof(tc), 
+                YDBI_CONFIG, 
+                (void*)&idleSlope,
+                sizeof(idleSlope),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+    DebugP_assert(err == 0);
 
-    // Traffic class is down-ing from 7 to 1
+    // Ask uniconf to write adminIdleSlop to HW
+    kvs[2]=NULL;
+    kss[2]=0;
+    err=uc_nc_askaction_push(ucntd, dbald, aps, kvs, kss);
+    if (err!=0)
+    {
+        DPRINT("uc_nc_askaction_push failed. err=%d\n", err);
+    } 
+    else 
+    {
+        DPRINT("ask uniconf to write adminIdleSlop succeeded \n", __func__);
+    }
+    // Now wait for uniconf to finish writing adminIdleSlop to HW
+    if (sem)
+    {
+        /* Waiting for setting completed at the HW with the timeout */
+        if (uc_notice_sig_check(BTRUE, sem, 200, __func__))
+        {
+            DPRINT("%s, Failed to get a notice from the uniconf",
+                    __func__);
+        } else
+        {
+            err = uc_nc_get_notice_act(ucntd, dbald,
+                                        sem_name, key, &ksize);
+            if (err)
+            {
+                DPRINT("There is no notice from the uniconf");
+            }
+            else
+            {
+                DPRINT("Registered adminIdleSlope finished. tc=%d", tc);
+            }
+        }
+        /* Release the semaphore */
+        err = uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
+        if (err != 0)
+        {
+            DPRINT("Failed to unregister sempahore");
+        }
+        sem = NULL;
+    }
+    return err;
+
+}
+
+/// Register idle initial idelSlope 
+void EnetApp_registerIdleSlope(uc_dbald *dbald, uc_notice_data_t* ucntd, char* ndev)
+{
+    int err;
     for (int i=7; i>0; i--)
     {
-        memset(sem_name, 0, sizeof(sem_name));
-        snprintf(sem_name, sizeof(sem_name), "/cbs_wait_sem_%d", i);
-
-        snprintf(buffer, sizeof(buffer), TC_AD_SLOPE_STR , ndev, i);
-
-        /* The semaphore is created by the following API */
-        err = yang_db_runtime_notice_register(ydrd, ucntd, buffer,
-                                                sem_name, &sem);
-        if (err != 0)
+        err=EnetCbsApp_registerAdminIdleSlope(dbald, ucntd,
+                                                ndev, i,
+                                                gTcCfg.tcToAdminIdleSlopeMap[i]);
+        if (err==0)
         {
-            DPRINT("%s, Failed to register semaphore for a notice %s", __func__, sem_name);
+            DPRINT("%s, Register idleSlope for tc=%d", __func__, i);
+        } else {
+            DPRINT("%s, Failed to Register idleSlope for tc=%d, err=%d", __func__, i, err);
         }
-
-        YANGDB_RUNTIME_WRITE(buffer, gTcCfg.tcToAdminIdleSlopeMap[i]);
-
-        err = yang_db_runtime_askaction(ydrd, ucntd);
-        if (err != 0)
-        {
-            DPRINT("%s, Failed to trigger uniconf to write idleSlope", __func__);
-            if (sem)
-            {
-                (void)uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
-            }
-            break;
-        }
-
-        if (sem)
-        {
-            /* Waiting for setting completed at the HW with the timeout */
-            if (uc_notice_sig_check(BTRUE, sem, 200, __func__))
-            {
-                DPRINT("%s, Failed to get a notice from the uniconf",
-                       __func__);
-            } else
-            {
-                err = uc_nc_get_notice_act(ucntd, dbald,
-                                           sem_name, key, &ksize);
-                if (err)
-                {
-                    DPRINT("There is no notice from the uniconf");
-                }
-            }
-            /* Release the semaphore */
-            err = uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
-            if (err != 0)
-            {
-                DPRINT("Failed to unregister sempahore");
-                break;
-            }
-            sem = NULL;
-        }
-
-        DPRINT("%s, Register idle slope for tc=%d", __func__, i);
     }
+
+}
+
+static int EnetCbsApp_registerCbsEnableToUniconf(uc_dbald *dbald, uc_notice_data_t *ucntd,
+                                                char *ifname)
+{
+    int err;
+    uint8_t kn_traffic_sched[5] = {
+		[0] = IETF_INTERFACES_BRIDGE_PORT,
+		[1] = IETF_INTERFACES_TRAFFIC_CLASS,
+        [2] = IETF_INTERFACES_CBS_ENABLED,
+	};
+    uint8_t kn_traffic_sched_size = 3;
+    // "/ietf-interfaces/interfaces/interface|name:%s|/bridge-port/traffic-class/cbs-enabled"
+    bool cbs_enabled=true;
+    err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&cbs_enabled, sizeof(cbs_enabled), 
+                YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
+
+    void *kvs[]={(void*)ifname, NULL, NULL};
+	uint8_t kss[]={strlen(ifname)+1, 0};
+    uint8_t aps[]={IETF_INTERFACES_RW,
+		IETF_INTERFACES_INTERFACES,
+		IETF_INTERFACES_INTERFACE,
+		IETF_INTERFACES_BRIDGE_PORT,
+		IETF_INTERFACES_TRAFFIC_CLASS,
+        IETF_INTERFACES_CBS_ENABLED,
+        255u,
+	};
+    err=uc_nc_askaction_push(ucntd, dbald, aps, kvs, kss);
+    if (err!=0)
+    {
+        DPRINT("uc_nc_askaction_push failed. err=%d\n", err);
+    } 
+    else 
+    {
+        DPRINT("%s: succeeded \n", __func__);
+    }
+
+    return err;
 }
 
 /// Set common configuration parameter
-int EnetApp_setMrpExtControlConfig(yang_db_runtime_dataq_t *ydrd, uc_notice_data_t* ucntd, char* dev)
+int EnetApp_setMrpExtControlConfig(uc_notice_data_t* ucntd, char* dev)
 {
-    char buffer[MAX_KEY_SIZE];
+    // char buffer[MAX_KEY_SIZE];
     int err;
+    int8_t i;
+    uc_dbald *dbald;
 
-    snprintf(buffer, sizeof(buffer), PROTOCOL_ENABLE_STR, 0, dev, "mvrp");
-    YANGDB_RUNTIME_WRITE(buffer, "true");
+    ydbi_mrp_set_external_control(0, dev, MRP_MVRP, 1);
+    ydbi_mrp_set_external_control(0, dev, MRP_MSRP, 1);
 
-    snprintf(buffer, sizeof(buffer), PROTOCOL_ENABLE_STR, 0, dev, "msrp");
-    YANGDB_RUNTIME_WRITE(buffer, "true");
+    dbald = ydbi_access_handle()->dbald;
 
-    snprintf(buffer, sizeof(buffer), TC_CBS_ENABLED_STR , dev);
-    YANGDB_RUNTIME_WRITE(buffer, gTcCfg.cbsEnable);
-    err = yang_db_runtime_askaction(ydrd, ucntd);
+    err=YDBI_SET_ITEM(ifk4vk1, dev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TRAFFIC_CLASS_TABLE,
+                IETF_INTERFACES_NUMBER_OF_TRAFFIC_CLASSES,
+                255,
+                NULL, 0, YDBI_CONFIG, (void*)&gTcCfg.tcNum, sizeof(gTcCfg.tcNum),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+    DebugP_assert(err == 0);
+
+    for (i=0; i<gTcCfg.tcNum; i++)
+    {
+        err=YDBI_SET_ITEM(ifk4vk1, dev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TRAFFIC_CLASS_TABLE,
+                IETF_INTERFACES_PRIORITY0+i,
+                255,
+                NULL, 0, YDBI_CONFIG, (void*)&gTcCfg.priorityToTcMap[i],
+                sizeof(gTcCfg.priorityToTcMap[i]),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
+
+        err=YDBI_SET_ITEM(ifk4vk1, dev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_LQUEUE,
+                255,
+                &i, sizeof(i), 
+                YDBI_STATUS, 
+                (void*)&gTcCfg.tcToLqMap[i],
+                sizeof(gTcCfg.tcToLqMap[i]),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
+    }
+
+    err=YDBI_SET_ITEM(ifk4vk1, dev, 
+            IETF_INTERFACES_TRAFFIC_CLASS,
+            IETF_INTERFACES_NUMBER_OF_PQUEUES,
+            255,
+            255,
+            NULL, 0, YDBI_STATUS, (void*)&gTcCfg.pQueueNum, sizeof(gTcCfg.pQueueNum),
+            YDBI_NO_NOTICE,
+            YANG_DB_ONHW_NOACTION
+            );
+    DebugP_assert(err == 0);
+
+    for (i=0; i<gTcCfg.pQueueNum; i++)
+    {
+        err=YDBI_SET_ITEM(ifk4vk1, dev, 
+            IETF_INTERFACES_TRAFFIC_CLASS,
+            IETF_INTERFACES_PQUEUE_MAP,
+            IETF_INTERFACES_LQUEUE,
+            255,
+            &i, sizeof(i), YDBI_STATUS,
+            (void*)&gTcCfg.pqToLqMap[i], sizeof(gTcCfg.pqToLqMap[i]),
+            YDBI_NO_NOTICE,
+            YANG_DB_ONHW_NOACTION
+            );
+        DebugP_assert(err == 0);
+    }
+
+    err=ydbi_set_item_qbk1vk0(ydbi_access_handle(), 
+                            "br0", 
+                            0, 
+                            IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT, 
+                            YDBI_STATUS,
+                            dev, strlen(dev)+1,
+                            YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
+    
+    uint16_t dot1q_ports=1;
+    err=ydbi_set_item_qbk1vk0(ydbi_access_handle(), 
+                            "br0", 
+                            0, 
+                            IEEE802_DOT1Q_BRIDGE_PORTS, 
+                            YDBI_STATUS,
+                            (void*)&dot1q_ports, 2,
+                            YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
+
+    for (i=0; i<8; i++)
+    {
+        err=YDBI_SET_ITEM(ifk4vk1, dev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_MAX_FRAME_SIZE,
+                255,
+                &i, sizeof(i), 
+                YDBI_CONFIG, 
+                (void*)&gTcCfg.tcMaxFrameSize[i],
+                sizeof(gTcCfg.tcMaxFrameSize[i]),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
+    }
+    
+    err=EnetCbsApp_registerCbsEnableToUniconf(dbald, ucntd, dev);
     if (err != 0)
     {
         DPRINT("%s, Failed to trigger uniconf to write idleSlope",
                __func__);
     }
-
-    snprintf(buffer, sizeof(buffer), TC_NUM_STR, dev);
-    YANGDB_RUNTIME_WRITE(buffer, gTcCfg.tcNum);
-
-    for (int i=0; i<8; i++)
-    {
-        snprintf(buffer, sizeof(buffer), TC_PRIORITY_STR , dev, i);
-        YANGDB_RUNTIME_WRITE(buffer, gTcCfg.priorityToTcMap[i]);
-
-        snprintf(buffer, sizeof(buffer), TC_LQUEUE_STR , dev, i);
-        YANGDB_RUNTIME_WRITE(buffer, gTcCfg.tcToLqMap[i]);
-    }
-
-    snprintf(buffer, sizeof(buffer), TC_PQUEUE_NO_STR, dev);
-    YANGDB_RUNTIME_WRITE(buffer, gTcCfg.pQueueNum);
-
-    for (int i=0; i<8; i++)
-    {
-        snprintf(buffer, sizeof(buffer), TC_PQUEUE_MAP_STR , dev, i);
-        YANGDB_RUNTIME_WRITE(buffer, gTcCfg.pqToLqMap[i]);
-    }
-
-    snprintf(buffer, sizeof(buffer), DOT1Q_BRIDGE_PORTS_BRPORT_STR, "br0", "cmp00");
-    YANGDB_RUNTIME_WRITE(buffer, dev);
-
-    snprintf(buffer, sizeof(buffer), DOT1Q_BRIDGE_PORTS_NO_STR, "br0", "cmp00");
-    YANGDB_RUNTIME_WRITE(buffer, "1");
-
-    for (int i=0; i<8; i++)
-    {
-        snprintf(buffer, sizeof(buffer), TC_MAX_FRAME_SZ_STR , dev, i);
-        YANGDB_RUNTIME_WRITE(buffer, gTcCfg.tcMaxFrameSize[i]);
-    }
-    
     DPRINT("%s", __func__);
 
     return 0;
 }
 
 /// Check if gptp is sync before starting mrp app
-bool EnetApp_isGptpSync(yang_db_runtime_dataq_t *ydrd)
+bool EnetApp_isGptpSync()
 {
-    int err = -1;
     bool syncFlag = BFALSE;
-    char buffer[MAX_KEY_SIZE];
     void *val = NULL;
-    uint32_t vsize;
     uint8_t portState = 0;
+    uint8_t gmState=0;//0: no sync, 1: sync, 2: sync stable
     bool asCapable;
 
-    snprintf(buffer, sizeof(buffer), IEEE1588_PTP_TT_CLOCKSTATE_NODE"/gmstate");
-    err = yang_db_runtime_get_oneline(ydrd, buffer, &val, &vsize);
-    if (err == -1)
-    {
-        DPRINT("Failed to read %s from the DB!", buffer);
-        return BFALSE;
-    }
+    int portIdx=TESTING_PORT_INDEX+1; /* gPTP port index in the DB started from 1 */
+    int gdi=ydbi_gptpinstdomain2dbinst_pt(ydbi_access_handle(), 0, 0);
+    YDBI_GET_ITEM_INTSUBST(ptk3vk0, gmState, val, gdi,
+			       IEEE1588_PTP_TT_CLOCK_STATE, IEEE1588_PTP_TT_GMSTATE, 255,
+			       YDBI_STATUS);
 
-    syncFlag = *(uint8_t *)val == 2? BTRUE: BFALSE;
-    UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
-    val = NULL;
+    syncFlag = (gmState == 2 || gmState==1) ? BTRUE: BFALSE;
     if (!syncFlag) {return BFALSE;}
 
     syncFlag = BFALSE;
-    /* gPTP port index in the DB started from 1 */
-    snprintf(buffer, sizeof(buffer),
-                IEE1588_PTP_PORT_STATE_NODE"/port-state", TESTING_PORT_INDEX+1);
-    err = yang_db_runtime_get_oneline(ydrd, buffer, &val, &vsize);
-    if (err == -1)
-    {
-        DPRINT("Failed to read %s ", buffer);
-        return BFALSE;
-    }
-    portState =  *(uint8_t *)val;
-    UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
-    val  = NULL;
+    YDBI_GET_ITEM_INTSUBST(ptk4vk1, portState, val, gdi,
+                    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
+                    IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_PORT_STATE,
+                    &portIdx, sizeof(uint16_t), YDBI_STATUS);
 
     /* check ieee1588-ptp-tt.yang for description of portState */
     if (portState != 6 && portState != 9) {DPRINT("Current port-state: %d ", portState);}
 
-    snprintf(buffer, sizeof(buffer), IEE1588_PTP_PORT_STATE_NODE"/as-capable", TESTING_PORT_INDEX+1);
-    err = yang_db_runtime_get_oneline(ydrd, buffer, &val, &vsize);
-    if (err == -1)
-    {
-        DPRINT("Failed to read %s ", buffer);
-        return BFALSE;
-    }
-    asCapable = *(uint8_t *)val? BTRUE: BFALSE;
-    UB_SD_RELMEM(YANGINIT_GEN_SMEM, val);
+    asCapable=ydbi_get_asCapable(ydbi_access_handle(), 0, 0, portIdx);
+
     if ((portState == 6 || portState == 9) && asCapable) {syncFlag = BTRUE;}
     else if (portState == 9 && !asCapable) {syncFlag = BTRUE;}
 
@@ -436,6 +544,9 @@ static void *EnetApp_xmrpdTask(void *arg)
         res=mrpman_open(mrpmand);
         if (res==0)
         {
+            int64_t tid=(int64_t)&modCtx->hTaskHandle;
+            uc_dbal_setproc(ydbi_access_handle()->dbald, "xmrpd", tid);
+
             uint8_t ready=1;
             res=YDBI_SET_ITEM(nymrk1vk0, 0, XL4_EXTMOD_XL4MRP_XMRPD_READY,
 			                            YDBI_STATUS, &ready, 1, YDBI_NO_NOTICE);
@@ -560,21 +671,21 @@ static void *EnetApp_xmrpcTask(void *arg)
 
     // Init DB in here
     yang_db_item_access_t *ydbi = ydbi_access_handle();
-    yang_db_runtime_dataq_t *ydrd;
     uc_notice_data_t* ucntd;
     ucntd = uc_notice_init(UC_CALLMODE_THREAD, xmrpd_app_info.dbname);
-    ydrd = yang_db_runtime_init(ydbi->dbald, NULL);
     //
 
     xmrpd_app_info.dbald = ydbi->dbald;
     xmrpd_app_info.ucntd = ucntd;
-    xmrpd_app_info.ydrd = ydrd;
 
     for (uint8_t i=0; i<xmrpd_app_info.avb_app_num; i++)
     {
         EnetApp_initMrpCfg(&xmrpd_app_info, i);
         xmrpd_app_info.mrp_data[i].netdev=&ctx->netdev[TESTING_PORT_INDEX][0];
     }
+
+    int64_t tid=(int64_t)&modCtx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "xmrpd", tid);
 
     /* Doesn't return */
 	run_xmrpd_app(&xmrpd_app_info);

@@ -148,6 +148,7 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
@@ -161,6 +162,7 @@ LIBS_common = \
 	-ltsn_unibase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lyangemb-freertos.am64x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -192,6 +194,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	yangemb-freertos.am64x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -202,6 +205,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
@@ -236,7 +240,7 @@ $(OBJDIR)/%.obj %.obj: %.c
 
 $(OBJDIR)/%.obj %.obj: %.S
 	@echo  Compiling: am64x:r5fss0-0:freertos:ti-arm-clang $(LIBNAME): $<
-	$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) -o $(OBJDIR)/$@ $<
+	$(CC) -c $(CFLAGS) -o $(OBJDIR)/$@ $<
 
 all: $(TARGETS)
 

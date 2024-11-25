@@ -40,7 +40,6 @@
 #include <tsn_combase/cb_tmevent.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
@@ -88,12 +87,6 @@ int EnetQoSApp_openDB(EnetApp_dbArgs *dbarg, char *dbName, const char *mode)
             DPRINT("Failed to open uc notice!");
             break;
         }
-        dbarg->ydrd = yang_db_runtime_init(dbarg->dbald, NULL);
-        if (!dbarg->ydrd)
-        {
-            DPRINT("Failed to init DB runtime!");
-            break;
-        }
         res = 0;
     } while (0);
     return res;
@@ -102,56 +95,88 @@ int EnetQoSApp_openDB(EnetApp_dbArgs *dbarg, char *dbName, const char *mode)
 void EnetQoSApp_closeDB(EnetApp_dbArgs *dbarg)
 {
     uc_notice_close(dbarg->ucntd, 0);
-    yang_db_runtime_close(dbarg->ydrd);
     uc_dbal_close(dbarg->dbald, UC_CALLMODE_THREAD);
 }
 
+/// Note: How to intput ifk4vk1 param, look at full string below:
+/// `k4vk1` it means the function can support setting up to 4 keys (k4) and one value key (vk1) started after `bridge-port`
+/// ex: /ietf-interfaces/interfaces/interface|name:eno1|/bridge-port/traffic-class""/tc-data|tc:2|/lqueue 2
+///  After `bridge-port`, k1,2,3=IETF_INTERFACES_TRAFFIC_CLASS, IETF_INTERFACES_TC_DATA, IETF_INTERFACES_LQUEUE (set k4=255 as not used)
+//   vk1 is for IETF_INTERFACES_TC_DATA, and set next param+size to 2, and sizeof(int8)
+//   In case of no vk, set to NULL and vksize is 0
 int EnetQoSApp_setCommonParam(QoSAppCommonParam_t *prm,
                               EnetApp_dbArgs *dbarg)
 {
     int err = 0, i;
-    char buffer[MAX_KEY_SIZE];
-    char val[MAX_VAL_SIZE];
-    yang_db_runtime_dataq_t *ydrd = dbarg->ydrd;
 
     /* Write the num of traffic classes and value of each TC to DB */
-    snprintf(buffer, sizeof(buffer),
-             TRAFFIC_CLASS_TABLE_NODE"/number-of-traffic-classes",
-             prm->netdev);
-    snprintf(val, sizeof(val), "%d", prm->nTCs);
-    YANGDB_RUNTIME_WRITE(buffer, val);
+    err=YDBI_SET_ITEM(ifk4vk1, prm->netdev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TRAFFIC_CLASS_TABLE,
+                IETF_INTERFACES_NUMBER_OF_TRAFFIC_CLASSES,
+                255,
+                NULL, 0, YDBI_CONFIG, (void*)&prm->nTCs, sizeof(prm->nTCs),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+    DebugP_assert(err == 0);
 
     /* Use one-to-one mapping of priority to logical queue */
     for (i = 0; i < prm->nTCs; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 TRAFFIC_CLASS_TABLE_NODE"/priority%d",
-                 prm->netdev, i);
-        snprintf(val, sizeof(val), "%d",
-                 prm->priority2TcMapping[i]);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        err=YDBI_SET_ITEM(ifk4vk1, prm->netdev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TRAFFIC_CLASS_TABLE,
+                IETF_INTERFACES_PRIORITY0+i,
+                255,
+                NULL, 0, YDBI_CONFIG, (void*)&prm->priority2TcMapping[i],
+                sizeof(prm->priority2TcMapping[i]),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
 
         /* Map same number of priority to logical queue */
-        snprintf(buffer, sizeof(buffer),
-                 TRAFFIC_CLASS_DATA_NODE"|tc:%d|/lqueue",
-                 prm->netdev, prm->priority2TcMapping[i]);
-        snprintf(val, sizeof(val), "%d", prm->priority2TcMapping[i]);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        err=YDBI_SET_ITEM(ifk4vk1, prm->netdev, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_LQUEUE,
+                255,
+                &prm->priority2TcMapping[i], sizeof(prm->priority2TcMapping[i]), 
+                YDBI_STATUS, 
+                (void*)&prm->priority2TcMapping[i],
+                sizeof(prm->priority2TcMapping[i]),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
     }
 
-    snprintf(buffer, sizeof(buffer),
-             TRAFFIC_CLASS_NODE"/number-of-pqueues", prm->netdev);
-    snprintf(val, sizeof(val), "%d", prm->nQueues);
-    YANGDB_RUNTIME_WRITE(buffer, val);
+    err=YDBI_SET_ITEM(ifk4vk1, prm->netdev, 
+            IETF_INTERFACES_TRAFFIC_CLASS,
+            IETF_INTERFACES_NUMBER_OF_PQUEUES,
+            255,
+            255,
+            NULL, 0, YDBI_STATUS, (void*)&prm->nQueues, sizeof(prm->nQueues),
+            YDBI_NO_NOTICE,
+            YANG_DB_ONHW_NOACTION
+            );
+    DebugP_assert(err == 0);
 
     /* Use one-to-one mapping of logical queue to HW queue */
     for (i = 0; i < prm->nQueues; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 PHYSICAL_QUEUE_MAP_NODE"|pqueue:%d|/lqueue",
-                 prm->netdev, prm->priority2TcMapping[i]);
-        snprintf(val, sizeof(val), "%d", prm->priority2TcMapping[i]);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        err=YDBI_SET_ITEM(ifk4vk1, prm->netdev, 
+            IETF_INTERFACES_TRAFFIC_CLASS,
+            IETF_INTERFACES_PQUEUE_MAP,
+            IETF_INTERFACES_LQUEUE,
+            255,
+            &prm->priority2TcMapping[i], 1, YDBI_STATUS,
+            (void*)&prm->priority2TcMapping[i], sizeof(prm->priority2TcMapping[i]),
+            YDBI_NO_NOTICE,
+            YANG_DB_ONHW_NOACTION
+            );
+        DebugP_assert(err == 0);
     }
 
     return err;

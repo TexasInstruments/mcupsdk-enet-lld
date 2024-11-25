@@ -84,6 +84,7 @@
             -i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
+            -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
             -m=gptp_lwip_cpsw.${ConfigName}.map
@@ -123,6 +124,7 @@
                 -llwipif-cpsw-freertos.am64x.r5f.ti-arm-clang.debug.lib
                 -llwip-freertos.am64x.r5f.ti-arm-clang.debug.lib
                 -llwip-contrib-freertos.am64x.r5f.ti-arm-clang.debug.lib
+                -lyangemb-freertos.am64x.r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -147,6 +149,7 @@
                 -llwipif-cpsw-freertos.am64x.r5f.ti-arm-clang.release.lib
                 -llwip-freertos.am64x.r5f.ti-arm-clang.release.lib
                 -llwip-contrib-freertos.am64x.r5f.ti-arm-clang.release.lib
+                -lyangemb-freertos.am64x.r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "

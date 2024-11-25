@@ -38,6 +38,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -86,6 +87,7 @@ const libs_freertos_r5f = {
         "tsn_gptp-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_l2-freertos.am62ax.r5f.ti-arm-clang.lib",
+        "yangemb-freertos.am62ax.r5f.ti-arm-clang.lib",
     ],
 };
 
@@ -153,7 +155,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_TSN_GPTP";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_TSN_AVTP";
 
 const templates_freertos_r5f =
 [

@@ -47,9 +47,10 @@
 #define PRINT_EVERY_N_PACKET 20
 
 extern int avtp_testclient(int argc, char *argv[]);
-extern void EnetApp_registerIdleSlope(uc_dbald *dbald, yang_db_runtime_dataq_t *ydrd, uc_notice_data_t* ucntd, const char* ndev);
-extern int EnetApp_setMrpExtControlConfig(yang_db_runtime_dataq_t *ydrd, uc_notice_data_t* ucntd, char* dev);
-extern bool EnetApp_isGptpSync(yang_db_runtime_dataq_t *ydrd);
+extern void EnetApp_registerIdleSlope(uc_dbald *dbald, uc_notice_data_t* ucntd, char* ndev);
+extern int EnetApp_setMrpExtControlConfig(uc_notice_data_t* ucntd, char* dev);
+extern bool EnetApp_isGptpSync();
+extern int uc_dbal_setproc(uc_dbald *dbald, const char *name, int64_t pvalue);
 static int proto_to_attr(int tpe )
 {
 	if( (tpe < 7) || (tpe > 12) ) return -1;
@@ -595,7 +596,7 @@ static int mvrp_state_machine(xmrpd_app_data_t *xmrpd_app_info , uint8_t appno)
 		case MVRP_STATE_IDLE:
 			return -1;
 		case MVRP_STATE_WAIT_GPTP_SYNC:
-			if (EnetApp_isGptpSync(xmrpd_app_info->ydrd))
+			if (EnetApp_isGptpSync())
 			{
 				DPRINT("%s: GPTP Sync-ed on dev %s\n",__func__, xmrpd_app_info[appno].netdev);
 				mrp_data->mvrp_data.mrp_state = MVRP_STATE_STARTED;
@@ -969,6 +970,9 @@ static int run_avtp_testclient(xmrpd_app_data_t *xmrpd_app_info, uint8_t appno)
 		return -1;
 	}
 
+	int64_t tid=(int64_t)&xmrpd_app_info->mrp_data[appno].avtp_tc_thread;
+	uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
+
 	return 0;
 }
 
@@ -1013,8 +1017,8 @@ int mrp_linkcheck(xmrpd_app_data_t *xmrpd_app_info)
 				xmrpd_app_info->mrp_data[i].mvrp_data.mrp_state = MVRP_STATE_WAIT_GPTP_SYNC;
 			}
 			// Register CBS
-			(void)EnetApp_setMrpExtControlConfig(xmrpd_app_info->ydrd, xmrpd_app_info->ucntd, xmrpd_app_info->netdev);
-			EnetApp_registerIdleSlope(xmrpd_app_info->dbald, xmrpd_app_info->ydrd, xmrpd_app_info->ucntd, xmrpd_app_info->netdev);
+			(void)EnetApp_setMrpExtControlConfig(xmrpd_app_info->ucntd, xmrpd_app_info->netdev);
+			EnetApp_registerIdleSlope(xmrpd_app_info->dbald, xmrpd_app_info->ucntd, xmrpd_app_info->netdev);
 		}
 		else
 		{

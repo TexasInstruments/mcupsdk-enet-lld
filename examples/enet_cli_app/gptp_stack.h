@@ -46,7 +46,6 @@
 #include <tsn_combase/tilld/lldtype.h>
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_gptp/gptpman.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
@@ -148,7 +147,6 @@ struct EnetTsn_ModuleCtx_s
 struct EnetTsn_DbArgs_s
 {
     uc_dbald *dbald;
-    yang_db_runtime_dataq_t *ydrd;
     uc_notice_data_t *ucntd;
 };
 

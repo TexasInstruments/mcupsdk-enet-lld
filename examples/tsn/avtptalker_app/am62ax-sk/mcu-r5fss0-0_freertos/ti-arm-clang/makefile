@@ -2,7 +2,7 @@
 # Auto generated makefile
 #
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -70,13 +70,15 @@ FILES_PATH_common = \
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include/c \
 	-I${MCU_PLUS_SDK_PATH}/source \
+	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include \
+	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am62ax/r5f \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils/include \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils/V3 \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy \
@@ -84,7 +86,7 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am62ax \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
-	-I${MCU_PLUS_SDK_PATH}/examples/networking/tsn \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc/tsn_l2 \
@@ -169,6 +171,7 @@ LIBS_common = \
 	-ltsn_gptp-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_l2-freertos.am62ax.r5f.ti-arm-clang.lib \
+	-lyangemb-freertos.am62ax.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -201,6 +204,7 @@ LIBS_NAME = \
 	tsn_gptp-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am62ax.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_l2-freertos.am62ax.r5f.ti-arm-clang.lib \
+	yangemb-freertos.am62ax.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -362,7 +366,7 @@ $(BOOTIMAGE_NAME): $(OUTNAME)
 ifneq ($(OS),Windows_NT)
 	$(CHMOD) a+x $(XIPGEN_CMD)
 endif
-	$(OUTRPRC_CMD) $(OUTNAME) >> $(BOOTIMAGE_TEMP_OUT_FILE)
+	$(OUTRPRC_CMD) $(OUTNAME) $(SW_VERSION)>> $(BOOTIMAGE_TEMP_OUT_FILE)
 	$(COPY) $(BOOTIMAGE_RPRC_NAME) $(BOOTIMAGE_RPRC_NAME_TMP)
 	$(RM) $(BOOTIMAGE_RPRC_NAME)
 	$(XIPGEN_CMD) -i $(BOOTIMAGE_RPRC_NAME_TMP) -o $(BOOTIMAGE_RPRC_NAME) -x $(BOOTIMAGE_RPRC_NAME_XIP) --flash-start-addr 0x60000000 -v > $(BOOTIMAGE_TEMP_OUT_FILE)

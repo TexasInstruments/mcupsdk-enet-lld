@@ -36,6 +36,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -77,6 +78,7 @@ const libs_freertos_r5f = {
         "tsn_unibase-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_lldp-freertos.am273x.r5f.ti-arm-clang.lib",
         "tsn_uniconf-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "yangemb-freertos.am273x.r5f.ti-arm-clang.lib",
     ],
 };
 
@@ -92,7 +94,7 @@ const defines_r5f = {
         "ENET_ENABLE_PER_CPSW=1",
         'PRINT_FORMAT_NO_WARNING',
         'SITARA',
-        'LLDP_ENABLED',
+        'LLDP_ENABLED'
     ],
 };
 

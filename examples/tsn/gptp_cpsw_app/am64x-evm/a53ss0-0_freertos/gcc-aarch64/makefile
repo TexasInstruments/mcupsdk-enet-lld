@@ -132,6 +132,7 @@ LIBS_PATH_common = \
 	-L${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-L$(CGT_GCC_AARCH64_PATH)/lib \
 
 LIBS_common = \
@@ -143,6 +144,7 @@ LIBS_common = \
 	-l:tsn_unibase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_gptp-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_uniconf-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:yangemb-freertos.am64x.a53.gcc-aarch64.lib \
 
 LFLAGS_common = \
 	-Wl,-static \
@@ -164,6 +166,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_gptp-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_uniconf-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	yangemb-freertos.am64x.a53.gcc-aarch64.lib \
 
 LIBS_PATH_NAME = \
 	generated \
@@ -172,6 +175,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	$(CGT_GCC_AARCH64_PATH)/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))

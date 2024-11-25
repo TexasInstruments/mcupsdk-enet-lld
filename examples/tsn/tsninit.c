@@ -36,7 +36,6 @@
 
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_gptp/gptpman.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
@@ -67,7 +66,6 @@ static void *EnetApp_uniconfTask(void *arg);
 static int EnetApp_uniconfInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs);
 static int EnetApp_startUniconfTask(void);
 static int EnetApp_startTask(EnetApp_ModuleCtx_t* modCtx, int moduleIdx);
-
 /* ========================================================================== */
 /*                     External Function Declarations                         */
 /* ========================================================================== */
@@ -132,8 +130,10 @@ static void *EnetApp_uniconfTask(void *arg)
     appCtx->ucCtx.dbname = appCtx->dbName;
     appCtx->ucCtx.configfiles = configFiles;
     appCtx->ucCtx.numconfigfile = UNICONF_CONF_FILE_NUM;
+    appCtx->ucCtx.ucinit=(uint8_t*)UCINIT_DATA;
+	appCtx->ucCtx.ucinit_size=UCINIT_SIZE;
 
-    DPRINT("%s: dbname: %s", __func__, appCtx->dbName ? appCtx->dbName : "NULL");
+    // DPRINT("%s: dbname: %s", __func__, appCtx->dbName ? appCtx->dbName : "NULL");
 
     return uniconf_main(&appCtx->ucCtx);
 }
@@ -142,29 +142,24 @@ static int EnetApp_uniconfInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbar
 {
 #ifdef DISABLE_FAT_FS
     EnetApp_Ctx_t *appCtx = modCtx->appCtx;
-    char buffer[MAX_KEY_SIZE]={0};
-    int res=-1;
     int i;
 
     for (i = 0; i < appCtx->netdevSize; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 "/ietf-interfaces/interfaces/interface|name:%s|/enabled",
-                 appCtx->netdev[i]);
-        res=yang_db_runtime_put_oneline(dbargs->ydrd, buffer, (char*)"true",
-                                        YANG_DB_ONHW_NOACTION);
-        if (res != 0) {
-            DPRINT("%s: yang_db_runtime_put_oneline failed=%d", __func__, res);
-        }
+        uint8_t up=1;
+		UB_LOG(UBL_DEBUG, "use network device:%s\n", appCtx->netdev[i]);
+		YDBI_SET_ITEM(ifk1vk0, (char*)appCtx->netdev[i],
+			      IETF_INTERFACES_ENABLED, YDBI_CONFIG,
+			      &up, 1, YDBI_PUSH_NOTICE);
     }
-    return res;
+    return 0;
 #else
     TSNAPP_UNUSED_ARG(dbargs);
     return 0;
 #endif
 }
 
-// Can be read from cfg files, or in case of no db file is specified, init runtime config
+// Can be read from cfg files, or in case of no db file is specified, setting default db
 static int EnetApp_initDb(void)
 {
     EnetApp_ModuleCtx_t *mod;
@@ -172,8 +167,10 @@ static int EnetApp_initDb(void)
     int res = 0;
     int timeout_ms = 500;
     int i;
-
+    uint64_t uc_start, uc_end;
+    uint64_t t1,t2;
     do {
+        uc_start = ub_mt_gettime64();
         res = CB_SEM_WAIT(&gAppCtx.ucReadySem);
         if (res != 0)
         {
@@ -187,6 +184,7 @@ static int EnetApp_initDb(void)
             DPRINT("The uniconf must be run first !");
             break;
         }
+        uc_end = ub_mt_gettime64();
         dbargs.dbald = uc_dbal_open(gAppCtx.dbName, "w", UC_CALLMODE_THREAD);
         if (!dbargs.dbald)
         {
@@ -194,14 +192,8 @@ static int EnetApp_initDb(void)
             res = -1;
             break;
         }
-        dbargs.ydrd = yang_db_runtime_init(dbargs.dbald, NULL);
-        if (!dbargs.ydrd)
-        {
-            DPRINT("Failed to init yang db runtime");
-            res = -1;
-            break;
-        }
 
+        t1 = ub_mt_gettime64();
         for (i = 0; i < ENETAPP_MAX_TASK_IDX; i++)
         {
             mod = &gModCtxTable[i];
@@ -210,12 +202,10 @@ static int EnetApp_initDb(void)
                 mod->onModuleDBInit(mod, &dbargs);
             }
         }
+        t2 = ub_mt_gettime64();
+        DPRINT("Uniconf/ModuleInit time= %u/%u us", (uint32_t)((uc_end-uc_start)/1000), (uint32_t)((t2-t1)/1000));
 
     } while (0);
-    if (dbargs.ydrd)
-    {
-        yang_db_runtime_close(dbargs.ydrd);
-    }
     if (dbargs.dbald)
     {
         uc_dbal_close(dbargs.dbald, UC_CALLMODE_THREAD);
@@ -279,7 +269,7 @@ int EnetApp_initTsnByCfg(AppTsnCfg_t *cfg)
     {
         /* set DB File initialized flag to be used later during onModuleDBInit */
         gAppCtx.dbInitFlag = EnetApp_isDBFileInit(gAppCtx.dbName);
-        DPRINT("DB File Initialized: %s", gAppCtx.dbInitFlag ? "True" : "False");
+        // DPRINT("DB File Initialized: %s", gAppCtx.dbInitFlag ? "True" : "False");
     }
 
     if (CB_SEM_INIT(&gAppCtx.ucReadySem, 0, 0) < 0)
@@ -377,7 +367,6 @@ static int EnetApp_startTask(EnetApp_ModuleCtx_t *modCtx, int moduleIdx)
     }
     else
     {
-        DPRINT("Start: %s", modCtx->taskName);
         if (moduleIdx == ENETAPP_UNICONF_TASK_IDX)
         {
             /* initDb must be run right after UNICONF is started and

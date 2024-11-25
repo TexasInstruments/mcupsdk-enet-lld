@@ -60,17 +60,6 @@
                                            (((dei) & ENETAPP_VLAN_DEI_MASK)<< ENETAPP_VLAN_DEI_OFFSET) | \
                                            ((vid) & ENETAPP_VLAN_VID_MASK) )
 
-#define TRAFFIC_CLASS_NODE      "/ietf-interfaces/interfaces/interface|name:%s|" \
-                                "/bridge-port/traffic-class"
-#define TRAFFIC_CLASS_TABLE_NODE TRAFFIC_CLASS_NODE"/traffic-class-table"
-#define TRAFFIC_CLASS_DATA_NODE  TRAFFIC_CLASS_NODE"/tc-data"
-#define PHYSICAL_QUEUE_MAP_NODE  TRAFFIC_CLASS_NODE"/pqueue-map"
-
-#define YANGDB_RUNTIME_WRITE(key,val) do {                              \
-        err = yang_db_runtime_put_oneline(ydrd, key, val, YANG_DB_ONHW_NOACTION); \
-        DebugP_assert(err == 0);                                        \
-    } while (0)
-
 UB_ABIT32_FIELD(cmsh_sv, 23, 0x1) // cmsh_sv_bit_field, cmsh_sv_set_bit_field
 
 typedef struct QoSAppCommonParam
@@ -365,6 +354,14 @@ int8_t EnetQoSApp_getPortIdx(EnetQoSApp_AppCtx_t *ctx, char *netdev);
  */
 int EnetQoSApp_setCommonParam(QoSAppCommonParam_t *prm,
                               EnetApp_dbArgs *dbarg);
+/*!
+ * \brief Pause the talker.
+
+ * \param ctx   [IN] Point to context object of the application
+ *
+ * \return 0: On Success; -1: on Failure
+ */
+void EnetQoSApp_pauseTalker(EnetQoSApp_AppCtx_t *ctx);
 
 /*!
  * \brief Get current time.

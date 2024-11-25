@@ -35,6 +35,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -80,6 +81,7 @@ const libs_freertos_r5f = {
         "tsn_unibase-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_gptp-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "yangemb-freertos.am263px.r5f.ti-arm-clang.lib",
     ],
 };
 

@@ -41,7 +41,6 @@
 #include <tsn_combase/cb_tmevent.h>
 #include <tsn_gptp/tilld/lld_gptp_private.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
@@ -107,6 +106,9 @@ extern EnetApp_ModuleCtx_t gModCtxTable[ENETAPP_MAX_TASK_IDX];
 extern EnetApp_Ctx_t gAppCtx;
 
 static EnetQoSApp_AppCtx_t gEnetCbsAppCtx;
+
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
 
 #define MBPS          (1000000ULL)
 #define KBPS          (1000U)
@@ -427,27 +429,156 @@ static void EnetCbsApp_showTestMenu(void)
     DPRINT(" 'S'  -  Reset stats info ");
 }
 
+static int EnetCbsApp_registerCbsEnableToUniconf(uc_dbald *dbald, uc_notice_data_t *ucntd,
+                                                char *ifname)
+{
+    int err;
+    uint8_t kn_traffic_sched[5] = {
+		[0] = IETF_INTERFACES_BRIDGE_PORT,
+		[1] = IETF_INTERFACES_TRAFFIC_CLASS,
+        [2] = IETF_INTERFACES_CBS_ENABLED,
+	};
+    uint8_t kn_traffic_sched_size = 3;
+    // "/ietf-interfaces/interfaces/interface|name:%s|/bridge-port/traffic-class/cbs-enabled"
+    bool cbs_enabled=true;
+    err=YDBI_SET_ITEM(ifknvk0, ifname,
+			    kn_traffic_sched, kn_traffic_sched_size,
+			    YDBI_CONFIG,
+                (void *)&cbs_enabled, sizeof(cbs_enabled), 
+                YDBI_NO_NOTICE);
+    DebugP_assert(err == 0);
+
+    void *kvs[]={(void*)ifname, NULL, NULL};
+	uint8_t kss[]={strlen(ifname)+1, 0};
+    uint8_t aps[]={IETF_INTERFACES_RW,
+		IETF_INTERFACES_INTERFACES,
+		IETF_INTERFACES_INTERFACE,
+		IETF_INTERFACES_BRIDGE_PORT,
+		IETF_INTERFACES_TRAFFIC_CLASS,
+        IETF_INTERFACES_CBS_ENABLED,
+        255u,
+	};
+    err=uc_nc_askaction_push(ucntd, dbald, aps, kvs, kss);
+    if (err!=0)
+    {
+        DPRINT("uc_nc_askaction_push failed. err=%d\n", err);
+    } 
+    else 
+    {
+        DPRINT("%s: succeeded \n", __func__);
+    }
+
+    return err;
+}
+
+static int EnetCbsApp_registerAdminIdleSlope(uc_dbald *dbald, uc_notice_data_t *ucntd,
+                                                char *ifname, bool syncFlag,
+                                                EnetCbsParam_t *cbsPrm,
+                                                int i)
+{
+    char sem_name[64];
+    int err;
+    uint32_t ksize;
+    char key[UC_MAX_KEYSIZE];
+    UC_NOTICE_SIG_T *sem = NULL;
+    uint8_t aps[]={IETF_INTERFACES_RW, IETF_INTERFACES_INTERFACES,
+                IETF_INTERFACES_INTERFACE, IETF_INTERFACES_BRIDGE_PORT,
+                IETF_INTERFACES_TRAFFIC_CLASS, IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_ADMIN_IDLESLOPE,
+                255u};
+    if (syncFlag)
+    {
+        /*
+        * We want to register a semaphore for a notification
+        * on completing of admin-idleslope seeting at HW side
+        * before going to the next TC's idle slope to make sure
+        * the idleSlope of highest priority queue must be configured
+        * first before going for the lower priority queue.
+        * This restriction is only required at the initial time.
+        * In the run time configuration, since all priority queues
+        * have been configured, setting idle slope of any queue will
+        * work fine.
+        */
+        snprintf(sem_name, sizeof(sem_name), "/cbs_wait_sem_%d",
+                cbsPrm->cbsparams[i].tc);
+        // scoped variable
+        void *kvs[]={(void*)ifname, (void*)&cbsPrm->cbsparams[i].tc, sem_name, NULL};
+	    uint8_t kss[]={strlen(ifname)+1, sizeof(cbsPrm->cbsparams[i].tc), strlen(sem_name)+1};
+        if(uc_nc_notice_register(ucntd, dbald, aps, kvs, kss, UC_NOTICE_DBVAL_ADD, &sem))
+        {
+			DPRINT("%s: uc_nc_notice_register failure. tc=%d\n", __func__, cbsPrm->cbsparams[i].tc);
+			return -1;
+		}
+    }
+    
+    err=YDBI_SET_ITEM(ifk4vk1, ifname, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_ADMIN_IDLESLOPE,
+                255,
+                &cbsPrm->cbsparams[i].tc, sizeof(cbsPrm->cbsparams[i].tc), 
+                YDBI_CONFIG, 
+                (void*)&cbsPrm->cbsparams[i].idleSlope,
+                sizeof(cbsPrm->cbsparams[i].idleSlope),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+    DebugP_assert(err == 0);
+
+    // Ask uniconf to write adminIdleSlop to HW
+    void *kvs[]={(void*)ifname, (void*)&cbsPrm->cbsparams[i].tc, NULL};
+    uint8_t kss[]={strlen(ifname)+1, sizeof(cbsPrm->cbsparams[i].tc), 0};
+    err=uc_nc_askaction_push(ucntd, dbald, aps, kvs, kss);
+    if (err!=0)
+    {
+        DPRINT("uc_nc_askaction_push failed. err=%d\n", err);
+    } 
+    else 
+    {
+        DPRINT("ask uniconf to write adminIdleSlop succeeded \n", __func__);
+    }
+    // Now wait for uniconf to finish writing adminIdleSlop to HW
+    if (sem)
+    {
+        /* Waiting for setting completed at the HW with the timeout */
+        if (uc_notice_sig_check(BTRUE, sem, 200, __func__))
+        {
+            DPRINT("%s, Failed to get a notice from the uniconf",
+                    __func__);
+        } else
+        {
+            err = uc_nc_get_notice_act(ucntd, dbald,
+                                        sem_name, key, &ksize);
+            if (err)
+            {
+                DPRINT("There is no notice from the uniconf");
+            }
+            else
+            {
+                DPRINT("Registered adminIdleSlope finished. tc=%d", cbsPrm->cbsparams[i].tc);
+            }
+        }
+        /* Release the semaphore */
+        err = uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
+        if (err != 0)
+        {
+            DPRINT("Failed to unregister sempahore");
+        }
+        sem = NULL;
+    }
+    return err;
+
+}
+
 static int EnetCbsApp_setCbsParam(EnetCbsParam_t *cbsPrm, char *ifname,
                                   EnetApp_dbArgs *dbarg, bool syncFlag)
 {
 
     uc_dbald *dbald = dbarg->dbald;
-    yang_db_runtime_dataq_t *ydrd = dbarg->ydrd;
     uc_notice_data_t *ucntd = dbarg->ucntd;
     int i, err = 0;
-    char buffer[MAX_KEY_SIZE];
-    char val[MAX_VAL_SIZE];
-    char sem_name[64];
-    uint32_t ksize;
-    char key[UC_MAX_KEYSIZE];
-    UC_NOTICE_SIG_T *sem = NULL;
 
-    snprintf(buffer, sizeof(buffer),
-             TRAFFIC_CLASS_NODE"/cbs-enabled",
-             ifname);
-    strcpy(val, "1");
-    YANGDB_RUNTIME_WRITE(buffer, val);
-    err = yang_db_runtime_askaction(ydrd, ucntd);
+    err=EnetCbsApp_registerCbsEnableToUniconf(dbald, ucntd, ifname);
     if (err != 0)
     {
         DPRINT("%s, Failed to trigger uniconf to write idleSlope",
@@ -455,80 +586,28 @@ static int EnetCbsApp_setCbsParam(EnetCbsParam_t *cbsPrm, char *ifname,
     }
     for (i = 0; i < cbsPrm->length; i++)
     {
-        snprintf(buffer, sizeof(buffer),
-                 TRAFFIC_CLASS_DATA_NODE"|tc:%d|/lqueue",
-                 ifname, cbsPrm->cbsparams[i].tc);
-        snprintf(val, sizeof(val), "%d", cbsPrm->cbsparams[i].tc);
-        YANGDB_RUNTIME_WRITE(buffer, val);
+        // "/ietf-interfaces/interfaces/interface|name:%s|/bridge-port/traffic-class/tc-data/lqueue"
+        err=YDBI_SET_ITEM(ifk4vk1, ifname, 
+                IETF_INTERFACES_TRAFFIC_CLASS,
+                IETF_INTERFACES_TC_DATA,
+                IETF_INTERFACES_LQUEUE,
+                255,
+                &cbsPrm->cbsparams[i].tc, sizeof(cbsPrm->cbsparams[i].tc), 
+                YDBI_STATUS, 
+                (void*)&cbsPrm->cbsparams[i].tc,
+                sizeof(cbsPrm->cbsparams[i].tc),
+                YDBI_NO_NOTICE,
+                YANG_DB_ONHW_NOACTION
+                );
+        DebugP_assert(err == 0);
 
-        snprintf(buffer, sizeof(buffer),
-                 TRAFFIC_CLASS_DATA_NODE"|tc:%d|/admin-idleslope",
-                 ifname, cbsPrm->cbsparams[i].tc);
-        if (syncFlag)
-        {
-            /*
-             * We want to register a semaphore for a notification
-             * on completing of admin-idleslope seeting at HW side
-             * before going to the next TC's idle slope to make sure
-             * the idleSlope of highest priority queue must be configured
-             * first before going for the lower priority queue.
-             * This restriction is only required at the initial time.
-             * In the run time configuration, since all priority queues
-             * have been configured, setting idle slope of any queue will
-             * work fine.
-             */
-            snprintf(sem_name, sizeof(sem_name), "/cbs_wait_sem_%d",
-                     cbsPrm->cbsparams[i].tc);
-            /* The semaphore is created by the following API */
-            err = yang_db_runtime_notice_register(ydrd, ucntd, buffer,
-                                                  sem_name, &sem);
-            if (err != 0)
-            {
-                DPRINT("%s, Failed to register semaphore for a notice",
-                       __func__);
-            }
-        }
-        /* Write the admin-idleslope to the DB */
-        snprintf(val, sizeof(val), "%lld", cbsPrm->cbsparams[i].idleSlope);
-        YANGDB_RUNTIME_WRITE(buffer, val);
-
-        err = yang_db_runtime_askaction(ydrd, ucntd);
-        if (err != 0)
-        {
-            DPRINT("%s, Failed to trigger uniconf to write idleSlope",
-                   __func__);
-            if (sem)
-            {
-                (void)uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
-            }
-            break;
-        }
-        if (sem)
-        {
-            /* Waiting for setting completed at the HW with the timeout */
-            if (uc_notice_sig_check(BTRUE, sem, 200, __func__))
-            {
-                DPRINT("%s, Failed to get a notice from the uniconf",
-                       __func__);
-            } else
-            {
-                err = uc_nc_get_notice_act(ucntd, dbald,
-                                           sem_name, key, &ksize);
-                if (err)
-                {
-                    DPRINT("There is no notice from the uniconf");
-                }
-            }
-            /* Release the semaphore */
-            err = uc_nc_notice_deregister_all(ucntd, dbald, sem_name);
-            if (err != 0)
-            {
-                DPRINT("Failed to unregister sempahore");
-                break;
-            }
-            sem = NULL;
-        }
+        err=EnetCbsApp_registerAdminIdleSlope(dbald, ucntd,
+                                            ifname, syncFlag,
+                                            cbsPrm,
+                                            i);
+        DebugP_assert(err == 0);
     }
+
     return err;
 }
 

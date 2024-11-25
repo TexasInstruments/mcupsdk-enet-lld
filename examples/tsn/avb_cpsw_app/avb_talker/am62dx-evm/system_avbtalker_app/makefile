@@ -61,7 +61,7 @@ endif
 
 syscfg:
 	@echo Generating SysConfig files ...
-	$(SYSCFG_NODE) $(SYSCFG_CLI_PATH)/dist/cli.js --product $(SYSCFG_SDKPRODUCT) $(CORES)
+	$(SYSCFG_NODE) $(SYSCFG_CLI_PATH)/dist/cli.js --device AM62Dx --product $(SYSCFG_SDKPRODUCT) $(CORES)
 
 syscfg-gui:
 	$(SYSCFG_NWJS) $(SYSCFG_PATH) --product $(SYSCFG_SDKPRODUCT) --device AM62Dx --part AM62D24-G --package ANF $(CORES)

@@ -35,7 +35,6 @@
 /* ========================================================================== */
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_l2/tilld/frtos_avtp_include.h>
 #include <tsn_uniconf/ucman.h>

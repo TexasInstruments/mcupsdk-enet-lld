@@ -35,6 +35,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -87,6 +88,7 @@ const libs_freertos_a53 = {
         "lwipif-cpsw-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib",
         "lwip-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib",
         "lwip-contrib-freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib",
+        "yangemb-freertos.am62x.a53.gcc-aarch64.lib",
     ],
 };
 

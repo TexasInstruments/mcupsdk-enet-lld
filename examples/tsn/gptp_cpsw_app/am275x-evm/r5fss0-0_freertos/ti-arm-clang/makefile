@@ -142,6 +142,7 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
@@ -155,6 +156,7 @@ LIBS_common = \
 	-ltsn_unibase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lyangemb-freertos.am275x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -186,6 +188,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	yangemb-freertos.am275x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -198,6 +201,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 LIBS_PREBUILD_PATH_NAME = \
@@ -337,16 +341,14 @@ else
 endif
 
 MULTI_CORE_IMAGE_PARAMS = \
-    $(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTNAME) 
-	
-MCELF_XIP_RANGE?=0x60100000:0x60200000 \
+    $(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTNAME) \
 
 $(BOOTIMAGE_NAME): $(OUTNAME)
 	@echo  Boot image: am275x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ ...
 ifneq ($(OS),Windows_NT)
 	$(CHMOD) a+x $(XIPGEN_CMD)
 endif
-	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME) --xip=$(MCELF_XIP_RANGE)
+	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME)
 # Sign the appimage for HS-FS using appimage signing script
     #
     #   Authentication type 0 with load address 0x84000000

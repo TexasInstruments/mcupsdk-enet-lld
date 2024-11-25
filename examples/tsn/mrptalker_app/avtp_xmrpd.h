@@ -36,7 +36,6 @@
 #include <stdint.h>
 #include "mrp_datatypes.h"
 #include <xmrpd/xmrpdconf/mrpgcfg.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <xmrpd/mrpman.h>
 #include <xmrpd/mrp_map.h>
 #include <xmrpd/mrp_extcontrol.h>
@@ -114,7 +113,6 @@ typedef struct xmrpd_at_data {
 	char *dbname;
 	uc_dbald *dbald;
 	uc_notice_data_t* ucntd;
-	yang_db_runtime_dataq_t *ydrd;
 	char *netdev;
 	mrpgcfgd_t *mrpgcfg; 
 

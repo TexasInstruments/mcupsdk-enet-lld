@@ -61,6 +61,7 @@
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc
             -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib
             -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am62px
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -mcpu=cortex-r5
             -mfloat-abi=hard
             -mfpu=vfpv3-d16
@@ -90,6 +91,7 @@
             -i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
+            -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
             -m=gptp_lwip_cpsw.${ConfigName}.map
@@ -134,6 +136,7 @@
                 -llwipif-cpsw-freertos.am62px.wkup-r5f.ti-arm-clang.debug.lib
                 -llwip-freertos.am62px.wkup-r5f.ti-arm-clang.debug.lib
                 -llwip-contrib-freertos.am62px.wkup-r5f.ti-arm-clang.debug.lib
+                -lyangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -163,6 +166,7 @@
                 -llwipif-cpsw-freertos.am62px.wkup-r5f.ti-arm-clang.release.lib
                 -llwip-freertos.am62px.wkup-r5f.ti-arm-clang.release.lib
                 -llwip-contrib-freertos.am62px.wkup-r5f.ti-arm-clang.release.lib
+                -lyangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "

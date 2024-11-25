@@ -36,6 +36,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -53,6 +54,7 @@ const libdirs_freertos_wkup_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
     ],
 };
 
@@ -127,6 +129,7 @@ const libs_freertos_r5f = {
         "tsn_unibase-freertos.am62px.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_gptp-freertos.am62px.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am62px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "yangemb-freertos.am62px.r5f.ti-arm-clang.lib",
     ],
 };
 
@@ -147,6 +150,7 @@ const libs_freertos_wkup_r5f = {
         "tsn_unibase-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_gptp-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am62px.wkup-r5f.ti-arm-clang.${ConfigName}.lib",
+        "yangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib",
     ],
 };
 

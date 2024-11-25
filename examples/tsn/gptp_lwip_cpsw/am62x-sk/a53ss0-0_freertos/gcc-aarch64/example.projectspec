@@ -90,6 +90,7 @@
             -L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -L$(CGT_GCC_AARCH64_PATH)/lib
             -Wl,-Map=gptp_lwip_cpsw.${ConfigName}.map
             -Wl,-static
@@ -127,6 +128,7 @@
                 -llwipif-cpsw-freertos.am62x.a53.gcc-aarch64.debug.lib
                 -llwip-freertos.am62x.a53.gcc-aarch64.debug.lib
                 -llwip-contrib-freertos.am62x.a53.gcc-aarch64.debug.lib
+                -lyangemb-freertos.am62x.a53.gcc-aarch64.lib
             "
         ></configuration>
         <configuration name="Release"
@@ -146,6 +148,7 @@
                 -llwipif-cpsw-freertos.am62x.a53.gcc-aarch64.release.lib
                 -llwip-freertos.am62x.a53.gcc-aarch64.release.lib
                 -llwip-contrib-freertos.am62x.a53.gcc-aarch64.release.lib
+                -lyangemb-freertos.am62x.a53.gcc-aarch64.lib
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />

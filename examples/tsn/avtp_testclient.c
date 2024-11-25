@@ -36,6 +36,12 @@
 #include <tsn_unibase/unibase_binding.h>
 #include <tsn_unibase/unibase.h>
 #include <tsn_combase/cb_rate_reporter.h>
+#include <tsn_uniconf/yangs/yang_modules.h>
+#include "tsn_uniconf/yangs/yang_node.h"
+#include <tsn_uniconf/yangs/yang_db_access.h>
+#include <tsn_uniconf/yangs/ietf-interfaces_access.h>
+#include <tsn_uniconf/yangs/excelfore-aed_access.h>
+#include <tsn_uniconf/uc_notice.h>
 #include "tsn_gptp/gptpmasterclock.h"
 #ifdef AVTP_PLATFORM_INCLUDE
 #include AVTP_PLATFORM_INCLUDE
@@ -74,6 +80,27 @@ typedef enum {
 	FIXED_DATA=0,
 	AVB_TEST_VIDEO,
 } data_type;
+
+typedef struct avtptc_cfg{
+	uint8_t instance_index;
+	uc_dbald *dbald;
+	uc_notice_data_t *ucntd;
+	uint8_t callmode;
+	UC_NOTICE_SIG_T *dbsem;
+} avtptc_cfg_t;
+
+/*
+ * This define of maximum number of avtpc instance number, if this client
+ * does not use diag feature or access to uniconf db please adjust to 0 to
+ * reduce memory
+ */
+#ifndef AVTPC_CONFIG_INST_NUM
+#define AVTPC_CONFIG_INST_NUM 16 /* maximum number of stream supported by avtpd */
+#endif
+
+#define AVTPC_CONFIG_INST avtpc_config_inst
+UB_SD_GETMEM_DEF(AVTPC_CONFIG_INST, (int)sizeof(avtptc_cfg_t),
+		 AVTPC_CONFIG_INST_NUM);
 
 typedef struct {
 	ub_streamid_t streamid;
@@ -145,6 +172,8 @@ typedef struct avtptc_data {
 	bool direct; //avtpc tx/rx direct mode
 	uint16_t tsport; //UDP test source port in direct mode
 	uint16_t tdport; //UDP test dest port in direct mode
+	char *dbname;	//database name
+	avtptc_cfg_t *cfgd; //configuration data
 } avtptc_data_t;
 
 /* when we run multiple 'avtp_testclient' in threads,
@@ -212,6 +241,7 @@ static int print_usage(char *pname, avtptc_data_t *avtptcd)
 	UB_CONSOLE_PRINT("-i|--direct: enable avtpc tx/rx direct mode\n");
 	UB_CONSOLE_PRINT("-k|--tsport: src_port: UDP test source port in direct mode\n");
 	UB_CONSOLE_PRINT("-K|--tdport: dst_port: UDP test dest port in direct mode\n");
+	UB_CONSOLE_PRINT("-j|--dbname filename(mandatory needed option)\n");
 	return -1;
 }
 
@@ -259,12 +289,13 @@ static int set_options(avtptc_data_t *avtptcd, int argc, char *argv[])
 		{"tsport", required_argument, 0, 'k'},
 		{"tdport", required_argument, 0, 'K'},
 		{"noubinit", no_argument, 0, 'u'},
+		{"dbname", required_argument, 0, 'j'},
 		{0, 0, 0, 0}
 	};
 
 	/* 'u' must be in the last of next string */
 	while((oc=getopt_long(argc, argv,
-		"hm:d:v:s:f:t:r:b:pgn::e:q:A:S:NPT:M:E:H:G:D:a:I:o:w:x:y:Z:B:cCFik:K:u",
+		"hm:d:v:s:f:t:r:b:pgn::e:q:A:S:NPT:M:E:H:G:D:a:I:o:w:x:y:Z:B:cCFik:K:j:u",
 		long_options, NULL))!=-1){
 		switch(oc){
 		case 'm':
@@ -380,6 +411,8 @@ static int set_options(avtptc_data_t *avtptcd, int argc, char *argv[])
 		case 'K':
 			avtptcd->tdport=(uint16_t)strtol(optarg, NULL, 0);
 			break;
+		case 'j': /* only set dbname in case actpc want to access to uniconf database (ie: diag feature) */
+			avtptcd->dbname=optarg;
 		case 'u':
 			//noubinit must be the last one
 			break;
@@ -392,6 +425,65 @@ static int set_options(avtptc_data_t *avtptcd, int argc, char *argv[])
 	res=optind;
 	optind=0;
 	return res;
+}
+
+static avtptc_cfg_t *avtpc_cfg_init(uint8_t instance_index, const char *dbname,
+			   bool ucthread)
+{
+	avtptc_cfg_t *avtpcgcd=NULL;
+
+	avtpcgcd=(avtptc_cfg_t *)UB_SD_GETMEM(AVTPC_CONFIG_INST, sizeof(avtptc_cfg_t));
+	if(ub_assert_fatal(avtpcgcd!=NULL, __func__, NULL)){return NULL;}
+	memset(avtpcgcd, 0, sizeof(avtptc_cfg_t));
+	avtpcgcd->instance_index=instance_index;
+	if(ucthread){avtpcgcd->callmode=UC_CALLMODE_THREAD;}
+
+	avtpcgcd->dbald=uc_dbal_open(dbname, "w", avtpcgcd->callmode);
+	if(avtpcgcd->dbald==NULL){goto erexit;}
+	avtpcgcd->ucntd=uc_notice_init(avtpcgcd->callmode, dbname);
+	if(avtpcgcd->ucntd==NULL){goto erexit;}
+	ydbi_access_init(avtpcgcd->dbald, avtpcgcd->ucntd);
+	return avtpcgcd;
+erexit:
+	uc_notice_close(avtpcgcd->ucntd, avtpcgcd->callmode);
+	uc_dbal_close(avtpcgcd->dbald, avtpcgcd->callmode);
+	ydbi_access_close();
+	UB_SD_RELMEM(AVTPC_CONFIG_INST, avtpcgcd);
+	return NULL;
+}
+
+static void avtpc_cfg_close(avtptc_data_t *avtptcd)
+{
+	avtptc_cfg_t *avtpcgcd;
+	if(!avtptcd || !avtptcd->cfgd){ return; }
+	avtpcgcd=avtptcd->cfgd;
+	uc_notice_close(avtpcgcd->ucntd, avtpcgcd->callmode);
+	uc_dbal_close(avtpcgcd->dbald, avtpcgcd->callmode);
+	ydbi_access_close();
+	UB_SD_RELMEM(AVTPC_CONFIG_INST, avtpcgcd);
+}
+
+static void avtpc_cfg_set_media_stream_ready(avtptc_data_t *avtptcd)
+{
+	char netdev[36];
+	uint64_t ts64;
+	uint8_t inst_idx;
+	uint8_t stream_type=avtptcd->mode;
+	uint8_t stream_idx=avtpc_get_connection_index(avtptcd->avtpc);
+	uint32_t status=2;
+
+	if(!avtptcd->cfgd){ return; }
+	inst_idx=avtptcd->cfgd->instance_index;
+
+	ts64 = gptpmasterclock_getts64();
+	ub_strncpy(netdev, avtptcd->netdev, sizeof(avtptcd->netdev));
+	YDBI_SET_ITEM(aedk1vk0, inst_idx, stream_type, stream_idx, EXCELFORE_AED_PORT,
+			YDBI_STATUS, netdev, strlen(netdev),YDBI_NO_NOTICE);
+	YDBI_SET_ITEM(aedk1vk0, inst_idx, stream_type, stream_idx, EXCELFORE_AED_TIMESTAMP,
+			YDBI_STATUS, &ts64, sizeof(ts64), YDBI_NO_NOTICE);
+	YDBI_SET_ITEM(aedk1vk0, inst_idx, stream_type, stream_idx, EXCELFORE_AED_STATUS,
+			YDBI_STATUS, &status, sizeof(status), YDBI_PUSH_NOTICE);
+	uc_dbal_releasedb(avtptcd->cfgd->dbald);
 }
 
 static rxstream_info_t *get_rxstream_info(avtptc_data_t *avtptcd,
@@ -860,6 +952,7 @@ static int start_listener(avtptc_data_t *avtptcd)
 							  avtptcd->report_interval * UB_SEC_NS);
 	}
 	UB_LOG(UBL_INFO,"%s:start\n",__func__);
+	avtpc_cfg_set_media_stream_ready(avtptcd);
 	start_ts = ub_mt_gettime64();
 	while(avtp_running && !durnation_ended(start_ts, avtptcd->test_duration)){
 #ifdef HAVE_NO_SELECT
@@ -1102,6 +1195,10 @@ int AVTP_TESTCLIENT_MAIN(int argc, char *argv[])
 	avtptcd->addber=avtptcd->addber*avtptcd->report_interval;
 	avtptcd->runber=avtptcd->addber;
 
+	if(avtptcd->dbname){
+		avtptcd->cfgd = avtpc_cfg_init(0, avtptcd->dbname, 0);
+	}
+
 	if(strstr(avtptcd->netdev, CB_VIRTUAL_ETHDEV_PREFIX)==avtptcd->netdev){
 		// need the IP/UDP header space
 		avtptcd->max_frame_size -= CCDBUFF_PAYLOAD_OFFSET + 20;
@@ -1144,6 +1241,7 @@ end:
 		ubb_memory_out_close();
 		unibase_close();
 	}
+	avtpc_cfg_close(avtptcd);
 	if(avtptcd){free(avtptcd);}
 	return 0;
 }

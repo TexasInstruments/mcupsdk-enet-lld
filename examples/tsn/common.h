@@ -32,7 +32,7 @@
 
 #ifndef __COMMON_H__
 #define __COMMON_H__
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
+#include "yang_db_access.h"
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
 #include <tsn_unibase/unibase_binding.h>
@@ -50,8 +50,14 @@
 #define UNICONF_CONF_FILE_NUM   (0)
 #define INTERFACE_CONFFILE_PATH (NULL)
 #define UNICONF_DBFILE_PATH     (NULL)
+extern const uint8_t* ucinit[];
+extern int ucinit_size;
+#define UCINIT_DATA ucinit;
+#define UCINIT_SIZE ucinit_size;
 #else
 #define UNICONF_CONF_FILE_NUM   (1)
+#define UCINIT_DATA NULL;
+#define UCINIT_SIZE 0;
 #endif //DISABLE_FAT_FS
 
 #ifndef AVTP_TALKER_NUM
@@ -90,7 +96,6 @@ typedef enum {
 
 typedef struct {
     uc_dbald *dbald;
-    yang_db_runtime_dataq_t *ydrd;
     uc_notice_data_t *ucntd;
 } EnetApp_dbArgs;
 

@@ -59,7 +59,6 @@ typedef enum {
 
 typedef struct {
     uc_dbald *dbald;
-    yang_db_runtime_dataq_t *ydrd;
     uc_notice_data_t *ucntd;
 } EnetApp_dbArgs;
 

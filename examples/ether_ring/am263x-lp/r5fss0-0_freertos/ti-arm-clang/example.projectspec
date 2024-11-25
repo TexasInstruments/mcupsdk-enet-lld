@@ -87,7 +87,7 @@
             -i${MCU_PLUS_SDK_PATH}/source/board/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
-            -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib
+            -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
             -m=ether_ring.${ConfigName}.map
