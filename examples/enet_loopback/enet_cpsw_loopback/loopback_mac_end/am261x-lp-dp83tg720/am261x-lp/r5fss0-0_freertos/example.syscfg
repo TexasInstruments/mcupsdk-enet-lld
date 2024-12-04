@@ -11,8 +11,6 @@
  */
 const eeprom     = scripting.addModule("/board/eeprom/eeprom", {}, false);
 const eeprom1    = eeprom.addInstance();
-const gpio       = scripting.addModule("/drivers/gpio/gpio", {}, false);
-const gpio1      = gpio.addInstance();
 const i2c        = scripting.addModule("/drivers/i2c/i2c", {}, false);
 const i2c1       = i2c.addInstance();
 const debug_log  = scripting.addModule("/kernel/dpl/debug_log");
