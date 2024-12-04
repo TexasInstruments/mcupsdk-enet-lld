@@ -42,6 +42,7 @@
 
 #include <stdint.h>
 #include <tsn_combase/combase.h>
+#include <tsn_combase/combase_link.h>
 #include "dataflow.h"
 #include "debug_log.h"
 #include "tsninit.h"
@@ -85,6 +86,20 @@ void ConsolePrint(const char *pcString, ...)
     va_end(args);
 
     DebugP_log("%s", buffer);
+}
+
+int EnetApp_lldCfgUpdateCb(cb_socket_lldcfg_update_t *update_cfg)
+{
+    if (update_cfg->proto == ETH_P_1588)
+    {
+        update_cfg->numRxChannels = 1;
+        update_cfg->dmaTxChId = ENET_DMA_TX_CH_PTP;
+        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH_PTP;
+        update_cfg->nTxPkts = ENET_DMA_TX_CH_PTP_NUM_PKTS;
+        update_cfg->nRxPkts[0] = ENET_DMA_RX_CH_PTP_NUM_PKTS;
+        update_cfg->pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
+    }
+    return 0;
 }
 
 int EnetApp_initTsn(void)
@@ -218,7 +233,7 @@ int32_t EnetApp_addHostPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacA
 }
 
 int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr,
-                                uint32_t vlanId, uint32_t ethType, uint32_t rxFlowIdx)
+                                uint32_t vlanId, uint32_t ethType, uint32_t rxChNum)
 {
     Enet_IoctlPrms prms;
     CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
@@ -244,7 +259,7 @@ int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dst
     }
     setPolicerEntryInArgs.policerMatch.portIsTrunk = BFALSE;
     setPolicerEntryInArgs.threadIdEn = BTRUE;
-    setPolicerEntryInArgs.threadId = rxFlowIdx;
+    setPolicerEntryInArgs.threadId = rxChNum;
 
     ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerEntryInArgs, &setPolicerEntryOutArgs);
     ENET_IOCTL(hEnet, coreId,
@@ -458,6 +473,7 @@ static void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
 {
     EnetAppUtils_print("MAC Port %u: link %s\r\n",
                        ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
+    notify_linkchange();
 }
 
 static void EnetApp_mdioLinkStatusChange(Cpsw_MdioLinkStateChangeInfo *info,
@@ -495,60 +511,6 @@ static void EnetApp_initEnetLinkCbPrms(Cpsw_Cfg *cpswCfg)
 
     cpswCfg->portLinkStatusChangeCb    = &EnetApp_portLinkStatusChangeCb;
     cpswCfg->portLinkStatusChangeCbArg = NULL;
-}
-
-int32_t EnetApp_configureIntervlan(Enet_Handle hEnet)
-{
-    Enet_IoctlPrms prms;
-    int32_t status = ENET_SOK;
-
-    /* Add InterVlan configuration to match vlanId, Dst Mac port */
-    Cpsw_SetInterVlanRouteMultiEgressOutArgs interVlanOutargs;
-    Cpsw_SetInterVlanRouteMultiEgressInArgs interVlanInargs = {
-        .numEgressPorts = 2,
-        .egressCfg =
-            {
-                {
-                    .egressPort = ENET_MAC_PORT_1,
-                    .outPktModCfg =
-                        {
-                            .dstAddr             = {0},
-                            .srcAddr             = {0},
-                            .vlanId              = 30,
-                            .replaceDASA         = false,
-                            .forceUntaggedEgress = false,
-                            .decrementTTL        = false,
-                        },
-                },
-                {
-                    .egressPort = ENET_MAC_PORT_2,
-                    .outPktModCfg =
-                        {
-                            .dstAddr             = {0},
-                            .srcAddr             = {0},
-                            .vlanId              = 40,
-                            .replaceDASA         = false,
-                            .forceUntaggedEgress = false,
-                            .decrementTTL        = false,
-                        },
-                },
-            },
-        .inPktMatchCfg =
-        {
-            /* By default vlanId is matched, to match any other field
-             * use the below packetMatchEnMask and fill the corresponding field*/
-            .ttlCheckEn        = false,
-            .ingressPort       = 0, /* don't care */
-            .vlanId            = 255,
-        },
-    };
-
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &interVlanInargs, &interVlanOutargs);
-    status = Cpsw_ioctlInterVlan(
-            hEnet->enetPer,
-            CPSW_PER_IOCTL_SET_INTERVLAN_ROUTE_MULTI_EGRESS, &prms);
-
-    return status;
 }
 
 void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cpswCfg)
@@ -602,13 +564,6 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
     aleCfg->vlanCfg.unknownUnregMcastFloodMask = CPSW_ALE_ALL_MACPORTS_MASK;
     aleCfg->vlanCfg.unknownRegMcastFloodMask   = CPSW_ALE_ALL_MACPORTS_MASK;
     aleCfg->vlanCfg.unknownVlanMemberListMask  = CPSW_ALE_ALL_MACPORTS_MASK;
-
-    if (gEnetAppCfg.isIntervlanEnabled)
-    {
-        Enet_Handle hEnet = NULL;
-        hEnet = EnetSoc_getEnetHandle(enetType, instId);
-        EnetApp_configureIntervlan(hEnet);
-    }
 }
 
 static void EnetApp_closePort()

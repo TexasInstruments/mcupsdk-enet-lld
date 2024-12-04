@@ -52,10 +52,8 @@ EnetDma_Handle ghEnetDma;
 /* ========================================================================== */
 /*                           Function Declarations                            */
 /* ========================================================================== */
-void configureNodeTxRx();
-void configureTrafficGenerator();
 void configureNodeId();
-void configureIntervlan();
+void EnetApp_mainTask(void *args);
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -71,20 +69,6 @@ void EnetApp_mainTask(void *args)
     DebugP_log("==========================\r\n");
 
     configureNodeId();
-#if 0
-    gEnetAppCfg.isTxEnabled = false;
-    gEnetAppCfg.isIntervlanEnabled = false;
-    configureNodeTxRx();
-#else
-    gEnetAppCfg.isTxEnabled = true;
-#endif
-    if (gEnetAppCfg.isTxEnabled)
-    {
-        gEnetAppCfg.numClassAStreams = 1;
-        gEnetAppCfg.numClassDStreams = 1;
-        gEnetAppCfg.packetCount = 10;
-        // configureTrafficGenerator();
-    }
 
     EnetApp_initAppCfg(&attachCoreOutArgs, &handleInfo);
 
@@ -98,7 +82,6 @@ void EnetApp_mainTask(void *args)
     EnetApp_createEtherRingClearTask();
 
     EnetApp_startHwTimer();
-//     EnetApp_createTxRetrievePollTask();
 
     if (EnetApp_initTsn())
     {
@@ -106,16 +89,13 @@ void EnetApp_mainTask(void *args)
     }
     else
     {
-        if (gEnetAppCfg.isTxEnabled)
-        {
-           EnetApp_createStreamTask();
-        }
+
+        EnetApp_createStreamTask();
 
         while (true)
         {
             // Print CPU load
             ClockP_usleep(30000);
-//            ClockP_usleep(5000);
 //            EnetApp_printCpuLoad();
             TaskP_yield();
         }
@@ -124,81 +104,10 @@ void EnetApp_mainTask(void *args)
     }
 }
 
-void configureNodeTxRx()
-{
-    char option = ' ';
-    while(true)
-    {
-        EnetAppUtils_print("\r\nCPSW ETHERRING Test Menu:\r\n");
-        EnetAppUtils_print(" 't' - Configure node as TX \r\n");
-        EnetAppUtils_print(" 'r' - Configure node as RX \r\n");
-        DebugP_scanf("%c", &option);
-        if (option == 't')
-        {
-            gEnetAppCfg.isTxEnabled = true;
-            EnetAppUtils_print("Configured as TX\r\n");
-        }
-        else if (option == 'r')
-        {
-            EnetAppUtils_print("Configured as RX\r\n");
-        }
-        else
-        {
-            EnetAppUtils_print("Enter valid data\r\n");
-            EnetAppUtils_print(" 't' for TX and 'r' for RX \r\n");
-            continue;
-        }
-        break;
-    }
-}
-
-void configureTrafficGenerator()
-{
-    while (true)
-    {
-        EnetAppUtils_print("Max ClassA Streams Supported : %d\r\n", MAX_CLASSA_STREAMS);
-        EnetAppUtils_print("Max ClassD Streams Supported : %d\r\n", MAX_CLASSD_STREAMS);
-        EnetAppUtils_print("Enter the number of class A Streams : \r\n");
-
-        DebugP_scanf("%d", &gEnetAppCfg.numClassAStreams);
-        if ((gEnetAppCfg.numClassAStreams < 0) || (gEnetAppCfg.numClassAStreams > MAX_CLASSA_STREAMS))
-        {
-            EnetAppUtils_print("Enter a valid number for ClassA stream\r\n");
-            continue;
-        }
-
-        EnetAppUtils_print("Enter the number of class D Streams : \r\n");
-        DebugP_scanf("%d", &gEnetAppCfg.numClassDStreams);
-        if ((gEnetAppCfg.numClassDStreams >= 0) || (gEnetAppCfg.numClassDStreams <= MAX_CLASSD_STREAMS))
-        {
-            EnetAppUtils_print("%d\r\n", gEnetAppCfg.numClassDStreams);
-            break;
-        }
-    }
-
-    gEnetAppCfg.payLoadLength = 100;
-    while(true)
-    {
-
-        EnetAppUtils_print("Enter number of packets to send\r\n");
-        DebugP_scanf("%d", &gEnetAppCfg.packetCount);
-        break;
-    }
-}
-
 void configureNodeId()
 {
     while (true)
     {
-#if 0
-        EnetAppUtils_print("\r\n");
-        EnetAppUtils_print("\r\n");
-        EnetAppUtils_print("\r\n");
-        EnetAppUtils_print("      EtherRing Demonstartion Completed\r\n");
-        EnetAppUtils_print("\r\n");
-        EnetAppUtils_print("\r\n");
-        EnetAppUtils_print("\r\n");
-#endif
         EnetAppUtils_print("0 - Central Compute Node\r\n");
         EnetAppUtils_print("1 - Zone Left Node\r\n");
         EnetAppUtils_print("2 - Zone Right Node\r\n");

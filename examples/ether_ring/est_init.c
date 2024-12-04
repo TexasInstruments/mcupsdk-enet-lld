@@ -37,7 +37,7 @@
 #include <tsn_unibase/unibase_binding.h>
 #include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
-#include <tsn_l2/tilld/frtos_avtp_include.h>
+// #include <tsn_l2/tilld/frtos_avtp_include.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
 #include "common.h"
@@ -47,40 +47,28 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-#define AVTPD_TASK_PRIORITY         (2)
-#define MELCO_APP_CLASSD1_TASK_PRIORITY (10)
+#define TSND_TASK_PRIORITY          (2)
+#define EST_TASK_PRIORITY           (10)
 
-#define AVTPD_TASK_NAME         "avtpd_task"
+#define TSND_TASK_NAME         "tsnd_task"
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
-#ifdef HAVE_GPTP_READY_NOTICE
 extern CB_SEM_T g_gptpd_ready_semaphore;
-#endif
-
 extern EnetApp_Ctx_t gAppCtx;
 
 /* ========================================================================== */
 /*                            Local Variables                                */
 /* ========================================================================== */
-static uint8_t gAvtpdStackBuf[TSN_TSK_STACK_SIZE] \
+static uint8_t gTsndStackBuf[TSN_TSK_STACK_SIZE] \
 __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-/* AVTPD is always enabled once AVTP is supported */
-static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-
-int EnetApp_avtpInit(EnetApp_ModuleCtx_t *modCtxTbl)
+static void *EnetApp_tsnTask(void *arg)
 {
-    return EnetApp_addAvtpModCtx(modCtxTbl);
-}
-
-static void *EnetApp_avtpdTask(void *arg)
-{
-//    char *argv[]={"avtpd", "-n", NULL};
     int timeout_ms = 3000;
     int res;
 
@@ -89,23 +77,19 @@ static void *EnetApp_avtpdTask(void *arg)
     {
         DPRINT("The uniconf must be run first !");
     }
-    else
-    {
-//        AVTPD_MAIN(2, argv);
-    }
     return NULL;
 }
 
-#define AVTPD_TASK_ENTRY \
-    [ENETAPP_AVTPD_TASK_IDX]={ \
+#define TSND_TASK_ENTRY \
+    [ENETAPP_TSND_TASK_IDX]={ \
         .enable = BFALSE, \
         .stopFlag = BTRUE, \
-        .taskPriority = AVTPD_TASK_PRIORITY, \
-        .taskName = AVTPD_TASK_NAME, \
-        .stackBuffer = gAvtpdStackBuf, \
-        .stackSize = sizeof(gAvtpdStackBuf), \
+        .taskPriority = TSND_TASK_PRIORITY, \
+        .taskName = TSND_TASK_NAME, \
+        .stackBuffer = gTsndStackBuf, \
+        .stackSize = sizeof(gTsndStackBuf), \
         .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_avtpdTask, \
+        .onModuleRunner = EnetApp_tsnTask, \
         .appCtx = &gAppCtx \
     }
 
@@ -139,12 +123,12 @@ static int EnetApp_estInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs)
 static uint8_t gEstCfgStackBuf[TSN_TSK_STACK_SIZE] \
 __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 
-#define AVTP_EST_CFG_ENTRY \
-    [ENETAPP_MELCO_EST_CFG_IDX]={ \
+#define EST_CFG_ENTRY \
+    [ENETAPP_EST_CFG_IDX]={ \
         .enable = BTRUE, \
         .stopFlag = BTRUE, \
-        .taskPriority = MELCO_APP_CLASSD1_TASK_PRIORITY, \
-        .taskName = "melcoApp_EST", \
+        .taskPriority = EST_TASK_PRIORITY, \
+        .taskName = "task_EST", \
         .stackBuffer = gEstCfgStackBuf, \
         .stackSize = sizeof(gEstCfgStackBuf), \
         .onModuleDBInit = EnetApp_estInit, \
@@ -152,21 +136,21 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
         .appCtx = &gAppCtx \
     }
 
-static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
+int EnetApp_addTsnModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 {
     int i;
 
-    EnetApp_ModuleCtx_t avtpMods[ENETAPP_MAX_TASK_IDX] =
+    EnetApp_ModuleCtx_t tsnMods[ENETAPP_MAX_TASK_IDX] =
     {
-        AVTPD_TASK_ENTRY,
-        AVTP_EST_CFG_ENTRY,
+        TSND_TASK_ENTRY,
+        EST_CFG_ENTRY,
     };
 
     for (i = 0; i < ENETAPP_MAX_TASK_IDX; i++)
     {
-        if (avtpMods[i].enable == BTRUE)
+        if (tsnMods[i].enable == BTRUE)
         {
-            memcpy(&modCtxTbl[i], &avtpMods[i], sizeof(EnetApp_ModuleCtx_t));
+            memcpy(&modCtxTbl[i], &tsnMods[i], sizeof(EnetApp_ModuleCtx_t));
         }
     }
     return 0;

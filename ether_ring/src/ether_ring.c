@@ -77,11 +77,8 @@
 /* \brief Sequence Id index in CB Packet */
 #define ETHERRING_SEQUENCE_NUMBER_INDEX                             21U
 
-/* \brief Minimum StreamId for ClassA */
-#define ETHERRING_MIN_STREAMID_CLASSA                               0U
-
-/* \brief Minimum StreamId for ClassD */
-#define ETHERRING_MIN_STREAMID_CLASSD                               3U
+/* \brief Minimum StreamId */
+#define ETHERRING_MIN_STREAMID                               0U
 
 /* \brief Index of StreamId in CB Packet */
 #define ETHERRING_STREAM_ID_INDEX                                   30U
@@ -120,10 +117,12 @@ static EtherRingPool gEtherRingPool = {
         .etherRingIsMemPoolInitialised = false,
 };
 
+#ifdef ETHERRING_PROFILING
 EtherRingRxTs_obj gEtherRingRxTs =
 {
-        .etherRingRxClassATsIndex = 0,
+        .etherRingRxTsIndex = 0,
 };
+#endif
 
 static EtherRing_Cfg *gEtherRingCfg;
 
@@ -177,7 +176,7 @@ void EtherRing_close(void *hEtherRing)
     }
 }
 
-void EtherRing_attachtxDmaHandle(void *hEtherRing,
+void EtherRing_attachTxDmaHandle(void *hEtherRing,
                                 EnetDma_TxChHandle hTxCh,
                                 int32_t txChNum)
 {
@@ -228,10 +227,9 @@ int32_t EtherRing_submitTxPktQ(void *hEtherRing,
         EnetQueue_enq(&txSubmitQ, &pktInfo->node);
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(pSubmitQ);
     }
-    gEtherRingTxStaticPoints[1]  = (CycleCounterP_getCount32() - startTime)/400;
     retVal = EnetDma_submitTxPktQ(pRingHandle->hTxCh,
                                   &txSubmitQ);
-    gEtherRingTxStaticPoints[2]  = (CycleCounterP_getCount32() - startTime)/400;
+
     return retVal;
 }
 
@@ -250,7 +248,7 @@ int32_t EtherRing_retrieveTxPktQ(void *hEtherRing,
 
     retVal = EnetDma_retrieveTxPktQ(pRingHandle->hTxCh,
                                     &retrieveQ);
-    gEtherRingTxStaticPoints[3] = (CycleCounterP_getCount32() - startTime)/400;
+
     while(EnetQueue_getQCount(&retrieveQ))
     {
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&retrieveQ);
@@ -258,7 +256,7 @@ int32_t EtherRing_retrieveTxPktQ(void *hEtherRing,
         EtherRing_removeCBLikeHeader(pktInfo);
         EnetQueue_enq(pRetrieveQ, &pktInfo->node);
     }
-    gEtherRingTxStaticPoints[4] = (CycleCounterP_getCount32() - startTime)/400;
+
     return retVal;
 }
 
@@ -300,10 +298,12 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
     EnetDma_Pkt *pktInfo = NULL;
     uint8_t lastByteMac;
     uint8_t seqNumber;
+#ifdef ETHERRING_PROFILING
     uint8_t streamId;
-    uint16_t lookupIndex;
     uint8_t* currTimeStampPtr;
     uint64_t currTimeStampValue;
+#endif
+    uint16_t lookupIndex;
 
     EtherRing_pktQ rxRetrieveQ;
     EtherRing_pktQ rxDupPktQ;
@@ -325,29 +325,29 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
             lookupIndex = (uint16_t) (((uint16_t) lastByteMac << 8) | seqNumber);
             if (pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] == 0)
             {
+#ifdef ETHERRING_PROFILING
                 /* capturing the rx timestamps and currentTimeStamp for retrieved CB packets */
                 if (pktInfo->tsInfo.rxPktTs)
                 {
                     streamId = pktInfo->sgList.list[0].bufPtr[ETHERRING_STREAM_ID_INDEX];
 
-                    pRingHandle->etherRingStats.etherRingClassRxCount[streamId]++;
-                    if ((gEtherRingRxTs.etherRingRxClassATsIndex
-                            < ETHERRING_MAX_RX_TIMESTAMPS_STORED) && (streamId == ETHERRING_MIN_STREAMID_CLASSA))
+                    if ((gEtherRingRxTs.etherRingRxTsIndex
+                            < ETHERRING_MAX_RX_TIMESTAMPS_STORED) && (streamId == ETHERRING_MIN_STREAMID))
                     {
                         /* Storing the rxTs for current packet*/
-                        gEtherRingRxTs.etherRingTimeStampsRx[gEtherRingRxTs.etherRingRxClassATsIndex] =
+                        gEtherRingRxTs.etherRingTimeStampsRx[gEtherRingRxTs.etherRingRxTsIndex] =
                                 pktInfo->tsInfo.rxPktTs;
 
                         currTimeStampPtr = pktInfo->sgList.list[0].bufPtr + ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH;
                         currTimeStampValue = *(uint64_t*)currTimeStampPtr;
 
                         /* Storing the current timestamp received with CB packet*/
-                        gEtherRingRxTs.etherRingCurrentTimeStamps[gEtherRingRxTs.etherRingRxClassATsIndex] = currTimeStampValue;
+                        gEtherRingRxTs.etherRingCurrentTimeStamps[gEtherRingRxTs.etherRingRxTsIndex] = currTimeStampValue;
 
-                        gEtherRingRxTs.etherRingRxClassATsIndex++;
+                        gEtherRingRxTs.etherRingRxTsIndex++;
                     }
                 }
-
+#endif
                 /* remove the CB header and updating the bufPtr before giving to application */
                 memmove(pktInfo->sgList.list[0].bufPtr + ETHERRING_CB_HEADER_SIZE,
                         pktInfo->sgList.list[0].bufPtr, ETHERRING_VLAN_HEADER_SIZE);
@@ -416,12 +416,6 @@ void EtherRing_addCBLikeHeader(EnetDma_Pkt *pktInfo,
     Enet_assert(headerWithCB != NULL);
     Enet_assert(pktInfo != NULL);
 
-    if (EnetQueue_getQCount(&gEtherRingPool.etherRingFreeQueue) > 0)
-    {
-        headerWithCB = (uint8_t*)EnetQueue_deq(&gEtherRingPool.etherRingFreeQueue);
-    }
-
-    // Enet_assert(headerWithCB != NULL);
     pktInfo->sgList.list[1] = pktInfo->sgList.list[0];
     pktInfo->sgList.list[1].bufPtr += ETHERRING_VLAN_HEADER_SIZE;
     pktInfo->sgList.list[1].segmentFilledLen -= ETHERRING_VLAN_HEADER_SIZE;

@@ -97,8 +97,7 @@ static int32_t EnetCpdma_checkRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
-//volatile uint64_t gRxIsrCount = 0;
-//uint64_t gRxIsrProfile[10000];
+
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -1759,8 +1758,6 @@ int32_t EnetCpdma_rxThreshIsr(EnetDma_Handle hEnetDma)
  *  @retval
  *      ENET_SOK
  */
-// extern uint64_t ub_mt_gettime64(void);
-
 int32_t EnetCpdma_rxIsr(EnetDma_Handle hEnetDma)
 {
     int32_t retVal = ENET_SOK;

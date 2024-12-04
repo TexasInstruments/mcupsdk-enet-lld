@@ -44,16 +44,13 @@
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
-
-#ifdef GPTP_ENABLED
 #include <tsn_gptp/gptpmasterclock.h>
-#endif
-#include "../../ether_ring/debug_log.h"
-#include "../../ether_ring/tsninit.h"
-#include "../../ether_ring/common.h"
-#include "../../ether_ring/qosapp_misc.h"
-#include "../../ether_ring/enetapp_cpsw.h"
-#include "../../ether_ring/est/est_configure.h"
+#include "debug_log.h"
+#include "tsninit.h"
+#include "common.h"
+#include "qosapp_misc.h"
+#include "enetapp_cpsw.h"
+#include "est/est_configure.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -125,7 +122,6 @@ typedef struct EnetEstAppCtx
 typedef struct EnetEstAppTestParam
 {
     EnetTas_ControlList list;          /*! List of Admin param for EST */
-    QoSAppStreamConfigParam_t stParam; /*! Streams parameters */
 } EnetEstAppTestParam_t;
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
@@ -245,25 +241,6 @@ static EnetEstAppTestParam_t gEnetEstAppTestLists[] =
             },
             .listLength = 16U,
         },
-        .stParam =
-        {
-            .streamParams =
-            {
-                /* test appliction sends packet with interval 1000us */
-                {.bitRateKbps = CALC_BITRATE_KBPS(600, 125),
-                 .payloadLen = 600, // AAF 16channels classA
-                 .tc = 2,
-                 .priority = 2,
-                },
-                /* test appliction sends packet with interval 125us */
-                {.bitRateKbps = CALC_BITRATE_KBPS(400, 125),
-                 .payloadLen = 400, // AAF 16channels classA
-                 .tc = 3,
-                 .priority = 3,
-                },
-            },
-            .nStreams = 2,
-        }
     },
 };
 
@@ -406,7 +383,6 @@ static bool EnetEstApp_isPTPClockStateSync(EnetQoSApp_AppCtx_t *ctx,
             DPRINT("Current port-state: %d ", portState);
             if (portState != 6 && portState != 9)
             {
-                // DPRINT("Current port-state: %d ", portState);
                 break;
             }
 
@@ -573,25 +549,22 @@ void est_schedule(EnetApp_ModuleCtx_t *modCtx)
     int err;
     EnetQoSApp_AppCtx_t *ctx =  (EnetQoSApp_AppCtx_t *)&gEnetEstAppCtx;
     ctx->ectx = (EnetApp_Ctx_t *)modCtx->appCtx;
-    ctx->talker.vid = 110;
-    ctx->talker.nStreams = QOSAPP_NUM_OF_STREAMS;
-    ctx->talker.nTCs = QOSAPP_NUM_OF_STREAMS;
     for (int i = 0; i < ((EnetApp_Ctx_t *)ctx->ectx)->netdevSize; i++)
     {
         ctx->netdev[i] = ((EnetApp_Ctx_t *)ctx->ectx)->netdev[i];
     }
     ctx->netdevSize = ((EnetApp_Ctx_t *)ctx->ectx)->netdevSize;
-#ifdef PTP_ENABLED
+#if 1
     while ((!EnetEstApp_isPTPClockStateSync(ctx, ctx->netdev[0])) &&
              (!EnetEstApp_isPTPClockStateSync(ctx, ctx->netdev[1])) )
     {
-        DPRINT("Waiting errfor PTP clock to be synchronized!");
+        DPRINT("Waiting for PTP clock to be synchronized!");
         CB_USLEEP(1000000ULL);
     }
 #endif
 
 
-#if 0
+#if 1
     int schedIdx = 0;
     err = EnetEstApp_runSchedule(ctx,
                                  &gEnetEstAppTestLists[schedIdx].list,

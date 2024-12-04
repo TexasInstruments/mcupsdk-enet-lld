@@ -34,15 +34,16 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 #include <tsn_combase/combase.h>
-#include "est/est_configure.h"
-#include "enetapp_cpsw.h"
-#include "dataflow.h"
 #include "tsnapp_porting.h"
 #include "tsn_gptp/gptpmasterclock.h"
 #include "enet_osal.h"
 #include <priv/mod/cpsw_cpts_priv.h>
 #include <hw_include/cpts/V1/cslr_cpts.h>
 #include <priv/mod/cpsw_cpts_ioctl_priv.h>
+#include <est/est_configure.h>
+#include <enetapp_cpsw.h>
+#include <config.h>
+#include <dataflow.h>
 /* ========================================================================== */
 /*                                Function Declarations                       */
 /* ========================================================================== */
@@ -60,111 +61,43 @@
                                                       (((dei) & ENETAPP_VLAN_DEI_MASK) << ENETAPP_VLAN_DEI_OFFSET) | \
                                                       (((vid) & ENETAPP_VLAN_VID_MASK)))
 /* Experimental EtherType used in TX test packets */
-#define ENETAPP_TEST_TX_ETHERTYPE                    (0x88B5U)
-#define ENETAPP_TEST_TX_ETHERTYPE_2                  (0xB588U)
+const uint16_t gTxEtherType = 0x88B5U;
+const uint16_t gTxVlanTciClassA = Enet_htons(ENETAPP_VLAN_TCI(3, 0, 255));
+const uint16_t gTxVlanTciClassD = Enet_htons(ENETAPP_VLAN_TCI(2, 0, 255));
+const uint16_t gEthVlanHdrSize = sizeof(EthVlanFrameHeader);
 
-#define SEND_PACKETS_PER_STREAM 100000
+#define SEND_PACKETS_PER_STREAM                       100000
 #define TX_TASK_PRIORITY                              14U
-#define TX_RETRIEVE_TASK_PRIORITY                     TX_TASK_PRIORITY+1
-#define RX_TASK_PRIORIY                               TX_TASK_PRIORITY+1
+#define RX_TASK_PRIORIY                               TX_TASK_PRIORITY + 1U
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
 extern EnetApp_Cfg gEnetAppCfg;
+#ifdef ETHERRING_PROFILING
 extern EtherRingRxTs_obj gEtherRingRxTs;
-
+#endif
 static TaskP_Params taskParamsStreamGen;
 static uint8_t gEnetAppTaskStackRx[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static uint8_t gEnetAppStreamTaskStack[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS][ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static uint8_t gEnetAppEtherRingTaskStack[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static int8_t gEtherRingStreamIdpool[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {0,1,2,3,4,5};
 
-//static uint8_t gEtherRingStreamToMcast[MAX_NODES_IN_LOOP - 1];
-static uint8_t gEtherRingStreamToMcast[MAX_NODES_IN_LOOP];
-//static uint8_t gEtherRingStreamToMcast[3];
-
+static uint8_t gEtherRingStreamToMcast[MAX_NODES_IN_LOOP - 1];
 static EtherRing_Cfg gEtherRingCfg;
 
 static uint32_t payLoadLength = 100;
-// static void *gEtherRingprintLock = NULL;
 
-#if 1
 static uint32_t gSendPacketsClassStream[6] = {SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,
                                               SEND_PACKETS_PER_STREAM/8,SEND_PACKETS_PER_STREAM/8,SEND_PACKETS_PER_STREAM/8};
 static uint32_t gPacketCountClassStream[6] = {0,0,0,0,0,0};
-#endif
 
-extern CpswCpts_Handle ghCptsEtherRing;
-extern CSL_cptsRegs *gCptsRegsEtherRing;
 
-//#define CYCLEP_DEBUG
-//#define SUB_JITTER
-//#define SUB_PROFILE
-//#define CYCLEP_MAX_MIN_JITTER
-//#define SUBPEND_JITTER
-//#define RXPEND_JITTER
-//#define RX_PROFILE
-#define TX_DEBUG_ARRAY_SIZE  40000
-
-#ifdef CYCLEP_MAX_MIN_JITTER
-	static uint32_t gPrevTimeCb = 0;
-#endif
-
-#ifdef SUB_JITTER
-	static uint32_t gPrevTimeCb = 0;
-	volatile static uint32_t gTimerDebugIndex = 0;
-	static uint32_t gTimerArray[TX_DEBUG_ARRAY_SIZE];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-#ifdef SUB_PROFILE
-//	static uint32_t gPrevTimeCb = 0;
-	volatile static uint32_t gTimerDebugIndex = 0;
-	static uint32_t gTimerArray[TX_DEBUG_ARRAY_SIZE];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-#ifdef RX_PROFILE
-	volatile static uint32_t gTimerDebugIndex = 0;
-	static uint32_t gTimerArray[TX_DEBUG_ARRAY_SIZE];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-#ifdef CYCLEP_DEBUG
-	static uint32_t gPrevTimeCb = 0;
-	volatile static uint32_t gTimerDebugIndex = 0;
-	static uint32_t gTimerArray[TX_DEBUG_ARRAY_SIZE];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-#ifdef SUBPEND_JITTER
-	static uint32_t gPrevTimeCbA0 = 0;
-	static uint32_t gPrevTimeCbA1 = 0;
-	volatile static uint32_t gTimerDebugIndexA0 = 0;
-	volatile static uint32_t gTimerDebugIndexA1 = 0;
-	static uint32_t gTimerArrayA0[TX_DEBUG_ARRAY_SIZE/2];
-	static uint32_t gTimerArrayA1[TX_DEBUG_ARRAY_SIZE/2];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-#ifdef RXPEND_JITTER
-	static uint32_t gPrevTimeCb = 0;
-	volatile static uint32_t gTimerDebugIndex = 0;
-	static uint32_t gTimerArray[TX_DEBUG_ARRAY_SIZE];
-	volatile static uint32_t gIsTxArrayPrinted = 0;
-#endif
-
-//uint8_t isPrintedRxIsr = 0;
-SemaphoreP_Object gRxIsrObj;
 volatile uint32_t isStreamsEnabled = 0;
-volatile uint32_t stopCapture = 0;
 extern EnetDma_Handle ghEnetDma;
-extern volatile uint32_t isIsrArrayCapture;
-static volatile uint32_t staticRxTaskPoints[2];
-//static volatile uint32_t gMinTimerJitter = UINT32_MAX;
-//static volatile uint32_t gMaxTimerJitter = 0;
 
-static uint32_t gIsPrintDone = 0;
+#ifdef ETHERRING_PROFILING
+static uint32_t gIsLatencyPrintDone = 0;
+#endif
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -175,7 +108,7 @@ static uint32_t gIsPrintDone = 0;
 static void EnetApp_initTxFreePktQ(void);
 static uint32_t EnetApp_retrieveFreeTxPkts();
 static void EnetApp_initRxReadyPktQ(EnetDma_RxChHandle hRxCh);
-void EnetApp_scheduleStream(void *stream_id);
+static void EnetApp_scheduleClassAStream(void *stream_id);
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -235,8 +168,8 @@ int32_t EnetApp_etherRingInit()
         status = ENET_EFAIL;
     }
 
-    EtherRing_TxDmaHdle_Attach((void *)gEnetAppCfg.hEtherRing, gEnetAppCfg.hTxCh, gEnetAppCfg.txChNum);
-    EtherRing_RxDmaHdle_Attach((void *)gEnetAppCfg.hEtherRing, gEnetAppCfg.hRxCh, gEnetAppCfg.rxFlowIdx);
+    EtherRing_attachTxDmaHandle((void *)gEnetAppCfg.hEtherRing, gEnetAppCfg.hTxCh, gEnetAppCfg.txChNum);
+    EtherRing_attachRxDmaHandle((void *)gEnetAppCfg.hEtherRing, gEnetAppCfg.hRxCh, gEnetAppCfg.rxChNum);
 
     return status;
 }
@@ -253,49 +186,20 @@ static void EnetApp_rxIsrFxn(void *appData)
     SemaphoreP_post(&gEnetAppCfg.rxSemObj);
 }
 
-int32_t EnetApp_mapMcastAndStreamId(int8_t nodeId)
+static void EnetApp_mapMcastAndStreamId(int8_t nodeId)
 {
-#if 0
-    uint8_t streamId = 0;
-    uint32_t nodeIndex = nodeId+1;
-    uint32_t streamsAssigned = 0;
-
-    while(nodeIndex != nodeId && streamsAssigned < MAX_NODES_IN_LOOP-1)
+    uint32_t streamIndex = 0;
+    for (streamIndex = 0; streamIndex < MAX_NODES_IN_LOOP-1 ; streamIndex++)
     {
-        if (nodeIndex >= MAX_NODES_IN_LOOP)
+        if (nodeId != MAX_NODES_IN_LOOP - 1)
         {
-            nodeIndex = 0;
+            gEtherRingStreamToMcast[streamIndex] = nodeId + 1;
         }
-        gEtherRingStreamToMcast[streamId++] = nodeIndex;
-        nodeIndex++;
-        streamsAssigned++;
+        else
+        {
+            gEtherRingStreamToMcast[streamIndex] = 0;
+        }
     }
-#endif
-    if(nodeId == 0)
-    {
-    	gEtherRingStreamToMcast[0] = 1;
-    	gEtherRingStreamToMcast[1] = 1;
-    	gEtherRingStreamToMcast[2] = 1;
-    }
-    else if(nodeId == 1)
-    {
-    	gEtherRingStreamToMcast[0] = 2;
-    	gEtherRingStreamToMcast[1] = 2;
-    	gEtherRingStreamToMcast[2] = 2;
-    }
-    else if(nodeId ==2)
-    {
-    	gEtherRingStreamToMcast[0] = 3;
-    	gEtherRingStreamToMcast[1] = 3;
-    	gEtherRingStreamToMcast[2] = 3;
-    }
-    else if(nodeId ==3)
-    {
-        gEtherRingStreamToMcast[0] = 0;
-        gEtherRingStreamToMcast[1] = 0;
-        gEtherRingStreamToMcast[2] = 0;
-    }
-    return 0;
 }
 
 int32_t EnetApp_configureMcastAddress(Enet_Handle hEnet, uint32_t coreId)
@@ -313,8 +217,7 @@ int32_t EnetApp_configureMcastAddress(Enet_Handle hEnet, uint32_t coreId)
             },
             .info =
             {
-//                .portMask = 0x07, /* allow for all ports */
-                .portMask = 0x01, /* allow for all ports */
+                .portMask = 0x01, /* allow only for host port */
                 .super = false,
                 .fwdState = CPSW_ALE_FWDSTLVL_FWD,
                 .numIgnBits =0U,
@@ -393,8 +296,7 @@ int32_t EnetApp_addVlanEntries(Enet_Handle hEnet, uint32_t coreId, uint32_t vlan
         vlanInArgs.vlanIdInfo.vlanId        = vlan;
         vlanInArgs.vlanIdInfo.tagType       = ENET_VLAN_TAG_TYPE_INNER;
         vlanInArgs.vlanMemberList           = 0x7; /* allow for all ports */
-//        vlanInArgs.unregMcastFloodMask      = 0x7;
-        vlanInArgs.unregMcastFloodMask      = 0x6;
+        vlanInArgs.unregMcastFloodMask      = 0x6; /* except host port */
         vlanInArgs.regMcastFloodMask        = 0x7;
         vlanInArgs.forceUntaggedEgressMask  = 0U;
         vlanInArgs.noLearnMask              = 0U;
@@ -453,18 +355,14 @@ static int32_t EnetApp_openDma()
         EnetApp_GetRxDmaHandleOutArgs  rxChInfo;
 
         rxInArgs.notifyCb = EnetApp_rxIsrFxn;
-//        rxInArgs.notifyCb = NULL;
         rxInArgs.cbArg   = NULL;
 
         EnetApp_getRxDmaHandle(ENET_DMA_RX_CH0,
                                &rxInArgs,
                                &rxChInfo);
-#if defined(ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
-        gEnetAppCfg.rxStartFlowIdx = rxChInfo.rxFlowStartIdx;
-        gEnetAppCfg.rxFlowIdx = rxChInfo.rxFlowIdx;
-#else
-        gEnetAppCfg.rxFlowIdx = rxChInfo.rxChNum;
-#endif
+
+        gEnetAppCfg.rxChNum = rxChInfo.rxChNum;
+
         gEnetAppCfg.hRxCh  = rxChInfo.hRxCh;
         EnetAppUtils_assert(rxChInfo.numValidMacAddress == 1);
         EnetUtils_copyMacAddr(gEnetAppCfg.macAddr, rxChInfo.macAddr[rxChInfo.numValidMacAddress - 1]);
@@ -543,7 +441,6 @@ int32_t EnetApp_open()
 
     // EtherRing_createClearLookupPollTask();
 
-    gEnetAppCfg.txSubmittedCount = 0;
     gEnetAppCfg.totalRxCnt = 0;
 
     return status;
@@ -655,15 +552,15 @@ static void EtherRing_dmaRxIsr()
     int32_t status;
     uintptr_t key;
 
-	key = EnetOsal_disableAllIntr();
-	Enet_assert(ghEnetDma != NULL);
+    key = EnetOsal_disableAllIntr();
+    Enet_assert(ghEnetDma != NULL);
 
-	status = EnetCpdma_rxIsr(ghEnetDma);
+    status = EnetCpdma_rxIsr(ghEnetDma);
 
-	/* TODO: Add ISR safe error:
-	 * failed to handle Rx intr: %d\r\n", status); */
-	ENET_UNUSED(status);
-	EnetOsal_restoreAllIntr(key);
+    /* TODO: Add ISR safe error:
+     * failed to handle Rx intr: %d\r\n", status); */
+    ENET_UNUSED(status);
+    EnetOsal_restoreAllIntr(key);
 }
 
 /* Rx Echo task for non-gPTP traffic */
@@ -674,73 +571,19 @@ static void EnetApp_rxTask(void *args)
 
     EnetAppUtils_print("%s: default RX flow started\r\n",
                        gEnetAppCfg.name);
-#ifdef PTP_ENABLED
+
     EnetApp_waitSystemStable();
 
     while(gptpmasterclock_init(NULL)){
         UB_LOG(UBL_INFO,"Waiting for tsn_gptpd to be ready...\n");
         CB_USLEEP(100000);
     }
-#endif
+
     while ((ENET_SOK == status))
     {
         /* Wait for packet reception */
         SemaphoreP_pend(&gEnetAppCfg.rxSemObj, SystemP_WAIT_FOREVER);
-#ifdef RXPEND_JITTER
-        uint32_t gCurrentTime = CycleCounterP_getCount32();
-        if(gPrevTimeCb != 0)
-        {
-			if(isStreamsEnabled && (gTimerDebugIndex < TX_DEBUG_ARRAY_SIZE))
-			{
-				if(gCurrentTime > gPrevTimeCb)
-				{
-					gTimerArray[gTimerDebugIndex] = gCurrentTime-gPrevTimeCb;
-				}
-				else
-				{
-					gTimerArray[gTimerDebugIndex] = (0xFFFFFFFF -gPrevTimeCb + gCurrentTime)&0xFFFFFFFF;
-				}
-				gTimerDebugIndex++;
-			}
-        }
-        gPrevTimeCb = gCurrentTime;
-        if(gIsTxArrayPrinted == 0 && gTimerDebugIndex >= (TX_DEBUG_ARRAY_SIZE))
-        {
-        	uint32_t printArrayIndex = 0;
-        	for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-			{
-				EnetAppUtils_print("RXPEND: %lu\r\n", gTimerArray[printArrayIndex]);
-			}
-			gIsTxArrayPrinted = 1;
-        }
-#endif
-#ifdef RX_PROFILE
-		uint32_t gPrevTime = CycleCounterP_getCount32();
-        // printing the jitter for submitTx
-        if(gIsTxArrayPrinted == 0 && gTimerDebugIndex >= (TX_DEBUG_ARRAY_SIZE))
-        {
-        	uint32_t printArrayIndex = 0;
-        	for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-			{
-				EnetAppUtils_print("RX_PF: %lu\r\n", gTimerArray[printArrayIndex]);
-			}
-			gIsTxArrayPrinted = 1;
-        }
-#endif
 
-#if 0
-		if (gIsPrintDone == 0 && gEnetAppCfg.totalRxCnt >= 90000)
-		{
-			int16_t timeStampIndex;
-			for(timeStampIndex=10; timeStampIndex<10000; timeStampIndex++)
-			{
-				EnetAppUtils_print("[EL_RXTS_A]: %llu\r\n",
-						gEtherRingRxTs.etherRingTimeStampsRx[0][timeStampIndex]);
-			}
-			 gIsPrintDone = 1;
-		}
-#endif
-		uint32_t startTime = CycleCounterP_getCount32();
         /* All peripherals have single hardware RX channel, so we only need to retrieve
          * packets from a single flow.*/
         EnetQueue_initQ(&rxReadyQ);
@@ -748,12 +591,15 @@ static void EnetApp_rxTask(void *args)
         /* Get the packets received so far */
         status = EtherRing_retrieveRxPktQ(gEnetAppCfg.hEtherRing, &rxReadyQ);
 
-        staticRxTaskPoints[0] = (CycleCounterP_getCount32() - startTime)/400;
-        if(staticRxTaskPoints[0] > 22)
+        if (gEnetAppCfg.totalRxCnt < UINT64_MAX)
         {
-//                    	 DebugP_assert(0);
+            gEnetAppCfg.totalRxCnt += EnetQueue_getQCount(&rxReadyQ);
         }
-        gEnetAppCfg.totalRxCnt += EnetQueue_getQCount(&rxReadyQ);
+        else
+        {
+            gEnetAppCfg.totalRxCnt = 0;
+        }
+
         if (status != ENET_SOK)
         {
             /* Should we bail out here? */
@@ -764,33 +610,13 @@ static void EnetApp_rxTask(void *args)
 
         /* Submit now processed buffers */
         EtherRing_submitRxPktQ(gEnetAppCfg.hEtherRing, &rxReadyQ);
-        staticRxTaskPoints[1] = (CycleCounterP_getCount32() - startTime)/400;
-        if(staticRxTaskPoints[1] > 22)
-        {
-//                    	 DebugP_assert(0);
-        }
+
         if (status != ENET_SOK)
         {
             EnetAppUtils_print("Failed to submit RX pkt queue: %d\r\n", status);
             Enet_assert(false);
         }
-#ifdef RX_PROFILE
-					 uint32_t gCurrentTime = CycleCounterP_getCount32();
-					if(isStreamsEnabled && (gTimerDebugIndex < TX_DEBUG_ARRAY_SIZE))
-					{
-						if(gCurrentTime > gPrevTime)
-						{
-							gTimerArray[gTimerDebugIndex] = gCurrentTime-gPrevTime;
-						}
-						else
-						{
-							gTimerArray[gTimerDebugIndex] = (0xFFFFFFFF -gPrevTime + gCurrentTime)&0xFFFFFFFF;
-						}
-						gTimerDebugIndex++;
-					}
-#endif
     }
-
 
     TaskP_exit();
 }
@@ -802,7 +628,6 @@ void EnetApp_createRxTask()
 
     DebugP_assert(ENET_SOK == status);
 
-//    status = SemaphoreP_constructBinary(&gRxIsrObj, 0);
     status = SemaphoreP_constructBinary(&gEnetAppCfg.rxSemObj, 0);
     DebugP_assert(SystemP_SUCCESS == status);
     TaskP_Params_init(&taskParams);
@@ -825,7 +650,7 @@ void EnetApp_destroyRxTask()
     EnetApp_closeDma();
 }
 
-void EnetApp_scheduleStream(void *stream_id)
+static void EnetApp_scheduleClassAStream(void *stream_id)
 {
     EnetDma_PktQ txSubmitQ;
     EthVlanFrame *frame;
@@ -833,159 +658,27 @@ void EnetApp_scheduleStream(void *stream_id)
     int8_t streamId = *(int8_t*)stream_id;
     uint64_t tsValCurrent = 0ULL;
     uint64_t tsValCurrentvalue = 0ULL;
-    uint8_t multicastAddr[ENET_MAC_ADDR_LEN] = {0x01,0x00,0x5E,0x7F,0xFF,0x00};
+    uint8_t multicastAddr[ENET_MAC_ADDR_LEN] = {0x01,0x00,0x5E,0x7F,0xFF,gEtherRingStreamToMcast[streamId]};
     EnetDma_PktQ txFreeQ;
     EnetQueue_initQ(&txFreeQ);
     uint32_t key;
 
-    if (streamId < 3)
-    {
-        multicastAddr[ENET_MAC_ADDR_LEN-1] = gEtherRingStreamToMcast[streamId];
-    }
-    else if (streamId >=3 && streamId < 6)
-    {
-        multicastAddr[ENET_MAC_ADDR_LEN-1] = gEtherRingStreamToMcast[streamId-3];
-    }
-
-    int8_t priority = 0;
-
-#ifdef PTP_ENABLED
     EnetApp_waitSystemStable();
 
-    while(gptpmasterclock_init(NULL)){
+    while (gptpmasterclock_init(NULL))
+    {
         UB_LOG(UBL_INFO,"Waiting for tsn_gptpd to be ready...\n");
         CB_USLEEP(100000);
     }
-#endif
 
-    #ifdef WITH_EST_CONFIG
-        wait_est_configured();
-    #endif
-
-    // EnetAppUtils_print("Schedule started for StreamId: %d\r\n", streamId);
+    wait_est_configured();
 
     isStreamsEnabled = 1;
-    while(true)
+    while (true)
     {
         SemaphoreP_pend(&gEnetAppCfg.streamSemObj[streamId], SystemP_WAIT_FOREVER);
-         key = EnetOsal_disableAllIntr();
-#ifdef SUBPEND_JITTER
-         if(streamId == 0)
-         {
-             uint32_t gCurrentTime = CycleCounterP_getCount32();
-             if(gPrevTimeCbA0 != 0)
-             {
-                 if(isStreamsEnabled && (gTimerDebugIndexA0 < TX_DEBUG_ARRAY_SIZE))
-                 {
-                     if(gCurrentTime > gPrevTimeCbA0)
-                     {
-                         gTimerArrayA0[gTimerDebugIndexA0] = gCurrentTime-gPrevTimeCbA0;
-                     }
-                     else
-                     {
-                         gTimerArrayA0[gTimerDebugIndexA0] = (0xFFFFFFFF -gPrevTimeCbA0 + gCurrentTime)&0xFFFFFFFF;
-                     }
-                     gTimerDebugIndexA0++;
-                 }
-             }
-             gPrevTimeCbA0 = gCurrentTime;
-         }
-         else if(streamId == 1)
-         {
-             uint32_t gCurrentTime = CycleCounterP_getCount32();
-             if(gPrevTimeCbA1 != 0)
-             {
-                 if(isStreamsEnabled && (gTimerDebugIndexA1 < TX_DEBUG_ARRAY_SIZE))
-                 {
-                     if(gCurrentTime > gPrevTimeCbA1)
-                     {
-                         gTimerArrayA1[gTimerDebugIndexA1] = gCurrentTime-gPrevTimeCbA1;
-                     }
-                     else
-                     {
-                         gTimerArrayA1[gTimerDebugIndexA1] = (0xFFFFFFFF -gPrevTimeCbA1 + gCurrentTime)&0xFFFFFFFF;
-                     }
-                     gTimerDebugIndexA1++;
-                 }
-             }
-             gPrevTimeCbA1 = gCurrentTime;
-         }
-         if(gIsTxArrayPrinted == 0 && gTimerDebugIndexA1 >= (TX_DEBUG_ARRAY_SIZE/2))
-         {
-             uint32_t printArrayIndex = 0;
-             for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE/2); printArrayIndex++)
-             {
-                 EnetAppUtils_print("SPEND0: %lu\r\n", gTimerArrayA0[printArrayIndex]);
-                 EnetAppUtils_print("SPEND1: %lu\r\n", gTimerArrayA1[printArrayIndex]);
-             }
-             gIsTxArrayPrinted = 1;
-         }
-#endif
-if (streamId == 0)
-{
-    #ifdef SUB_PROFILE
-         uint32_t gPrevTime;
-            gPrevTime = CycleCounterP_getCount32();
-            // printing the jitter for submitTx
-            if(gIsTxArrayPrinted == 0 && gTimerDebugIndex >= (TX_DEBUG_ARRAY_SIZE))
-            {
-                uint32_t printArrayIndex = 0;
-                for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-                {
-                    EnetAppUtils_print("SP: %lu\r\n", gTimerArray[printArrayIndex]);
-                }
-                gIsTxArrayPrinted = 1;
-            }
-    #endif
-}
-#ifdef SUB_JITTER
-        // printing the jitter for submitTx
-        if(gIsTxArrayPrinted == 0 && gTimerDebugIndex >= (TX_DEBUG_ARRAY_SIZE))
-        {
-        	uint32_t printArrayIndex = 0;
-        	for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-			{
-				EnetAppUtils_print("ST: %lu\r\n", gTimerArray[printArrayIndex]);
-			}
-			gIsTxArrayPrinted = 1;
-        }
-#endif
-#if 0
-        if(stopCapture == 1/*&& isIsrArrayCapture*/)
-        {
-        	uint32_t printArrayIndex = 0;
-        	for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-			{
-				EnetAppUtils_print("ISR: %llu\r\n", gProfileArray[printArrayIndex]);
-			}
-        	isIsrArrayCapture = 0;
-        	while(1);
-        }
-#endif
-#ifdef CYCLEP_DEBUG
-        if(gIsTxArrayPrinted == 0 && gTimerDebugIndex >= (TX_DEBUG_ARRAY_SIZE))
-        {
-        	uint32_t printArrayIndex = 0;
-        	for(printArrayIndex = 0; printArrayIndex<(TX_DEBUG_ARRAY_SIZE); printArrayIndex++)
-			{
-				EnetAppUtils_print("TCB: %lu\r\n", gTimerArray[printArrayIndex]);
-			}
-			gIsTxArrayPrinted = 1;
-        }
-#endif
-#if 0
-        if(streamId == 0)
-		{
-			if((gProfileIndexEl >= (TX_DEBUG_ARRAY_SIZE) &&(isTxPrinted == 0)))
-			{
-				for(int32_t index =0; index<(TX_DEBUG_ARRAY_SIZE); index++)
-				{
-					EnetAppUtils_print("PF: %llu\r\n", gProfileArray[index]);
-				}
-				isTxPrinted = 1;
-			}
-		}
-#endif
+        key = EnetOsal_disableAllIntr();
+
         if (gPacketCountClassStream[streamId] < gSendPacketsClassStream[streamId])
         {
             EnetQueue_initQ(&txSubmitQ);
@@ -1000,22 +693,14 @@ if (streamId == 0)
                      memcpy(frame->hdr.dstMac, multicastAddr, 6U);
                      memcpy(frame->hdr.srcMac, gEnetAppCfg.macAddr, 6U);
                      frame->hdr.tpid = Enet_htons(ENETAPP_VLAN_TPID);
-                     if (streamId <3)
-                     {
-                         priority = 3;
-//                         payLoadLength = 1000;
-                         payLoadLength = 1000;
-                     }
-                     else
-                     {
-                         priority =0;
-                     }
-					 frame->hdr.etherType = Enet_htons(ENETAPP_TEST_TX_ETHERTYPE);
-                     frame->hdr.tci  = Enet_htons(ENETAPP_VLAN_TCI(priority, 0, 255));
+                     payLoadLength = CLASSA_PAYLOAD_LENGTH;
 
-                     pktInfo->sgList.list[0].segmentFilledLen = payLoadLength + sizeof(EthVlanFrameHeader);
+                     frame->hdr.etherType = gTxEtherType;
+                     frame->hdr.tci  = gTxVlanTciClassA;
 
-                     //8bytes current timestamp(adding zeros for now) + streamId (1 byte) + 191bytes payload
+                     pktInfo->sgList.list[0].segmentFilledLen = payLoadLength + gEthVlanHdrSize;
+
+                     /* 8bytes current timestamp(adding zeros for now) + streamId (1 byte) + 191bytes payload */
                      tsValCurrentvalue = tsValCurrent + 125000;
                      memcpy(&frame->payload[0U], &tsValCurrentvalue, 8U);
 
@@ -1036,31 +721,31 @@ if (streamId == 0)
 
                      retVal = EtherRing_submitTxPktQ(gEnetAppCfg.hEtherRing, &txSubmitQ);
 
-					 gPacketCountClassStream[streamId]++;
+                     gPacketCountClassStream[streamId]++;
 
-					 retVal = EtherRing_retrieveTxPktQ(gEnetAppCfg.hEtherRing, &txFreeQ);
+                     retVal = EtherRing_retrieveTxPktQ(gEnetAppCfg.hEtherRing, &txFreeQ);
 
-					 if (retVal == ENET_SOK)
-					 {
-					     EnetDma_Pkt *pktInfo;
-						 pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
-						 while (NULL != pktInfo)
-						 {
-							 EnetDma_checkPktState(&pktInfo->pktState,
-												   ENET_PKTSTATE_MODULE_APP,
-												   ENET_PKTSTATE_APP_WITH_DRIVER,
-												   ENET_PKTSTATE_APP_WITH_FREEQ);
+                     if (retVal == ENET_SOK)
+                     {
+                         EnetDma_Pkt *pktInfo;
+                         pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
+                         while (NULL != pktInfo)
+                         {
+                             EnetDma_checkPktState(&pktInfo->pktState,
+                                                   ENET_PKTSTATE_MODULE_APP,
+                                                   ENET_PKTSTATE_APP_WITH_DRIVER,
+                                                   ENET_PKTSTATE_APP_WITH_FREEQ);
 
-							 EnetQueue_enq(&gEnetAppCfg.txFreePktInfoQ, &pktInfo->node);
-							 pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
-						 }
-					 }
+                             EnetQueue_enq(&gEnetAppCfg.txFreePktInfoQ, &pktInfo->node);
+                             pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
+                         }
+                     }
                      EnetOsal_restoreAllIntr(key);
                  }
-			}
-			else
-			{
-				EnetAppUtils_print("no free pktInfo for stream: %d\r\n", streamId);
+            }
+            else
+            {
+                EnetAppUtils_print("no free pktInfo for stream: %d\r\n", streamId);
                 retVal = EtherRing_retrieveTxPktQ(gEnetAppCfg.hEtherRing, &txFreeQ);
 
                 if (retVal == ENET_SOK)
@@ -1078,61 +763,39 @@ if (streamId == 0)
                         pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
                     }
                 }
-			}
-		}
+            }
+        }
         else
         {
-    #if 1
-            if (gIsPrintDone == 0 && streamId == 0)
+#ifdef ETHERRING_PROFILING
+            if (gIsLatencyPrintDone == 0 && streamId == 0)
             {
                 EnetAppUtils_print("RxTs and CurrentTs values stored\r\n");
-                ClockP_usleep(5000);
+                ClockP_usleep(990);
+                ClockP_usleep(990);
                 int16_t timeStampIndex;
-                for(timeStampIndex=10; timeStampIndex<MAX_RX_TIMESTAMPS_STORED-5020; timeStampIndex++)
+                for (timeStampIndex=10; timeStampIndex < ETHERRING_MAX_RX_TIMESTAMPS_STORED; timeStampIndex++)
                 {
-                    EnetAppUtils_print("[EL_RXTS_A]: %llu\r\n",
+                    EnetAppUtils_print("[RXTS]: %llu\r\n",
                             gEtherRingRxTs.etherRingTimeStampsRx[timeStampIndex]);
+                    ClockP_usleep(990);
                 }
 
-                for(timeStampIndex=10; timeStampIndex<MAX_RX_TIMESTAMPS_STORED-5020; timeStampIndex++)
-                {
-                    EnetAppUtils_print("[EL_LAT_A]: %llu\r\n",
-                            gEtherRingRxTs.etherRingCurrentTimeStamps[timeStampIndex]);
-                }
-
-                ClockP_usleep(1000);
-                gIsPrintDone = 1;
+                ClockP_usleep(990);
+                gIsLatencyPrintDone = 1;
                 EnetAppUtils_print("\r\n\n");
                 EnetAppUtils_print("----------ETHERRING DEMONSTRATION COMPLETED----------\r\n");
                 EnetAppUtils_print("\r\n\n");
             }
-    #endif
-//        	stopCapture = 1;
-#if 0
-        	if(isTxPrinted == 0)
-        	{
-        	    for(int32_t index = 0; index<100 ;index++)
-        	    {
-        	    	volatile uint32_t startCountCycleP = CycleCounterP_getCount32();
-        	    	uint32_t startCountClockP = ClockP_getTicks();
-        	    	uint64_t startus = ClockP_getTimeUsec();
-        	    	ClockP_sleep(1);
-        	    	volatile uint32_t endCountCycleP = CycleCounterP_getCount32();
-        	    	uint32_t endCountClockP = ClockP_getTicks();
-        	    	uint64_t endus = ClockP_getTimeUsec();
-        	    	EnetAppUtils_print("[LATER]CY_startTick: %u, endTick: %u, CL_startTick: %u, endTick: %u, CL_startTimeUs: %llu, endTimeUs: %llu\r\n",
-        	    			startCountCycleP, endCountCycleP, startCountClockP, endCountClockP, startus, endus);
-        	    }
-        	    isTxPrinted = 1;
-        	}
 #endif
         }
 
-		if (retVal != ENET_SOK)
-		{
-			EnetAppUtils_print("Etherring Tx submit failed\r\n");
-		}
-#if 1
+        if (retVal != ENET_SOK)
+        {
+            EnetAppUtils_print("Etherring Tx submit failed\r\n");
+        }
+
+#if 0
         Enet_IoctlPrms prms;
 
         ENET_IOCTL_SET_OUT_ARGS(&prms, (void *)&tsValCurrent);
@@ -1149,32 +812,22 @@ void EnetApp_scheduleStreamD(void *stream_id)
     int8_t streamId = *(int8_t*)stream_id;
     uint64_t tsValCurrent = 0ULL;
     uint64_t tsValCurrentvalue = 0ULL;
-    uint8_t multicastAddr[ENET_MAC_ADDR_LEN] = {0x01,0x00,0x5E,0x7F,0xFF,0x00};
+    uint8_t multicastAddr[ENET_MAC_ADDR_LEN] = {0x01,0x00,0x5E,0x7F,0xFF,gEtherRingStreamToMcast[streamId - 3]};
     EnetDma_PktQ txFreeQ;
     EnetQueue_initQ(&txFreeQ);
 
-    multicastAddr[ENET_MAC_ADDR_LEN-1] = gEtherRingStreamToMcast[streamId-3];
-
-
-    int8_t priority = 0;
-
-#ifdef PTP_ENABLED
     EnetApp_waitSystemStable();
 
-    while(gptpmasterclock_init(NULL)){
+    while (gptpmasterclock_init(NULL))
+    {
         UB_LOG(UBL_INFO,"Waiting for tsn_gptpd to be ready...\n");
         CB_USLEEP(100000);
     }
-#endif
 
-    #ifdef WITH_EST_CONFIG
-        wait_est_configured();
-    #endif
-
-    // EnetAppUtils_print("Schedule started for StreamId: %d\r\n", streamId);
+    wait_est_configured();
 
     isStreamsEnabled = 1;
-    while(true)
+    while (true)
     {
         SemaphoreP_pend(&gEnetAppCfg.streamSemObj[streamId], SystemP_WAIT_FOREVER);
 
@@ -1183,11 +836,11 @@ void EnetApp_scheduleStreamD(void *stream_id)
         if (EnetQueue_getQCount(&gEnetAppCfg.txFreePktInfoQ) > 0 )
         {
             uint32_t classDstreamIndex = 0;
-            for(classDstreamIndex = 0; classDstreamIndex<3 ;classDstreamIndex++)
+            for(classDstreamIndex = 0; classDstreamIndex < NUM_CLASSD_STREAMS ;classDstreamIndex++)
             {
-                if (gPacketCountClassStream[classDstreamIndex+3] < gSendPacketsClassStream[3+classDstreamIndex])
+                if (gPacketCountClassStream[classDstreamIndex + 3] < gSendPacketsClassStream[3 + classDstreamIndex])
                 {
-                    multicastAddr[ENET_MAC_ADDR_LEN-1] = gEtherRingStreamToMcast[classDstreamIndex];
+                    multicastAddr[ENET_MAC_ADDR_LEN -1 ] = gEtherRingStreamToMcast[classDstreamIndex];
                     EnetDma_Pkt *pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&gEnetAppCfg.txFreePktInfoQ);
 
                     if (pktInfo != NULL)
@@ -1196,11 +849,13 @@ void EnetApp_scheduleStreamD(void *stream_id)
                         memcpy(frame->hdr.dstMac, multicastAddr, 6U);
                         memcpy(frame->hdr.srcMac, gEnetAppCfg.macAddr, 6U);
                         frame->hdr.tpid = Enet_htons(ENETAPP_VLAN_TPID);
-                        priority = 2;
-                        payLoadLength = 1450;
-                        frame->hdr.etherType = Enet_htons(ENETAPP_TEST_TX_ETHERTYPE);
-                        frame->hdr.tci  = Enet_htons(ENETAPP_VLAN_TCI(priority, 0, 255));
-                        pktInfo->sgList.list[0].segmentFilledLen = payLoadLength + sizeof(EthVlanFrameHeader);
+
+                        payLoadLength = CLASSD_PAYLOAD_LENGTH;
+
+                        frame->hdr.etherType = gTxEtherType;
+                        frame->hdr.tci  = gTxVlanTciClassD;
+
+                        pktInfo->sgList.list[0].segmentFilledLen = payLoadLength + gEthVlanHdrSize;
 
                         //8bytes current timestamp(adding zeros for now) + streamId (1 byte) + 191bytes payload
                         tsValCurrentvalue = tsValCurrent + 1000000;
@@ -1262,11 +917,11 @@ void EnetApp_createStreamTask()
     int32_t status = ENET_SOK;
 
     EnetApp_mapMcastAndStreamId(gEnetAppCfg.nodeId);
-    // gEtherRingprintLock = EnetOsal_createMutex();
 
-    EnetAppUtils_print("ClassA stream count:%d\r\n", gEnetAppCfg.numClassAStreams);
-    EnetAppUtils_print("ClassD stream count:%d\r\n", gEnetAppCfg.numClassDStreams);
-    for(stream_id = 0 ;stream_id<(gEnetAppCfg.numClassAStreams) ;stream_id++)
+    EnetAppUtils_print("ClassA stream count:%d\r\n", NUM_CLASSA_STREAMS);
+    EnetAppUtils_print("ClassD stream count:%d\r\n", NUM_CLASSD_STREAMS);
+
+    for(stream_id = 0 ;stream_id<(NUM_CLASSA_STREAM_TASKS) ;stream_id++)
     {
         status = SemaphoreP_constructBinary(&gEnetAppCfg.streamSemObj[stream_id], 0);
         DebugP_assert(SystemP_SUCCESS == status);
@@ -1276,13 +931,13 @@ void EnetApp_createStreamTask()
         taskParamsStreamGen.stackSize      = sizeof(gEnetAppStreamTaskStack[stream_id]);
         taskParamsStreamGen.args           = (void*)&gEtherRingStreamIdpool[stream_id];
         taskParamsStreamGen.name           = "ClassA Task";
-        taskParamsStreamGen.taskMain       = &EnetApp_scheduleStream;
+        taskParamsStreamGen.taskMain       = &EnetApp_scheduleClassAStream;
 
         status = TaskP_construct(&gEnetAppCfg.streamTaskObj[stream_id], &taskParamsStreamGen);
         DebugP_assert(SystemP_SUCCESS == status);
     }
 
-    for(stream_id = 3 ;stream_id<(3 + gEnetAppCfg.numClassDStreams) ;stream_id++)
+    for(stream_id = 3 ;stream_id<(3 + NUM_CLASSD_STREAM_TASKS) ;stream_id++)
     {
         status = SemaphoreP_constructBinary(&gEnetAppCfg.streamSemObj[stream_id], 0);
         DebugP_assert(SystemP_SUCCESS == status);
@@ -1297,7 +952,6 @@ void EnetApp_createStreamTask()
         status = TaskP_construct(&gEnetAppCfg.streamTaskObj[stream_id], &taskParamsStreamGen);
         DebugP_assert(SystemP_SUCCESS == status);
     }
-//     EnetApp_startHwTimer();
 }
 
 void EnetApp_clearLookupTable()
@@ -1305,7 +959,7 @@ void EnetApp_clearLookupTable()
     while(true)
     {
         SemaphoreP_pend(&gEnetAppCfg.etherringSemObj, SystemP_WAIT_FOREVER);
-        EtherRing_clearLookupPollTask();
+        EtherRing_periodicTick(&gEnetAppCfg.hEtherRing);
     }
 }
 
@@ -1334,55 +988,9 @@ void avbTimerIsrClassA(void)
         static int counter = 0;
         static uint32_t etherRingCounter  = 0;
         int32_t stream_id;
-#ifdef CYCLEP_MAX_MIN_JITTER
         if(isStreamsEnabled)
         {
-			uint32_t gCurrentTime = CycleCounterP_getCount32();
-			if(gPrevTimeCb != 0)
-			{
-					uint32_t timeDiff;
-					if(gCurrentTime > gPrevTimeCb)
-					{
-						timeDiff = (gCurrentTime-gPrevTimeCb)/400;
-					}
-					else
-					{
-						timeDiff = ((0xFFFFFFFF -gPrevTimeCb + gCurrentTime)&0xFFFFFFFF)/400;
-					}
-					if(timeDiff < gMinTimerJitter)
-					{
-						gMinTimerJitter = timeDiff;
-					}
-					else if(timeDiff > gMaxTimerJitter)
-					{
-						gMaxTimerJitter = timeDiff;
-					}
-			}
-			gPrevTimeCb = gCurrentTime;
-        }
-#endif
-#ifdef CYCLEP_DEBUG
-        	uint32_t gCurrentTime = CycleCounterP_getCount32();
-        if(gPrevTimeCb != 0)
-        {
-			if(isStreamsEnabled && (gTimerDebugIndex < TX_DEBUG_ARRAY_SIZE))
-			{
-				if(gCurrentTime > gPrevTimeCb)
-				{
-					gTimerArray[gTimerDebugIndex] = gCurrentTime-gPrevTimeCb;
-				}
-				else
-				{
-					gTimerArray[gTimerDebugIndex] = (0xFFFFFFFF -gPrevTimeCb + gCurrentTime)&0xFFFFFFFF;
-				}
-				gTimerDebugIndex++;
-			}
-        }
-        gPrevTimeCb = gCurrentTime;
-#endif
-        if(isStreamsEnabled)
-        {
-                for(stream_id = 0 ;stream_id<(gEnetAppCfg.numClassAStreams); stream_id++)
+                for(stream_id = 0 ;stream_id < (NUM_CLASSA_STREAM_TASKS); stream_id++)
                 {
                     SemaphoreP_post(&gEnetAppCfg.streamSemObj[stream_id]);
                 }
@@ -1391,7 +999,7 @@ void avbTimerIsrClassA(void)
                 etherRingCounter++;
                 if (counter % 8 == 0)
                 {
-                    for(stream_id = 3 ;stream_id<(3 + gEnetAppCfg.numClassDStreams); stream_id++)
+                    for(stream_id = 3 ;stream_id<(3 + NUM_CLASSD_STREAM_TASKS); stream_id++)
                     {
                         SemaphoreP_post(&gEnetAppCfg.streamSemObj[stream_id]);
                     }
@@ -1406,116 +1014,3 @@ void avbTimerIsrClassA(void)
         }
         EtherRing_dmaRxIsr();
 }
-
-
-#if 0
-void EnetApp_TxRetrievePoll(void *args)
-{
-    EnetDma_PktQ txFreeQ;
-    EnetDma_Pkt *pktInfo;
-    int32_t status = ENET_SOK;
-
-    /* Call the driver's periodic polling function */
-    EtherRingApp_TxRtrvPollTaskInfo *pPollTxRtrvTaskInfo = &pollTxRtrvTaskInfo;
-    EnetQueue_initQ(&txFreeQ);
-
-    while (!pPollTxRtrvTaskInfo->shutDownFlag)
-    {
-        SemaphoreP_pend(&pPollTxRtrvTaskInfo->sem, SystemP_WAIT_FOREVER);
-
-        status = EtherRing_retrieveTxPktQ(gEnetAppCfg.hEtherRing, &txFreeQ);
-
-        if (status == ENET_SOK)
-        {
-            pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
-            while (NULL != pktInfo)
-            {
-                EnetDma_checkPktState(&pktInfo->pktState,
-                                      ENET_PKTSTATE_MODULE_APP,
-                                      ENET_PKTSTATE_APP_WITH_DRIVER,
-                                      ENET_PKTSTATE_APP_WITH_FREEQ);
-
-                EnetQueue_enq(&gEnetAppCfg.txFreePktInfoQ, &pktInfo->node);
-                pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&txFreeQ);
-            }
-        }
-        else
-        {
-            EnetAppUtils_print("retrieveFreeTxPkts() failed to retrieve pkts: %d\r\n",
-                               status);
-        }
-    }
-    SemaphoreP_post(&pPollTxRtrvTaskInfo->shutDownSemObj);
-}
-
-void EnetApp_postTxRetrievePollLink(ClockP_Object *clkObj, void *arg)
-{
-    if (arg != NULL)
-    {
-        SemaphoreP_Object *hPollSem = (SemaphoreP_Object *) arg;
-        SemaphoreP_post(hPollSem);
-    }
-}
-
-int32_t EnetApp_createTxRetrievePollTask()
-{
-    TaskP_Params params;
-    int32_t status;
-    ClockP_Params clkPrms;
-
-    EtherRingApp_TxRtrvPollTaskInfo *pPollTxRtrvTaskInfo = &pollTxRtrvTaskInfo;
-
-    if (NULL != pPollTxRtrvTaskInfo)
-    {
-        /*Initialize semaphore to call synchronize the poll function with a timer*/
-        status = SemaphoreP_constructBinary(&pPollTxRtrvTaskInfo->sem, 0U);
-        EnetAppUtils_assert(status == SystemP_SUCCESS);
-
-        /*Initialize semaphore to call synchronize the poll function with a timer*/
-        status = SemaphoreP_constructBinary(&pPollTxRtrvTaskInfo->shutDownSemObj, 0U);
-        EnetAppUtils_assert(status == SystemP_SUCCESS);
-
-        /* Initialize the poll function as a thread */
-        TaskP_Params_init(&params);
-        params.name           = "retrieve_tx_poll_task";
-        params.priority       = TX_RETRIEVE_TASK_PRIORITY;
-        params.stack          = pPollTxRtrvTaskInfo->gEnetAppTaskStackPolling;
-        params.stackSize      = sizeof(pPollTxRtrvTaskInfo->gEnetAppTaskStackPolling);
-        params.args           = (void*)&gEnetAppCfg;
-        params.taskMain       = &EnetApp_TxRetrievePoll;
-
-        status = TaskP_construct(&pPollTxRtrvTaskInfo->task, &params);
-        EnetAppUtils_assert(status == SystemP_SUCCESS);
-
-        ClockP_Params_init(&clkPrms);
-        clkPrms.start     = 0;
-        clkPrms.period    = 1;
-        clkPrms.args      = &pPollTxRtrvTaskInfo->sem; // make a proper semaphore structure for this.
-        clkPrms.callback  = &EnetApp_postTxRetrievePollLink;
-        clkPrms.timeout   = 1;
-
-        /* Creating timer and setting timer callback function*/
-        status = ClockP_construct(&pPollTxRtrvTaskInfo->pollLinkClkObj, &clkPrms);
-        if (status == SystemP_SUCCESS)
-        {
-            /* Set timer expiry time in OS ticks */
-            ClockP_setTimeout(&pPollTxRtrvTaskInfo->pollLinkClkObj, 1);
-            ClockP_start(&pPollTxRtrvTaskInfo->pollLinkClkObj);
-        }
-        else
-        {
-            EnetAppUtils_assert(status == SystemP_SUCCESS);
-        }
-
-        /* Filter not defined */
-        /* Inform the world that we are operational. */
-        EnetAppUtils_print("TX Retrieve task started successfully\r\n");
-
-        return 0;
-    }
-    else
-    {
-        return -1;
-    }
-}
-#endif

@@ -303,8 +303,6 @@ static CpswCptsIoctlHandlerRegistry_t CpswCptsIoctlHandlerRegistry[] =
     CPSW_CPTS_IOCTL_HANDLER_ENTRY_INIT(CPSW_CPTS_IOCTL_REGISTER_HANDLER),
 };
 
-CpswCpts_Handle ghCptsEtherRing;
-CSL_cptsRegs *gCptsRegsEtherRing;
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -325,12 +323,8 @@ int32_t CpswCpts_open(EnetMod_Handle hMod,
                       uint32_t cfgSize)
 {
     CpswCpts_Handle hCpts = (CpswCpts_Handle)hMod;
-    ghCptsEtherRing = hCpts;
-
     const CpswCpts_Cfg *cptsCfg = (const CpswCpts_Cfg *)cfg;
     CSL_cptsRegs *regs = (CSL_cptsRegs *)hMod->virtAddr;
-    gCptsRegsEtherRing = regs;
-
     CSL_CPTS_CONTROL control;
     uint32_t i;
     int32_t status = ENET_SOK;

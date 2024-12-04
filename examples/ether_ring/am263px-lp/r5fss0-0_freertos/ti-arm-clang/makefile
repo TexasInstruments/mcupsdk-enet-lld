@@ -45,16 +45,15 @@ endif
 
 FILES_common := \
 	gptp_init.c \
-	avtp_init.c \
-	default_flow_cfg.c \
+	est_init.c \
 	tsninit.c \
 	debug_log.c \
 	enetapp_cpsw.c \
 	tsnapp_cpsw_main.c \
-	default_flow_cpsw.c \
 	main.c \
 	est_configure.c \
 	qosapp_misc.c \
+	default_flow_cpsw.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -76,6 +75,8 @@ FILES_PATH_common = \
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include/c \
 	-I${MCU_PLUS_SDK_PATH}/source \
+	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include \
+	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am263px/r5f \

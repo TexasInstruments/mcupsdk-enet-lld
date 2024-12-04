@@ -74,33 +74,9 @@ static int EnetApp_startTask(EnetApp_ModuleCtx_t* modCtx, int moduleIdx);
 /*                     External Function Declarations                         */
 /* ========================================================================== */
 
-#ifdef NETCONF_ENABLED
-extern int EnetApp_addNetconfModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif //NETCONF_ENABLED
-
-#ifdef AVTP_ENABLED
-extern int EnetApp_avtpInit(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif //AVTP_ENABLED
-
-#ifdef LLDP_ENABLED
-extern int EnetApp_addLldpModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif //LLDP_ENABLED
-
-#ifdef GPTP_ENABLED
+extern int EnetApp_addTsnModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
 extern int EnetApp_addGptpModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif //GPTP_ENABLED
 
-#ifdef EST_APP_ENABLED
-extern int EnetApp_addEstAppModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif /* EST_APP_ENABLED */
-
-#ifdef CBS_APP_ENABLED
-extern int EnetApp_addCbsAppModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif /* EST_APP_ENABLED */
-
-#ifdef XMRPD_ENABLED
-extern int EnetApp_addMrpconfModCtx(EnetApp_ModuleCtx_t *modCtxTbl);
-#endif //XMRPD_ENABLED
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -292,54 +268,16 @@ int EnetApp_initTsnByCfg(AppTsnCfg_t *cfg)
     memcpy(&gModCtxTable[ENETAPP_UNICONF_TASK_IDX],
            &uniconfModCtx, sizeof(EnetApp_ModuleCtx_t));
 
-#ifdef GPTP_ENABLED
     if (res == 0)
     {
          res = EnetApp_addGptpModCtx(gModCtxTable);
     }
-#endif //GPTP_ENABLED
 
-#ifdef LLDP_ENABLED
     if (res == 0)
     {
-        res = EnetApp_addLldpModCtx(gModCtxTable);
+        res = EnetApp_addTsnModCtx(gModCtxTable);
     }
-#endif //LLDP_ENABLED
 
-#ifdef AVTP_ENABLED
-    if (res == 0)
-    {
-        res = EnetApp_avtpInit(gModCtxTable);
-    }
-#endif //AVTP_ENABLED
-
-#ifdef NETCONF_ENABLED
-    if (res == 0)
-    {
-        res = EnetApp_addNetconfModCtx(gModCtxTable);
-    }
-#endif //NETCONF_ENABLED
-
-#ifdef EST_APP_ENABLED
-    if (res == 0)
-    {
-        res = EnetApp_addEstAppModCtx(gModCtxTable);
-    }
-#endif //EST_APP_ENABLED
-
-#ifdef CBS_APP_ENABLED
-    if (res == 0)
-    {
-        res = EnetApp_addCbsAppModCtx(gModCtxTable);
-    }
-#endif //CBS_APP_ENABLED
-
-#ifdef XMRPD_ENABLED
-    if (res == 0)
-    {
-        res = EnetApp_addMrpconfModCtx(gModCtxTable);
-    }
-#endif //XMRPD_ENABLED
     return res;
 }
 

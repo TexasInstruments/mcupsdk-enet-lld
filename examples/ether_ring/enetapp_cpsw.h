@@ -34,14 +34,7 @@
 
 #include <ether_ring/inc/ether_ring.h>
 #include "dataflow.h"
-
-#define NUM_CLASSA_STREAMS 0 // 8000pkts per sec per stream
-#define NUM_CLASSD_STREAMS 1 // 1000pkts per sec per stream
-
-#define MAX_CLASSA_STREAMS 3
-#define MAX_CLASSD_STREAMS 3
-
-#define MAX_NODES_IN_LOOP 4
+#include "config.h"
 /*============================================================================*/
 /*                           Macros and Constants                             */
 /*============================================================================*/
@@ -89,11 +82,8 @@ typedef struct EnetApp_Cfg_s
     /* Queue of free TX packets */
     EnetDma_PktQ txFreePktInfoQ;
 
-    /* Start flow index */
-    uint32_t rxStartFlowIdx;
-
     /* Regular traffic RX flow index */
-    uint32_t rxFlowIdx;
+    uint32_t rxChNum;
 
     /* RX channel handle for regular traffic */
     EnetDma_RxChHandle hRxCh;
@@ -113,12 +103,6 @@ typedef struct EnetApp_Cfg_s
 
     TaskP_Object etherringTaskObj;
 
-    /* Semaphore posted from IPC Notify to start the listener */
-    SemaphoreP_Object startListnerSemObj;
-
-    /* Semaphore posted from IPC Notify to start the talker */
-    SemaphoreP_Object startTalkerSemObj;
-
     /* Semaphore posted from RX callback when Regular packets have arrived */
     SemaphoreP_Object rxSemObj;
 
@@ -136,50 +120,15 @@ typedef struct EnetApp_Cfg_s
 
     TaskP_Object streamTaskObj[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS];
 
-    uint64_t txSubmittedCount;
-
     uint64_t totalRxCnt;
 
     EtherRing_Handle hEtherRing;
-
-    int numClassAStreams;
-
-    int numClassDStreams;
-
-    bool isTxEnabled;
-
-    int payLoadLength;
-
-    int packetCount;
 
     bool isIntervlanEnabled;
 
     int nodeId;
 } EnetApp_Cfg;
 
-#if 0
-typedef struct EtherRingApp_TxRtrvPollTaskInfo_s
-{
-    TaskP_Object      task;
-    uint8_t gEnetAppTaskStackPolling[10U * 1024U] __attribute__ ((aligned(32)));
-    SemaphoreP_Object sem;
-
-    /*
-     * Handle to counting shutdown semaphore, which all subtasks created in the
-     * open function must post before the close operation can complete.
-     */
-    SemaphoreP_Object shutDownSemObj;
-    /** Boolean to indicate shutDownFlag status of translation layer.*/
-    volatile bool shutDownFlag;
-
-    /*
-     * Clock handle for triggering the packet Rx notify
-     */
-    ClockP_Object pollLinkClkObj;
-} EtherRingApp_TxRtrvPollTaskInfo;
-
-EtherRingApp_TxRtrvPollTaskInfo pollTxRtrvTaskInfo;
-#endif
 /* ========================================================================== */
 /*                          External Functions                                */
 /* ========================================================================== */

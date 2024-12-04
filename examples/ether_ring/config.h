@@ -1,0 +1,13 @@
+#define NUM_CLASSA_STREAMS 1 // 8000pkts per sec per stream
+#define NUM_CLASSD_STREAMS 3 // 1000pkts per sec per stream
+
+#define MAX_CLASSA_STREAMS 3
+#define MAX_CLASSD_STREAMS 3
+
+#define NUM_CLASSA_STREAM_TASKS 1
+#define NUM_CLASSD_STREAM_TASKS 1
+
+#define CLASSA_PAYLOAD_LENGTH 1000U
+#define CLASSD_PAYLOAD_LENGTH 1450U
+
+#define MAX_NODES_IN_LOOP 4

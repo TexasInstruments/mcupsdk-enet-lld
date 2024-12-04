@@ -77,9 +77,9 @@ const enet_pkt_pool_config = {
         {
             name: "LargePoolPktSize",
             displayName: "Large Pool Packet Size",
-            default: 1544,
+            default: 1536,
             isInteger: true,
-            range: [128, 1544]
+            range: [128, 1536]
 
         },
         {

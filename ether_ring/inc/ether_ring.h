@@ -67,17 +67,16 @@ extern "C" {
 /*! \brief Maximum Instances of EtherRing supported */
 #define ETHERRING_MAX_ETHERRING_INSTANCES                                     1U
 
-/*! \brief Value of Maximum Rx TimeStamps stored in the EtherRing stats */
-#define ETHERRING_MAX_RX_TIMESTAMPS_STORED                                    1020U
+/* \brief Macro to Enable and Disable Profiling for Ether-Ring */
+#define ETHERRING_PROFILING
 
 /* \brief Size of Lookup table for Duplicate packet rejection */
 #define ETHERRING_LOOKUP_TABLE_SIZE                                 (256U*256U)
 
-/* \brief Count of Maximum ClassA streams Supported */
-#define ETHERRING_MAX_CLASSA_STREAMS                                3U
-
-/* \brief Count of Maximum ClassD streams Supported */
-#define ETHERRING_MAX_CLASSD_STREAMS                                3U
+#ifdef ETHERRING_PROFILING
+/*! \brief Value of Maximum Rx TimeStamps stored in the EtherRing stats */
+#define ETHERRING_MAX_RX_TIMESTAMPS_STORED                                    520U
+#endif
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -115,8 +114,6 @@ typedef struct
     /*! Count of submitted packets via EtherRing */
     uint64_t etherRingSubmittedPacketCount;
 
-    /*! Received packet count in RX per stream */
-    uint64_t etherRingClassRxCount[ETHERRING_MAX_CLASSA_STREAMS + ETHERRING_MAX_CLASSD_STREAMS];
 }EtherRingStats;
 
 /**
@@ -154,21 +151,26 @@ typedef struct EtherRing_Obj_s
 }
 EtherRing_Obj, *EtherRing_Handle;
 
+#ifdef ETHERRING_PROFILING
 /**
  * \brief
- *  Etherring RxTs, Current TimeStamp stats for class A and D streams
+ *  Etherring RxTs, Current TimeStamp stats
  *
  * \details
  *  This structure stores the Rx timestamp and current timestamp stats.
  */
 typedef struct
 {
-    /*! Rx Timestamp Array for Class A and D streams */
+    /*! Rx Timestamp Array */
     uint64_t etherRingTimeStampsRx[ETHERRING_MAX_RX_TIMESTAMPS_STORED];
 
-    /*! Array Index for ClassA stream*/
-    int16_t etherRingRxClassATsIndex;
+    /*! Current Timestamp Array */
+    uint64_t etherRingCurrentTimeStamps[ETHERRING_MAX_RX_TIMESTAMPS_STORED];
+
+    /*! Array Index for RX Timestamp */
+    int16_t etherRingRxTsIndex;
 }EtherRingRxTs_obj;
+#endif
 
 typedef EnetQ EtherRing_pktQ;
 /* ========================================================================== */
@@ -316,15 +318,6 @@ void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo);
  *  \return \ref void
  */
 void EtherRing_periodicTick(void *hEtherRing);
-
-/*!
- * \brief Creates a polling task to clear the lookup table.
- *
- * \param void
- *
- *  \return \ref Enet_ErrorCodes
- */
-void EtherRing_clearLookupPollTask();
 
 #ifdef __cplusplus
 }

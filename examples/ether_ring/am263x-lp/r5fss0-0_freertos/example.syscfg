@@ -73,6 +73,7 @@ i2c1.I2C_child.$name     = "drivers_i2c_v1_i2c_v1_template1";
 debug_log.enableUartLog            = true;
 debug_log.enableCssLog             = false;
 debug_log.uartLog.$name            = "CONFIG_UART0";
+debug_log.uartLog.baudRate         = 19200;
 debug_log.uartLog.UART.$assign     = "UART0";
 debug_log.uartLog.UART.RXD.$assign = "UART0_RXD";
 debug_log.uartLog.UART.TXD.$assign = "UART0_TXD";
@@ -267,6 +268,17 @@ enet_cpsw1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
 enet_cpsw1.rxDmaChannel[1].$name        = "ENET_DMA_RX_CH_PTP";
 enet_cpsw1.rxDmaChannel[1].macAddrCount = 0;
 enet_cpsw1.rxDmaChannel[1].PacketsCount = 4;
+
+const ethphy_cpsw_icssg              = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
+const ethphy_cpsw_icssg1             = ethphy_cpsw_icssg.addInstance({}, false);
+ethphy_cpsw_icssg1.$name             = "CONFIG_ENET_ETHPHY0";
+ethphy_cpsw_icssg1.enableCustomBoard = scripting.forceWrite(false);
+enet_cpsw1.ethphy1                   = ethphy_cpsw_icssg1;
+
+const ethphy_cpsw_icssg2             = ethphy_cpsw_icssg.addInstance({}, false);
+ethphy_cpsw_icssg2.$name             = "CONFIG_ENET_ETHPHY1";
+ethphy_cpsw_icssg2.enableCustomBoard = scripting.forceWrite(false);
+enet_cpsw1.ethphy2                   = ethphy_cpsw_icssg2;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

@@ -5,16 +5,15 @@ let device = "am263px";
 const files = {
     common: [
         "gptp_init.c",
-        "avtp_init.c",
-        "default_flow_cfg.c",
+        "est_init.c",
         "tsninit.c",
         "debug_log.c",
         "enetapp_cpsw.c",
         "tsnapp_cpsw_main.c",
-        "default_flow_cpsw.c",
         "main.c",
         "est_configure.c",
         "qosapp_misc.c",
+        "default_flow_cpsw.c",
     ],
 };
 
@@ -42,6 +41,8 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
+	"${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am263px/r5f",
@@ -153,7 +154,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_TSN_AVTP";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_EST";
 
 const templates_freertos_r5f =
 [

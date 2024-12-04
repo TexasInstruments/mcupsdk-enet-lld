@@ -31,6 +31,8 @@
         compilerBuildOptions="
             -I${CG_TOOL_ROOT}/include/c
             -I${MCU_PLUS_SDK_PATH}/source
+            -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include
+            -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am263px/r5f
@@ -150,9 +152,7 @@
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
         <file path="../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
-        <file path="../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../est_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
@@ -162,17 +162,17 @@
         </file>
         <file path="../../../tsnapp_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../est/est_configure.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../qosapp_misc.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
+        <file path="../../../default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am263px/EXAMPLES_ENET_CPSW_TSN_AVTP.html"
+        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am263px/EXAMPLES_ENET_CPSW_EST.html"
                 openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">
         </file>
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
