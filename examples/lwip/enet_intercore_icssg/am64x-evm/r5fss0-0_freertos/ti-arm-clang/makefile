@@ -260,7 +260,7 @@ $(COREOUTNAME):  $(SYSTEM_COMMAND)
 	@echo  .
 	@echo  Relinking Linking: am64x:r5fss0-0:freertos:ti-arm-clang $@ with OptiShare SSO..
 	$(LNK) $(LNKOPTFLAGS) $(LFLAGS) $(LIBS_PATH) -Wl,-m=$(basename $@).map -o $@ $(addprefix $(OBJDIR), $(OBJS)) $(LIBS) $(LNK_FILES) -Wl,--xml_link_info=$(basename $@).lnkxml -Wl,--import_sso=$(SSO_PATH)
-	@echo  Relinking with optishare: am263px:r5fss0-0:freertos:ti-arm-clang $@ Done !!!
+	@echo  Relinking with optishare: am64x:r5fss0-0:freertos:ti-arm-clang $@ Done !!!
 	@echo  .
 
 clean:
@@ -336,6 +336,7 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 BOOTIMAGE_CERT_KEY=$(APP_SIGNING_KEY)
 
 BOOTIMAGE_CORE_ID_a53ss0-0 = 0
+BOOTIMAGE_CORE_ID_a53ss0-1 = 1
 BOOTIMAGE_CORE_ID_r5fss0-0 = 4
 BOOTIMAGE_CORE_ID_r5fss0-1 = 5
 BOOTIMAGE_CORE_ID_r5fss1-0 = 6
