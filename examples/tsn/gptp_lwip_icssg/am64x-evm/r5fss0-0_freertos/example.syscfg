@@ -110,7 +110,7 @@ enet_icss1.addMacAddrCnt                = 1;
 enet_icss1.PktInfoOnlyEnable            = true;
 enet_icss1.PktInfoOnlyCount             = 8;
 enet_icss1.LargePoolPktCount            = 14;
-enet_icss1.GigabitSupportEnable         = false;
+enet_icss1.GigabitSupportEnable         = true;
 enet_icss1.txDmaChannel.create(2);
 enet_icss1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_icss1.txDmaChannel[0].PacketsCount = 4;

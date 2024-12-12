@@ -162,7 +162,7 @@ LIBS_common = \
 	-llibsysbm.a \
 	-ltsn_icssg_combase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_unibase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ltsn_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_icssg_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwipif-icssg-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -196,7 +196,7 @@ LIBS_NAME = \
 	libsysbm.a \
 	tsn_icssg_combase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_unibase-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	tsn_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_icssg_gptp-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwipif-icssg-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
