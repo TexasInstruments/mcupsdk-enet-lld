@@ -233,6 +233,7 @@ section7.output_section[0].input_section[1].additional_data = "#if (ENET_SYSCFG_
 enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
 enet_cpsw1.mdioMode              = "MDIO_MODE_MANUAL";
 enet_cpsw1.DisableMacPort2       = true;
+enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_MAC";
 enet_cpsw1.MDIO.$assign          = "MDIO0";
 enet_cpsw1.MDIO.MDC.$assign      = "PRG0_PRU1_GPO19";
 enet_cpsw1.MDIO.MDIO.$assign     = "PRG0_PRU1_GPO18";
