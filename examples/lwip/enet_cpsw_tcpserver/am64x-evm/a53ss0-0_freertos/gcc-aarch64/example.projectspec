@@ -75,7 +75,6 @@
             -L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
             -L$(CGT_GCC_AARCH64_PATH)/lib
-            -i${PROJECT_BUILD_DIR}/syscfg
             -Wl,-Map=enet_cpsw_tcpserver.${ConfigName}.map
             -Wl,-static
             -Wl,--gc-sections

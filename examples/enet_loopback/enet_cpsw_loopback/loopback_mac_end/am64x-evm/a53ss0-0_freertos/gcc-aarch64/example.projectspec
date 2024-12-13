@@ -69,7 +69,6 @@
             -L${MCU_PLUS_SDK_PATH}/source/board/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -L$(CGT_GCC_AARCH64_PATH)/lib
-            -i${PROJECT_BUILD_DIR}/syscfg
             -Wl,-Map=enet_cpsw_loopback_mac_end.${ConfigName}.map
             -Wl,-static
             -Wl,--gc-sections

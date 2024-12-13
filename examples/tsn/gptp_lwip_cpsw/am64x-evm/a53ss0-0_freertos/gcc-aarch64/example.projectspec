@@ -90,7 +90,6 @@
             -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
             -L${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
             -L$(CGT_GCC_AARCH64_PATH)/lib
-            -i${PROJECT_BUILD_DIR}/syscfg
             -Wl,-Map=gptp_lwip_cpsw.${ConfigName}.map
             -Wl,-static
             -Wl,--gc-sections
