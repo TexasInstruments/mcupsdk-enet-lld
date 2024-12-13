@@ -176,7 +176,6 @@ function getComponentBuildProperty(buildOption) {
             build_property.defines = defines_a53;
             build_property.cflags = cflags_a53;
             build_property.lflags = lflags_a53;
-            build_property.projectspecLnkPath = linker_includePath_freertos;
             build_property.loptflags = loptflags_a53;
         }
     }
