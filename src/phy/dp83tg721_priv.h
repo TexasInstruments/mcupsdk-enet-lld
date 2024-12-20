@@ -45,7 +45,7 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include "enetphy_priv.h"
+#include "phy_common_priv.h"
 
 #ifdef __cplusplus
 extern "C" {

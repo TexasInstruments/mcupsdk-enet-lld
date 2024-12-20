@@ -111,6 +111,7 @@
 #define LIST_FOREACH(list, node) \
     for(node=(list)->next; node!=(list); node=node->next)
 
+#define DP83TG721_MAGIC_NUMBER (0xABCDEF)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -184,8 +185,9 @@ typedef struct PhyTxTs_s {
 typedef struct Dp83tg721Priv_s
 {
     uint64_t tick;
-    EnetPhy_Handle hPhy;
+    EthPhyDrv_Handle hPhy;
     bool isMaster;
+    uint32_t magic;
 
     TsReadyQ rxTsReadyQ;
     TsReadyQ txTsReadyQ;
@@ -211,75 +213,81 @@ typedef struct Timespec64_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static bool Dp83tg721_isPhyDevSupported(EnetPhy_Handle hPhy,
-                    const EnetPhy_Version *version);
-static bool Dp83tg721_isMacModeSupported(EnetPhy_Handle hPhy, EnetPhy_Mii mii);
-static int32_t Dp83tg721_config(EnetPhy_Handle hPhy,
-                    const EnetPhy_Cfg *cfg, EnetPhy_Mii mii);
-static void Dp83tg721_reset(EnetPhy_Handle hPhy);
-static bool Dp83tg721_isResetComplete(EnetPhy_Handle hPhy);
-static int32_t Dp83tg721_readExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t *val);
-static int32_t Dp83tg721_writeExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t val);
-static void Dp83tg721_printRegs(EnetPhy_Handle hPhy);
-static void Dp83tg721_readStraps(EnetPhy_Handle hPhy);
-static void Dp83tg721_chipInit(EnetPhy_Handle hPhy, Dp83tg721Priv *priv);
-static void Dp83tg721_setBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t mask);
-static void Dp83tg721_clearBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t mask);
-static void Dp83tg721_configIntr(EnetPhy_Handle hPhy, bool intrEn);
-static int32_t Dp83tg721_adjFreq(EnetPhy_Handle hPhy, int64_t ppb);
-static int32_t Dp83tg721_adjPhase(EnetPhy_Handle hPhy, int64_t offset);
-static int32_t Dp83tg721_getTxTs(EnetPhy_Handle hPhy, uint32_t domain,
+static bool Dp83tg721_isPhyDevSupported(EthPhyDrv_Handle hPhy,
+                    const void* vers);
+
+static bool Dp83tg721_isMacModeSupported(EthPhyDrv_Handle hPhy, Phy_Mii mii);
+
+static int32_t Dp83tg721_config(uint8_t *phphy, const void *pExtCfg, const uint32_t extCfgSize, Phy_Mii mii, bool loopbackEn);
+static void Dp83tg721_reset(EthPhyDrv_Handle hPhy);
+static bool Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_readExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t *val);
+static int32_t Dp83tg721_writeExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t val);
+void Dp83tg721_bind(EthPhyDrv_Handle* hPhy,uint8_t phyAddr,Phy_RegAccessCb_t* pRegAccessCb);
+static void Dp83tg721_printRegs(EthPhyDrv_Handle hPhy);
+static void Dp83tg721_readStraps(EthPhyDrv_Handle hPhy);
+static void Dp83tg721_chipInit(EthPhyDrv_Handle hPhy, Dp83tg721Priv *priv);
+static void Dp83tg721_setBitsExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t mask);
+static void Dp83tg721_clearBitsExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t mask);
+static void Dp83tg721_configIntr(EthPhyDrv_Handle hPhy, bool intrEn);
+static int32_t Dp83tg721_adjFreq(EthPhyDrv_Handle hPhy, int64_t ppb);
+static int32_t Dp83tg721_adjPhase(EthPhyDrv_Handle hPhy, int64_t offset);
+static int32_t Dp83tg721_getTxTs(EthPhyDrv_Handle hPhy, uint32_t domain,
                     uint32_t msgType, uint32_t seqId, uint64_t *ts64);
-static int32_t Dp83tg721_getRxTs(EnetPhy_Handle hPhy, uint32_t domain,
+static int32_t Dp83tg721_getRxTs(EthPhyDrv_Handle hPhy, uint32_t domain,
                     uint32_t msgType, uint32_t seqId, uint64_t *ts64);
-static int32_t Dp83tg721_setTime(EnetPhy_Handle hPhy, uint64_t ts64);
-static int32_t Dp83tg721_getTime(EnetPhy_Handle hPhy, uint64_t *ts64);
-static int32_t Dp83tg721_waitPtpTxTime(EnetPhy_Handle hPhy, uint32_t domain,
+static int32_t Dp83tg721_setTime(EthPhyDrv_Handle hPhy, uint64_t ts64);
+static int32_t Dp83tg721_getTime(EthPhyDrv_Handle hPhy, uint64_t *ts64);
+static int32_t Dp83tg721_waitPtpTxTime(EthPhyDrv_Handle hPhy, uint32_t domain,
                     uint32_t msgType, uint32_t seqId);
-static int32_t Dp83tg721_procStatusFrame(EnetPhy_Handle hPhy,
+static int32_t Dp83tg721_procStatusFrame(EthPhyDrv_Handle hPhy,
                     uint8_t *frame, uint32_t size, uint32_t *types);
-static int32_t Dp83tg721_getStatusFrameEthHeader(EnetPhy_Handle hPhy,
+static int32_t Dp83tg721_getStatusFrameEthHeader(EthPhyDrv_Handle hPhy,
                     uint8_t *ethhdr, uint32_t size);
-static int32_t Dp83tg721_enablePtp(EnetPhy_Handle hPhy, bool on,
+static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
                     uint32_t srcMacStatusFrameType);
-static int32_t Dp83tg721_tickDriver(EnetPhy_Handle hPhy);
-static int32_t Dp83tg721_enableEventCapture(EnetPhy_Handle hPhy, uint32_t eventIdx,
+static int32_t Dp83tg721_tickDriver(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_enableEventCapture(EthPhyDrv_Handle hPhy, uint32_t eventIdx,
                     bool falling, bool on);
-static int32_t Dp83tg721_enableTriggerOutput(EnetPhy_Handle hPhy, uint32_t triggerIdx,
+static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t triggerIdx,
                     uint64_t start, uint64_t period, bool repeat);
 
-static int32_t Dp83tg721_getEventTs(EnetPhy_Handle hPhy, uint32_t *eventIdx,
+static int32_t Dp83tg721_getEventTs(EthPhyDrv_Handle hPhy, uint32_t *eventIdx,
                     uint32_t *seqId, uint64_t *ts64);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
 
-EnetPhy_Drv gEnetPhyDrvDp83tg721 =
+Phy_DrvObj_t gEnetPhyDrvDp83tg721 =
 {
-    .name                = "Dp83tg721",
-    .isPhyDevSupported   = Dp83tg721_isPhyDevSupported,
-    .isMacModeSupported  = Dp83tg721_isMacModeSupported,
-    .config              = Dp83tg721_config,
-    .reset               = Dp83tg721_reset,
-    .isResetComplete     = Dp83tg721_isResetComplete,
-    .readExtReg          = Dp83tg721_readExtReg,
-    .writeExtReg         = Dp83tg721_writeExtReg,
-    .printRegs           = Dp83tg721_printRegs,
-    .adjPtpFreq              = Dp83tg721_adjFreq,
-    .adjPtpPhase             = Dp83tg721_adjPhase,
-    .getPtpTime              = Dp83tg721_getTime,
-    .setPtpTime              = Dp83tg721_setTime,
-    .getPtpTxTime            = Dp83tg721_getTxTs,
-    .getPtpRxTime            = Dp83tg721_getRxTs,
-    .waitPtpTxTime           = Dp83tg721_waitPtpTxTime,
-    .procStatusFrame         = Dp83tg721_procStatusFrame,
-    .getStatusFrameEthHeader = Dp83tg721_getStatusFrameEthHeader,
-    .enablePtp               = Dp83tg721_enablePtp,
-    .tickDriver              = Dp83tg721_tickDriver,
-    .enableEventCapture      = Dp83tg721_enableEventCapture,
-    .enableTriggerOutput     = Dp83tg721_enableTriggerOutput,
-    .getEventTs              = Dp83tg721_getEventTs,
+    .fxn =
+    {
+        .name               = "Dp83tg721",
+        .bind               = Dp83tg721_bind,
+        .isPhyDevSupported  = Dp83tg721_isPhyDevSupported,
+        .isMacModeSupported = Dp83tg721_isMacModeSupported,
+        .config             = Dp83tg721_config,
+        .reset              = Dp83tg721_reset,
+        .isResetComplete    = Dp83tg721_isResetComplete,
+        .readExtReg         = GenericPhy_readExtReg,
+        .writeExtReg        = GenericPhy_writeExtReg,
+        .printRegs          = Dp83tg721_printRegs,
+        .adjPtpFreq              = Dp83tg721_adjFreq,
+        .adjPtpPhase             = Dp83tg721_adjPhase,
+        .getPtpTime              = Dp83tg721_getTime,
+        .setPtpTime              = Dp83tg721_setTime,
+        .getPtpTxTime            = Dp83tg721_getTxTs,
+        .getPtpRxTime            = Dp83tg721_getRxTs,
+        .waitPtpTxTime           = Dp83tg721_waitPtpTxTime,
+        .procStatusFrame         = Dp83tg721_procStatusFrame,
+        .getStatusFrameEthHeader = Dp83tg721_getStatusFrameEthHeader,
+        .enablePtp               = Dp83tg721_enablePtp,
+        .tickDriver              = Dp83tg721_tickDriver,
+        .enableEventCapture      = Dp83tg721_enableEventCapture,
+        .enableTriggerOutput     = Dp83tg721_enableTriggerOutput,
+        .getEventTs              = Dp83tg721_getEventTs,
+    }
 };
 
 /* PHY Device Attributes */
@@ -295,9 +303,12 @@ static uint8_t gGpioTable[GPIO_NUM_PINS] =
     [START_EVENT_IDX+1] = LED_1
 };
 
+static Dp83tg721Priv* gPriv = &gDp83tg721_Table[0];
+
 static const RegVal gMasterRegsInit[] =
 {
     { 0x405, 0x6C00 },
+    { 0x430, 0x0060 },
     { 0x8ad, 0x3c51 },
     { 0x894, 0x5df7 },
     { 0x8a0, 0x9e7  },
@@ -329,6 +340,7 @@ static const RegVal gMasterRegsInit[] =
 static const RegVal gSlaveRegsInit[] =
 {
     { 0x405, 0x6C00 },
+    { 0x430, 0x0060 },
     { 0x8ad, 0x3c51 },
     { 0x894, 0x5df7 },
     { 0x8a0, 0x9e7  },
@@ -367,14 +379,14 @@ void Dp83tg721_initCfg(Dp83tg721_Cfg *cfg)
     /* No extended config parameters at the moment */
 }
 
-static void ListInit(ListNode *list)
+static void Dp83tg721_ListInit(ListNode *list)
 {
     list->prev=list;
     list->next=list;
 }
 
 /* Push to the tail */
-static void ListPush(ListNode *list, ListNode *node)
+static void Dp83tg721_ListPush(ListNode *list, ListNode *node)
 {
     list->prev->next=node;
     node->prev=list->prev;
@@ -382,7 +394,7 @@ static void ListPush(ListNode *list, ListNode *node)
     list->prev=node;
 }
 
-static void ListUnlink(ListNode *node)
+static void Dp83tg721_ListUnlink(ListNode *node)
 {
     node->prev->next=node->next;
     node->next->prev=node->prev;
@@ -390,24 +402,24 @@ static void ListUnlink(ListNode *node)
     node->prev=NULL;
 }
 
-static bool ListEmpty(ListNode *list)
+static bool Dp83tg721_ListEmpty(ListNode *list)
 {
     return (list->next==list);
 }
 
 /* Pop from the head */
-static ListNode* ListPop(ListNode *list)
+static ListNode* Dp83tg721_ListPop(ListNode *list)
 {
     ListNode *node = NULL;
-    if (ListEmpty(list) == false)
+    if (Dp83tg721_ListEmpty(list) == false)
     {
         node = list->next;
-        ListUnlink(node);
+        Dp83tg721_ListUnlink(node);
     }
     return node;
 }
 
-static void InitPriv(Dp83tg721Priv *priv, EnetPhy_Handle hPhy)
+static void Dp83tg721_InitPriv(Dp83tg721Priv *priv, EthPhyDrv_Handle hPhy)
 {
     int32_t i;
     /* default of the status frame ethernet header */
@@ -419,13 +431,12 @@ static void InitPriv(Dp83tg721Priv *priv, EnetPhy_Handle hPhy)
 
     memset(priv, 0, sizeof(Dp83tg721Priv));
     priv->isMaster = false;
-    priv->hPhy = hPhy;
-    hPhy->priv = priv;
-    ListInit(&priv->txTsWaitList);
-    ListInit(&priv->txTsPoolList);
+    memcpy(priv->hPhy, hPhy, sizeof(EthPhyDrv_Handle));
+    Dp83tg721_ListInit(&priv->txTsWaitList);
+    Dp83tg721_ListInit(&priv->txTsPoolList);
     for (i = 0; i < MAX_TXTS_POOL; i++)
     {
-        ListPush(&priv->txTsPoolList, &priv->txTsPoolData[i].node);
+        Dp83tg721_ListPush(&priv->txTsPoolList, &priv->txTsPoolData[i].node);
     }
     priv->txTsReadyQ.name = "TXQ";
     priv->txTsReadyQ.size = MAX_TS_INFO_POOL;
@@ -436,25 +447,11 @@ static void InitPriv(Dp83tg721Priv *priv, EnetPhy_Handle hPhy)
     memcpy(priv->stsFrameEthHdr, ethHdr, sizeof(ethHdr));
 }
 
-static Dp83tg721Priv *GetFreePriv(void)
+static bool Dp83tg721_isPhyDevSupported(EthPhyDrv_Handle hPhy,
+                    const void* vers)
 {
-    int32_t i;
-    Dp83tg721Priv *priv = NULL;
-
-    for (i = 0; i < MAX_DP83TG721_PHY; i++)
-    {
-        if (gDp83tg721_Table[i].hPhy == NULL)
-        {
-            priv = &gDp83tg721_Table[i];
-            break;
-        }
-    }
-    return priv;
-}
-
-static bool Dp83tg721_isPhyDevSupported(EnetPhy_Handle hPhy,
-                    const EnetPhy_Version *version)
-{
+    (void)hPhy;
+    EnetPhy_Version *version = (EnetPhy_Version*)vers;
     bool supported = false;
 
     if ((version->oui == DP83TG721_OUI) &&
@@ -466,8 +463,9 @@ static bool Dp83tg721_isPhyDevSupported(EnetPhy_Handle hPhy,
     return supported;
 }
 
-static bool Dp83tg721_isMacModeSupported(EnetPhy_Handle hPhy, EnetPhy_Mii mii)
+static bool Dp83tg721_isMacModeSupported(EthPhyDrv_Handle hPhy, Phy_Mii mii)
 {
+    (void)hPhy;
     bool supported = false;
 
     switch (mii)
@@ -486,15 +484,24 @@ static bool Dp83tg721_isMacModeSupported(EnetPhy_Handle hPhy, EnetPhy_Mii mii)
     return supported;
 }
 
-static void Dp83tg721_setLoopbackCfg(EnetPhy_Handle hPhy, bool enable)
+void Dp83tg721_bind(EthPhyDrv_Handle* hPhy,
+                    uint8_t phyAddr,
+                    Phy_RegAccessCb_t* pRegAccessCb)
+{
+    Phy_Obj_t* pObj = (Phy_Obj_t*) hPhy;
+    pObj->phyAddr = phyAddr;
+    pObj->regAccessApi = *pRegAccessCb;
+}
+
+static void Dp83tg721_setLoopbackCfg(EthPhyDrv_Handle hPhy, bool enable)
 {
     bool complete;
     int32_t status;
     uint16_t val;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
 
-    ENETTRACE_DBG("PHY %u: %s loopback\n", hPhy->addr, enable ? "enable" : "disable");
 
-    status = EnetPhy_readReg(hPhy, PHY_BMCR, &val);
+    status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_BMCR, &val);
     if (status == ENETPHY_SOK)
     {
         if (enable)
@@ -509,7 +516,7 @@ static void Dp83tg721_setLoopbackCfg(EnetPhy_Handle hPhy, bool enable)
         }
         /* Specific predefined loopback configuration values are required for
          * normal mode or loopback mode */
-        EnetPhy_writeReg(hPhy, PHY_BMCR, val);
+        status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, PHY_BMCR, val);
 
         /* Software restart is required after changing LOOPCR register */
         Dp83tg721_reset(hPhy);
@@ -520,45 +527,37 @@ static void Dp83tg721_setLoopbackCfg(EnetPhy_Handle hPhy, bool enable)
         } while (complete == false);
     }
 }
-
-static int32_t Dp83tg721_config(EnetPhy_Handle hPhy,
-                const EnetPhy_Cfg *cfg, EnetPhy_Mii mii)
+static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, const uint32_t extCfgSize, Phy_Mii mii, bool loopbackEn)
 {
     uint16_t rxIntDelay = 1U;    //Enable RX Clock Shift
     uint16_t txIntDelay = 1U;    //Enable TX Clock Shift
     uint16_t rgmiiDelay = 0U;
     uint16_t value = 0;
     bool enableAutoNeg = true;
-    EnetPhy_State *state = &hPhy->state;
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
+	uint32_t phyAddr = PhyPriv_getPhyAddr(hPhy);
+	(void)phyAddr;
 
-    if (priv == NULL)
+    if (priv->magic != DP83TG721_MAGIC_NUMBER)
     {
-        priv = GetFreePriv();
-        if (priv != NULL)
-        {
-            InitPriv(priv, hPhy);
-        }
-        else
-        {
-            ENETTRACE_ERR("PHY %u: GetFreePriv error\n", hPhy->addr);
-            status = CSL_EALLOC-6;
-        }
+        Dp83tg721_InitPriv(priv, hPhy);
+        priv->magic = DP83TG721_MAGIC_NUMBER;
     }
+	else
+	{
+		ENETTRACE_ERR("PHY %u: Re Initializing the driver, not supported\n");
+	}
 
     if (status == ENETPHY_SOK)
     {
-        /* Set Parameters for Automotive PHYs - Fixed Speed */
-        state->phyLinkCaps = ENETPHY_LINK_CAP_FD1000; // 1000Mbit/s - Full Duplex
-
         Dp83tg721_readStraps(hPhy);
 
         Dp83tg721_chipInit(hPhy, priv);
 
         if (mii == ENETPHY_MAC_MII_SGMII)
         {
-            ENETTRACE_DBG("PHY %u: Enabling SGMII Mode\n", hPhy->addr);
+            ENETTRACE_DBG("PHY %u: Enabling SGMII Mode\n", phyAddr);
 
             status = Dp83tg721_readExtReg(hPhy, SGMII_CTRL_1, &value);
 
@@ -587,9 +586,6 @@ static int32_t Dp83tg721_config(EnetPhy_Handle hPhy,
         }
         else
         {
-            ENETTRACE_DBG("PHY %u: Disabling SRGMII Mode, disable Autoneg\n",
-                          hPhy->addr);
-
             status = Dp83tg721_readExtReg(hPhy, SGMII_CTRL_1, &value);
             value &= ~(SGMII_EN | SGMII_AUTO_NEG_EN);
             if (status == ENETPHY_SOK)
@@ -600,46 +596,44 @@ static int32_t Dp83tg721_config(EnetPhy_Handle hPhy,
     if (status == ENETPHY_SOK)
     {
         Dp83tg721_configIntr(hPhy, false);
-        Dp83tg721_setLoopbackCfg(hPhy, cfg->loopbackEn);
+        Dp83tg721_setLoopbackCfg(hPhy, loopbackEn);
     }
 
     return status;
 }
 
-static void Dp83tg721_reset(EnetPhy_Handle hPhy)
+static void Dp83tg721_reset(EthPhyDrv_Handle hPhy)
 {
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
     /* Global software reset */
-    ENETTRACE_DBG("PHY %u: global soft-reset\n", hPhy->addr);
-    EnetPhy_rmwReg(hPhy, MII_REG_1F, SW_RESET, SW_RESET);
+    pRegAccessApi->EnetPhy_rmwReg(pRegAccessApi->pArgs, MII_REG_1F, SW_RESET, SW_RESET);
 }
 
-static void Dp83tg721_resetHw(EnetPhy_Handle hPhy)
+static void Dp83tg721_resetHw(EthPhyDrv_Handle hPhy)
 {
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
     /* Global hardware reset */
-    ENETTRACE_DBG("PHY %u: global hard-reset\n", hPhy->addr);
-    EnetPhy_rmwReg(hPhy, MII_REG_1F, HW_RESET, HW_RESET);
+    pRegAccessApi->EnetPhy_rmwReg(pRegAccessApi->pArgs, MII_REG_1F, HW_RESET, HW_RESET);
 }
 
-static bool Dp83tg721_isResetComplete(EnetPhy_Handle hPhy)
+static bool Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy)
 {
     int32_t status;
     uint16_t val;
     bool complete = false;
 
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
     /* Reset is complete when RESET bits have self-cleared */
-    status = EnetPhy_readReg(hPhy, MII_REG_1F, &val);
+    status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, MII_REG_1F, &val);
     if (status == ENETPHY_SOK)
     {
         complete = ((val & (SW_RESET | HW_RESET)) == 0U);
     }
 
-    ENETTRACE_DBG("PHY %u: global reset is %s complete\n",
-                  hPhy->addr, complete ? "" : "not");
-
     return complete;
 }
 
-static int32_t ExtRegToDevad(uint16_t reg, uint16_t *accessReg, uint16_t *devad)
+static int32_t Dp83tg721_ExtRegToDevad(uint16_t reg, uint16_t *accessReg, uint16_t *devad)
 {
     int32_t status = ENETPHY_SOK;
     /* Registers range:
@@ -676,69 +670,75 @@ static int32_t ExtRegToDevad(uint16_t reg, uint16_t *accessReg, uint16_t *devad)
     return status;
 }
 
-static uint32_t Dp83tg721_accessExtReg(EnetPhy_Handle hPhy, uint32_t reg)
+static uint32_t Dp83tg721_accessExtReg(EthPhyDrv_Handle hPhy, uint32_t reg)
 {
     int32_t status;
     uint16_t devad;
     uint16_t accessReg;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
 
-    status = ExtRegToDevad((uint16_t)reg, &accessReg, &devad);
+    status = Dp83tg721_ExtRegToDevad((uint16_t)reg, &accessReg, &devad);
     if (status == ENETPHY_SOK)
     {
-        status = EnetPhy_writeReg(hPhy, PHY_MMD_CR, devad | MMD_CR_ADDR);
+        status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs,  PHY_MMD_CR, devad | MMD_CR_ADDR);
     }
     if (status == ENETPHY_SOK)
     {
-        status = EnetPhy_writeReg(hPhy, PHY_MMD_DR, accessReg);
+        status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, PHY_MMD_DR, accessReg);
     }
     if (status == ENETPHY_SOK)
     {
-        status = EnetPhy_writeReg(hPhy, PHY_MMD_CR, devad | MMD_CR_DATA_NOPOSTINC);
+        status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, PHY_MMD_CR, devad | MMD_CR_DATA_NOPOSTINC);
     }
     return status;
 }
 
-static int32_t Dp83tg721_readExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t *val)
+static int32_t Dp83tg721_readExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t *val)
 {
     int32_t status;
-
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(hPhy);
+    (void)phyAddr;
     status = Dp83tg721_accessExtReg(hPhy, reg);
     if (status == ENETPHY_SOK)
     {
-        status = EnetPhy_readReg(hPhy, PHY_MMD_DR, val);
+        status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_MMD_DR, val);
     }
 
     ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
                          "PHY %u: read reg %u val 0x%04x\n",
-                         hPhy->addr, reg, *val);
+                         phyAddr, reg, *val);
 
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: failed to read reg %u\n",
-                     hPhy->addr, reg);
+                     phyAddr, reg);
 
     return status;
 }
 
-static int32_t Dp83tg721_writeExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t val)
+static int32_t Dp83tg721_writeExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t val)
 {
     int32_t status;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(hPhy);
+    (void)phyAddr;
 
     ENETTRACE_VERBOSE("PHY %u: write %u val 0x%04x\n",
-                      hPhy->addr, reg, val);
+                      phyAddr, reg, val);
 
     status = Dp83tg721_accessExtReg(hPhy, reg);
     if (status == ENETPHY_SOK)
     {
-        status = EnetPhy_writeReg(hPhy, PHY_MMD_DR, val);
+        status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs,  PHY_MMD_DR, val);
     }
 
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: failed to write reg %u val 0x%04x\n",
-                     hPhy->addr, reg, val);
+                     phyAddr, reg, val);
     return status;
 }
 
-static void Dp83tg721_setBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t mask)
+static void Dp83tg721_setBitsExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t mask)
 {
     uint16_t value;
     int32_t status;
@@ -751,7 +751,7 @@ static void Dp83tg721_setBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t 
     }
 }
 
-static void Dp83tg721_clearBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_t mask)
+static void Dp83tg721_clearBitsExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t mask)
 {
     uint16_t value;
     int32_t status;
@@ -764,11 +764,11 @@ static void Dp83tg721_clearBitsExtReg(EnetPhy_Handle hPhy, uint32_t reg, uint16_
     }
 }
 
-static void Dp83tg721_readStraps(EnetPhy_Handle hPhy)
+static void Dp83tg721_readStraps(EthPhyDrv_Handle hPhy)
 {
     uint16_t strap;
     int32_t status;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if (priv)
     {
@@ -794,7 +794,7 @@ static void Dp83tg721_readStraps(EnetPhy_Handle hPhy)
     }
 }
 
-static void Dp83tg721_writeSeq(EnetPhy_Handle hPhy, const RegVal *regVals, int32_t size)
+static void Dp83tg721_writeSeq(EthPhyDrv_Handle hPhy, const RegVal *regVals, int32_t size)
 {
     int32_t i;
     for (i = 0; i < size; i++)
@@ -803,9 +803,10 @@ static void Dp83tg721_writeSeq(EnetPhy_Handle hPhy, const RegVal *regVals, int32
     }
 }
 
-static void Dp83tg721_chipInit(EnetPhy_Handle hPhy, Dp83tg721Priv *priv)
+static void Dp83tg721_chipInit(EthPhyDrv_Handle hPhy, Dp83tg721Priv *priv)
 {
     bool complete = false;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
 
     Dp83tg721_resetHw(hPhy);
 
@@ -815,8 +816,8 @@ static void Dp83tg721_chipInit(EnetPhy_Handle hPhy, Dp83tg721Priv *priv)
     if (priv->isMaster)
     {
         /* Set specific value in BMSR register */
-        EnetPhy_writeReg(hPhy, PHY_BMSR, 0x0940U);
-        EnetPhy_writeReg(hPhy, PHY_BMSR, 0x0140U);
+        pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs,  PHY_BMSR, 0x0940U);
+        pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs,  PHY_BMSR, 0x0140U);
 
         /* Set Master mode */
         Dp83tg721_writeExtReg(hPhy, PMA_PMD_CONTROL, 0xC001U);
@@ -832,7 +833,7 @@ static void Dp83tg721_chipInit(EnetPhy_Handle hPhy, Dp83tg721Priv *priv)
     }
 
     /* Enable the PHY */
-    EnetPhy_writeReg(hPhy, LPS_CFG3, 0x0001U);
+    pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs,  LPS_CFG3, 0x0001U);
 
     /* Do a software reset to restart the PHY with the updated values */
     Dp83tg721_reset(hPhy);
@@ -848,69 +849,70 @@ static void Dp83tg721_chipInit(EnetPhy_Handle hPhy, Dp83tg721Priv *priv)
     Dp83tg721_writeExtReg(hPhy, 0x056AU, 0x5F41U);
 }
 
-static void Dp83tg721_configIntr(EnetPhy_Handle hPhy, bool intrEn)
+static void Dp83tg721_configIntr(EthPhyDrv_Handle hPhy, bool intrEn)
 {
     uint16_t regVal;
     int32_t status;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
 
     if (intrEn)
     {
-        ENETTRACE_DBG("PHY %u: Enable interrupts\n", hPhy->addr);
-        status = EnetPhy_readReg(hPhy, MII_REG_12, &regVal);
+        status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, MII_REG_12, &regVal);
         if (status == ENETPHY_SOK)
         {
             regVal |= (TRAINING_DONE_INT_EN | ESD_EVENT_INT_EN |
                        LINK_STAT_INT_EN | ENERGY_DET_INT_EN);
-            EnetPhy_writeReg(hPhy, MII_REG_12, regVal);
-            status = EnetPhy_readReg(hPhy, MII_REG_13, &regVal);
+            pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_12, regVal);
+            status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, MII_REG_13, &regVal);
             if (status == ENETPHY_SOK)
             {
                 regVal |= (OVERTEMP_INT_EN | OVERVOLTAGE_INT_EN | UNDERVOLTAGE_INT_EN);
-                EnetPhy_writeReg(hPhy, MII_REG_13, regVal);
-                status = EnetPhy_readReg(hPhy, MII_REG_18, &regVal);
+                pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_13, regVal);
+                status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, MII_REG_18, &regVal);
                 if (status == ENETPHY_SOK)
                 {
                     regVal |= (LPS_INT_EN | WUR_INT_EN | POR_DONE_INT_EN);
-                    EnetPhy_writeReg(hPhy, MII_REG_18, regVal);
+                    pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_18, regVal);
                 }
             }
         }
     }
     else
     {
-        ENETTRACE_DBG("PHY %u: Disable interrupts\n", hPhy->addr);
-        EnetPhy_writeReg(hPhy, MII_REG_12, 0U);
-        EnetPhy_writeReg(hPhy, MII_REG_13, 0U);
-        EnetPhy_writeReg(hPhy, MII_REG_18, 0U);
+        pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_12, 0U);
+        pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_13, 0U);
+        pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, MII_REG_18, 0U);
     }
 }
 
-static void Dp83tg721_printRegs(EnetPhy_Handle hPhy)
+static void Dp83tg721_printRegs(EthPhyDrv_Handle hPhy)
 {
-    uint32_t phyAddr = hPhy->addr;
+    uint32_t phyAddr = PhyPriv_getPhyAddr(hPhy);
+    (void)phyAddr;
     uint16_t val;
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
 
-    EnetPhy_readReg(hPhy, PHY_BMCR, &val);
+    pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_BMCR, &val);
     EnetUtils_printf("PHY %u: BMCR    = 0x%04x\n", phyAddr, val);
-    EnetPhy_readReg(hPhy, PHY_BMSR, &val);
+    pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_BMSR, &val);
     EnetUtils_printf("PHY %u: BMSR    = 0x%04x\n", phyAddr, val);
-    EnetPhy_readReg(hPhy, PHY_PHYIDR1, &val);
+    pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_PHYIDR1, &val);
     EnetUtils_printf("PHY %u: PHYIDR1 = 0x%04x\n", phyAddr, val);
-    EnetPhy_readReg(hPhy, PHY_PHYIDR2, &val);
+    pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, PHY_PHYIDR2, &val);
     EnetUtils_printf("PHY %u: PHYIDR2 = 0x%04x\n", phyAddr, val);
     Dp83tg721_readExtReg(hPhy, SGMII_CTRL_1, &val);
-    EnetUtils_printf("PHY %u: SGMII_CTRL = 0x%04x\n", hPhy->addr, val);
+    EnetUtils_printf("PHY %u: SGMII_CTRL = 0x%04x\n", phyAddr, val);
     Dp83tg721_readExtReg(hPhy, RGMII_CTRL, &val);
-    EnetUtils_printf("PHY %u: RGMII_CTRL = 0x%04x\n", hPhy->addr, val);
+    EnetUtils_printf("PHY %u: RGMII_CTRL = 0x%04x\n", phyAddr, val);
     Dp83tg721_readExtReg(hPhy, RGMII_DELAY_CTRL, &val);
-    EnetUtils_printf("PHY %u: RGMII_DELAY_CTRL = 0x%04x\n", hPhy->addr, val);
+    EnetUtils_printf("PHY %u: RGMII_DELAY_CTRL = 0x%04x\n", phyAddr, val);
     Dp83tg721_readExtReg(hPhy, A2D_REG_48, &val);
-    EnetUtils_printf("PHY %u: RGMII_DELAY_TX_RX = 0x%04x\n", hPhy->addr, val);
+    EnetUtils_printf("PHY %u: RGMII_DELAY_TX_RX = 0x%04x\n", phyAddr, val);
     Dp83tg721_readExtReg(hPhy, PMA_PMD_CONTROL, &val);
-    EnetUtils_printf("PHY %u: REG_MasterSlave = 0x%04x\n", hPhy->addr, val);
+    EnetUtils_printf("PHY %u: REG_MasterSlave = 0x%04x\n", phyAddr, val);
 }
 
-static int32_t Dp83tg721_adjFreq(EnetPhy_Handle hPhy, int64_t ppb)
+static int32_t Dp83tg721_adjFreq(EthPhyDrv_Handle hPhy, int64_t ppb)
 {
     uint64_t rate;
     int32_t negAdj = 0;
@@ -941,19 +943,19 @@ static int32_t Dp83tg721_adjFreq(EnetPhy_Handle hPhy, int64_t ppb)
     return ENETPHY_SOK;
 }
 
-static uint64_t DivU64Rem(uint64_t dividend, uint32_t divisor, uint32_t *remainder)
+static uint64_t Dp83tg721_DivU64Rem(uint64_t dividend, uint32_t divisor, uint32_t *remainder)
 {
     *remainder = dividend % divisor;
     return dividend / divisor;
 }
 
-static void NsecToTimespec64(const int64_t nsec, Timespec64 *ts)
+static void Dp83tg721_NsecToTimespec64(const int64_t nsec, Timespec64 *ts)
 {
     uint32_t rem;
 
     if (nsec > 0)
     {
-        ts->sec = DivU64Rem(nsec, SEC_NSEC, &rem);
+        ts->sec = Dp83tg721_DivU64Rem(nsec, SEC_NSEC, &rem);
         ts->nsec = rem;
     }
     else if (nsec < 0)
@@ -963,16 +965,16 @@ static void NsecToTimespec64(const int64_t nsec, Timespec64 *ts)
          * second, and nsec counts the nanoseconds since
          * then, so nsec is always a positive number.
          */
-        ts->sec = -DivU64Rem(-nsec - 1, SEC_NSEC, &rem) - 1;
+        ts->sec = -Dp83tg721_DivU64Rem(-nsec - 1, SEC_NSEC, &rem) - 1;
         ts->nsec = SEC_NSEC - rem - 1;
     }
 }
 
-static int32_t TdrWrite(EnetPhy_Handle hPhy, int64_t nsec, uint16_t cmd)
+static int32_t Dp83tg721_TdrWrite(EthPhyDrv_Handle hPhy, int64_t nsec, uint16_t cmd)
 {
     Timespec64 ts;
 
-    NsecToTimespec64(nsec, &ts);
+    Dp83tg721_NsecToTimespec64(nsec, &ts);
 
     Dp83tg721_writeExtReg(hPhy, PTP_TDR, ts.nsec & 0xffff);/* ns[15:0]  */
     Dp83tg721_writeExtReg(hPhy, PTP_TDR, ts.nsec >> 16);   /* ns[31:16] */
@@ -984,30 +986,27 @@ static int32_t TdrWrite(EnetPhy_Handle hPhy, int64_t nsec, uint16_t cmd)
     return ENETPHY_SOK;
 }
 
-static int32_t Dp83tg721_adjPhase(EnetPhy_Handle hPhy, int64_t offset)
+static int32_t Dp83tg721_adjPhase(EthPhyDrv_Handle hPhy, int64_t offset)
 {
-    return TdrWrite(hPhy, offset+(int64_t)ADJTIME_FIX, PTP_STEP_CLK);
+    return Dp83tg721_TdrWrite(hPhy, offset+(int64_t)ADJTIME_FIX, PTP_STEP_CLK);
 }
 
-static uint32_t ExtRead(EnetPhy_Handle hPhy, uint32_t reg)
-{
-    uint16_t val = 0;
-    Dp83tg721_readExtReg(hPhy, reg, &val);
-    return (uint32_t)val;
-}
-
-static int32_t Dp83tg721_getTime(EnetPhy_Handle hPhy, uint64_t *ts64)
+static int32_t Dp83tg721_getTime(EthPhyDrv_Handle hPhy, uint64_t *ts64)
 {
     uint32_t val[4];
     uint64_t sec = 0;
     uint64_t nsec = 0;
-
+	uint16_t extRegVal = 0;
     Dp83tg721_writeExtReg(hPhy, PTP_CTL, PTP_RD_CLK);
 
-    val[0] = ExtRead(hPhy, PTP_TDR); /* ns[15:0] */
-    val[1] = ExtRead(hPhy, PTP_TDR); /* ns[31:16] */
-    val[2] = ExtRead(hPhy, PTP_TDR); /* sec[15:0] */
-    val[3] = ExtRead(hPhy, PTP_TDR); /* sec[31:16] */
+    Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* ns[15:0] */
+	val[0] = extRegVal;
+    Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* ns[31:16] */
+	val[1] = extRegVal;
+    Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* sec[15:0] */
+	val[2] = extRegVal;
+    Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* sec[31:16] */
+	val[3] = extRegVal;
 
     nsec = val[0] | (val[1] << 16);
     sec  = val[2] | (val[3] << 16);
@@ -1017,12 +1016,12 @@ static int32_t Dp83tg721_getTime(EnetPhy_Handle hPhy, uint64_t *ts64)
     return ENETPHY_SOK;
 }
 
-static int32_t Dp83tg721_setTime(EnetPhy_Handle hPhy, uint64_t ts64)
+static int32_t Dp83tg721_setTime(EthPhyDrv_Handle hPhy, uint64_t ts64)
 {
-    return TdrWrite(hPhy, ts64, PTP_LOAD_CLK);
+    return Dp83tg721_TdrWrite(hPhy, ts64, PTP_LOAD_CLK);
 }
 
-static bool IsLittleEndian(void)
+static bool Dp83tg721_IsLittleEndian(void)
 {
     int32_t check = 1;
     char *ptr = (char*)&check;
@@ -1036,17 +1035,17 @@ static bool IsLittleEndian(void)
     return result;
 }
 
-static void Dp83tg721_enableStatusFrames(EnetPhy_Handle hPhy, bool on,
+static void Dp83tg721_enableStatusFrames(EthPhyDrv_Handle hPhy, bool on,
                     uint32_t srcMacStatusFrameType)
 {
     uint16_t cfg0 = 0;
     uint16_t ver;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if (on == true)
     {
         cfg0 = PSF_EVNT_EN | PSF_RXTS_EN | PSF_TXTS_EN;
-        if (IsLittleEndian() == true)
+        if (Dp83tg721_IsLittleEndian() == true)
         {
             cfg0 |= PSF_ENDIAN;
         }
@@ -1082,7 +1081,7 @@ static void Dp83tg721_enableStatusFrames(EnetPhy_Handle hPhy, bool on,
     Dp83tg721_writeExtReg(hPhy, PSF_CFG1, ver);
 }
 
-static int32_t Dp83tg721_enablePtp(EnetPhy_Handle hPhy, bool on,
+static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
                     uint32_t srcMacStatusFrameType)
 {
     uint16_t txcfg0;
@@ -1122,11 +1121,11 @@ static int32_t Dp83tg721_enablePtp(EnetPhy_Handle hPhy, bool on,
         Dp83tg721_writeExtReg(hPhy, PTP_TXCFG0, txcfg0);
         Dp83tg721_writeExtReg(hPhy, PTP_RXCFG0, rxcfg0);
 
-		#if DP83TG721_ONLY_TIMESTAMP_PTP_EVENTS
+        #if DP83TG721_ONLY_TIMESTAMP_PTP_EVENTS
         /* Timestamp only PTP events, not all PTP packets */
         Dp83tg721_writeExtReg(hPhy, PTP_TXCFG1, 0x0800);
         Dp83tg721_writeExtReg(hPhy, PTP_RXCFG1, 0x0800);
-		#endif
+        #endif
     }
 
     return ENETPHY_SOK;
@@ -1148,7 +1147,7 @@ static uint64_t Dp83tg721_regTimeToNsec(uint16_t nsLow, uint16_t nsHigh,
     return ns;
 }
 
-static void UpdateTsReadyQ(TsReadyQ *readyQ, TsInfo *newTs, uint32_t phyAddr)
+static void Dp83tg721_UpdateTsReadyQ(TsReadyQ *readyQ, TsInfo *newTs, uint32_t phyAddr)
 {
     TsInfo *oldTs = &readyQ->tsInfoTable[readyQ->writeP];
     if (oldTs->ts)
@@ -1164,7 +1163,7 @@ static void UpdateTsReadyQ(TsReadyQ *readyQ, TsInfo *newTs, uint32_t phyAddr)
     }
 }
 
-static uint64_t LookupTsFromReadyQ(TsReadyQ *readyQ, uint32_t msgType, uint32_t seqId)
+static uint64_t Dp83tg721_LookupTsFromReadyQ(TsReadyQ *readyQ, uint32_t msgType, uint32_t seqId)
 {
     int32_t i;
     uint64_t ts = 0;
@@ -1182,11 +1181,11 @@ static uint64_t LookupTsFromReadyQ(TsReadyQ *readyQ, uint32_t msgType, uint32_t 
     return ts;
 }
 
-static int32_t Dp83tg721_getTs(EnetPhy_Handle hPhy, uint32_t domain, uint32_t msgType,
+static int32_t Dp83tg721_getTs(EthPhyDrv_Handle hPhy, uint32_t domain, uint32_t msgType,
                                uint32_t seqId, uint64_t *ts64, bool tx)
 {
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if ((priv == NULL) || (ts64 == NULL))
     {
@@ -1198,7 +1197,7 @@ static int32_t Dp83tg721_getTs(EnetPhy_Handle hPhy, uint32_t domain, uint32_t ms
         if (tx)
             readyQ = &priv->txTsReadyQ;
 
-        *ts64 = LookupTsFromReadyQ(readyQ, msgType, seqId);
+        *ts64 = Dp83tg721_LookupTsFromReadyQ(readyQ, msgType, seqId);
         if ((*ts64) == 0)
         {
             status = CSL_EALLOC-6;
@@ -1208,19 +1207,19 @@ static int32_t Dp83tg721_getTs(EnetPhy_Handle hPhy, uint32_t domain, uint32_t ms
     return status;
 }
 
-static int32_t Dp83tg721_getTxTs(EnetPhy_Handle hPhy, uint32_t domain,
+static int32_t Dp83tg721_getTxTs(EthPhyDrv_Handle hPhy, uint32_t domain,
                 uint32_t msgType, uint32_t seqId, uint64_t *ts64)
 {
     return Dp83tg721_getTs(hPhy, domain, msgType, seqId, ts64, true);
 }
 
-static int32_t Dp83tg721_getRxTs(EnetPhy_Handle hPhy, uint32_t domain,
+static int32_t Dp83tg721_getRxTs(EthPhyDrv_Handle hPhy, uint32_t domain,
                 uint32_t msgType, uint32_t seqId, uint64_t *ts64)
 {
     return Dp83tg721_getTs(hPhy, domain, msgType, seqId, ts64, false);
 }
 
-static uint64_t PhyToTxTs(PhyTxTs *p)
+static uint64_t Dp83tg721_PhyToTxTs(PhyTxTs *p)
 {
     uint64_t ns;
     uint32_t sec;
@@ -1235,7 +1234,7 @@ static uint64_t PhyToTxTs(PhyTxTs *p)
     return ns;
 }
 
-static void PhyToRxTs(PhyRxTs *p, TsInfo *rxts)
+static void Dp83tg721_PhyToRxTs(PhyRxTs *p, TsInfo *rxts)
 {
     uint32_t sec;
 
@@ -1249,20 +1248,23 @@ static void PhyToRxTs(PhyRxTs *p, TsInfo *rxts)
     rxts->msgType = (p->msgType >> 12) & 0xf;
 }
 
-static void DecodeRxTs(Dp83tg721Priv *priv, PhyRxTs *phyRxTs)
+static void Dp83tg721_DecodeRxTs(Dp83tg721Priv *priv, PhyRxTs *phyRxTs)
 {
     uint8_t overflow;
     TsInfo tsInfo;
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(priv->hPhy);
 
     overflow = (phyRxTs->nsHigh >> 14) & 0x3;
     if (overflow)
         ENETTRACE_ERR("rx timestamp queue overflow, count %d\n", overflow);
 
-    PhyToRxTs(phyRxTs, &tsInfo);
-    UpdateTsReadyQ(&priv->rxTsReadyQ, &tsInfo, priv->hPhy->addr);
+    Dp83tg721_PhyToRxTs(phyRxTs, &tsInfo);
+
+
+    Dp83tg721_UpdateTsReadyQ(&priv->rxTsReadyQ, &tsInfo, phyAddr);
 }
 
-static bool TsExpired(uint64_t now, uint64_t timeout)
+static bool Dp83tg721_TsExpired(uint64_t now, uint64_t timeout)
 {
     bool result = false;
 
@@ -1274,13 +1276,15 @@ static bool TsExpired(uint64_t now, uint64_t timeout)
     return result;
 }
 
-static void DecodeTxTs(Dp83tg721Priv *priv, PhyTxTs *phyTxTs)
+static void Dp83tg721_DecodeTxTs(Dp83tg721Priv *priv, PhyTxTs *phyTxTs)
 {
     uint8_t overflow;
     // uint64_t ns;
     TxTsWait *wait;
 
-    wait = (TxTsWait *)ListPop(&priv->txTsWaitList);
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(priv->hPhy);
+
+    wait = (TxTsWait *)Dp83tg721_ListPop(&priv->txTsWaitList);
     if (wait != NULL)
     {
         overflow = (phyTxTs->nsHigh >> 14) & 0x3;
@@ -1289,8 +1293,8 @@ static void DecodeTxTs(Dp83tg721Priv *priv, PhyTxTs *phyTxTs)
             ENETTRACE_ERR("tx timestamp queue overflow, count %d\n", overflow);
             while (wait != NULL)
             {
-                ListPush(&priv->txTsPoolList, &wait->node);
-                wait = (TxTsWait *)ListPop(&priv->txTsWaitList);
+                Dp83tg721_ListPush(&priv->txTsPoolList, &wait->node);
+                wait = (TxTsWait *)Dp83tg721_ListPop(&priv->txTsWaitList);
             }
         }
         else
@@ -1298,32 +1302,32 @@ static void DecodeTxTs(Dp83tg721Priv *priv, PhyTxTs *phyTxTs)
             /* Remove all the expired timestamp */
             while (wait != NULL)
             {
-                if (TsExpired(priv->tick, wait->timeout) == false)
+                if (Dp83tg721_TsExpired(priv->tick, wait->timeout) == false)
                 {
                     TsInfo tsInfo;
                     tsInfo.msgType = wait->msgType;
                     tsInfo.seqId = wait->seqId;
-                    tsInfo.ts = PhyToTxTs(phyTxTs);
+                    tsInfo.ts = Dp83tg721_PhyToTxTs(phyTxTs);
 
-                    UpdateTsReadyQ(&priv->txTsReadyQ, &tsInfo, priv->hPhy->addr);
-                    ListPush(&priv->txTsPoolList, &wait->node);
+                    Dp83tg721_UpdateTsReadyQ(&priv->txTsReadyQ, &tsInfo, phyAddr);
+                    Dp83tg721_ListPush(&priv->txTsPoolList, &wait->node);
                     break;
                 }
                 else
                 {
-                    ListPush(&priv->txTsPoolList, &wait->node);
-                    wait = (TxTsWait *)ListPop(&priv->txTsWaitList);
+                    Dp83tg721_ListPush(&priv->txTsPoolList, &wait->node);
+                    wait = (TxTsWait *)Dp83tg721_ListPop(&priv->txTsWaitList);
                 }
             }
         }
     }
     else
     {
-        ENETTRACE_ERR("PHY %u: recv txts, txWaitList empty\n", priv->hPhy->addr);
+        ENETTRACE_ERR("PHY %u: recv txts, txWaitList empty\n", phyAddr);
     }
 }
 
-static void UpdateEventTsReadyQ(EventTsReadyQ *readyQ, EventTsInfo *newEv,
+static void Dp83tg721_UpdateEventTsReadyQ(EventTsReadyQ *readyQ, EventTsInfo *newEv,
                     uint32_t phyAddr)
 {
     /* HW does not support a seqId for an event, we add it to allow user app to
@@ -1349,12 +1353,12 @@ static void UpdateEventTsReadyQ(EventTsReadyQ *readyQ, EventTsInfo *newEv,
     readyQ->seqId++;
 }
 
-static uint16_t EventNumToEventStatus(int eventNum)
+static uint16_t Dp83tg721_EventNumToEventStatus(int eventNum)
 {
     return 1 << (eventNum * 2);
 }
 
-static int32_t DecodeEvent(Dp83tg721Priv *priv,
+static int32_t Dp83tg721_DecodeEvent(Dp83tg721Priv *priv,
                 void *data, int32_t len, uint16_t ests)
 {
     PhyTxTs *phyTxTs;
@@ -1364,6 +1368,8 @@ static int32_t DecodeEvent(Dp83tg721Priv *priv,
     int32_t i;
     int32_t result = len;
     EventTsInfo event;
+
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(priv->hPhy);
 
     /* calculate length of the event timestamp status message */
     if (ests & MULT_EVNT)
@@ -1401,20 +1407,20 @@ static int32_t DecodeEvent(Dp83tg721Priv *priv,
 
         if (extStatus == 0)
         {
-            extStatus = EventNumToEventStatus(DECODE_BIGFIELD(EVNT_NUM, ests));
+            extStatus = Dp83tg721_EventNumToEventStatus(DECODE_BIGFIELD(EVNT_NUM, ests));
         }
 
-        event.ts = PhyToTxTs(&priv->eventData);
+        event.ts = Dp83tg721_PhyToTxTs(&priv->eventData);
 
         /* Compensate for input path and synchronization delays */
         event.ts -= PTP_EVENT_TS_COMP;
 
         for (i = 0; i < NUM_EVENTS; i++)
         {
-            if (extStatus & EventNumToEventStatus(i))
+            if (extStatus & Dp83tg721_EventNumToEventStatus(i))
             {
                 event.index = i;
-                UpdateEventTsReadyQ(&priv->evTsReadyQ, &event, priv->hPhy->addr);
+                Dp83tg721_UpdateEventTsReadyQ(&priv->evTsReadyQ, &event, phyAddr);
             }
         }
         result = parsed;
@@ -1423,7 +1429,7 @@ static int32_t DecodeEvent(Dp83tg721Priv *priv,
     return result;
 }
 
-static int32_t Dp83tg721_procStatusFrame(EnetPhy_Handle hPhy,
+static int32_t Dp83tg721_procStatusFrame(EthPhyDrv_Handle hPhy,
                     uint8_t *frame, uint32_t frameSize, uint32_t *types)
 {
     PhyRxTs *phyRxTs;
@@ -1434,7 +1440,7 @@ static int32_t Dp83tg721_procStatusFrame(EnetPhy_Handle hPhy,
     uint16_t ests;
     uint16_t type;
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv * priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if ((frame == NULL) || (priv == NULL) || (types == NULL))
     {
@@ -1463,20 +1469,20 @@ static int32_t Dp83tg721_procStatusFrame(EnetPhy_Handle hPhy,
             if ((PSF_RX == type) && (len >= sizeof(PhyRxTs)))
             {
                 phyRxTs = (PhyRxTs *)ptr;
-                DecodeRxTs(priv, phyRxTs);
+                Dp83tg721_DecodeRxTs(priv, phyRxTs);
                 size = sizeof(PhyRxTs);
                 *types |= (1U << 1);
             }
             else if ((PSF_TX == type) && (len >= sizeof(PhyTxTs)))
             {
                 phyTxTs = (PhyTxTs *)ptr;
-                DecodeTxTs(priv, phyTxTs);
+                Dp83tg721_DecodeTxTs(priv, phyTxTs);
                 size = sizeof(PhyTxTs);
                 *types |= (1U << 1);
             }
             else if (PSF_EVNT == type)
             {
-                size = DecodeEvent(priv, ptr, len, ests);
+                size = Dp83tg721_DecodeEvent(priv, ptr, len, ests);
                 *types |=  (1U << 2);
             }
             else
@@ -1491,24 +1497,26 @@ static int32_t Dp83tg721_procStatusFrame(EnetPhy_Handle hPhy,
     return status;
 }
 
-static int32_t Dp83tg721_waitPtpTxTime(EnetPhy_Handle hPhy, uint32_t domain,
+static int32_t Dp83tg721_waitPtpTxTime(EthPhyDrv_Handle hPhy, uint32_t domain,
                                        uint32_t msgType, uint32_t seqId)
 {
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv * priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
+    uint32_t phyAddr =  PhyPriv_getPhyAddr(hPhy);
+    (void)phyAddr;
 
-	#if DP83TG721_ONLY_TIMESTAMP_PTP_EVENTS
-	if ((priv == NULL) || (msgType >= 8))
+    #if DP83TG721_ONLY_TIMESTAMP_PTP_EVENTS
+    if ((priv == NULL) || (msgType >= 8))
     {
         status = ENETPHY_EINVALIDPARAMS;
     }
-	#else
+    #else
     /* Only accept the PTP event message (msgType < 8) */
     if (priv == NULL)
     {
         status = ENETPHY_EINVALIDPARAMS;
     }
-	#endif
+    #endif
 
     if (status == ENETPHY_SOK)
     {
@@ -1529,18 +1537,18 @@ static int32_t Dp83tg721_waitPtpTxTime(EnetPhy_Handle hPhy, uint32_t domain,
 
         if (existed == false)
         {
-            wait = (TxTsWait *)ListPop(&priv->txTsPoolList);
+            wait = (TxTsWait *)Dp83tg721_ListPop(&priv->txTsPoolList);
             if (wait != NULL)
             {
                 wait->msgType = msgType;
                 wait->seqId = seqId;
                 wait->timeout = priv->tick + WAIT_TXTS_TIMEOUT;
-                ListPush(&priv->txTsWaitList, &wait->node);
+                Dp83tg721_ListPush(&priv->txTsWaitList, &wait->node);
             }
             else
             {
                 status = CSL_EALLOC-6;
-                ENETTRACE_ERR("PHY %u: No slot to wait\n", hPhy->addr);
+                ENETTRACE_ERR("PHY %u: No slot to wait\n", phyAddr);
             }
         }
     }
@@ -1548,11 +1556,11 @@ static int32_t Dp83tg721_waitPtpTxTime(EnetPhy_Handle hPhy, uint32_t domain,
     return status;
 }
 
-static int32_t Dp83tg721_getStatusFrameEthHeader(EnetPhy_Handle hPhy,
+static int32_t Dp83tg721_getStatusFrameEthHeader(EthPhyDrv_Handle hPhy,
                     uint8_t *ethhdr, uint32_t size)
 {
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if ((ethhdr == NULL) || (size < sizeof(priv->stsFrameEthHdr)) || (priv == NULL))
     {
@@ -1566,9 +1574,9 @@ static int32_t Dp83tg721_getStatusFrameEthHeader(EnetPhy_Handle hPhy,
     return status;
 }
 
-static int32_t Dp83tg721_tickDriver(EnetPhy_Handle hPhy)
+static int32_t Dp83tg721_tickDriver(EthPhyDrv_Handle hPhy)
 {
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
     int32_t status = ENETPHY_SOK;
 
     if (priv == NULL)
@@ -1583,7 +1591,7 @@ static int32_t Dp83tg721_tickDriver(EnetPhy_Handle hPhy)
     return status;
 }
 
-static int32_t Dp83tg721_enableEventCapture(EnetPhy_Handle hPhy, uint32_t eventIdx,
+static int32_t Dp83tg721_enableEventCapture(EthPhyDrv_Handle hPhy, uint32_t eventIdx,
                     bool falling, bool on)
 {
     int32_t status = ENETPHY_SOK;
@@ -1623,7 +1631,7 @@ static int32_t Dp83tg721_enableEventCapture(EnetPhy_Handle hPhy, uint32_t eventI
             }
 
             /* PTP_EVENT_GPIO_SEL has multi-hot field to select multiple GPIO */
-            gpioSelect = ExtRead(hPhy, PTP_EVENT_GPIO_SEL);
+            Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
             gpioSelect |= ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
 
             Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
@@ -1631,7 +1639,7 @@ static int32_t Dp83tg721_enableEventCapture(EnetPhy_Handle hPhy, uint32_t eventI
         }
         else
         {
-            gpioSelect = ExtRead(hPhy, PTP_EVENT_GPIO_SEL);
+            Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
             gpioSelect &= ~ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
             Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
             Dp83tg721_writeExtReg(hPhy, PTP_EVNT, evnt);
@@ -1641,7 +1649,7 @@ static int32_t Dp83tg721_enableEventCapture(EnetPhy_Handle hPhy, uint32_t eventI
     return status;
 }
 
-static int32_t Dp83tg721_enableTriggerOutput(EnetPhy_Handle hPhy, uint32_t triggerIdx,
+static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t triggerIdx,
                     uint64_t start, uint64_t period, bool repeat)
 {
     int32_t status = ENETPHY_SOK;
@@ -1713,11 +1721,11 @@ static int32_t Dp83tg721_enableTriggerOutput(EnetPhy_Handle hPhy, uint32_t trigg
     return status;
 }
 
-static int32_t Dp83tg721_getEventTs(EnetPhy_Handle hPhy, uint32_t *eventIdx,
+static int32_t Dp83tg721_getEventTs(EthPhyDrv_Handle hPhy, uint32_t *eventIdx,
                     uint32_t *seqId, uint64_t *ts64)
 {
     int32_t status = ENETPHY_SOK;
-    Dp83tg721Priv *priv = hPhy->priv;
+    Dp83tg721Priv *priv = gPriv;
 
     if ((eventIdx == NULL) || (seqId == NULL) || (ts64 == NULL) || (priv == NULL))
     {
