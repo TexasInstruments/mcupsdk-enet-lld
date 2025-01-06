@@ -86,8 +86,11 @@
 #include <soc/am261x/enet_soc.h>
 #elif defined(SOC_AWR2544)
 #include <soc/awr2544/enet_soc.h>
+#elif defined (SOC_J722S)
+#include <soc/k3/j722s/enet_soc.h>
+#include <soc/k3/k3_soc.h>
+#include <drivers/udma/soc/j722s/udma_soc.h>
 #endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif

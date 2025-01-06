@@ -52,7 +52,7 @@
 #ifdef __ARM_ACLE
 #include <arm_acle.h>
 #define NOP5 do { __nop(); __nop(); __nop(); __nop(); __nop();} while (0);
-#elif ((defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX)|| defined(SOC_AM275DX) || defined(SOC_AM62X)) && defined(__aarch64__))
+#elif ((defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX)|| defined(SOC_AM275DX) || defined(SOC_AM62X) || defined (SOC_J722S)) && defined(__aarch64__))
 #include <kernel/freertos/portable/GCC/ARM_CA53/portmacro.h>
 #define __NOP portNOP()
 #define NOP5   do { __NOP; __NOP; __NOP; __NOP; __NOP; } while (0)
