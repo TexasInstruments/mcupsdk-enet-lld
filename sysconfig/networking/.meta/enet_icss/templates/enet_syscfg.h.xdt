@@ -88,7 +88,7 @@ function getTotalTxChCount(instances)
 }
 
 function isLinuxEnabled(){
-    
+
     let instance = ipc.$static;
     return instance.enableLinuxIpc;
 }
@@ -133,7 +133,7 @@ function isLinuxEnabled(){
 #define ENET_SYSCFG_TX_CHANNELS_NUM              (`Number(getTotalTxChCount(instances))`U)
 #define ENET_SYSCFG_RING_MON_NUM                 (3U) /*Not appicable for LCDMA devices*/
 #define ENET_SYSCFG_ENABLE_MDIO_MANUALMODE       (`Number(instance.mdioMode === "MDIO_MODE_MANUAL")`U)
-
+#define ENET_SYSCFG_TIMESTAMP_SOURCE             (LLDTSYNC_TS_SOURCE_CPTS)
 
 /*! \brief Number of external mac ports. */
 // One external port for Dualmac. Switch will have 2 external ports.

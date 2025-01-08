@@ -547,6 +547,15 @@ function validate(instance, report) {
     {
         report.logError(`Invalid macAddrList Entry`, instance, "macAddrList");
     }
+
+
+    if (instance.TimestampSource === "LLDTSYNC_TS_SOURCE_PHY")
+	{
+		if (instance.DisableMacPort2 == false)
+		{
+			report.logError("Only macport 1 has to be enabled for PHY timestamping.", instance)
+		}
+	}
 }
 
 function moduleInstances(instance) {

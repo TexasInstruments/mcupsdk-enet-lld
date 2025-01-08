@@ -132,7 +132,7 @@ int EnetApp_initTsn(void)
         EnetAppAbort("Failed to int tsn!\r\n");
     }
     if (cb_lld_init_devs_table(ethdevs, i, gEnetAppCfg.enetType,
-                               gEnetAppCfg.instId) < 0)
+                               gEnetAppCfg.instId, ENET_SYSCFG_TIMESTAMP_SOURCE) < 0)
     {
         EnetAppAbort("Failed to int devs table!\r\n");
     }

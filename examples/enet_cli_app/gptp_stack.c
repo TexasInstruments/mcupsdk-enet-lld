@@ -390,7 +390,7 @@ static int EnetTsn_initTsn(int32_t priority1, int32_t priority2,
         EnetAppUtils_print("Failed to int tsn!\r\n");
     }
     if (cb_lld_init_devs_table(ethdevs, i, EnetApp_inst.enetType,
-            EnetApp_inst.instId) < 0)
+            EnetApp_inst.instId, ENET_SYSCFG_TIMESTAMP_SOURCE) < 0)
     {
         EnetAppUtils_print("Failed to int devs table!\r\n");
     }
