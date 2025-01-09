@@ -11,7 +11,7 @@
 
     <project
         title="Gptp App"
-        name = "gptp_app_am62dx-evm_mcu-r5fss0-0_freertos_ti-arm-clang"
+        name = "gptp_app_am62dx-evm-dp83867/am62dx-evm_mcu-r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -140,19 +140,19 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../debug_log.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../debug_log.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../enetapp_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../enetapp_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../tsnapp_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../tsnapp_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../nrt_flow/default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../nrt_flow/default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
