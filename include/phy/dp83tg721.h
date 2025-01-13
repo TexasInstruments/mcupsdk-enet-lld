@@ -76,7 +76,8 @@ extern "C" {
  */
 typedef struct Dp83tg721_Cfg_s
 {
-    /* No extended config params at the moment */
+    bool enablePTPstatusFrames;
+    uint32_t srcMacStatusFrameType;
 } Dp83tg721_Cfg;
 
 /* ========================================================================== */

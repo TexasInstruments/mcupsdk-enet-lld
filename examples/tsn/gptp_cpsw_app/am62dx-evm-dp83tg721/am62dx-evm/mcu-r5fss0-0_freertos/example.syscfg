@@ -95,9 +95,10 @@ enet_cpsw1.rxDmaChannel[1].PacketsCount   = 16;
 enet_cpsw1.rxDmaChannel[1].useGlobalEvt   = true;
 enet_cpsw1.rxDmaChannel[1].useDefaultFlow = false;
 
-ethphy_cpsw_icssg1.$name     = "CONFIG_ENET_ETHPHY0";
-enet_cpsw1.ethphy1           = ethphy_cpsw_icssg1;
-ethphy_cpsw_icssg1.phySelect = "DP83TG721";
+ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
+enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.phySelect      = "DP83TG721";
+ethphy_cpsw_icssg1.extendedConfig = ".enablePTPstatusFrames = true,\n.srcMacStatusFrameType = 0,";
 
 const udma         = scripting.addModule("/drivers/udma/udma", {}, false);
 const udma1        = udma.addInstance({}, false);

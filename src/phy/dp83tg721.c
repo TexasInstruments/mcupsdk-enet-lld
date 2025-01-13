@@ -112,6 +112,8 @@
     for(node=(list)->next; node!=(list); node=node->next)
 
 #define DP83TG721_MAGIC_NUMBER (0xABCDEF)
+#define DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_DEFAULT   (0)
+#define DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_INVALID   (100)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -377,6 +379,8 @@ static const RegVal gSlaveRegsInit[] =
 void Dp83tg721_initCfg(Dp83tg721_Cfg *cfg)
 {
     /* No extended config parameters at the moment */
+    cfg->enablePTPstatusFrames = false;
+    cfg->srcMacStatusFrameType = DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_DEFAULT;
 }
 
 static void Dp83tg721_ListInit(ListNode *list)
@@ -536,18 +540,19 @@ static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, cons
     bool enableAutoNeg = true;
     int32_t status = ENETPHY_SOK;
     Dp83tg721Priv *priv = gPriv;
-	uint32_t phyAddr = PhyPriv_getPhyAddr(hPhy);
-	(void)phyAddr;
+    uint32_t phyAddr = PhyPriv_getPhyAddr(hPhy);
+    (void)phyAddr;
+    Dp83tg721_Cfg *cfg = (Dp83tg721_Cfg*)pExtCfg;
 
     if (priv->magic != DP83TG721_MAGIC_NUMBER)
     {
         Dp83tg721_InitPriv(priv, hPhy);
         priv->magic = DP83TG721_MAGIC_NUMBER;
     }
-	else
-	{
-		ENETTRACE_ERR("PHY %u: Re Initializing the driver, not supported\n");
-	}
+    else
+    {
+        ENETTRACE_ERR("PHY %u: Re Initializing the driver, not supported\n");
+    }
 
     if (status == ENETPHY_SOK)
     {
@@ -597,6 +602,17 @@ static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, cons
     {
         Dp83tg721_configIntr(hPhy, false);
         Dp83tg721_setLoopbackCfg(hPhy, loopbackEn);
+
+        if (cfg->enablePTPstatusFrames == true)
+        {
+            Dp83tg721_enablePtp(hPhy, true,
+                                      cfg->srcMacStatusFrameType);
+        }
+        else
+        {
+            Dp83tg721_enablePtp(hPhy, false,
+                                      DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_INVALID);
+        }
     }
 
     return status;
@@ -996,17 +1012,17 @@ static int32_t Dp83tg721_getTime(EthPhyDrv_Handle hPhy, uint64_t *ts64)
     uint32_t val[4];
     uint64_t sec = 0;
     uint64_t nsec = 0;
-	uint16_t extRegVal = 0;
+    uint16_t extRegVal = 0;
     Dp83tg721_writeExtReg(hPhy, PTP_CTL, PTP_RD_CLK);
 
     Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* ns[15:0] */
-	val[0] = extRegVal;
+    val[0] = extRegVal;
     Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* ns[31:16] */
-	val[1] = extRegVal;
+    val[1] = extRegVal;
     Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* sec[15:0] */
-	val[2] = extRegVal;
+    val[2] = extRegVal;
     Dp83tg721_readExtReg(hPhy, PTP_TDR, &extRegVal); /* sec[31:16] */
-	val[3] = extRegVal;
+    val[3] = extRegVal;
 
     nsec = val[0] | (val[1] << 16);
     sec  = val[2] | (val[3] << 16);
