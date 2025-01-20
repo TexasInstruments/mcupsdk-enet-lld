@@ -10,14 +10,14 @@ function enet_cpsw_ale_validate(instance, report) {
 
     if (instance.IpNxtWhitelist.length  > ipWhiteListMaxCnt)
     {
-        report.logError(`Max length of WhiteList cannot exceed ipWhiteListMaxCnt`, instance, "IpNxtWhitelist");        
+        report.logError(`Max length of WhiteList cannot exceed ipWhiteListMaxCnt`, instance, "IpNxtWhitelist");
     }
 }
 
 const enet_cpsw_ale_policer_global_config = {
     name: "alePolicerGlobalConfig",
     displayName: "Policer Config",
-	longDescription: "Configuration of CPSW ALE policer init time params",
+    longDescription: "Configuration of CPSW ALE policer init time params",
     config: [
         {
             name: "policingEn",
@@ -43,7 +43,7 @@ const enet_cpsw_ale_policer_global_config = {
             description: "Enables the ALE to drop yellow packets based on the yellow threshold value",
             displayName: "Drop Yellow-marked Packets",
             default: false,
-            hidden: true,            
+            hidden: true,
             onChange: function (inst, ui) {
                 /* Init delay applicable only for single master mode */
                 if(inst.yellowDropEn == false) {
@@ -162,7 +162,7 @@ const enet_cpsw_ale_policer_global_config = {
 const enet_cpsw_ale_aging_config = {
     name: "aleAgingConfig",
     displayName: "Aging Config",
-	longDescription: "Configuration of CPSW ALE aging related init time params",
+    longDescription: "Configuration of CPSW ALE aging related init time params",
     config: [
         {
             name: "autoAgingEn",
@@ -195,7 +195,7 @@ const enet_cpsw_ale_aging_config = {
 const enet_cpsw_ale_init_vlan_unknown_vlan_force_untagged_egress_config = {
     name: "unknownVlanForceUntaggedEgress",
     displayName: "Unknown VLAN Force Untagged Egress Config",
-	longDescription: "Configuration of forced VLAN stripping on egress for unknown VLANs",
+    longDescription: "Configuration of forced VLAN stripping on egress for unknown VLANs",
     config: [
         {
             name: "unknownVlanForceUntaggedEgressHostPortEn",
@@ -222,7 +222,7 @@ const enet_cpsw_ale_init_vlan_unknown_vlan_force_untagged_egress_config = {
 const enet_cpsw_ale_init_vlan_unknown_vlan_registered_multicast_flood_config = {
     name: "unknownRegMcastFloodMask",
     displayName: "Unknown VLAN Registered Multicast Membership Config",
-	longDescription: "Configuration of port membership for registered multicast addresses",
+    longDescription: "Configuration of port membership for registered multicast addresses",
     config: [
         {
             name: "unknownRegMcastHostPortEn",
@@ -249,7 +249,7 @@ const enet_cpsw_ale_init_vlan_unknown_vlan_registered_multicast_flood_config = {
 const enet_cpsw_ale_init_vlan_unknown_vlan_unregistered_multicast_flood_config = {
     name: "unknownUnregMcastFloodMask",
     displayName: "Unknown VLAN Unregistered Multicast Membership config",
-	longDescription: "Configuration of port membership for unregistered multicast addresses",
+    longDescription: "Configuration of port membership for unregistered multicast addresses",
     config: [
         {
             name: "unknownUnregMcastHostPortEn",
@@ -276,7 +276,7 @@ const enet_cpsw_ale_init_vlan_unknown_vlan_unregistered_multicast_flood_config =
 const enet_cpsw_ale_init_vlan_unknown_vlan_membership_config = {
     name: "unknownVlanMemberListMask",
     displayName: "Unknown VLAN Membership Config",
-	longDescription: "Configuration of port membership for unknown VLANs",
+    longDescription: "Configuration of port membership for unknown VLANs",
     config: [
         {
             name: "unknownVlanMembershipHostPortEn",
@@ -303,7 +303,7 @@ const enet_cpsw_ale_init_vlan_unknown_vlan_membership_config = {
 const enet_cpsw_ale_init_vlan_config = {
     name: "aleVlanConfig",
     displayName: "VLAN Config",
-	longDescription: "Configuration of CPSW ALE VLAN init time params",
+    longDescription: "Configuration of CPSW ALE VLAN init time params",
     config: [
         {
             name: "aleVlanAwareMode",
@@ -364,7 +364,7 @@ const enet_cpsw_ale_init_vlan_config = {
 const enet_cpsw_ale_network_security_malformed_pkt_config = {
     name: "malformedPktCfg",
     displayName: "Malformed Packet Handling Config",
-	longDescription: "Malformed packet handling config",
+    longDescription: "Malformed packet handling config",
     config: [
         {
             name: "srcMcastDropDis",
@@ -388,7 +388,7 @@ Ethertypes 0-1500 are 802.3 lengths, all others are EtherTypes`,
 const enet_cpsw_ale_network_security_ip_pkt_config = {
     name: "ipPktSecurityCfg",
     displayName: "IP Packet Security Configuration",
-	longDescription: "IP packet security configuration",
+    longDescription: "IP packet security configuration",
     config: [
         {
             name: "dfltNoFragEn",
@@ -408,7 +408,7 @@ const enet_cpsw_ale_network_security_ip_pkt_config = {
         {
             name: "IpNxtWhitelist",
             displayName: "IP NXT Field Whitelist",
-            longDescription: 
+            longDescription:
 `IP Nxt field to be whitelisted. Total of 4 NXT HDRs field can be whitelisted.\n
  Refer https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml`,
             hidden: false,
@@ -427,7 +427,7 @@ const enet_cpsw_ale_network_security_ip_pkt_config = {
 const enet_cpsw_ale_network_security_mac_authentication_config = {
     name: "macAuthCfg",
     displayName: "MAC Authentication Configuration",
-	longDescription: "MAC authentication configuration",
+    longDescription: "MAC authentication configuration",
     config: [
         {
             name: "authModeEn",
@@ -479,7 +479,7 @@ const enet_cpsw_ale_network_security_mac_authentication_config = {
 const enet_cpsw_ale_network_security_config = {
     name: "aleNetworkSecurityConfig",
     displayName: "Network Security Config",
-	longDescription: "Configuration of CPSW ALE network security related init time params",
+    longDescription: "Configuration of CPSW ALE network security related init time params",
     config: [
         {
             name: "hostOuiNoMatchDeny",
@@ -498,7 +498,7 @@ the host unless the destination address matches with a supervisory destination a
             displayName: "VID0 Allow",
             default: true,
             hidden: false,
-            longDescription: 
+            longDescription:
 `Enable VLAN ID = 0 Mode, When cleared process the priority tagged packet \n
 with VID = PORT_VLAN[11:0]. When set process the priority tagged packet \n
 with VID = 0`,
@@ -867,7 +867,7 @@ const enet_cpsw_port_config = {
 const enet_cpsw_ale_config = {
     name: "aleConfig",
     displayName: "ALE Config",
-	longDescription: "Configuration of CPSW ALE module",
+    longDescription: "Configuration of CPSW ALE module",
     config: [
         {
             name: "BypassEnable",
@@ -879,7 +879,7 @@ const enet_cpsw_ale_config = {
             name: "UnknownUnicastFloodToHost",
             description: "Enable Unknown unicast packet flooding to HostPort",
             displayName: "Unknown Unicast Flood To Host",
-            default: false,            
+            default: false,
         },
         enet_cpsw_ale_policer_global_config,
         enet_cpsw_ale_aging_config,

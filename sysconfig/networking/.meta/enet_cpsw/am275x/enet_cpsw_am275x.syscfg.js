@@ -43,7 +43,7 @@ const enet_cpsw_udma_channel_config = {
 const enet_cpsw_lwipIf_config = {
     name: "lwipIfConfig",
     displayName: "LWIP Interface config",
-	longDescription: "Configuration of LWIP Interface",
+    longDescription: "Configuration of LWIP Interface",
     collapsed:true,
     config: [
 
@@ -509,6 +509,15 @@ function validate(instance, report) {
     {
         report.logError(`Invalid macAddrList Entry`, instance, "macAddrList");
     }
+
+
+    if (instance.TimestampSource === "LLDTSYNC_TS_SOURCE_PHY")
+    {
+        if (instance.DisableMacPort2 == false)
+        {
+            report.logError("Only macport 1 has to be enabled for PHY timestamping.", instance)
+        }
+    }
 }
 
 function moduleInstances(instance) {
@@ -602,7 +611,7 @@ function addSharedModuleInstances(inst) {
 }
 
 function getCpuInfo() {
-	const cpuInfo = new Map(
+    const cpuInfo = new Map(
                                [
                                  ['CSL_CORE_ID_R5FSS0_0',{subsystem: "R5FSS",
                                   clusternum: "0", core: "0"}],
@@ -618,7 +627,7 @@ function getCpuInfo() {
                                   clusternum: "0", core: "0"}],
                                ],
                              );
-	return cpuInfo.get(getCpuID());
+    return cpuInfo.get(getCpuID());
 }
 
 function getEnetCoreIdPrefix() {
@@ -630,7 +639,7 @@ function getEnetCoreIdPrefix() {
 
     if((coreInfo) && (common.getSelfSysCfgCoreName().includes("r5f"))) {
         return `TISCI_DEV_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}`;
-	}
+    }
 }
 
 function getEnetCoreIntNumPrefix() {
@@ -640,9 +649,9 @@ function getEnetCoreIntNumPrefix() {
         return `CSLR_WKUP_R5FSS0_CORE0_INTR_`
     }
 
-	if(common.getSelfSysCfgCoreName().includes("r5f")) {
-		return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_INTR_`
-	}
+    if(common.getSelfSysCfgCoreName().includes("r5f")) {
+        return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_INTR_`
+    }
 }
 
 

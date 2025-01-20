@@ -12,6 +12,21 @@ const enet_cpsw_cpts_config = {
     displayName: "CPTS Configuration",
     longDescription: "Configuration information for the CPTS module",
     config: [
+		{
+            name: "TimestampSource",
+            description: "Select the timestamp source for the ethernet packets.",
+			longDescription: "Select the source to timestamp the ethernet packets. Currently available options are PHY and CPSW CPTS. PHY timestamp source is available only with first macport.",
+            displayName: "Timestamp Source",
+            default: "LLDTSYNC_TS_SOURCE_CPTS",
+            options: [
+                {
+                    name: "LLDTSYNC_TS_SOURCE_CPTS",
+                },
+                {
+                    name: "LLDTSYNC_TS_SOURCE_PHY",
+                },
+            ],
+        },
         {
             name: "cptsHostRxTsEn",
             description: "Host Receive timestamp enable: When set, timestamps are enabled on received packets to host",
