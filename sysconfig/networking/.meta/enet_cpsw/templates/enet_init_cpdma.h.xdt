@@ -77,21 +77,3 @@ static void EnetAppUtils_closeRxCh(Enet_Handle hEnet,
                                    uint32_t freeHostMacAddrCount,
                                    uint8_t macAddr[ENET_MAX_NUM_MAC_PER_PHER][ENET_MAC_ADDR_LEN]);
 
-static int32_t EnetAppUtils_allocRxFlow(Enet_Handle hEnet,
-                                        uint32_t coreKey,
-                                        uint32_t coreId,
-                                        uint32_t *rxFlowStartIdx,
-                                        uint32_t *flowIdx);
-static int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
-                                      uint32_t coreKey,
-                                      uint32_t coreId,
-                                      uint32_t *txPSILThreadId);
-static int32_t EnetAppUtils_freeRxFlow(Enet_Handle hEnet,
-                                       uint32_t coreKey,
-                                       uint32_t coreId,
-                                       uint32_t rxFlowIdx);
-static int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
-                                     uint32_t coreKey,
-                                     uint32_t coreId,
-                                     uint32_t txChNum);
-

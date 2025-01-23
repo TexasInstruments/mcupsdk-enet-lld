@@ -222,11 +222,11 @@ int32_t EnetAppUtils_unregDfltRxFlowForChIdx(Enet_Handle hEnet,
 }
 
 int32_t EnetAppUtils_regDstMacRxFlow(Enet_Handle hEnet,
-                                          uint32_t coreKey,
-                                          uint32_t coreId,
-                                          uint32_t rxFlowStartIdx,
-                                          uint32_t rxFlowIdx,
-                                          uint8_t macAddress[ENET_MAC_ADDR_LEN])
+                                     uint32_t coreKey,
+                                     uint32_t coreId,
+                                     uint32_t rxFlowStartIdx,
+                                     uint32_t rxFlowIdx,
+                                     uint8_t macAddress[ENET_MAC_ADDR_LEN])
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -249,6 +249,215 @@ int32_t EnetAppUtils_regDstMacRxFlow(Enet_Handle hEnet,
     }
 
     return status;
+}
+
+int32_t EnetAppUtils_allocRxFlowForChIdx(Enet_Handle hEnet,
+                                         uint32_t coreKey,
+                                         uint32_t coreId,
+                                         uint32_t chIdx,
+                                         uint32_t *rxFlowStartIdx,
+                                         uint32_t *flowIdx)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_AllocRxFlowInArgs inArgs;
+    EnetRm_AllocRxFlow rxFlowPrms;
+
+    inArgs.coreKey = coreKey;
+    inArgs.chIdx   = chIdx;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &rxFlowPrms);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_ALLOC_RX_FLOW,
+               &prms,
+               status);
+
+    if (status == ENET_SOK)
+    {
+        *rxFlowStartIdx = rxFlowPrms.startIdx;
+        *flowIdx        = rxFlowPrms.flowIdx;
+    }
+    else
+    {
+        EnetAppUtils_print("EnetAppUtils_allocRxFlowForChIdx() failed : %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_allocRxFlow(Enet_Handle hEnet,
+                                 uint32_t coreKey,
+                                 uint32_t coreId,
+                                 uint32_t *rxFlowStartIdx,
+                                 uint32_t *flowIdx)
+{
+    return EnetAppUtils_allocRxFlowForChIdx(hEnet,
+                                            coreKey,
+                                            coreId,
+                                            0U,
+                                            rxFlowStartIdx,
+                                            flowIdx);
+}
+
+int32_t EnetAppUtils_freeRxFlowForChIdx(Enet_Handle hEnet,
+                                        uint32_t coreKey,
+                                        uint32_t coreId,
+                                        uint32_t chIdx,
+                                        uint32_t rxFlowIdx)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_FreeRxFlowInArgs freeRxFlowInArgs;
+
+    /*Free Rx Flow*/
+    freeRxFlowInArgs.coreKey = coreKey;
+    freeRxFlowInArgs.flowIdx = rxFlowIdx;
+    freeRxFlowInArgs.chIdx   = chIdx;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &freeRxFlowInArgs);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_FREE_RX_FLOW,
+               &prms,
+               status);
+
+    return status;
+}
+
+int32_t EnetAppUtils_freeRxFlow(Enet_Handle hEnet,
+                                uint32_t coreKey,
+                                uint32_t coreId,
+                                uint32_t rxFlowIdx)
+{
+    return EnetAppUtils_freeRxFlowForChIdx(hEnet,
+                                           coreKey,
+                                           coreId,
+                                           0U,
+                                           rxFlowIdx);
+}
+
+int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
+                               uint32_t coreKey,
+                               uint32_t coreId,
+                               uint32_t *txPSILThreadId)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+
+    /* Allocate Tx Ch */
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &coreKey, txPSILThreadId);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_ALLOC_TX_CH_PEERID,
+               &prms,
+               status);
+    if (status != ENET_SOK)
+    {
+        *txPSILThreadId = ENET_RM_TXCHNUM_INVALID;
+        EnetAppUtils_print("EnetAppUtils_allocTxCh() failed: %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_allocAbsTxCh(Enet_Handle hEnet,
+                                  uint32_t coreKey,
+                                  uint32_t coreId,
+                                  uint32_t *txPSILThreadId,
+                                  uint32_t chNum)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+
+    /* Allocate Tx Ch */
+    /* Allocating specific numbered Tx channel is not supported in MCU_PLUS_SDK.
+     * But adding the support to this API as Multicore applications need such functionality
+     * ToDo: Add absolute allocation support through IOCTL */
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &coreKey, txPSILThreadId);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_ALLOC_TX_CH_PEERID,
+               &prms,
+               status);
+    if (status != ENET_SOK)
+    {
+        *txPSILThreadId = ENET_RM_TXCHNUM_INVALID;
+        EnetAppUtils_print("EnetAppUtils_allocAbsTxCh() failed: %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
+                              uint32_t coreKey,
+                              uint32_t coreId,
+                              uint32_t txChNum)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_FreeTxChInArgs freeTxChInArgs;
+
+    /* Release Tx Ch */
+    freeTxChInArgs.coreKey = coreKey;
+    freeTxChInArgs.txChNum = txChNum;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &freeTxChInArgs);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_FREE_TX_CH_PEERID,
+               &prms,
+               status);
+
+    return status;
+}
+
+void EnetAppUtils_openTxCh(Enet_Handle hEnet,
+                           uint32_t coreKey,
+                           uint32_t coreId,
+                           uint32_t *pTxChNum,
+                           EnetDma_TxChHandle *pTxChHandle,
+                           EnetUdma_OpenTxChPrms *pTxChCfg)
+{
+    EnetDma_Handle hDma = Enet_getDmaHandle(hEnet);
+    int32_t status;
+
+    EnetAppUtils_assert(hDma != NULL);
+
+    status = EnetAppUtils_allocTxCh(hEnet,
+                                    coreKey,
+                                    coreId,
+                                    pTxChNum);
+    EnetAppUtils_assert(ENET_SOK == status);
+
+    pTxChCfg->chNum = *pTxChNum;
+
+    *pTxChHandle = EnetDma_openTxCh(hDma, pTxChCfg);
+    EnetAppUtils_assert(NULL != *pTxChHandle);
+}
+
+void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
+                            uint32_t coreKey,
+                            uint32_t coreId,
+                            EnetDma_PktQ *pFqPktInfoQ,
+                            EnetDma_PktQ *pCqPktInfoQ,
+                            EnetDma_TxChHandle hTxChHandle,
+                            uint32_t txChNum)
+{
+    int32_t status;
+
+    EnetQueue_initQ(pFqPktInfoQ);
+    EnetQueue_initQ(pCqPktInfoQ);
+
+    EnetDma_disableTxEvent(hTxChHandle);
+    status = EnetDma_closeTxCh(hTxChHandle, pFqPktInfoQ, pCqPktInfoQ);
+    EnetAppUtils_assert(ENET_SOK == status);
+
+    status = EnetAppUtils_freeTxCh(hEnet,
+                                   coreKey,
+                                   coreId,
+                                   txChNum);
+    EnetAppUtils_assert(ENET_SOK == status);
 }
 
 #if (ENET_ENABLE_PER_CPSW == 1)
@@ -280,5 +489,23 @@ int32_t EnetAppUtils_unregDstMacRxFlow(Enet_Handle hEnet,
     }
 
     return status;
+}
+
+uint32_t EnetAppUtils_getStartFlowIdx(Enet_Handle hEnet,
+                                      uint32_t coreId)
+{
+    Enet_IoctlPrms prms;
+    uint32_t p0FlowIdOffset;
+    int32_t status;
+
+    ENET_IOCTL_SET_OUT_ARGS(&prms, &p0FlowIdOffset);
+    ENET_IOCTL(hEnet,
+               coreId,
+               CPSW_HOSTPORT_GET_FLOW_ID_OFFSET,
+               &prms,
+               status);
+
+    EnetAppUtils_assert(status == ENET_SOK);
+    return p0FlowIdOffset;
 }
 #endif

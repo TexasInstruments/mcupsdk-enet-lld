@@ -75,6 +75,27 @@ extern "C" {
 
 void EnetAppUtils_freePktInfoQ(EnetDma_PktQ *pPktInfoQ);
 
+int32_t EnetAppUtils_allocRxFlow(Enet_Handle hEnet,
+                                 uint32_t coreKey,
+                                 uint32_t coreId,
+                                 uint32_t *rxFlowStartIdx,
+                                 uint32_t *flowIdx);
+
+int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
+                               uint32_t coreKey,
+                               uint32_t coreId,
+                               uint32_t *txPSILThreadId);
+
+int32_t EnetAppUtils_freeRxFlow(Enet_Handle hEnet,
+                                uint32_t coreKey,
+                                uint32_t coreId,
+                                uint32_t rxFlowIdx);
+
+int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
+                              uint32_t coreKey,
+                              uint32_t coreId,
+                              uint32_t txChNum);
+
 bool EnetAppUtils_isDescCached(void);
 
 /* ========================================================================== */

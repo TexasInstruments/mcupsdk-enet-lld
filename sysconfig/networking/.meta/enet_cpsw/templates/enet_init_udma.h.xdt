@@ -65,46 +65,11 @@ typedef struct EnetAppTxDmaCfg_Info_s
     Udma_DrvHandle hUdmaDrv;
 } EnetAppTxDmaCfg_Info;
 
-static int32_t EnetAppUtils_allocRxFlowForChIdx(Enet_Handle hEnet,
-                                                uint32_t coreKey,
-                                                uint32_t coreId,
-                                                uint32_t chIdx,
-                                                uint32_t *rxFlowStartIdx,
-                                                uint32_t *flowIdx);
-static int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
-                                      uint32_t coreKey,
-                                      uint32_t coreId,
-                                      uint32_t *txPSILThreadId);
-static int32_t EnetAppUtils_freeRxFlowForChIdx(Enet_Handle hEnet,
-                                               uint32_t coreKey,
-                                               uint32_t coreId,
-                                               uint32_t chIdx,
-                                               uint32_t rxFlowIdx);
-static int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
-                                     uint32_t coreKey,
-                                     uint32_t coreId,
-                                     uint32_t txChNum);
-static uint32_t EnetAppUtils_getStartFlowIdx(Enet_Handle hEnet,
-                                             uint32_t coreId);
 static void EnetAppUtils_absFlowIdx2FlowIdxOffset(Enet_Handle hEnet,
                                                   uint32_t coreId,
                                                   uint32_t absRxFlowId,
                                                   uint32_t *pStartFlowIdx,
                                                   uint32_t *pFlowIdxOffset);
-static void EnetAppUtils_openTxCh(Enet_Handle hEnet,
-                                  uint32_t coreKey,
-                                  uint32_t coreId,
-                                  uint32_t *pTxChNum,
-                                  EnetDma_TxChHandle *pTxChHandle,
-                                  EnetUdma_OpenTxChPrms *pCpswTxChCfg);
-
-static void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
-                                   uint32_t coreKey,
-                                   uint32_t coreId,
-                                   EnetDma_PktQ *pFqPktInfoQ,
-                                   EnetDma_PktQ *pCqPktInfoQ,
-                                   EnetDma_TxChHandle hTxChHandle,
-                                   uint32_t txChNum);
 
 static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
                                             Enet_Handle hEnet,
@@ -147,10 +112,5 @@ static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
                               uint32_t coreKey,
                               uint32_t coreId,
                               EnetAppTxDmaCfg_Info *txCfg);
-
-
-static void EnetAppUtils_setCommonRxFlowPrms(EnetUdma_OpenRxFlowPrms *pRxChPrms);
-
-static void EnetAppUtils_setCommonTxChPrms(EnetUdma_OpenTxChPrms *pTxChPrms);
 
 Udma_DrvHandle EnetApp_getUdmaInstanceHandle(void);

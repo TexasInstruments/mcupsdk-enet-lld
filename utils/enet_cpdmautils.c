@@ -96,6 +96,111 @@ void EnetAppUtils_freePktInfoQ(EnetDma_PktQ *pPktInfoQ)
     }
 }
 
+int32_t EnetAppUtils_allocRxFlow(Enet_Handle hEnet,
+                                 uint32_t coreKey,
+                                 uint32_t coreId,
+                                 uint32_t *rxFlowStartIdx,
+                                 uint32_t *flowIdx)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_AllocRxFlowInArgs inArgs;
+    EnetRm_AllocRxFlow rxFlowPrms;
+
+    inArgs.coreKey = coreKey;
+    inArgs.chIdx   = 0U;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &rxFlowPrms);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_ALLOC_RX_FLOW,
+               &prms,
+               status);
+
+    if (status == ENET_SOK)
+    {
+        *rxFlowStartIdx = rxFlowPrms.startIdx;
+        *flowIdx        = rxFlowPrms.flowIdx;
+    }
+    else
+    {
+        EnetAppUtils_print("EnetAppUtils_allocRxFlow() failed : %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
+                               uint32_t coreKey,
+                               uint32_t coreId,
+                               uint32_t *txPSILThreadId)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+
+    /* Allocate Tx Ch */
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &coreKey, txPSILThreadId);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_ALLOC_TX_CH_PEERID,
+               &prms,
+               status);
+    if (status != ENET_SOK)
+    {
+        *txPSILThreadId = ENET_RM_TXCHNUM_INVALID;
+        EnetAppUtils_print("EnetAppUtils_allocTxCh() failed: %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_freeRxFlow(Enet_Handle hEnet,
+                                uint32_t coreKey,
+                                uint32_t coreId,
+                                uint32_t rxFlowIdx)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_FreeRxFlowInArgs freeRxFlowInArgs;
+
+    /*Free Rx Flow*/
+    freeRxFlowInArgs.coreKey = coreKey;
+    freeRxFlowInArgs.flowIdx = rxFlowIdx;
+    freeRxFlowInArgs.chIdx   = 0U;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &freeRxFlowInArgs);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_FREE_RX_FLOW,
+               &prms,
+               status);
+
+    return status;
+}
+
+int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
+                              uint32_t coreKey,
+                              uint32_t coreId,
+                              uint32_t txChNum)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    EnetRm_FreeTxChInArgs freeTxChInArgs;
+
+    /* Release Tx Ch */
+    freeTxChInArgs.coreKey = coreKey;
+    freeTxChInArgs.txChNum = txChNum;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &freeTxChInArgs);
+    ENET_IOCTL(hEnet,
+               coreId,
+               ENET_RM_IOCTL_FREE_TX_CH_PEERID,
+               &prms,
+               status);
+
+    return status;
+}
+
 
 #if ((__ARM_ARCH == 7) && (__ARM_ARCH_PROFILE == 'R'))
 #include <kernel/dpl/MpuP_armv7.h>

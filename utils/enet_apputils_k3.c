@@ -648,4 +648,17 @@ void EnetAppUtils_setupSciServer(void)
     return;
 }
 
+void EnetAppUtils_turnCpswOn(void)
+{
+    /* This is used only in EthFw for reser recovery.
+     * The usage of these APIs should be cleaned up from EthFw and should be depricated */
+    EnetAppUtils_assert(false);}
+
+void EnetAppUtils_turnCpswOff(void)
+{
+    /* This is used only in EthFw for reser recovery.
+     * The usage of these APIs should be cleaned up from EthFw and should be depricated */
+    EnetAppUtils_assert(false);
+}
+
 /* end of file */

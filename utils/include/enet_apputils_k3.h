@@ -125,6 +125,10 @@ int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType,
  */
 void EnetAppUtils_setupSciServer(void);
 
+void EnetAppUtils_turnCpswOn(void);
+
+void EnetAppUtils_turnCpswOff(void);
+
 /* ========================================================================== */
 /*                       Static Function Definitions                          */
 /* ========================================================================== */
