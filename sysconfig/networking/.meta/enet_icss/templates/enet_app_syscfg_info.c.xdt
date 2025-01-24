@@ -73,8 +73,8 @@ function getInstMacCnt(module, instance){
 #include "ti_enet_config.h"
 #include "ti_drivers_config.h"
 #include "ti_enet_open_close.h"
-#include <networking/enet/utils/include/enet_appboardutils.h>
-#include <utils/include/enet_appsoc.h>
+#include <enet_appboardutils.h>
+#include <enet_appsoc.h>
 
 /* Maximum number of MAC address to be set per CPSW peripheral.
 Since CPSW_3G can support upto two MACs, this is set to 2 here */

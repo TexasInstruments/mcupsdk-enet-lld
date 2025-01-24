@@ -15,7 +15,7 @@ for (let inst of module.$instances) {
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include <networking/enet/utils/include/enet_board.h>
+#include <enet_board.h>
 
 /* ========================================================================== */
 /*                                 Macros                                     */

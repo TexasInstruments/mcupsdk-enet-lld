@@ -43,8 +43,8 @@
 #include "FreeRTOS.h"
 #include <kernel/dpl/TaskP.h>
 #include <task.h>
-#include <networking/enet/utils/include/enet_apputils.h>
-#include <networking/enet/utils/include/enet_appmemutils.h>
+#include <enet_apputils.h>
+#include <enet_appmemutils.h>
 #include <tsn_combase/tilld/cb_lld_ethernet.h>
 #include "ti_board_open_close.h"
 #include "ti_drivers_open_close.h"

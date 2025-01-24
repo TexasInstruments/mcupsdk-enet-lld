@@ -89,7 +89,7 @@ function getIcssgInstName(instance)
 #include <priv/per/icssg_priv.h>
 #include <soc/k3/icssg_soc.h>
 #include <src/dma/udma/enet_udma_priv.h>
-#include <networking/enet/utils/include/enet_appsoc.h>
+#include <enet_appsoc.h>
 
 #define ICSSG_FW_PLACEMENT_SECTION __attribute__((section(".rodata")))
 
