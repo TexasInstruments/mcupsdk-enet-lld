@@ -17,7 +17,7 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
+        "../../../../", /* Example base */
     ],
 };
 
@@ -112,7 +112,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_HELLO_WORLD";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_LOOPBACK";
 
 const templates_freertos_r5f =
 [

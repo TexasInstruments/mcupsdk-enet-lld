@@ -354,14 +354,16 @@ else
 endif
 
 MULTI_CORE_IMAGE_PARAMS = \
-    $(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTNAME) \
+    $(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTNAME) 
+	
+MCELF_XIP_RANGE?=0x60100000:0x60200000 \
 
 $(BOOTIMAGE_NAME): $(OUTNAME)
 	@echo  Boot image: am275x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ ...
 ifneq ($(OS),Windows_NT)
 	$(CHMOD) a+x $(XIPGEN_CMD)
 endif
-	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME)
+	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME) --xip=$(MCELF_XIP_RANGE)
 # Sign the appimage for HS-FS using appimage signing script
     #
     #   Authentication type 0 with load address 0x84000000
