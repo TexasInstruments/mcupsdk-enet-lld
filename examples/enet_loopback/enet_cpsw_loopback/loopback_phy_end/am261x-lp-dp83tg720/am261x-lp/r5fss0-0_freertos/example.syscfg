@@ -52,6 +52,7 @@ i2c1.I2C.SDA.$assign     = "GPIO134";
 i2c1.I2C_child.$name     = "drivers_i2c_v1_i2c_v1_template1";
 
 debug_log.enableUartLog            = true;
+debug_log.enableCssLog             = false;
 debug_log.uartLog.$name            = "CONFIG_UART0";
 debug_log.uartLog.UART.$assign     = "UART0";
 debug_log.uartLog.UART.RXD.$assign = "GPIO27";
