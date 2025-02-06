@@ -206,6 +206,22 @@ let enet_cpsw_lwipif_netif_module = {
             minSelections: 0,
             options: _.keys(Array(16)).map((index)=>({name: index})),
         },
+
+        {
+            name: "packetDequeueMode",
+            description: "Whether to use Timer based dequeue method or interrupt based",
+            displayName: "Packet Dequeue Mode",
+            default: "TimerBasedPolling",
+            options: [
+                {
+                    name: "TimerBasedPolling",
+                },
+                {
+                    name: "INTERRUPT",
+                },
+            ],
+            hidden: false,
+        },
     ],
     getTotalNetIfCount,
     getInstanceConfig,

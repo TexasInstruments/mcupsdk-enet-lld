@@ -1955,6 +1955,15 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
             {
                 pDescEntry->bufPtr = (uint64_t) EnetUtils_physToVirt(pDescEntry->bufPtr, NULL);
                 pDescEntry->orgBufPtr = (uint64_t) EnetUtils_physToVirt(pDescEntry->orgBufPtr, NULL);
+                /*          In udma use case, bufPtr and orgBufPtr points to same address, no metadata is either appended or prepended with the payload.
+                */
+#if ENET_CFG_IS_ON(DEV_ERROR)
+                Enet_assert(pDescEntry->bufPtr == pDescEntry->orgBufPtr);
+#endif
+                if (ENET_UDMA_DIR_RX == transferDir && (FALSE == Enet_isCacheCoherent()))
+                {
+                     EnetOsal_cacheInv((void *)(uintptr_t)pDescEntry->bufPtr, CSL_udmapCppi5GetOrgBufferLen(pDescEntry));
+                }
                 if (pDescEntry->nextDescPtr != 0ULL)
                 {
                     pNextDescEntryVirt = (CSL_UdmapCppi5HMPD*) EnetUtils_physToVirt(pDescEntry->nextDescPtr, NULL);

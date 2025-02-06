@@ -332,8 +332,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
 
         /* set the print function callback if not null */
         hLwip2Enet->print = (Enet_Print) &EnetUtils_printf;
-        hLwip2Enet->isInitDone = true;
-        Lwip2Enet_createTimer(hLwip2Enet);
+        
     }
 
     /* Associate with corresponding Tx Channels */
@@ -347,7 +346,10 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         if (pInterface->hTx[txChIdIndex]->refCount == 1)
         {
             hLwip2Enet->allocPktInfo += pInterface->hTx[txChIdIndex]->numPackets;
-            EnetDma_enableTxEvent(pInterface->hTx[txChIdIndex]->hCh);
+            if(false == pInterface->hTx[txChIdIndex]->disableEvent)
+            {
+                EnetDma_enableTxEvent(pInterface->hTx[txChIdIndex]->hCh);
+            } 
         }
     }
     pInterface->count_hTx = txChIdCount;
@@ -358,7 +360,10 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         const uint32_t rxChId = rxChIdList[rxChIdIdx];
         pInterface->hRx[rxChIdIdx] = Lwip2Enet_allocateRxHandle(hLwip2Enet, enetType, instId, rxChId);
         Lwip2Enet_initRxObj(enetType, instId, rxChId, pInterface->hRx[rxChIdIdx]);
-
+        if(false == pInterface->hRx[rxChIdIdx]->disableEvent)
+        {
+            EnetDma_enableRxEvent(pInterface->hRx[rxChIdIdx]->hFlow);
+        }
         /* Process netif related parameters*/
         pInterface->hRx[rxChIdIdx]->mode = LwipifEnetAppCb_getRxMode(enetType, instId);
         if ((pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_SwitchSharedChannel) ||
@@ -418,14 +423,26 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     pInterface->isPortLinkedFxn = hLwip2Enet->appInfo.isPortLinkedFxn;
     pInterface->pNetif   = netif;
 
+    /* Ensure both TX and RX are in same operation mode, either interrupt disabled or enabled. */
+    Lwip2Enet_assert(pInterface->hTx[0]->disableEvent == pInterface->hRx[0]->disableEvent);
+
     /* Updating the netif params */
     Lwip2Enet_assert(netif->hwaddr_len == ENET_MAC_ADDR_LEN);
     netif->state = (void *)pInterface;
-
-    /* assert if clk period is not valid  */
-    Lwip2Enet_assert(0U != hLwip2Enet->appInfo.timerPeriodUs);
-
-    ClockP_start(&hLwip2Enet->pacingClkObj);
+    
+    if (hLwip2Enet->isInitDone == false)
+    {
+        /* Enable polling mode only when interrupt mode is disabled */
+        if((pInterface->hRx[0]->disableEvent) && (pInterface->hTx[0]->disableEvent)){
+            
+            hLwip2Enet->isInitDone = true;
+            Lwip2Enet_createTimer(hLwip2Enet);
+            ClockP_start(&hLwip2Enet->pacingClkObj);
+            /* assert if clk period is not valid  */
+            Lwip2Enet_assert(0U != hLwip2Enet->appInfo.timerPeriodUs);
+        }
+    }
+    
     return hLwip2Enet;
 }
 
@@ -1102,13 +1119,6 @@ void Lwip2Enet_rxPktHandler(Lwip2Enet_RxHandle hRx)
     if (pktCnt != 0U)
     {
         Lwip2Enet_updateRxNotifyStats(&hRx->stats.pktStats, pktCnt, 0U);
-    }
-
-    // ClockP_start(&hLwip2Enet->pacingClkObj);
-
-    if (!hRx->disableEvent)
-    {
-        EnetDma_enableRxEvent(hRx->hFlow);
     }
 
 }

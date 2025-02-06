@@ -444,6 +444,25 @@ function getNetifConfig(instance, InstNum) {
     return cfgArray[InstNum];
 }
 
+function getNetifPacketDequeueMode(instance){
+    let enableTimerBasedPoll = (getNetifConfig(instance, 0).packetDequeueMode === "TimerBasedPolling") ? 1 : 0;
+    return enableTimerBasedPoll;     
+}
+
+function verifyNetifPacketDequeueMode(instance){
+    let timerEnabledNetifcount = 0;
+    let firstNetifMode = getNetifConfig(instance, 0).packetDequeueMode;
+
+    for (let Idx = 1; Idx < getNetifCount(instance); Idx++)
+    {
+        if(getNetifConfig(instance, Idx).packetDequeueMode !==firstNetifMode){
+            return false;
+        }
+    }
+    return true;
+}
+
+
 function getDefaultNetifCount(instance)
 {
     let defaultNetifCount = 0;
@@ -487,6 +506,9 @@ function validate(instance, report) {
         if (getDefaultNetifCount(instance) !=1)
         {
             report.logError(`Only one netif can be set as default`, instance, "netifInstance");
+        }
+        if(verifyNetifPacketDequeueMode(instance) === false){
+            report.logError(`Both the Netif should be in same PacketDeque Mode`, instance,);
         }
 
         if (getNetifCount(instance) === 2)
@@ -718,6 +740,7 @@ let enet_cpsw_module = {
     getDefaultPacketCount,
     getNetifCount,
     getNetifConfig,
+    getNetifPacketDequeueMode,
     getDefaultNetifIdx,
     getMiiConfig,
     validate: validate,

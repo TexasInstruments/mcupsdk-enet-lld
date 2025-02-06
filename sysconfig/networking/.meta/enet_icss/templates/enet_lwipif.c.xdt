@@ -301,7 +301,7 @@ void LwipifEnetAppCb_getTxHandleInfo(LwipifEnetAppIf_GetTxHandleInArgs *inArgs,
     outArgs->hTxChannel = txChInfo.hTxCh;
     outArgs->txChNum = txChInfo.txChNum;
     outArgs->numPackets = txChInfo.maxNumTxPkts;
-    outArgs->disableEvent = true;
+    outArgs->disableEvent = `module.getNetifPacketDequeueMode(instance)`;
 
     /* Initialize the DMA free queue */
     EnetQueue_initQ(inArgs->pktInfoQ);
@@ -326,7 +326,6 @@ void LwipifEnetAppCb_getRxHandleInfo(LwipifEnetAppIf_GetRxHandleInArgs *inArgs,
     uint32_t i = 0;
     EnetDma_Pkt *pPktInfo;
     Rx_CustomPbuf *cPbuf;
-    bool useRingMon = false;
     EnetApp_HandleInfo handleInfo;
     EnetApp_GetRxDmaHandleOutArgs  rxChInfo;
     EnetApp_GetDmaHandleInArgs     rxInArgs;
@@ -354,7 +353,7 @@ void LwipifEnetAppCb_getRxHandleInfo(LwipifEnetAppIf_GetRxHandleInArgs *inArgs,
     outArgs->rxFlowIdx = rxChInfo.rxFlowIdx;
     outArgs->hRxFlow  = rxChInfo.hRxCh;
     outArgs->numPackets  = rxChInfo.maxNumRxPkts;
-    outArgs->disableEvent = !useRingMon;
+    outArgs->disableEvent = `module.getNetifPacketDequeueMode(instance)`;
 
     for (uint32_t i = 0; i < rxChInfo.numValidMacAddress; i++)
     {

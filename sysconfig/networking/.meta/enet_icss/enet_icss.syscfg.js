@@ -620,6 +620,25 @@ function getDefaultNetifCount(instance)
 
 }
 
+function getNetifPacketDequeueMode(instance){
+
+    let enableTimerBasedPoll = (getNetifConfig(instance, 0).packetDequeueMode === "TimerBasedPolling") ? 1 : 0;
+    return enableTimerBasedPoll;     
+}
+
+function verifyNetifPacketDequeueMode(instance){
+    let timerEnabledNetifcount = 0;
+    let firstNetifMode = getNetifConfig(instance, 0).packetDequeueMode;
+
+    for (let Idx = 1; Idx < getNetifCount(instance); Idx++)
+    {
+        if(getNetifConfig(instance, Idx).packetDequeueMode !==firstNetifMode){
+            return false;
+        }
+    }
+    return true;
+}
+
 function getTxPacketsCount(instance) {
     return getPacketsCount(instance, "TX");
 }
@@ -792,7 +811,14 @@ function validate(instance, report) {
     pktPoolScript.validate(instance, report);
     mdioScript.validate(instance, report);
     timesyncScript.validate(instance, report);
-    validateInstances(instance, report)
+    validateInstances(instance, report);
+
+    if(getNetifCount(instance) > 0){
+
+        if(verifyNetifPacketDequeueMode(instance) === false){
+            report.logError(`Both the Netif should be in same PacketDeque Mode`, instance,);
+        }
+    }
 
     if ((getInstMacCnt() > 4) && (instance.useAddMacAddr === true))
     {
@@ -1249,6 +1275,7 @@ let enet_icss_module = {
     getDefaultPacketCount,
     getNetifCount,
     getNetifConfig,
+    getNetifPacketDequeueMode,
     getMiiConfig,
     validate: validate,
 };
