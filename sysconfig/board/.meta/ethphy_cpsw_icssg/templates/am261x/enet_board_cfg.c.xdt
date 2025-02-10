@@ -229,7 +229,9 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 % } else {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
 %}
+%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
             EnetBoard_setMacPort1IOExpanderCfg();
+%}
             break;
         case ENET_MAC_PORT_2:
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
@@ -238,7 +240,9 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 % } else {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
 %}
+%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
             EnetBoard_setMacPort2IOExpanderCfg();
+%}
             break;
         default:
             DebugP_assert(false);

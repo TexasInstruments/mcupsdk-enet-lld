@@ -4,6 +4,7 @@ let common = system.getScript("/common");
 let pinmux = system.getScript("/drivers/pinmux/pinmux");
 
 let soc = system.getScript(`/networking/soc/networking_${common.getSocName()}`);
+let device = common.getDeviceName();
 //Get packet pool configuration script
 const pktPoolScript = system.getScript("./enet_pkt_pool_config");
 //Get ALE configuration script
@@ -171,25 +172,51 @@ function getPeripheralPinNames(inst)
     return pinMuxScript.getPeripheralPinNames(inst);
 }
 
-const enet_clock_config =
+function getEnetClockConfig(device_name)
+{
+  var enet_clock_config;
+
+    if (device_name === "am261x-lp")
     {
-        clockIds        : [ "SOC_RcmPeripheralId_CPTS" ],
-        clockFrequencies: [
-            {
-                moduleId: "SOC_RcmPeripheralId_CPTS",
-                clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
-                clkRate : 250000000,
-            },
-        ],
-    };
+enet_clock_config =
+    {
+
+	clockIds        : [ "SOC_RcmPeripheralId_CPTS" ],
+	clockFrequencies: [
+	    {
+	        moduleId: "SOC_RcmPeripheralId_CPTS",
+	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
+	        clkRate : 250000000,
+	    },
+	],
+    }
+    }
+    else if (device_name === "am261x-som")
+    {
+enet_clock_config =
+    {
+
+	clockIds        : [ "SOC_RcmPeripheralId_CPTS" ],
+	clockFrequencies: [
+	    {
+	        moduleId: "SOC_RcmPeripheralId_CPTS",
+	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
+	        clkRate : 200000000,
+	    },
+	],
+    }
+    }
+
+    return enet_clock_config;
+}
 
 function getClockEnableIds(instance) {
-    let instConfig = enet_clock_config;
+    let instConfig = getEnetClockConfig(device);
     return instConfig.clockIds;
 }
 
 function getClockFrequencies(inst) {
-    let instConfig = enet_clock_config;
+    let instConfig = getEnetClockConfig(device);
     return instConfig.clockFrequencies;
 }
 
@@ -641,6 +668,9 @@ let enet_cpsw_module = {
                 },
                 {
                     name: "am261x-lp (dp83826 phy)",
+                },
+                {
+                    name: "am261x-som",
                 },
             ],
         },

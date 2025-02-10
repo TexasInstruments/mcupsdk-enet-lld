@@ -67,6 +67,7 @@ function getPhyInfo(boardType)
 		[
 			{deviceName: "am261x-lp (dp83tg720 phy)", defaultPhy1: "DP83TG720", defaultPhyAddr1: 8, defaultPhy2: "DP83TG720", defaultPhyAddr2: 12},
 			{deviceName: "am261x-lp (dp83826 phy)", defaultPhy1: "DP83826", defaultPhyAddr1: 3, defaultPhy2: "DP83826", defaultPhyAddr2: 1},
+                        {deviceName: "am261x-som", defaultPhy1: "DP83869", defaultPhyAddr1: 0, defaultPhy2: "DP83869", defaultPhyAddr2: 3},
 		];
 
 		return cpswPhyInfoMap.find(element => element.deviceName === boardType);
