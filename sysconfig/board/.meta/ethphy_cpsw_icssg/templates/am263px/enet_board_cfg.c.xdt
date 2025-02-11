@@ -334,7 +334,7 @@ static void EnetBoard_setMacPort2IOExpanderCfg(void)
                 status =  TCA6416_setOutput(&gTCA6416_Config, rgmii2MuxSelLine, TCA6416_OUT_STATE_LOW);
             }
         }
-        else if ((pEepromRdPtr[0] == 'E') && (pEepromRdPtr[1] == '2')) /* Checking PCB revision E2 */
+        else if (((pEepromRdPtr[0] == 'E') && (pEepromRdPtr[1] == '2')) || (pEepromRdPtr[0] == 'A')) /* Checking PCB revision Rev E2/Rev A*/
         {
             DebugP_logInfo("AM263Px CC E2 Board found\r\n");
             const uint32_t mdioMuxSel1Line  = 8*2 + 2; // PORT 2, PIN 2
