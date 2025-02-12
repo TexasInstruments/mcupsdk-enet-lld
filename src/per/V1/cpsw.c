@@ -371,7 +371,9 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     Cpsw_Cfg *cpswCfg = (Cpsw_Cfg *)cfg;
     Enet_IoctlPrms prms;
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
     uint32_t cpsw_freq_in_MHz = 0;
+#endif
 #if ENET_CFG_IS_ON(CPSW_SGMII)
     CSL_Xge_cpsw_ss_sRegs *ssRegs = (CSL_Xge_cpsw_ss_sRegs *)hPer->virtAddr2;
 #endif
@@ -539,7 +541,9 @@ int32_t Cpsw_rejoin(EnetPer_Handle hPer,
 void Cpsw_close(EnetPer_Handle hPer)
 {
     Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+#endif
     Enet_IoctlPrms prms;
     uintptr_t key;
     int32_t status;

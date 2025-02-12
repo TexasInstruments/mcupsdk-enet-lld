@@ -79,6 +79,9 @@ extern "C" {
 /*! \brief EST feature mask. */
 #define CPSW_FEATURE_EST                      (ENET_BIT(2U))
 
+/*! \brief Cut-thru feature mask. */
+#define CPSW_FEATURE_CUTTHRU                  (ENET_BIT(3U))
+
 /* TODO - Fix me */
 //#define CPSW_MAC_PORT_NUM 1U
 

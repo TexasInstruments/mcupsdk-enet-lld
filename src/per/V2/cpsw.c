@@ -47,6 +47,7 @@
 #include <enet_cfg.h>
 #include <priv/mod/cpsw_ale_priv.h>
 #include <priv/mod/cpsw_ale_ioctl_priv.h>
+#include <priv/mod/cpsw_clks.h>
 #include <priv/mod/cpsw_cpts_priv.h>
 #include <priv/mod/cpsw_cpts_ioctl_priv.h>
 #include <priv/mod/cpsw_hostport_priv.h>
@@ -77,6 +78,9 @@
 
 /*! \brief Default common TX MTU. */
 #define CPSW_COMMON_TX_MTU_DEFAULT            (2024U)
+
+/*! \brief Convert Hz to Mhz */
+#define CPSW_FREQ_CONVERT_HZ_TO_MHZ           (1000000ULL)
 
 /*!
  * \brief Priority escalation value for switch scheduler.
@@ -332,6 +336,9 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
     CSL_CPSW_PTYPE pType;
     uintptr_t key;
     uint32_t i;
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    uint32_t cpsw_freq_in_MHz = 0;
+#endif
     int32_t status = ENET_SOK;
 
     /* Saving CpswCfg context */
@@ -392,6 +399,15 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
         }
 #endif
 
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+        /* Enable EST global control */
+        if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_CUTTHRU))
+        {
+            cpsw_freq_in_MHz = (EnetSoc_getClkFreq(enetType, instId, CPSW_CPPI_CLK)/CPSW_FREQ_CONVERT_HZ_TO_MHZ);
+            CSL_CPSW_setCpswFrequency(regs, cpsw_freq_in_MHz);
+            CSL_CPSW_enableCutThru(regs);
+        }
+#endif
         /* Set port global config */
         for (i = 0U; i < ENET_PRI_NUM; i++)
         {
@@ -477,6 +493,9 @@ int32_t Cpsw_rejoin(EnetPer_Handle hPer,
 void Cpsw_close(EnetPer_Handle hPer)
 {
     Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+#endif
     Enet_IoctlPrms prms;
     uintptr_t key;
     int32_t status;
@@ -500,6 +519,14 @@ void Cpsw_close(EnetPer_Handle hPer)
     if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_EST))
     {
         Cpsw_disableEst(hPer);
+    }
+#endif
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    /* Disable EST global control */
+    if (ENET_FEAT_IS_EN(hPer->features, CPSW_FEATURE_CUTTHRU))
+    {
+        CSL_CPSW_disableCutThru(regs);
     }
 #endif
 

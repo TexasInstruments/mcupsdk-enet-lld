@@ -144,6 +144,35 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType,  uint32_t instId,   Cpsw_Cfg 
     cpswCfg->portLinkStatusChangeCb    = &EnetApp_portLinkStatusChangeCb;
     cpswCfg->portLinkStatusChangeCbArg = &gEnetApp;
 }
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+static int32_t EnetApp_setCutThruParams(EnetApp_PerCtxt *perCtxt)
+{
+    EnetMacPort_CutThruParams cutThruInArgs;
+    Enet_IoctlPrms prms;
+    int32_t status = ENET_SOK;
+    uint32_t i = 0;
+
+    for(i = 0; i < perCtxt->macPortNum; i++)
+    {
+        cutThruInArgs.cutThruCfg.rxPriCutThruEn = 1U;    /* Enabling RX Cut-thru for packet priority 0*/
+        cutThruInArgs.cutThruCfg.txPriCutThruEn = 1U;    /* Enabling TX Cut-thru for packet priority 0*/
+        cutThruInArgs.cutThruCfg.portSpeedAutoEn = 1U;
+        cutThruInArgs.macPort = perCtxt->macPort[i];
+
+        ENET_IOCTL_SET_IN_ARGS(&prms, &cutThruInArgs);
+        ENET_IOCTL(perCtxt->hEnet, gEnetApp.coreId, ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS, &prms, status);
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print("%s: Failed to set Cut-thru params: %d\r\n",
+                                perCtxt->name, status);
+        }
+    }
+
+    return status;
+}
+#endif
+
 int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
                            uint32_t numPerCtxts)
 {
@@ -228,6 +257,21 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
             }
         }
     }
+
+#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
+    if(status == ENET_SOK)
+    {
+        for (i = 0U; i < numPerCtxts; i++)
+        {
+            EnetApp_PerCtxt *perCtxt = &perCtxts[i];
+            status = EnetApp_setCutThruParams(perCtxt);
+            if (status != ENET_SOK)
+            {
+                EnetAppUtils_print("%s: failed to enable Cut-thru %d\r\n", perCtxt->name, status);
+            }
+        }
+    }
+#endif
 
     if (status == ENET_SOK)
     {
