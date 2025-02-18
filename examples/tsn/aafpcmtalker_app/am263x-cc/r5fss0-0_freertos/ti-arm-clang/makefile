@@ -1,5 +1,5 @@
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -21,22 +21,22 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=ether_ring.$(PROFILE).out
-COREOUTNAME:=ether_ring.$(PROFILE).optishare.out
+OUTNAME:=aafpcmtalker_app.$(PROFILE).out
+COREOUTNAME:=aafpcmtalker_app.$(PROFILE).optishare.out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=ether_ring.$(PROFILE).appimage
-BOOTIMAGE_NAME_XIP:=ether_ring.$(PROFILE).appimage_xip
-BOOTIMAGE_NAME_SIGNED:=ether_ring.$(PROFILE).appimage.signed
+BOOTIMAGE_NAME:=aafpcmtalker_app.$(PROFILE).appimage
+BOOTIMAGE_NAME_XIP:=aafpcmtalker_app.$(PROFILE).appimage_xip
+BOOTIMAGE_NAME_SIGNED:=aafpcmtalker_app.$(PROFILE).appimage.signed
 oeconfig?=None
 
-BOOTIMAGE_NAME_MCELF:=ether_ring.$(PROFILE).mcelf
-BOOTIMAGE_NAME_MCELF_HS:=ether_ring.$(PROFILE).mcelf.hs
-BOOTIMAGE_RPRC_NAME:=ether_ring.$(PROFILE).rprc
-BOOTIMAGE_RPRC_NAME_XIP:=ether_ring.$(PROFILE).rprc_xip
-BOOTIMAGE_RPRC_NAME_TMP:=ether_ring.$(PROFILE).rprc_tmp
-BOOTIMAGE_NAME_HS:=ether_ring.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=ether_ring.$(PROFILE).appimage.hs_fs
+BOOTIMAGE_NAME_MCELF:=aafpcmtalker_app.$(PROFILE).mcelf
+BOOTIMAGE_NAME_MCELF_HS:=aafpcmtalker_app.$(PROFILE).mcelf.hs
+BOOTIMAGE_RPRC_NAME:=aafpcmtalker_app.$(PROFILE).rprc
+BOOTIMAGE_RPRC_NAME_XIP:=aafpcmtalker_app.$(PROFILE).rprc_xip
+BOOTIMAGE_RPRC_NAME_TMP:=aafpcmtalker_app.$(PROFILE).rprc_tmp
+BOOTIMAGE_NAME_HS:=aafpcmtalker_app.$(PROFILE).appimage.hs
+BOOTIMAGE_NAME_HS_FS:=aafpcmtalker_app.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
 
 ifeq ($(DEVICE_TYPE), HS)
@@ -45,15 +45,16 @@ endif
 
 FILES_common := \
 	gptp_init.c \
-	est_init.c \
+	avtp_init.c \
+	default_flow_cfg.c \
 	tsninit.c \
 	debug_log.c \
 	enetapp_cpsw.c \
 	tsnapp_cpsw_main.c \
-	main.c \
-	est_configure.c \
-	qosapp_misc.c \
 	default_flow_cpsw.c \
+	main.c \
+	sample_audio.c \
+	aaf_pcm_app.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -69,7 +70,9 @@ FILES_common := \
 FILES_PATH_common = \
 	.. \
 	../../.. \
-	../../../est \
+	../../../.. \
+	../../../../nrt_flow \
+	../../../../aafpcm_app \
 	generated \
 
 INCLUDES_common := \
@@ -91,9 +94,10 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/am263x \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/ether_ring/ \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc/tsn_l2 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld \
@@ -105,18 +109,18 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM263X \
+	-DSOC_AM263X \
 	-DENET_ENABLE_PER_CPSW=1 \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
 	-DNO_GETOPT_LONG=1 \
 	-DUB_LOGCAT=5 \
 	-DAVTP_ENABLED=1 \
+	-DAVTP_HAVE_NO_SIGNAL=1 \
 	-DGPTP_ENABLED=1 \
-	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\" \
+	-DAAF_PCM_ENABLED=1 \
+	-DAAF_PCM_TALKER_ENABLE=1 \
 	-DAVTP_DIRECT_MODE=1 \
-	-DWITH_EST_CONFIG=1 \
-	-DRX_REPORT=1 \
-	-DTX=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -152,7 +156,7 @@ CFLAGS_debug := \
 	-D_DEBUG_=1 \
 
 LNK_FILES_common = \
-	generated/linker.cmd \
+	generated/./linker.cmd \
 
 LIBS_PATH_common = \
 	-Wl,-igenerated \
@@ -162,6 +166,7 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
@@ -175,6 +180,7 @@ LIBS_common = \
 	-ltsn_unibase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_gptp-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_l2-freertos.am263x.r5f.ti-arm-clang.lib \
 	-lyangemb-freertos.am263x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
@@ -187,7 +193,6 @@ LFLAGS_common = \
 	-Wl,--zero_init=on \
 	-Wl,--use_memset=fast \
 	-Wl,--use_memcpy=fast \
-	-Wl,--mapfile_contents=noltosymrefs \
 
 LNKOPTFLAGS_release = \
 		   -mcpu=cortex-r5 \
@@ -208,6 +213,7 @@ LIBS_NAME = \
 	tsn_unibase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_gptp-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_l2-freertos.am263x.r5f.ti-arm-clang.lib \
 	yangemb-freertos.am263x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
@@ -220,6 +226,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
@@ -305,7 +312,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am263x:r5fss0-0:freertos:ti-arm-clang ether_ring ...
+	@echo  Scrubing: am263x:r5fss0-0:freertos:ti-arm-clang aafpcmtalker_app ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
@@ -455,12 +462,12 @@ endif
 
 .PHONY: coverage
 coverage:
-	@echo Creating Coverage Report for ether_ring.$(PROFILE) ...
+	@echo Creating Coverage Report for aafpcmtalker_app.$(PROFILE) ...
 	$(MKDIR) coverage
-	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o ether_ring.$(PROFILE).profdata
-	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=ether_ring.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
-	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=ether_ring.$(PROFILE).profdata > coverage/ether_ring.$(PROFILE).profdata.json
-	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/ether_ring.$(PROFILE).profdata.json --output-json=coverage/ether_ring.$(PROFILE).analysis.json --output=../ether_ring.annotations.$(PROFILE).S --top-function-count=500
+	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o aafpcmtalker_app.$(PROFILE).profdata
+	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=aafpcmtalker_app.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
+	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=aafpcmtalker_app.$(PROFILE).profdata > coverage/aafpcmtalker_app.$(PROFILE).profdata.json
+	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/aafpcmtalker_app.$(PROFILE).profdata.json --output-json=coverage/aafpcmtalker_app.$(PROFILE).analysis.json --output=../aafpcmtalker_app.annotations.$(PROFILE).S --top-function-count=500
 	@echo Coverage Report Generated at $(COVERAGE_PATH)/coverage folder !!!
 
 -include $(addprefix $(OBJDIR)/, $(DEPS))

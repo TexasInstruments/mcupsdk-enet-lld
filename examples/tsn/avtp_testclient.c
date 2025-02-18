@@ -182,7 +182,7 @@ typedef struct avtptc_data {
  */
 static bool avtp_running;
 
-static bool durnation_ended(uint64_t start_time, int test_duration);
+static bool duration_ended(uint64_t start_time, int test_duration);
 
 static int print_usage(char *pname, avtptc_data_t *avtptcd)
 {
@@ -756,7 +756,7 @@ static int start_talker(avtptc_data_t *avtptcd)
 	cb_rate_reporter_init(&avtptcd->rate_reporter, avtptcd->report_interval * UB_SEC_NS);
 
 	uint64_t start_ts = ub_mt_gettime64();
-	while(avtp_running && !durnation_ended(start_ts, avtptcd->test_duration)){
+	while(avtp_running && !duration_ended(start_ts, avtptcd->test_duration)){
 #ifdef HAVE_NO_SELECT
 		talker_one_loop(avtptcd);
 		CB_USLEEP(avtptcd->send_interval);
@@ -918,7 +918,7 @@ static int receive_data(uint8_t *payload, int payload_size,
 	return 0;
 }
 
-static bool durnation_ended(uint64_t start_time, int test_duration)
+static bool duration_ended(uint64_t start_time, int test_duration)
 {
 	if (test_duration == -1) {return false;}
 	if (ub_mt_gettime64() - start_time >= (uint64_t)test_duration * UB_SEC_NS){
@@ -954,7 +954,7 @@ static int start_listener(avtptc_data_t *avtptcd)
 	UB_LOG(UBL_INFO,"%s:start\n",__func__);
 	avtpc_cfg_set_media_stream_ready(avtptcd);
 	start_ts = ub_mt_gettime64();
-	while(avtp_running && !durnation_ended(start_ts, avtptcd->test_duration)){
+	while(avtp_running && !duration_ended(start_ts, avtptcd->test_duration)){
 #ifdef HAVE_NO_SELECT
 		CB_USLEEP(10000);
 #else //!HAVE_NO_SELECT

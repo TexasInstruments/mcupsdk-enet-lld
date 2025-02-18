@@ -125,6 +125,7 @@
                 -ltsn_unibase-freertos.am263x.r5f.ti-arm-clang.debug.lib
                 -ltsn_gptp-freertos.am263x.r5f.ti-arm-clang.debug.lib
                 -ltsn_uniconf-freertos.am263x.r5f.ti-arm-clang.debug.lib
+                -lyangemb-freertos.am263x.r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -146,6 +147,7 @@
                 -ltsn_unibase-freertos.am263x.r5f.ti-arm-clang.release.lib
                 -ltsn_gptp-freertos.am263x.r5f.ti-arm-clang.release.lib
                 -ltsn_uniconf-freertos.am263x.r5f.ti-arm-clang.release.lib
+                -lyangemb-freertos.am263x.r5f.ti-arm-clang.lib
                 -llibc.a
                 -llibsysbm.a
             "
