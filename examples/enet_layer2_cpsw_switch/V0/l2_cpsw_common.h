@@ -44,7 +44,6 @@
 #include <kernel/dpl/TaskP.h>
 #include <kernel/dpl/ClockP.h>
 #include <kernel/dpl/SemaphoreP.h>
-#include <drivers/sciclient.h>
 #include <drivers/udma/udma_priv.h>
 #include <enet.h>
 #include <enet_cfg.h>

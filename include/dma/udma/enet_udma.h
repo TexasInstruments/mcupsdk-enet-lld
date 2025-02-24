@@ -449,8 +449,10 @@ typedef struct EnetUdma_DmaDesc_s
  * version of Udma_RingMonPrms.
  */
 typedef struct EnetUdma_RingMonCfg_s
-{
+{   
+    #if (ENET_SCICLIENT_AVAILABLE == 1)
     /*! Ring monitor mode. Refer \ref tisci_msg_rm_ring_mon_cfg_req::mode */
+    #endif
     uint8_t mode;
 
     /*! When mode is TISCI_MSG_VALUE_RM_MON_MODE_PUSH_POP, this is read-only
@@ -476,6 +478,7 @@ typedef struct EnetUdma_RingMonCfg_s
     uint32_t data1;
 } EnetUdma_RingMonCfg;
 
+
 /*!
  * \brief Enet UDMA channel ring parameters.
  *
@@ -487,7 +490,10 @@ typedef struct EnetUdma_UdmaRingPrms_s
      *  the ring's RING_ORDERID register. */
     uint8_t orderId;
 
-    /*! Ring mode. Refer \ref tisci_msg_rm_ring_cfg_req::mode */
+    /*! Ring mode.*/
+    #if (ENET_SCICLIENT_AVAILABLE ==1)
+    /* Refer \ref tisci_msg_rm_ring_cfg_req::mode */
+    #endif
     uint8_t mode;
 
     /*! Flag to indicate if ring monitor should be allocated for this ring.
@@ -538,6 +544,7 @@ typedef struct EnetUdma_UdmaFlowPrms_s
     /*! [IN] RX destination queue */
     uint16_t defaultRxCQ;
 
+#if (ENET_UDMA_FDQ_PRESENT == 1)
     /*! [IN] UDMAP receive flow source tag high byte constant configuration
      *  to be programmed into the rx_src_tag_hi field of the flow's RFLOW_RFB
      *  register */
@@ -577,7 +584,7 @@ typedef struct EnetUdma_UdmaFlowPrms_s
      *  to be programmed into the rx_dest_tag_low_sel field of the RFLOW_RFC
      *  register. Refer #tisci_msg_rm_udmap_flow_cfg_req::rx_dest_tag_lo_sel */
     uint8_t destTagLoSel;
-
+#endif
     /*! [IN] UDMAP receive flow packet size based free buffer queue enable
      * configuration */
     uint8_t sizeThreshEn;
@@ -597,11 +604,15 @@ typedef struct EnetUdma_UdmaChTxPrms_s
     /*! [IN] Bool: When set (TRUE), filter out protocl specific words */
     uint8_t filterPsWords;
 
-    /*! [IN] Address type for this channel.
-     *   Refer #tisci_msg_rm_udmap_tx_ch_cfg_req::tx_atype */
+    /*! [IN] Address type for this channel. */
+    #if (ENET_SCICLIENT_AVAILABLE ==1)
+    /*   Refer #tisci_msg_rm_udmap_tx_ch_cfg_req::tx_atype */
+    #endif
     uint8_t addrType;
-
+    
+    #if (ENET_SCICLIENT_AVAILABLE ==1)
     /*! [IN] Channel type. Refer #tisci_msg_rm_udmap_tx_ch_cfg_req::tx_chan_type */
+    #endif
     uint8_t chanType;
 
     /*! [IN] 3-bit priority value (0=highest, 7=lowest) */
@@ -614,8 +625,10 @@ typedef struct EnetUdma_UdmaChTxPrms_s
     uint8_t busOrderId;
 
     /*! [IN] This field selects which scheduling bin the channel will be placed
-     *  in for bandwidth allocation of the TX DMA units.
-     *  Refer #tisci_msg_rm_udmap_tx_ch_cfg_req::tx_sched_priority */
+     *  in for bandwidth allocation of the TX DMA units. */
+    #if (ENET_SCICLIENT_AVAILABLE ==1)
+    /*  Refer #tisci_msg_rm_udmap_tx_ch_cfg_req::tx_sched_priority */
+    #endif
     uint8_t dmaPriority;
 
     /*! [IN] TX credit for external channels */
@@ -815,11 +828,14 @@ typedef struct EnetUdma_OpenTxChPrms_s
  * The parameter structure for the RX channel open, containing a channel config
  * structure.
  */
+
 typedef struct EnetUdma_RxChInitPrms_s
 {
+    #if (ENET_SCICLIENT_AVAILABLE == 1)
     /*! This field selects which scheduling bin the channel will be placed in
      *  for bandwidth allocation of the TX DMA units.
      *  Refer \ref tisci_msg_rm_udmap_tx_ch_cfg_req::tx_sched_priority */
+    #endif
     uint8_t dmaPriority;
 } EnetUdma_RxChInitPrms;
 
