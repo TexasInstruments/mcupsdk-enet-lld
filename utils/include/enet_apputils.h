@@ -66,7 +66,7 @@
 
 #include "enet_ethutils.h"
 
-#if (defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X)) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
+#if (defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X)) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
 #include "enet_ioctlutils.h"
 #include "enet_apputils_k3.h"
 #include "enet_udmautils.h"
@@ -76,6 +76,8 @@
 #include "enet_ioctlutils.h"
 #include "enet_cpdmautils.h"
 #endif
+
+#include <drivers/soc.h>
 
 #if defined(__KLOCWORK__)
 #include <stdlib.h>

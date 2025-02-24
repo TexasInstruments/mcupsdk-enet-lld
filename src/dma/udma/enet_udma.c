@@ -54,17 +54,21 @@
 #include <include/common/enet_utils_dflt.h>
 #include <include/core/enet_rm.h>
 #include <include/core/enet_dma.h>
-
-#include "enet_udma_priv.h"
+#include "enet_udma_defines.h"
+#if (ENET_SCICLIENT_AVAILABLE == 1)
 #include <drivers/sciclient.h>
+#endif
+#include "enet_udma_priv.h"
 
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 0) && (UDMA_SOC_CFG_LCDMA_PRESENT == 0)
 #error "UDMA Type not supported)"
 #endif
-
 /* TODO: Cleanup Hack. These defines should be moved to public interface udma.h */
 #include <drivers/udma/udma_priv.h>
 
+#if defined(SOC_AM62LX)
+#include <drivers/hw_include/cslr_soc.h>
+#endif
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -87,6 +91,9 @@ static int32_t EnetUdma_checkRxFlowParams(EnetUdma_OpenRxFlowPrms *pRxFlowPrms);
 
 static void EnetUdma_drainIsrCq(EnetQ *dstQ,
                                EnetQ *isrCq);
+
+static void EnetDma_initflowSrcTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms);
+static void EnetDma_initflowDstTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms);
 
 #if (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
 static uint32_t EnetUdma_getMappedRxChNum(Enet_Type enetType,
@@ -111,31 +118,26 @@ void EnetDma_initRxChParams(void *pRxChCfg)
     memset(&flowPrms, 0, sizeof(flowPrms));
     UdmaFlowPrms_init(&flowPrms, UDMA_CH_TYPE_RX);
 
-    pRxFlowPrms->flowPrms.psInfoPresent = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PSINFO_PRESENT;
-    pRxFlowPrms->flowPrms.einfoPresent  = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_EINFO_PRESENT;
+    pRxFlowPrms->flowPrms.psInfoPresent = ENET_UDMA_RX_FLOW_PSINFO_PRESENT;
+    pRxFlowPrms->flowPrms.einfoPresent  = ENET_UDMA_RX_FLOW_EINFO_PRESENT;
     pRxFlowPrms->flowPrms.sopOffset    = flowPrms.sopOffset;
     pRxFlowPrms->flowPrms.defaultRxCQ  = flowPrms.defaultRxCQ;
-    pRxFlowPrms->flowPrms.srcTagHi     = flowPrms.srcTagHi;
-    pRxFlowPrms->flowPrms.srcTagLo     = flowPrms.srcTagLo;
-    pRxFlowPrms->flowPrms.srcTagHiSel  = flowPrms.srcTagHiSel;
-    pRxFlowPrms->flowPrms.srcTagLoSel  = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_SRC_SELECT_SRC_TAG;
-    pRxFlowPrms->flowPrms.destTagHi    = flowPrms.destTagHi;
-    pRxFlowPrms->flowPrms.destTagLo    = flowPrms.destTagLo;
-    pRxFlowPrms->flowPrms.destTagHiSel = flowPrms.destTagHiSel;
-    pRxFlowPrms->flowPrms.destTagLoSel = flowPrms.destTagLoSel;
-    pRxFlowPrms->flowPrms.sizeThreshEn =  TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_SIZE_THRESH_MAX;
+    pRxFlowPrms->flowPrms.sizeThreshEn =  ENET_UDMA_RX_FLOW_SIZE_THRESH_MAX;
     pRxFlowPrms->chIdx =  0U;
+
+    EnetDma_initflowSrcTag(&(pRxFlowPrms->flowPrms),&flowPrms);
+    EnetDma_initflowDstTag(&(pRxFlowPrms->flowPrms),&flowPrms);
 
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
     pRxFlowPrms->udmaChPrms.fqRingPrms.orderId    = UDMA_DEFAULT_RING_ORDER_ID;
     /* Use message mode for Rx FQ so at channel/flow teardown time UDMA IP can push
      * inflow descriptors back into the ring.*/
-    pRxFlowPrms->udmaChPrms.fqRingPrms.mode       = TISCI_MSG_VALUE_RM_RING_MODE_MESSAGE;
+    pRxFlowPrms->udmaChPrms.fqRingPrms.mode       = ENET_UDMA_RM_RING_MODE_MESSAGE;
     pRxFlowPrms->udmaChPrms.fqRingPrms.useRingMon = false;
 #endif
 
     pRxFlowPrms->udmaChPrms.cqRingPrms.orderId    = UDMA_DEFAULT_RING_ORDER_ID;
-    pRxFlowPrms->udmaChPrms.cqRingPrms.mode       = TISCI_MSG_VALUE_RM_RING_MODE_RING;
+    pRxFlowPrms->udmaChPrms.cqRingPrms.mode       = ENET_UDMA_RING_MODE_RING;
     pRxFlowPrms->udmaChPrms.cqRingPrms.useRingMon = false;
     pRxFlowPrms->udmaChPrms.cqRingPrms.ringMonCfg.mode = 0U;
     pRxFlowPrms->udmaChPrms.cqRingPrms.ringMonCfg.data0 = 0U;
@@ -185,6 +187,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
     bool allocRingMon = false, allocDropFqRing = false;
 #endif
     bool flowAttachFlag = false;
+    uint32_t flowidx = 0;
     uintptr_t intrKey;
 
     intrKey = EnetOsal_disableAllIntr();
@@ -234,14 +237,14 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
                 Enet_devAssert(NULL != reclaimPrms->hReclaimRing);
                 /* Ring mode should be message as both RX flow (pushes to CQ) and
                  * TX channel (pops from FQ) uses this ring */
-                Enet_devAssert(TISCI_MSG_VALUE_RM_RING_MODE_MESSAGE == Udma_ringGetMode(reclaimPrms->hReclaimRing));
+                Enet_devAssert(ENET_UDMA_RM_RING_MODE_MESSAGE == Udma_ringGetMode(reclaimPrms->hReclaimRing));
                 /* Filtering of protocol specific and extended info should be enabled as this
                  * information might corrupt TX channel (as the TX PSI and EINFO gets mapped to
                  * RX flow PSI and EINFO which has entirely different meaning)*/
                 Enet_devAssert(pRxFlowPrms->flowPrms.psInfoPresent ==
-                            TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PSINFO_PRESENT);
+                            ENET_UDMA_RX_FLOW_PSINFO_PRESENT);
                 Enet_devAssert(pRxFlowPrms->flowPrms.einfoPresent ==
-                            TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_EINFO_PRESENT);
+                            ENET_UDMA_RX_FLOW_EINFO_PRESENT);
                 /* Notify callback should be NULL when auto recycle is enabled as the
                  * CQ event should be disabled */
                 Enet_devAssert(pRxFlowPrms->notifyCb == NULL);
@@ -353,12 +356,15 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         ringAllocInfo.ringMemAllocFxn = pRxFlowPrms->ringMemAllocFxn;
         ringAllocInfo.ringMemFreeFxn  = pRxFlowPrms->ringMemFreeFxn;
         ringAllocInfo.cbArg          = pRxFlowPrms->cbArg;
-        ringAllocInfo.ringNum         = UDMA_RING_ANY;
         ringAllocInfo.enetType        = hDma->enetType;
         ringAllocInfo.instId          = hDma->instId;
         ringAllocInfo.mappedChNum     = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
         ringAllocInfo.transferDir     = ENET_UDMA_DIR_RX;
-
+#if defined(SOC_AM62LX)
+        ringAllocInfo.ringNum         = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
+#else
+        ringAllocInfo.ringNum         = UDMA_RING_ANY;
+#endif
         retVal = EnetUdma_allocRing(pRxFlow->hUdmaDrv,
                                    pRxFlow->cqRing,
                                    &ringPrms,
@@ -381,19 +387,20 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
          * gets a descriptor. In case of multi flow, this results in bottom
          * of FIFO drop, to avoid this errorHandling must be set to drop(0).
          */
-        flowPrms.errorHandling = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_ERR_DROP;
+        flowPrms.errorHandling = ENET_UDMA_RX_FLOW_ERR_DROP;
 
         /* CPPI TX Status Data Word [0..3] are mapped to Host Packet Descriptor Protocol Specific
          * Words if RFLOW[a]_RFA.rx_psinfo_present = 1 and RFLOW[a]_RFA.rx_ps_location = 0 (end) */
         flowPrms.psInfoPresent = pRxFlowPrms->flowPrms.psInfoPresent;
         /* Extended packet info block present CPPI TX info words are mapped */
         flowPrms.einfoPresent  = pRxFlowPrms->flowPrms.einfoPresent;
-        flowPrms.psLocation    = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PS_END_PD;
+        flowPrms.psLocation    = ENET_UDMA_RX_FLOW_PS_END_PD;
 
         /* Set Src tag low selection to get port number of the received packet (or)
          * flow Id (or) config tag from CPPI. */
+#if !defined(SOC_AM62LX)
         flowPrms.srcTagLoSel   = pRxFlowPrms->flowPrms.srcTagLoSel;
-
+#endif
         flowPrms.defaultRxCQ = Udma_ringGetNum(pRxFlow->cqRing);
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
         if (TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_SIZE_THRESH_MAX == pRxFlowPrms->flowPrms.sizeThreshEn)
@@ -410,7 +417,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
 #elif (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
         ringHandle = pRxFlow->cqRing;
 #endif
-
+#if (ENET_UDMA_FDQ_PRESENT == 1)
         /* ICSSG peripherals don't support this feature, so explicitly disable in spite of
          * applications request as this parameter could be easy to miss */
         if (Enet_isIcssFamily(hPer->enetType))
@@ -419,6 +426,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         }
         /* Align the RX MTU size to avoid truncation. Refer to ENET_UDMA_RXMTU_ALIGN description for
          * more details */
+
         flowPrms.sizeThresh0 = ENET_UTILS_ALIGN(pRxFlowPrms->rxFlowMtu, ENET_UDMA_RXMTU_ALIGN);
         flowPrms.sizeThresh1 = ENET_UTILS_ALIGN(ENET_UDMA_JUMBO_PACKET_SIZE, ENET_UDMA_RXMTU_ALIGN);
         flowPrms.sizeThresh2 = ENET_UTILS_ALIGN(ENET_UDMA_JUMBO_PACKET_SIZE, ENET_UDMA_RXMTU_ALIGN);
@@ -434,7 +442,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         flowPrms.fdq1Qnum    = Udma_ringGetNum(ringHandle);
         flowPrms.fdq2Qnum    = Udma_ringGetNum(ringHandle);
         flowPrms.fdq3Qnum    = Udma_ringGetNum(ringHandle);
-
+#endif
         flowStart = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
 
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
@@ -450,6 +458,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         {
             flowAllocMappedPrms.mappedFlowGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
         }
+#ifdef ENET_ENABLE_PER_ICSSG
         else if (hDma->enetType == ENET_ICSSG_SWITCH)
         {
             if (0U == hDma->instId)
@@ -480,11 +489,17 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
                 Enet_assert(false);
             }
         }
+#endif
         else
         {
             Enet_assert(false);
         }
-
+#if defined(SOC_AM62LX)
+        Udma_ChHandle ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
+        flowAllocMappedPrms.ChHandle = ChHandle;
+        flowPrms.ChHandle = ChHandle;
+        flowidx = pRxFlowPrms->flowIdx+1;
+#endif
         /* Attach and configure the flows */
         retVal = Udma_flowAttachMapped(pRxFlow->hUdmaDrv,
                                  pRxFlow->hUdmaFlow,
@@ -497,7 +512,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         {
             flowAttachFlag = true;
             retVal         = Udma_flowConfig(pRxFlow->hUdmaFlow,
-                                             0U, /* Flow Index */
+                                             flowidx, /* Flow Index */
                                              &flowPrms);
         }
     }
@@ -533,6 +548,11 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
 #endif
 
             EnetUdma_getRxFlowUdmaInfo(pRxFlow, &udmaInfo);
+#if defined(SOC_AM62LX)
+            udmaInfo.hUdmaCh = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
+            Udma_ChHandleInt cHandle = (Udma_ChHandleInt)udmaInfo.hUdmaCh;
+            cHandle->cqRing = pRxFlow->cqRing;
+#endif
             retVal = EnetUdma_registerEvent(&udmaInfo,
                                            ringHandle,
                                            EnetUdma_rxCqIsr,
@@ -769,10 +789,10 @@ void EnetDma_initTxChParams(void *pTxChCfg)
     EnetUdma_OpenTxChPrms *pTxChPrms = (EnetUdma_OpenTxChPrms *)pTxChCfg;
 
     UdmaChTxPrms_init(&txPrms, UDMA_CH_TYPE_TX);
-    pTxChPrms->udmaTxChPrms.filterPsWords = TISCI_MSG_VALUE_RM_UDMAP_TX_CH_FILT_PSWORDS_DISABLED;
+    pTxChPrms->udmaTxChPrms.filterPsWords = ENET_UDMA_TX_CH_FILT_PSWORDS_DISABLED;
     /* By default - don't filter extended packet info block where CPPI RX info words are mapped.
        App can enable filtering in case auto-reclaim use-case */
-    pTxChPrms->udmaTxChPrms.filterEinfo   = TISCI_MSG_VALUE_RM_UDMAP_TX_CH_FILT_EINFO_DISABLED;
+    pTxChPrms->udmaTxChPrms.filterEinfo   = ENET_UDMA_TX_CH_FILT_EINFO_DISABLED;
     pTxChPrms->udmaTxChPrms.addrType    = txPrms.addrType;
     pTxChPrms->udmaTxChPrms.chanType    = txPrms.chanType;
     pTxChPrms->udmaTxChPrms.busPriority = txPrms.busPriority;
@@ -793,7 +813,7 @@ void EnetDma_initTxChParams(void *pTxChCfg)
 #endif
 
     pTxChPrms->udmaChPrms.cqRingPrms.orderId    = UDMA_DEFAULT_RING_ORDER_ID;
-    pTxChPrms->udmaChPrms.cqRingPrms.mode       = TISCI_MSG_VALUE_RM_RING_MODE_RING;
+    pTxChPrms->udmaChPrms.cqRingPrms.mode       = ENET_UDMA_RING_MODE_RING;
     pTxChPrms->udmaChPrms.cqRingPrms.useRingMon = false;
     pTxChPrms->udmaChPrms.cqRingPrms.ringMonCfg.mode = 0U;
     pTxChPrms->udmaChPrms.cqRingPrms.ringMonCfg.data0 = 0U;
@@ -929,6 +949,7 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
         {
             chPrms.mappedChGrp   = UDMA_MAPPED_TX_GROUP_CPSW;
         }
+#ifdef ENET_ENABLE_PER_ICSSG
         else if (hDma->enetType == ENET_ICSSG_SWITCH)
         {
             if (0U == hDma->instId)
@@ -959,6 +980,7 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
                 Enet_assert(false);
             }
         }
+#endif
         else
         {
             Enet_assert(false);
@@ -1016,6 +1038,7 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
         {
                 pRingPrms->mappedRingGrp   = UDMA_MAPPED_TX_GROUP_CPSW;
         }
+#ifdef ENET_ENABLE_PER_ICSSG
         else if (hDma->enetType == ENET_ICSSG_SWITCH)
         {
             if (0U == hDma->instId)
@@ -1046,6 +1069,7 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
                 Enet_assert(false);
             }
         }
+#endif
         else
         {
             Enet_assert(false);
@@ -1133,7 +1157,7 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
         UdmaChTxPrms_init(&txPrms, chType);
 
         /* TODO - Should this be enabled? */
-        txPrms.pauseOnError    = TISCI_MSG_VALUE_RM_UDMAP_CH_PAUSE_ON_ERROR_DISABLED;
+        txPrms.pauseOnError    = ENET_UDMA_CH_PAUSE_ON_ERROR_DISABLED;
 
         /* CPPI RX (host TX) Control Data Words [0..2] are mapped to Host Packet Descriptor
          * Protocol Specific Words if (TCHAN[a]_TCFG.tx_filt_pswords = 0) and
@@ -2269,7 +2293,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
             UdmaRingPrms_init(&chPrms.tdCqRingPrms);
             chPrms.tdCqRingPrms.ringMem = pTdCqRingMem;
             chPrms.tdCqRingPrms.elemCnt = ENET_UDMA_TDCQ_RING_ELE_CNT;
-            chPrms.tdCqRingPrms.mode    = TISCI_MSG_VALUE_RM_RING_MODE_RING;
+            chPrms.tdCqRingPrms.mode    = ENET_UDMA_RING_MODE_RING;
         }
         else
         {
@@ -2284,6 +2308,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
         {
             chPrms.mappedChGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
         }
+#ifdef ENET_ENABLE_PER_ICSSG
         else if (hEnetUdma->enetType == ENET_ICSSG_SWITCH)
         {
             if (0U == hEnetUdma->instId)
@@ -2314,6 +2339,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
                 Enet_assert(false);
             }
         }
+#endif
         else
         {
             Enet_assert(false);
@@ -2652,8 +2678,9 @@ uint32_t EnetUdma_getMappedRxChStartIdx(EnetUdma_RxChObj *pRxCh)
 {
     uint32_t chNum, chStartIdx = 0U, index;
     /* Pass RX channel number in case of AM64x */
+#if !defined(SOC_AM62LX)
     extern const Udma_MappedChRingAttributes gUdmaRxMappedChRingAttributes[];
-
+#endif
     chNum = EnetUdma_getMappedRxChNum(pRxCh->enetType,
                                       pRxCh->instId,
                                       pRxCh->chIdx);
@@ -2663,7 +2690,7 @@ uint32_t EnetUdma_getMappedRxChStartIdx(EnetUdma_RxChObj *pRxCh)
 #if (defined(SOC_AM62AX)) || (defined(SOC_AM62PX)) || (defined(SOC_AM62DX))|| defined(SOC_AM62X)
     /*TODO!: Remove hard coding of numbers */
     chStartIdx = (gUdmaRxMappedChRingAttributes[index].startFreeRing - 99U);
-#elif (defined(SOC_AM275X))
+#elif (defined(SOC_AM275X)) || defined(SOC_AM62LX)
     chStartIdx = CSL_DMSS_PKTDMA_RX_CHANS_CPSW_START + 1;
 #elif (defined (SOC_J722S) || defined (SOC_TDA54))
     chStartIdx = CSL_DMSS_PKTDMA_RX_CHANS_CPSW_START;
@@ -2966,6 +2993,26 @@ int32_t EnetDma_registerTxEventCb(EnetDma_TxChHandle hTxCh, EnetDma_PktNotifyCb 
 
     EnetOsal_restoreAllIntr(key);
     return status;
+}
+
+static void EnetDma_initflowSrcTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms)
+{
+#if !defined(SOC_AM62LX)
+    enetflowPrms->srcTagHi     = flowPrms->srcTagHi;
+    enetflowPrms->srcTagLo     = flowPrms->srcTagLo;
+    enetflowPrms->srcTagHiSel  = flowPrms->srcTagHiSel;
+    enetflowPrms->srcTagLoSel  = ENET_UDMA_RX_FLOW_SRC_SELECT_SRC_TAG;
+#endif
+}
+
+static void EnetDma_initflowDstTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms)
+{
+#if !defined(SOC_AM62LX)
+    enetflowPrms->destTagHi    = flowPrms->destTagHi;
+    enetflowPrms->destTagLo    = flowPrms->destTagLo;
+    enetflowPrms->destTagHiSel = flowPrms->destTagHiSel;
+    enetflowPrms->destTagLoSel = flowPrms->destTagLoSel;
+#endif
 }
 
 /* End of file */

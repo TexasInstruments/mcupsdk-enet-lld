@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (C) Texas Instruments Incorporated 2020-2024
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -31,24 +31,41 @@
  */
 
 /*!
- * \file  enet_utils_dflt.c
+ * \file     enet_apputils_k3.c
  *
- * \brief This file contains a default implementation of the Enet Utils.
+ * \brief    Common Enet application utility functions for K3 SOCs.
  */
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include <stdint.h>
-#include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-#include <kernel/dpl/ClockP.h>
-#include <include/common/enet_utils_dflt.h>
-#include <drivers/soc.h>
-#include <kernel/nortos/dpl/common/printf.h>
 
+#include <drivers/hw_include/cslr_soc.h>
+#include <csl_cpswitch.h>
+
+#include <enet.h>
+#include <enet_cfg.h>
+#include <include/per/cpsw.h>
+
+#include <drivers/uart.h>
+
+
+#include "include/enet_apputils.h"
+#include "include/enet_appboardutils.h"
+
+#include "include/enet_appsoc.h"
+#include "include/enet_apprm.h"
+
+//TODO - private dependency
+#include <priv/mod/cpsw_clks.h>
+#include <kernel/dpl/SystemP.h>
+
+#include <drivers/soc.h>
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -65,67 +82,106 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static void EnetUtilsDflt_print(const char *fmt, ...);
-
-static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
-                                             void *appData);
-
-static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
-                                          void *appData);
-
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
-
-/* None */
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-void EnetUtilsDflt_initCfg(EnetUtils_Cfg *cfg)
+
+
+EnetAppUtils_MmrLockState EnetAppUtils_mcuMmrCtrl(EnetAppUtils_CtrlMmrType mmrNum,
+                                                  EnetAppUtils_MmrLockState lock)
 {
-    cfg->print = EnetUtilsDflt_print;
-    cfg->virtToPhys = &EnetUtilsDflt_virtToPhysDflt;
-    cfg->physToVirt = &EnetUtilsDflt_physToVirtDflt;
+    EnetAppUtils_MmrLockState prevLockState = ENETAPPUTILS_LOCK_MMR;
+    return prevLockState;
+
 }
 
-static void EnetUtilsDflt_print(const char *fmt, ...)
+EnetAppUtils_MmrLockState EnetAppUtils_mainMmrCtrl(EnetAppUtils_CtrlMmrType mmrNum,
+                                                   EnetAppUtils_MmrLockState lock)
 {
-    char buf[ENET_CFG_PRINT_BUF_LEN];
-    va_list args;
+ 
+    EnetAppUtils_MmrLockState prevLockState = ENETAPPUTILS_LOCK_MMR;
+    return prevLockState;
 
-#if ENET_CFG_IS_ON(DEV_ERROR)
-    if (ENET_CFG_PRINT_BUF_LEN < strlen(fmt))
+}
+
+
+#if (ENET_ENABLE_PER_CPSW == 1)
+static void EnetAppUtils_selectCptsClock(Enet_Type enetType,
+                                         EnetAppUtils_CptsClkSelMux clkSelMux)
+{
+    uint32_t muxVal;
+    muxVal = (uint32_t) clkSelMux;
+#if defined(SOC_AM62LX)
+
+    switch (enetType)
     {
-        assert(false);
+        case ENET_CPSW_3G:
+        {
+            CSL_cptsRegs *regs = NULL;
+
+            regs = (CSL_cptsRegs *)(uintptr_t)(CSL_CPSW0_CPSW_NUSS_VBUSP_BASE +
+                                               CPSW_CPTS_OFFSET);
+            CSL_CPTS_setRFTCLKSelectReg(regs, muxVal);
+        }
+        break;
+
+        default:
+            EnetAppUtils_assert(false);
+            break;
+    }
+#else
+#error "Unsupported platform"
+#endif
+}
+#endif
+
+#define CPSW_SOC_RGMII_MHZ_250_CLK_VAL        (250000000U)
+#define CPSW_SOC_RGMII_MHZ_50_CLK_VAL         (50000000U)
+#define CPSW_SOC_RGMII_MHZ_5_CLK_VAL          (5000000U)
+
+void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
+{
+    uint32_t moduleId = AM62LX_DEV_CPSW0;;
+    uint32_t enableClock = 1;
+    SOC_moduleClockEnable(moduleId, enableClock);
+
+#if (ENET_ENABLE_PER_CPSW == 1)
+    if (Enet_isCpswFamily(enetType))
+    {
+        EnetAppUtils_CptsClkSelMux clkSelMux;
+        clkSelMux = ENETAPPUTILS_CPTS_CLKSEL_CPSWHSDIV_CLKOUT2;
+        EnetAppUtils_selectCptsClock(enetType, clkSelMux);
     }
 #endif
-
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    DebugP_log("%s",buf);
-    va_end(args);
 }
 
-static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
-                                             void *appData)
+void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
 {
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
-    /*!TODO: have SOC_virtToPhy function for AM62AX */
-    return ((uint64_t)(virtAddr));
-#else
-    return ((uint64_t)SOC_virtToPhy((void *)virtAddr));
-#endif
+    uint32_t moduleId = AM62LX_DEV_CPSW0;
+    uint32_t enableClock = 0;
+    SOC_moduleClockEnable(moduleId, enableClock);
 }
 
-static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
-                                          void *appData)
+
+int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint32_t input, uint32_t output)
 {
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
-    /*!TODO: have SOC_phyToVirt function for AM62AX */
-    return ((void*)(phyAddr));
-#else
-    return ((void*) SOC_phyToVirt(phyAddr));
+    int32_t  status = ENET_SOK;
+
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined(SOC_AM275X)
+    EnetAppUtils_assert(enetType == ENET_CPSW_3G);
 #endif
+
+    return status;
 }
+
+void EnetAppUtils_setupSciServer(void)
+{
+    return;
+}
+
+/* end of file */

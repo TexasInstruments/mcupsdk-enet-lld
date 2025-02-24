@@ -55,13 +55,16 @@
 #include <hw_include/cslr_icss.h>
 
 #include <priv/per/enet_hostport_udma.h>
+#if (ENET_SCICLIENT_AVAILABLE == 1)
 #include <drivers/sciclient.h>
+#endif
 #include <drivers/udma.h>
 
 #include "enet_udma_priv.h"
 /* hack to access gUdmaTxMappedChRingAttributes */
 #include "drivers/udma/udma_priv.h"
 #include "enet_udma_memcfg.h"
+#include "enet_udma_defines.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -260,8 +263,8 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
     int32_t retrieveCnt = 0;
 
     EnetQueue_initQ(pFromHwQueue);
-    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
 
@@ -401,8 +404,8 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     uint32_t totalPacketFilledLen = 0U;
     EnetUdma_SGListEntry *sgList;
 
-    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X)  || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -726,8 +729,8 @@ int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
     uint32_t totalPacketFilledLen = 0;
     EnetUdma_SGListEntry *sgList;
 
-    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)|| defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -872,8 +875,8 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
     uint32_t totalPacketFilledLen = 0;
     EnetUdma_SGListEntry *sgList;
 
-    isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+    isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -1348,6 +1351,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
             {
                     pRingPrms->mappedRingGrp   = UDMA_MAPPED_TX_GROUP_CPSW;
             }
+#ifdef ENET_ENABLE_PER_ICSSG
             else
             {
                 if ((0U == pRingAllocInfo->instId) || (1U == pRingAllocInfo->instId))
@@ -1363,6 +1367,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
                     Enet_assert(false);
                 }
             }
+#endif
         }
         else
         {
@@ -1370,6 +1375,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
             {
                     pRingPrms->mappedRingGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
             }
+#ifdef ENET_ENABLE_PER_ICSSG
             else if (pRingAllocInfo->enetType == ENET_ICSSG_SWITCH)
             {
                 if (0U == pRingAllocInfo->instId)
@@ -1400,6 +1406,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
                     Enet_assert(false);
                 }
             }
+#endif
             else
             {
                 Enet_assert(false);
@@ -1507,6 +1514,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
     bool flowAttachFlag = false;
     uintptr_t intrKey;
     uint32_t flowStart;
+    uint32_t flowidx = 0;
 
     intrKey = EnetOsal_disableAllIntr();
 
@@ -1565,7 +1573,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
     {
         UdmaRingPrms_init(&ringPrms);
         ringPrms.elemCnt = ENET_ARRAYSIZE(gRsvdFlowRingMemFQ);
-        ringPrms.mode    = TISCI_MSG_VALUE_RM_RING_MODE_MESSAGE;
+        ringPrms.mode    = ENET_UDMA_RM_RING_MODE_MESSAGE;
         ringPrms.ringMem = &gRsvdFlowRingMemFQ[0U][0U];
 
         ringAllocInfo.allocRingMem = false;
@@ -1589,17 +1597,21 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         UdmaRingPrms_init(&ringPrms);
         ringPrms.elemCnt = ENET_ARRAYSIZE(gRsvdFlowRingMemCQ);
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
-        ringPrms.mode    = TISCI_MSG_VALUE_RM_RING_MODE_MESSAGE;
+        ringPrms.mode    = ENET_UDMA_RM_RING_MODE_MESSAGE;
 #elif (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
-        ringPrms.mode    = TISCI_MSG_VALUE_RM_RING_MODE_RING;
+        ringPrms.mode    = ENET_UDMA_RING_MODE_RING;
 #endif
         ringPrms.ringMem = &gRsvdFlowRingMemCQ[0U][0U];
 
         ringAllocInfo.allocRingMem = false;
-        ringAllocInfo.ringNum      = UDMA_RING_ANY;
         ringAllocInfo.enetType     = hDma->enetType;
         ringAllocInfo.instId       = hDma->instId;
         ringAllocInfo.mappedChNum  = Udma_chGetNum(&hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj);;
+#if defined(SOC_AM62LX)      
+        ringAllocInfo.ringNum      = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
+#else
+        ringAllocInfo.ringNum      = UDMA_RING_ANY;
+#endif
         ringAllocInfo.transferDir  = ENET_UDMA_DIR_RX;
 
         retVal = EnetUdma_allocRing(pRxFlow->hUdmaDrv,
@@ -1624,8 +1636,8 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
          * gets a descriptor. In case of multi flow, this results in bottom
          * of FIFO drop, to avoid this errorHandling must be set to drop(0).
          */
-        flowPrms.errorHandling = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_ERR_DROP;
-        flowPrms.psInfoPresent = TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PSINFO_PRESENT;
+        flowPrms.errorHandling = ENET_UDMA_RX_FLOW_ERR_DROP;
+        flowPrms.psInfoPresent = ENET_UDMA_RX_FLOW_PSINFO_PRESENT;
 
         flowPrms.defaultRxCQ = Udma_ringGetNum(pRxFlow->cqRing);
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
@@ -1633,6 +1645,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
 #elif (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
         ringHandle = pRxFlow->cqRing;
 #endif
+#if (ENET_UDMA_FDQ_PRESENT == 1)
         flowPrms.fdq0Sz0Qnum = Udma_ringGetNum(ringHandle);
         flowPrms.fdq0Sz1Qnum = Udma_ringGetNum(ringHandle);
         flowPrms.fdq0Sz2Qnum = Udma_ringGetNum(ringHandle);
@@ -1640,9 +1653,11 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         flowPrms.fdq1Qnum    = Udma_ringGetNum(ringHandle);
         flowPrms.fdq2Qnum    = Udma_ringGetNum(ringHandle);
         flowPrms.fdq3Qnum    = Udma_ringGetNum(ringHandle);
-
+#endif
         flowStart = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
-
+#if defined(SOC_AM62LX)
+        flowidx  = pRxFlowPrms->flowIdx + 1;
+#endif
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
         /* Attach and configure the flows */
         retVal = Udma_flowAttach(pRxFlow->hUdmaDrv,
@@ -1658,6 +1673,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         {
             flowAllocMappedPrms.mappedFlowGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
         }
+#ifdef ENET_ENABLE_PER_ICSSG
         else if (hDma->enetType == ENET_ICSSG_SWITCH)
         {
             if (0U == hDma->instId)
@@ -1688,11 +1704,15 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
                 Enet_assert(false);
             }
         }
+#endif
         else
         {
             Enet_assert(false);
         }
-
+#if defined(SOC_AM62LX)
+        flowAllocMappedPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
+        flowPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj; 
+#endif
         /* Attach and configure the flows */
         retVal = Udma_flowAttachMapped(pRxFlow->hUdmaDrv,
                                  pRxFlow->hUdmaFlow,
@@ -1705,7 +1725,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         {
             flowAttachFlag = true;
             retVal         = Udma_flowConfig(pRxFlow->hUdmaFlow,
-                                             0U,
+                                             flowidx,
                                              &flowPrms);
         }
     }
@@ -1825,8 +1845,8 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
 
         EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
         CSL_UdmapCppi5HMPD *pHDesc = &pHpdDesc->hostDesc;
-        isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+        isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) || defined(SOC_AM62LX)
         isExposedRing = 0U;
 #endif
         physDescPtr = (uint64_t)EnetUtils_virtToPhys((void *)&pHpdDesc->hostDesc, NULL);
@@ -1918,8 +1938,8 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
 
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
-        isExposedRing = (Udma_ringGetMode(hUdmaRing) == TISCI_MSG_VALUE_RM_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
+        isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54) ||defined(SOC_AM62LX)
         isExposedRing = 0U;
 #endif
         if (isExposedRing == true)
@@ -2171,7 +2191,7 @@ void EnetUdma_buffDescInit(EnetUdma_CpswHpdDesc *hpdDesc)
 
     CSL_udmapCppi5SetDescType(hostDesc, descType);
     CSL_udmapCppi5SetEpiDataPresent(hostDesc, true);
-    CSL_udmapCppi5SetPsDataLoc(hostDesc, TISCI_MSG_VALUE_RM_UDMAP_RX_FLOW_PS_END_PD);
+    CSL_udmapCppi5SetPsDataLoc(hostDesc, ENET_UDMA_RX_FLOW_PS_END_PD);
     CSL_udmapCppi5SetPsDataLen(hostDesc, ENET_UDMA_PROTOCOL_SPECIFIC_INFO_BLOCK_SIZE);
     CSL_udmapCppi5HostSetPktLen(hostDesc, 0U);
     CSL_udmapCppi5SetPsFlags(hostDesc, 0U);
@@ -2299,7 +2319,6 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
      * the Int Aggr and Int Router according to our preferred interrupt
      * number.  The interrupt registration itself doesn't happen here */
     UdmaEventPrms_init(&evtPrms);
-
     switch (eventType)
     {
         case UDMA_EVENT_TYPE_DMA_COMPLETION:
@@ -2309,6 +2328,7 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
         case UDMA_EVENT_TYPE_RING:
             Enet_assert(NULL != hUdmaRing);
             evtPrms.ringHandle = hUdmaRing;
+            evtPrms.chHandle = pUdmaInfo->hUdmaCh;
             break;
 #if (UDMA_SOC_CFG_RING_MON_PRESENT == 1)
         case UDMA_EVENT_TYPE_RING_MON:
@@ -2325,25 +2345,15 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
 
     evtPrms.eventType         = eventType;
     evtPrms.eventMode         = UDMA_EVENT_MODE_SHARED;
-
+#if (ENET_SCICLIENT_AVAILABLE == 1)
     /* Global event can be used when number of events is too large
      * (i.e. large number of RX flows and/or TX channels) */
-    if (pUdmaInfo->useGlobalEvt)
-    {
 #if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
-        evtPrms.masterEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
+        evtPrms.masterEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL ;
 #else
-        evtPrms.controllerEventHandle = Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv);
+        evtPrms.controllerEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL;
+#endif  
 #endif
-    }
-    else
-    {
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined (SOC_TDA54)
-        evtPrms.masterEventHandle = NULL;
-#else
-        evtPrms.controllerEventHandle = NULL;
-#endif
-    }
 
     evtPrms.eventCb           = eventCb;
     evtPrms.appData           = cbArg;
@@ -2760,7 +2770,7 @@ Udma_RingMonHandle EnetUdma_allocRingMon(Udma_DrvHandle hUdmaDrv,
     if (UDMA_SOK == retVal)
     {
         UdmaRingMonPrms_init(&monPrms);
-        monPrms.source  = TISCI_MSG_VALUE_RM_MON_SRC_ELEM_CNT;
+        monPrms.source  = ENET_UDMA_RM_MON_SRC_ELEM_CNT;
         monPrms.mode    = pRingMonCfg->mode;
         monPrms.ringNum = Udma_ringGetNum(hUdmaRing);
         monPrms.data0   = pRingMonCfg->data0;

@@ -69,7 +69,10 @@
 #include <soc/k3/am62x/enet_soc.h>
 #include <soc/k3/k3_soc.h>
 #include <drivers/udma.h>
-
+#elif defined(SOC_AM62LX)
+#include <soc/k3/am62lx/enet_soc.h>
+#include <soc/k3/k3_soc.h>
+#include <drivers/udma.h>
 #elif defined(SOC_AM62DX)
 #include <soc/k3/am62dx/enet_soc.h>
 #include <soc/k3/k3_soc.h>
@@ -95,6 +98,7 @@
 #include <soc/k3/k3_soc.h>
 #include <drivers/udma/soc/tda54/udma_soc.h>
 #endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
