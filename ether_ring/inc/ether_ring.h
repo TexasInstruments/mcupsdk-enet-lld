@@ -64,19 +64,12 @@ extern "C" {
 /* ========================================================================== */
 /*                                 Macros                                     */
 /* ========================================================================== */
-/*! \brief Maximum Instances of EtherRing supported */
-#define ETHERRING_MAX_ETHERRING_INSTANCES                                     1U
+/*! \brief Size of CB Header */
+#define ETHERRING_CB_HEADER_SIZE                                    4U
 
-/* \brief Macro to Enable and Disable Profiling for Ether-Ring */
-#define ETHERRING_PROFILING
+/*! \brief Size of Lookup table for Duplicate packet rejection */
+#define ETHERRING_LOOKUP_TABLE_SIZE                                 (256U*256U)
 
-/* \brief Size of Lookup table for Duplicate packet rejection */
-#define ETHERRING_LOOKUP_TABLE_SIZE                                           (256U*256U)
-
-#ifdef ETHERRING_PROFILING
-/*! \brief Value of Maximum Rx TimeStamps stored in the EtherRing stats */
-#define ETHERRING_MAX_RX_TIMESTAMPS_STORED                                    520U
-#endif
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -151,26 +144,6 @@ typedef struct EtherRing_Obj_s
 }
 EtherRing_Obj, *EtherRing_Handle;
 
-#ifdef ETHERRING_PROFILING
-/**
- * \brief
- *  Etherring RxTs, Current TimeStamp stats
- *
- * \details
- *  This structure stores the Rx timestamp and current timestamp stats.
- */
-typedef struct
-{
-    /*! Rx Timestamp Array */
-    uint64_t etherRingTimeStampsRx[ETHERRING_MAX_RX_TIMESTAMPS_STORED];
-
-    /*! Current Timestamp Array */
-    uint64_t etherRingCurrentTimeStamps[ETHERRING_MAX_RX_TIMESTAMPS_STORED];
-
-    /*! Array Index for RX Timestamp */
-    int16_t etherRingRxTsIndex;
-}EtherRingRxTs_obj;
-#endif
 
 typedef EnetQ EtherRing_pktQ;
 /* ========================================================================== */
@@ -291,26 +264,6 @@ void EtherRing_attachRxDmaHandle(void *hEtherRing,
                                 int32_t rxChNum);
 
 /*!
- * \brief Adds the CBlike header with sequence_number to the packetInfo before submitting in TX with scatter-gather.
- *
- * \param pktInfo     [IN] DMA Packet-Info
- * \param seqNumber   [IN] Sequence Number of the packet
- *
- *  \return \ref void
- */
-void EtherRing_addCBLikeHeader(EnetDma_Pkt *pktInfo,
-                             uint16_t seqNumber);
-
-/*!
- * \brief Removes the CB-Like header after retrieving RX packet.
- *
- * \param pktInfo     [IN] DMA Packet-Info
- *
- *  \return \ref void
- */
-void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo);
-
-/*!
  * \brief Periodic function that needs to be called from application.
  *
  * \param hEtherRing  [IN] Void pointer to the Ether-ring handle
@@ -318,6 +271,7 @@ void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo);
  *  \return \ref void
  */
 void EtherRing_periodicTick(void *hEtherRing);
+
 
 #ifdef __cplusplus
 }

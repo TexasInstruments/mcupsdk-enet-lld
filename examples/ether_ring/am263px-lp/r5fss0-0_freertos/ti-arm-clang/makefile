@@ -110,12 +110,8 @@ DEFINES_common := \
 	-DSITARA \
 	-DNO_GETOPT_LONG=1 \
 	-DUB_LOGCAT=5 \
-	-DAVTP_ENABLED=1 \
 	-DGPTP_ENABLED=1 \
 	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\" \
-	-DAVTP_DIRECT_MODE=1 \
-	-DMELCO_APP_ENABLED=1 \
-	-DWITH_EST_CONFIG=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \

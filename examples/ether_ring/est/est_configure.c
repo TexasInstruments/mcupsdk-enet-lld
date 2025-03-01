@@ -54,9 +54,7 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-//#define CLASSA_INTERVAL_OPEN_TIME_NS 2000
-#define CLASSA_INTERVAL_OPEN_TIME_NS 20000 //todo
-#define CLASSD1_INTERVAL_OPEN_TIME_NS 20000
+#define CLASSA_INTERVAL_OPEN_TIME_NS 20000
 #define MAX_BASE_TIME_US   20000000
 
 extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
@@ -177,67 +175,69 @@ static EnetEstAppTestParam_t gEnetEstAppTestLists[] =
         .list =
         {
             .baseTime    = 0ULL,
-            // Class A cycle 125us, open 10us
-            // Class D cycle 1000us, open 125us
-            .cycleTime   = 1000*UB_USEC_NS,
+            /* Class A cycle 125us, open 20us */
+            /* Class D cycle 1000us, open 105us */
+            .cycleTime   = CLASSD_STREAM_TRAFFIC_PERIODICITY,
+
+            /* Gate7 is always opened for GPT Traffic irrespective of stream traffic */
             .gateCmdList =
             {
-                // Gate: (gptp gate7)                 7           3  2       0
-                // 125us
+                /* Gate: (gptp gate7)                 7           3  2       0 */
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 1, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
-                                // 125us
+                /* 125us */
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 1, 0, 0, 0),
                   .timeInterval =  CLASSA_INTERVAL_OPEN_TIME_NS
                 },
                 { .gateStateMask = ENET_TAS_GATE_MASK(1, 0, 0, 0, 0, 0, 0, 0),
-                  .timeInterval =  (125*UB_USEC_NS - CLASSA_INTERVAL_OPEN_TIME_NS)
+                  .timeInterval =  (CLASSA_STREAM_TRAFFIC_PERIODICITY- CLASSA_INTERVAL_OPEN_TIME_NS)
                 },
 
             },
@@ -576,7 +576,7 @@ static int EnetEstApp_runSchedule(EnetQoSApp_AppCtx_t *ctx,
         }
         else
         {
-            DPRINT("Set admin control list succesfully");
+            DPRINT("Set admin control list successfully");
         }
     } while (0);
 
@@ -603,17 +603,15 @@ void est_schedule(EnetApp_ModuleCtx_t *modCtx)
         ctx->netdev[i] = ((EnetApp_Ctx_t *)ctx->ectx)->netdev[i];
     }
     ctx->netdevSize = ((EnetApp_Ctx_t *)ctx->ectx)->netdevSize;
-#if 1
+
     while ((!EnetEstApp_isPTPClockStateSync(ctx, ctx->netdev[0])) &&
              (!EnetEstApp_isPTPClockStateSync(ctx, ctx->netdev[1])) )
     {
         DPRINT("Waiting for PTP clock to be synchronized!");
         CB_USLEEP(1000000ULL);
     }
-#endif
 
-
-#if 1
+#ifdef ENABLE_EST
     int schedIdx = 0;
     err = EnetEstApp_runSchedule(ctx,
                                  &gEnetEstAppTestLists[schedIdx].list,
@@ -627,12 +625,12 @@ void est_schedule(EnetApp_ModuleCtx_t *modCtx)
 #endif
     if (err == 0)
     {
-        // CB_USLEEP(ctx->adminDelayOffset); // 20s?
-        CB_USLEEP(20000000); // 20s?
+        /* Wait for 20sec before starting traffic to ensure ptp is synchronized */
+        CB_USLEEP(20000000);
 
         DPRINT("Waiting EST Setting done");
 
-        // trigger for talker/listener start
+        /* trigger for ClassA/ClassD start */
         SemaphoreP_post(&gEstFinishedSem);
     }
     else
@@ -653,5 +651,4 @@ void wait_est_configured()
         }
         CB_USLEEP(10000);
     }
-//    DPRINT("%s: done", __func__);
 }

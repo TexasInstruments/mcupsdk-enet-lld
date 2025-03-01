@@ -118,25 +118,98 @@ typedef struct EnetApp_Cfg_s
     /* Semaphore posted from RX callback when Regular packets have arrived */
     SemaphoreP_Object streamSemObj[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS];
 
+    /* Task object for Class A,D Streams */
     TaskP_Object streamTaskObj[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS];
 
-    uint64_t totalRxCnt;
+    /* Total Rx Ether-Ring Packet count */
+    uint64_t etherRingRxPktCnt;
 
+    /* Ether-Ring Driver Handle */
     EtherRing_Handle hEtherRing;
 
+    /* Inter-vlan Control flag */
     bool isIntervlanEnabled;
 
+    /* Device NodeId configured from UART */
     int nodeId;
 } EnetApp_Cfg;
+
+#ifdef ETHERRING_PROFILING
+/**
+ * \brief
+ *  Etherring RxTs, Current TimeStamp for Profiling
+ *
+ * \details
+ *  This structure stores the Rx timestamp and current timestamp for profiling.
+ */
+typedef struct
+{
+    /*! Rx Timestamp Array */
+    uint64_t timeStampsRx[ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED];
+
+    /*! Current Timestamp Array */
+    uint64_t currentTimeStamps[ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED];
+
+    /*! Array Index for RX Timestamp */
+    int16_t rxTsIndex;
+}EtherRingAppRxTs_obj;
+#endif
 
 /* ========================================================================== */
 /*                          External Functions                                */
 /* ========================================================================== */
-
+/*!
+ * \brief Initialize and starts gptp tsn and uniconf task
+ *
+ * \param [IN] void
+ *
+ * \return \ref Enet_ErrorCodes
+ */
 int EnetApp_initTsn(void);
+
+/*!
+ * \brief Configures clock and enet driver
+ *
+ * \param [IN] void
+ *
+ * \return void
+ */
 void EnetApp_initAppCfg(EnetPer_AttachCoreOutArgs *attachArgs, EnetApp_HandleInfo *handleInfo);
+
+/*!
+ * \brief Sets the mac address in application config object
+ *
+ * \param hwaddr [IN] uint8_t pointer to the mac address
+ *
+ * \return void
+ */
 void EnetApp_setMacAddr(uint8_t hwaddr[]);
+
+/*!
+ * \brief Adds Broadcast ALE Entry
+ *
+ * \param [IN] void
+ *
+ * \return void
+ */
 void EnetApp_addBroadcastEntry(void);
+
+/*!
+ * \brief Prints CPU Load
+ *
+ * \param [IN] void
+ *
+ * \return void
+ */
 void EnetApp_printCpuLoad(void);
 
+/*!
+ * \brief Prints CPU Load
+ *
+ * \param hEnet    [IN] Enet Handle
+ * \param coreId   [IN] Application core Id
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetApp_updatePtpMcastAddress(Enet_Handle hEnet, uint32_t coreId);
 #endif //_ENETAPP_H_

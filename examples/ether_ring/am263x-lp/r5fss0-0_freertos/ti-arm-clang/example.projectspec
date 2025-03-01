@@ -19,7 +19,7 @@
         "
         connection="TIXDS110_Connection.xml"
         toolChain="TICLANG"
-        cgtVersion="4.0.1"
+        cgtVersion="4.0.1.LTS"
         device="Cortex R.AM263x"
         deviceCore="Cortex_R5_0"
         ignoreDefaultDeviceSettings="true"
@@ -73,13 +73,8 @@
             -DSITARA
             -DNO_GETOPT_LONG=1
             -DUB_LOGCAT=5
-            -DAVTP_ENABLED=1
             -DGPTP_ENABLED=1
             -DTSNAPP_LOGLEVEL=\&quot;4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\&quot;
-            -DAVTP_DIRECT_MODE=1
-            -DWITH_EST_CONFIG=1
-            -DRX_REPORT=1
-            -DTX=1
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib

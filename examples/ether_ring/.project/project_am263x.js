@@ -101,20 +101,8 @@ const defines_r5f = {
         'SITARA',
         'NO_GETOPT_LONG=1',
         'UB_LOGCAT=5',
-        'AVTP_ENABLED=1',
-        // 'AVTP_HAVE_NO_SIGNAL=1',
         'GPTP_ENABLED=1',
         'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\\\"',
-        'AVTP_DIRECT_MODE=1',
-        // 'AAF_TX_CLASS_A_APPNO=4', // Map with stream 00:01:02:03:04:05-00:04
-        // 'AAF_TX_CLASS_D1_1_APPNO=1', // Map with stream 00:01:02:03:04:05-00:01
-        // 'AAF_TX_CLASS_D1_2_APPNO=2', // Map with stream 00:01:02:03:04:05-00:02
-        // 'AAF_TX_CLASS_D1_3_APPNO=3', // Map with stream 00:01:02:03:04:05-00:03
-        // 'AAF_RX_1_APPNO=0', // Map with stream 00:01:02:03:04:05-00:00
-        // 'AAF_RX_2_APPNO=5', // Map with stream 00:01:02:03:04:05-00:05
-        'WITH_EST_CONFIG=1',
-        'RX_REPORT=1',
-        'TX=1',
     ],
 };
 
