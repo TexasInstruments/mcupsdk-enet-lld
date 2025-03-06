@@ -64,12 +64,14 @@ endif
 MULTI_CORE_IMAGE_PARAMS = \
 	$(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTFILE) \
 
+MCELF_XIP_RANGE?=0x60100000:0x60200000 
+
 all:
 ifeq ($(CCS_IDE_MODE),cloud)
 #	No post build steps
 else
 	@echo  Boot image: am275x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_NAME)  ...
-	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME)
+	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(MULTI_CORE_IMAGE_PARAMS) --output=$(BOOTIMAGE_NAME) --xip=$(MCELF_XIP_RANGE) --sw_version=$(SW_VERSION)
 # Sign the appimage for HS-FS using appimage signing script
 	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 0  --loadaddr 84000000 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME).hs_fs --keyversion $(VERSION)
 ifeq ($(DEVICE_TYPE),HS)
