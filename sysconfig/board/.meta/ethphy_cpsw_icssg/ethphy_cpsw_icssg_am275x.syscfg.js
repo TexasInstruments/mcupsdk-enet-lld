@@ -47,14 +47,14 @@ const cpswPhyExtendedConfig = new Map([
 
 	['DP83TC812',{extConfig:""}],
 
-	['DP83TG720',{extConfig:""}],
-
-    ['DP83TG721',{extConfig:
+	['DP83TG720',{extConfig:
 `.txClkShiftEn = true,
 .rxClkShiftEn = true,
 .interruptEn = false,
 .sgmiiAutoNegEn = true,
 .MasterSlaveMode = DP83TG720_MASTER_SLAVE_STRAP,`}],
+
+    ['DP83TG721',{extConfig:""}],
 
 	['CUSTOM',{extConfig:""}],
 
