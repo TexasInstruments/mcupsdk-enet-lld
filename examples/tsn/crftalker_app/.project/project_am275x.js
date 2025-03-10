@@ -1,6 +1,6 @@
 let path = require('path');
 
-let device = "am62dx";
+let device = "am275x";
 
 const files = {
     common: [
@@ -50,7 +50,7 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F",
-        "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am62dx/r5f",
+        "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/r5f",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3",
@@ -58,7 +58,7 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/core",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am62dx",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am275x",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn",
@@ -77,18 +77,18 @@ const includes_freertos_r5f = {
 
 const libs_freertos_r5f = {
     common: [
-        "freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "drivers.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "enet-cpsw.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "board.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
+        "freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "drivers.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "enet-cpsw.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "board.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
         "libc.a",
         "libsysbm.a",
-        "tsn_combase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "tsn_unibase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "tsn_gptp-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "tsn_uniconf-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
-        "tsn_l2-freertos.am62dx.r5f.ti-arm-clang.lib",
-        "yangemb-freertos.am62dx.r5f.ti-arm-clang.lib",
+        "tsn_combase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "tsn_unibase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "tsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "tsn_l2-freertos.am275x.r5f.ti-arm-clang.lib",
+        "yangemb-freertos.am275x.r5f.ti-arm-clang.lib",
     ],
 };
 
@@ -101,7 +101,7 @@ const linker_includePath_freertos = {
 
 const defines_r5f = {
     common: [
-        "SOC_AM62DX",
+        "SOC_AM275X",
         "ENET_ENABLE_PER_CPSW=1",
         'PRINT_FORMAT_NO_WARNING',
         'SITARA',
@@ -169,7 +169,7 @@ const templates_freertos_r5f =
 ];
 
 const buildOptionCombos = [
-	{ device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83tg721/am62dx-evm", os: "freertos"},
+	{ device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am275x-evm-dp83tg721/am275x-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {

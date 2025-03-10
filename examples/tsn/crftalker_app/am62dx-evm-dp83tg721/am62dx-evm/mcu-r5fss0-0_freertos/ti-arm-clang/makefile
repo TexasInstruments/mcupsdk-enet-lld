@@ -2,7 +2,7 @@
 # Auto generated makefile
 #
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -48,6 +48,7 @@ FILES_common := \
 	default_flow_cpsw.c \
 	main.c \
 	crf_testclient.c \
+	media_clock_ctrl.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -62,9 +63,10 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../.. \
 	../../../.. \
-	../../../../nrt_flow \
+	../../../../.. \
+	../../../../../enet_media_clock_ctrl \
+	../../../../../nrt_flow \
 	generated \
 
 INCLUDES_common := \
@@ -76,7 +78,6 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am62dx/r5f \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core \
