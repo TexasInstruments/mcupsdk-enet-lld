@@ -168,7 +168,36 @@ extern "C" {
 #define PTP_PLL_FORCE_CTRL_2 0xD42 /* PTP_PLL Force control 2 */
 #define PTP_PLL_FORCE_CTRL_3 0xD43 /* PTP_PLL Force control 3 */
 
+#define CRF_MAS_TS_CAPT      0xD92 /* CRF master TS capture  */
+
+#define CRF_MAS_MCLK_LOC_SEC_31_16    0xD93  /* Media Clock Edge Location Sec MSB */
+#define CRF_MAS_MCLK_LOC_SEC_15_0     0xD94  /* Media Clock Edge Location Sec LSB */
+#define CRF_MAS_MCLK_LOC_NSEC_31_16   0xD95  /* Media Clock Edge Location nSec MSB */
+#define CRF_MAS_MCLK_LOC_NSEC_15_0    0xD96  /* Media Clock Edge Location nSec LSB */
+
 #define PTP_PLL_EN_CTL       0xD97 /* PTP_PLL Enable control */
+#define MCLK_PH_ADJ_LIM_1    0xD9D /* Media Clock Phase Adj Lim 1 */
+#define MCLK_PH_ADJ_LIM_2    0xD9E /* Media Clock Phase Adj Lim 2 */
+#define MCLK_DIV_CTL_1       0xD9F /* Media clock Division factor 1 */
+#define MCLK_DIV_CTL_2       0xDA0 /* Media clock Division factor 2 */
+#define MCLK_PH_ADJ_CTL_1    0xDA3 /* Media clock phase adjustment control 1 */
+#define MCLK_PH_ADJ_CTL_2    0xDA4 /* Media clock phase adjustment control 2 */
+#define CLKOUT_MUX_CTL       0xDA8 /* CLKOUT muxing control */
+
+#define CRF_PARSE_CTL             0xD80 /* CRF parsing control register */
+#define CRF_ETYPE                 0xD81 /* CRF ethertype control register */
+#define CRF_IP_CTL                0xD88 /* CRF IP parse control register */
+#define CRF_SAMP_CTL              0xD8A /* CRF sample control register */
+#define CRF_INT                   0xD8B /* CRF Interrupt register */
+#define CRF_TS_INTRVL_RD          0xDA6 /* CRF Timestamp Interval Read register */
+#define CRF_INT_2                 0xDB1 /* CRF interrupt register 2 */
+#define AUDIO_CLK_CTRL            0xDC1 /* Audio Clock Gating Control */
+#define CRF_INT_REG_3             0xDC2 /* CRF interrupt register 3 */
+#define MEDIA_CLK_GATE_CTRL_1     0xDC3 /* Media Clock Gating Control 1 */
+#define MEDIA_CLK_GATE_CTRL_2     0xDC4 /* Media Clock Gating Control 2 */
+#define MEDIA_CLK_GATE_CTRL_3     0xDC5 /* Media Clock Gating Control 3 */
+#define MEDIA_CLK_GATE_CTRL_4     0xDC6 /* Media Clock Gating Control 4 */
+#define MEDIA_CLK_GATE_CTRL_5     0xDC7 /* Media Clock Gating Control 5 */
 
 /* Bit definitions for the PTP_CTL register */
 #define TRIG_SEL_SHIFT  (10)   /* PTP Trigger Select */

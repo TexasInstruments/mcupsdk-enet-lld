@@ -400,7 +400,7 @@ int32_t EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_ENABLE_TRIGGER_OUTPUT(EnetP
                         inArgs->startNsec, inArgs->periodNsec, inArgs->repeat);
 
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
-                        "Port %u: Failed to %s event capture: %d\n",
+                        "Port %u: Failed to %s enable trigger output: %d\n",
                         ENET_MACPORT_ID(inArgs->macPort),
                         inArgs->periodNsec ? "enable" : "disable", status);
     return status;

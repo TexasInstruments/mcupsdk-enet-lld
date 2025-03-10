@@ -68,16 +68,17 @@
 #define DP83TG721_ONLY_TIMESTAMP_PTP_EVENTS 0
 
 #define NUM_TRIGGER       2
-#define NUM_EVENTS        2
+#define NUM_EVENTS        3
 #define START_TRIGGER_IDX 0
 #define START_EVENT_IDX   NUM_TRIGGER
 #define GPIO_NUM_PINS     (NUM_TRIGGER+NUM_EVENTS)
 
 /* GPIO pins for event capture and trigger */
-#define LED_0  1
-#define LED_1  2
-#define STRP_1 3
-#define CLKOUT 4
+#define LED_0           0x01
+#define LED_1           0x02
+#define STRP_1          0x03
+#define CLKOUT          0x04
+#define EVT_SEL_TRIG0   0x09
 
 #define WAIT_TXTS_TIMEOUT    2 /* ticks */
 
@@ -88,7 +89,10 @@
  * For example, to adjust the clock by +100 ns, the actual value added should
  * be 108 ns. To subtract 100 ns, the actual value subtracted should be 92 ns.
  */
-#define PTP_CLOCK_FREQ_HZ     250000000 //250Mhz PLL
+#define PLL_250MHZ_FREQ_CLOCK_FREQ_HZ     (250000000u)  /* 250Mhz PLL  */
+#define PTP_PLL_CLOCK_FREQ_HZ             (245760000u)  /*   PTP_PLL   */
+
+#define PTP_CLOCK_FREQ_HZ     (gPriv->ptp_clock_frequency)  /* Use PTP_PLL */
 #define PTP_CLOCK_PERIOD_NSEC (SEC_NSEC/PTP_CLOCK_FREQ_HZ)
 #define ADJTIME_FIX           (PTP_CLOCK_PERIOD_NSEC*2)
 
@@ -114,9 +118,19 @@
 #define DP83TG721_MAGIC_NUMBER (0xABCDEF)
 #define DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_DEFAULT   (0)
 #define DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_INVALID   (100)
+
+#define PHY_TRIGGER_INDEX     0
+#define PHY_EVENT_INDEX       0
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
+
+typedef enum ptpClockSource_e
+{
+    PTP_CLOCK_SOURCE_250MHZ_PLL = 0, /* Default */
+    PTP_CLOCK_SOURCE_PTP_PLL = 1,
+}ptpClockSource;
+
 typedef struct RegVal_s
 {
     uint32_t reg;
@@ -203,6 +217,12 @@ typedef struct Dp83tg721Priv_s
     EventTsReadyQ evTsReadyQ;
 
     uint8_t stsFrameEthHdr[14];
+    uint64_t ptp_clock_frequency;
+    uint8_t ptp_clock_source;
+    /* 1 to enable, 0 to disable */
+    uint8_t enableMediaClock;
+    /* 1 for listener, 0 for talker, ignored when enableMediaClock is 0*/
+    uint8_t mediaClockMode;
 } Dp83tg721Priv;
 
 typedef struct Timespec64_s
@@ -256,6 +276,11 @@ static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t tri
 
 static int32_t Dp83tg721_getEventTs(EthPhyDrv_Handle hPhy, uint32_t *eventIdx,
                     uint32_t *seqId, uint64_t *ts64);
+static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_gateMediaClock(EthPhyDrv_Handle hPhy, uint64_t startTime);
+static uint64_t Dp83tg721_getMediaClockEdge(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -301,8 +326,9 @@ static uint8_t gGpioTable[GPIO_NUM_PINS] =
     [START_TRIGGER_IDX] = LED_0,
     [START_TRIGGER_IDX+1] = CLKOUT,
     /* Capture pins */
-    [START_EVENT_IDX] = STRP_1,
-    [START_EVENT_IDX+1] = LED_1
+    [START_EVENT_IDX] = EVT_SEL_TRIG0,
+    [START_EVENT_IDX+1] = STRP_1,
+    [START_EVENT_IDX+2] = LED_1
 };
 
 static Dp83tg721Priv* gPriv = &gDp83tg721_Table[0];
@@ -378,9 +404,11 @@ static const RegVal gSlaveRegsInit[] =
 
 void Dp83tg721_initCfg(Dp83tg721_Cfg *cfg)
 {
-    /* No extended config parameters at the moment */
     cfg->enablePTPstatusFrames = false;
     cfg->srcMacStatusFrameType = DP83TG721_STATUS_FRAME_SRC_ADDR_SEL_DEFAULT;
+    cfg->clockSource = PTP_CLOCK_SOURCE_PTP_PLL;
+    cfg->enableMediaClock = 1;
+    cfg->mediaClockMode = 0;
 }
 
 static void Dp83tg721_ListInit(ListNode *list)
@@ -423,7 +451,7 @@ static ListNode* Dp83tg721_ListPop(ListNode *list)
     return node;
 }
 
-static void Dp83tg721_InitPriv(Dp83tg721Priv *priv, EthPhyDrv_Handle hPhy)
+static void Dp83tg721_InitPriv(Dp83tg721Priv *priv, Dp83tg721_Cfg* cfg, EthPhyDrv_Handle hPhy)
 {
     int32_t i;
     /* default of the status frame ethernet header */
@@ -449,6 +477,12 @@ static void Dp83tg721_InitPriv(Dp83tg721Priv *priv, EthPhyDrv_Handle hPhy)
     priv->evTsReadyQ.size = MAX_EVENT_INFO_POOL;
 
     memcpy(priv->stsFrameEthHdr, ethHdr, sizeof(ethHdr));
+
+    priv->enableMediaClock = cfg->enableMediaClock;
+    priv->mediaClockMode = cfg->mediaClockMode;
+    priv->ptp_clock_source = cfg->clockSource;
+    priv->ptp_clock_frequency = (priv->ptp_clock_source == PTP_CLOCK_SOURCE_PTP_PLL) ?
+                                PTP_PLL_CLOCK_FREQ_HZ : PLL_250MHZ_FREQ_CLOCK_FREQ_HZ;
 }
 
 static bool Dp83tg721_isPhyDevSupported(EthPhyDrv_Handle hPhy,
@@ -546,7 +580,7 @@ static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, cons
 
     if (priv->magic != DP83TG721_MAGIC_NUMBER)
     {
-        Dp83tg721_InitPriv(priv, hPhy);
+        Dp83tg721_InitPriv(priv, cfg, hPhy);
         priv->magic = DP83TG721_MAGIC_NUMBER;
     }
     else
@@ -557,6 +591,9 @@ static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, cons
     if (status == ENETPHY_SOK)
     {
         Dp83tg721_readStraps(hPhy);
+
+        /* Over ride the master mode from cfg. */
+        priv->isMaster = cfg->isMDIMaster;
 
         Dp83tg721_chipInit(hPhy, priv);
 
@@ -1102,9 +1139,7 @@ static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
 {
     uint16_t txcfg0;
     uint16_t rxcfg0;
-    // uint16_t txcfg1;
-    // uint16_t rxcfg1;
-
+    Dp83tg721Priv* priv = gPriv;
     /* Configuration for using free running 250 MHz from PLL */
 
     /* Step 1: Toggle PTP_RESET 1 -> 0 to perform PTP reset */
@@ -1127,7 +1162,36 @@ static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
 
         /* Step 5: (Optional) Required when Clock Output synchronized to
         * wall clock is needed on a pin */
-        Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, MR_PTP_PLL_PTP_PLL_EN);
+        if (priv->ptp_clock_source == PTP_CLOCK_SOURCE_PTP_PLL)
+        {
+            Dp83tg721_configPTP_PLLClock(hPhy);
+        }
+        else /* PTP_CLOCK_SOURCE_250MHZ_PLL */
+        {
+            Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, MR_PTP_PLL_PTP_PLL_EN);
+        }
+
+        if (priv->enableMediaClock == 1)
+        {
+            /* Condfigure the media clock */
+            Dp83tg721_configMediaClock(hPhy);
+
+            /* Set the CRF Master/Slave */
+            if (priv->mediaClockMode == 0)
+            {
+                /* Disable the media clock adjustments */
+                Dp83tg721_clearBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, 1<<14);
+                uint64_t edgeTime = Dp83tg721_getMediaClockEdge(hPhy);
+                uint32_t period = 10000000;
+                Dp83tg721_enableTriggerOutput(hPhy, PHY_TRIGGER_INDEX, edgeTime, period, true);
+                Dp83tg721_enableEventCapture(hPhy, PHY_EVENT_INDEX, false, true);
+            }
+            else /* CRF Listener. */
+            {
+                /* Configure the TG721 for CRF Parsing. */
+                Dp83tg721_configCRFParsing(hPhy);
+            }
+        }
 
         Dp83tg721_enableStatusFrames(hPhy, true, srcMacStatusFrameType);
 
@@ -1646,18 +1710,24 @@ static int32_t Dp83tg721_enableEventCapture(EthPhyDrv_Handle hPhy, uint32_t even
                 evnt |= EVNT_RISE;
             }
 
-            /* PTP_EVENT_GPIO_SEL has multi-hot field to select multiple GPIO */
-            Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
-            gpioSelect |= ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
+            if (gpioNum != EVT_SEL_TRIG0)
+            {
+                /* PTP_EVENT_GPIO_SEL has multi-hot field to select multiple GPIO */
+                Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
+                gpioSelect |= ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
 
-            Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
+                Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
+            }
             Dp83tg721_writeExtReg(hPhy, PTP_EVNT, evnt);
         }
         else
         {
-            Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
-            gpioSelect &= ~ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
-            Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
+            if (gpioNum != EVT_SEL_TRIG0)
+            {
+                Dp83tg721_readExtReg(hPhy, PTP_EVENT_GPIO_SEL, &gpioSelect);
+                gpioSelect &= ~ENCODE_BIGFIELD(PTP_GPIO_EVENT_EN, 1 << (gpioNum - 1));
+                Dp83tg721_writeExtReg(hPhy, PTP_EVENT_GPIO_SEL, gpioSelect);
+            }
             Dp83tg721_writeExtReg(hPhy, PTP_EVNT, evnt);
         }
     }
@@ -1665,12 +1735,125 @@ static int32_t Dp83tg721_enableEventCapture(EthPhyDrv_Handle hPhy, uint32_t even
     return status;
 }
 
+static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy)
+{
+    bool complete = false;
+
+    /* PTP_PLL default frequency output -> 245.76MHz */
+    Dp83tg721_writeExtReg(hPhy, FREQ_CTL_1, 0x9B88);
+    Dp83tg721_writeExtReg(hPhy, FREQ_CTL_2, 0xC953);
+
+    /* Select clock out from PTP PLL. */
+    Dp83tg721_setBitsExtReg(hPhy, PTP_CLKSRC, 1 << 12);
+    Dp83tg721_clearBitsExtReg(hPhy, PTP_CLKSRC, 0b11001 << 11);
+
+    /* Write the Source period */
+    Dp83tg721_setBitsExtReg(hPhy, PTP_CLKSRC, 0x04);
+    Dp83tg721_clearBitsExtReg(hPhy, PTP_CLKSRC, (~0x04)&0x7F);
+
+    /* PTP RATE H ACC only  */
+    Dp83tg721_clearBitsExtReg(hPhy, PTP_RATEH_ACC_ONLY, 1<<15);
+    Dp83tg721_setBitsExtReg(hPhy, PTP_RATEH_ACC_ONLY,  1<<14);
+
+    Dp83tg721_clearBitsExtReg(hPhy, PTP_RATEH_ACC_ONLY, (1<<10) - 1);
+    Dp83tg721_setBitsExtReg(hPhy, PTP_RATEH_ACC_ONLY, 0x1AA);
+
+    Dp83tg721_clearBitsExtReg(hPhy, PTP_ONESTEP_OFF, 0x3F << 10);
+    Dp83tg721_setBitsExtReg(hPhy, PTP_ONESTEP_OFF, 0x04 << 10);
+
+    Dp83tg721_writeExtReg(hPhy, PTP_RATEL_ACC_ONLY, 0xAAAA);
+
+    /* Enable PTP PLL */
+    Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, 0x01 << 0);
+
+    Dp83tg721_reset(hPhy);
+    do
+    {
+        complete = Dp83tg721_isResetComplete(hPhy);
+    } while (complete == false);
+
+    return 0;
+}
+
+static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy)
+{
+    bool complete = false;
+
+    /* Enable PTP PLL for Clock Division. */
+    Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, 0x01 << 1);
+
+    uint32_t mediaClockFreq = 48000;
+    uint32_t mclkDiv = PTP_CLOCK_FREQ_HZ/mediaClockFreq;
+
+    /* Media clock Division Register */
+    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_1, (uint16_t)mclkDiv);
+    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_2, (mclkDiv>>16)&0x0FFF);
+
+    Dp83tg721_reset(hPhy);
+    do
+    {
+        complete = Dp83tg721_isResetComplete(hPhy);
+    } while (complete == false);
+
+    /* Select GPIO for Media clock Output CLKOUT */
+    Dp83tg721_writeExtReg(hPhy, CLKOUT_MUX_CTL, 1<<1);
+
+    return 0;
+}
+
+static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy)
+{
+    /* Enable CRF Parsing. */
+    Dp83tg721_setBitsExtReg(hPhy, CRF_PARSE_CTL, ENET_BIT(0) | ENET_BIT(9)| ENET_BIT(15));
+    Dp83tg721_clearBitsExtReg(hPhy, CRF_PARSE_CTL, ENET_BIT(13));
+    Dp83tg721_setBitsExtReg(hPhy, CRF_IP_CTL, ENET_BIT(3));
+
+    /* Enable Auto Adjustments to Media Clock. */
+    Dp83tg721_setBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, ENET_BIT(14));
+    return 0;
+}
+
+static uint64_t Dp83tg721_getMediaClockEdge(EthPhyDrv_Handle hPhy)
+{
+    /* Capture the edge */
+    Dp83tg721_setBitsExtReg(hPhy, CRF_MAS_TS_CAPT, ENET_BIT(15));
+
+    while (1)
+    {
+        uint16_t val;
+        Dp83tg721_readExtReg(hPhy, CRF_MAS_TS_CAPT, &val);
+
+        if (ENET_IS_BIT_SET(val, 13))
+        {
+            break;
+        }
+    }
+
+    uint64_t currentTime;
+    Dp83tg721_getTime(hPhy, &currentTime);
+
+    /* Read MDIO to get the edge information. */
+    uint16_t val[4];
+    Dp83tg721_readExtReg(hPhy, CRF_MAS_MCLK_LOC_SEC_15_0,   &val[2]);
+    Dp83tg721_readExtReg(hPhy, CRF_MAS_MCLK_LOC_SEC_31_16,  &val[3]);
+
+    Dp83tg721_readExtReg(hPhy, CRF_MAS_MCLK_LOC_NSEC_15_0,  &val[0]);
+    Dp83tg721_readExtReg(hPhy, CRF_MAS_MCLK_LOC_NSEC_31_16, &val[1]);
+
+    uint64_t nsec = val[0] | (val[1] << 16);
+    uint64_t sec  = val[2] | (val[3] << 16);
+    uint64_t nanoSeconds = sec * SEC_NSEC + nsec;
+
+    (void)currentTime;
+    return nanoSeconds;
+}
+
 static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t triggerIdx,
                     uint64_t start, uint64_t period, bool repeat)
 {
     int32_t status = ENETPHY_SOK;
 
-    if (triggerIdx >= NUM_EVENTS)
+    if (triggerIdx >= NUM_TRIGGER)
     {
         status = ENETPHY_EINVALIDPARAMS;
     }
@@ -1688,7 +1871,7 @@ static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t tri
         }
 
         ptpTrig = TRIG_WR | ENCODE_BIGFIELD(TRIG_CSEL, triggerIdx) |
-            ENCODE_BIGFIELD(TRIG_GPIO, gpioNum) | TRIG_PULSE;
+            ENCODE_BIGFIELD(TRIG_GPIO, gpioNum) | TRIG_PULSE | TRIG_IF_LATE;
 
         if (repeat == true)
         {
@@ -1770,4 +1953,24 @@ static int32_t Dp83tg721_getEventTs(EthPhyDrv_Handle hPhy, uint32_t *eventIdx,
     }
 
     return status;
+}
+
+static int32_t Dp83tg721_gateMediaClock(EthPhyDrv_Handle hPhy, uint64_t startTime)
+{
+    /* Program the gate time.*/
+    Dp83tg721_writeExtReg(hPhy, MEDIA_CLK_GATE_CTRL_1, startTime & 0xffff);
+    Dp83tg721_writeExtReg(hPhy, MEDIA_CLK_GATE_CTRL_2, (startTime >> 16) & 0xffff);
+    Dp83tg721_writeExtReg(hPhy, MEDIA_CLK_GATE_CTRL_3, (startTime >> 32) & 0xffff);
+    Dp83tg721_writeExtReg(hPhy, MEDIA_CLK_GATE_CTRL_4, (startTime >> 48) & 0xffff);
+
+    /* Latch the gating time */
+    Dp83tg721_setBitsExtReg(hPhy, MEDIA_CLK_GATE_CTRL_5, ENET_BIT(0));
+
+    /* Enable the clock gating.  */
+    Dp83tg721_clearBitsExtReg(hPhy, AUDIO_CLK_CTRL, ENET_BIT(0));
+
+    /* Select GPIO for Media clock Output CLKOUT */
+    Dp83tg721_writeExtReg(hPhy, CLKOUT_MUX_CTL, ENET_BIT(1));
+
+    return 0;
 }

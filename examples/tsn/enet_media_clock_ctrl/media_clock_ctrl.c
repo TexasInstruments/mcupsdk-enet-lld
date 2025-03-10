@@ -1,6 +1,5 @@
-
 /*
- *  Copyright (c) Texas Instruments Incorporated 2024
+ *  Copyright (c) Texas Instruments Incorporated 2024-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -32,93 +31,89 @@
  */
 
 /*!
- * \file  dp83tg721.h
+ * \file   media_clock_ctl.c
  *
- * \brief This file contains the type definitions and helper macros for the
- *        DP83TG721 Ethernet PHY.
+ * \brief This file contains all functions related Media Clock Control Functions.
  */
-
-/*!
- * \ingroup  DRV_ENETPHY
- * \defgroup ENETPHY_DP83TG721 TI DP83TG721 PHY
- *
- * TI DP83TG721 Ethernet PHY.
- *
- * @{
- */
-
-#ifndef DP83TG721_H_
-#define DP83TG721_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
-
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include "media_clock_ctrl.h"
+#include <enet_apputils.h>
 /* ========================================================================== */
-/*                                 Macros                                     */
+/*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/*! \brief Number of LEDs available in the PHY. */
-#define DP83TG721_LED_NUM					  (2U)
+#define PHY_TRIGGER_INDEX     0
+#define PHY_EVENT_INDEX       0
+#define MCC_MAGIC             (0x12341234)
+/* ========================================================================== */
+/*                              Global Variables                              */
+/* ========================================================================== */
+MCC_Obj gMCCObject;
+/* ========================================================================== */
+/*                           Function Declarations                            */
+/* ========================================================================== */
 
 /* ========================================================================== */
-/*                         Structures and Enums                               */
+/*                           Function Definitions                             */
 /* ========================================================================== */
 
-/*!
- * \brief DP83TG721 PHY configuration parameters.
- */
-typedef struct Dp83tg721_Cfg_s
+/* Initialize the MCC object. */
+MCC_handle MCC_init(uint32_t mcFrequency, uint32_t timestampInterval)
 {
-    bool isMDIMaster;
-    bool enablePTPstatusFrames;
-    uint32_t srcMacStatusFrameType;
-    uint8_t clockSource;
-    uint8_t enableMediaClock;
-    uint8_t mediaClockMode;
-} Dp83tg721_Cfg;
+    /* MCC Init function*/
+    MCC_handle handle = &gMCCObject;
 
-/* ========================================================================== */
-/*                         Global Variables Declarations                      */
-/* ========================================================================== */
+    if (handle->magic != MCC_MAGIC)
+    {
+        handle->magic = MCC_MAGIC;
+        handle->MediaClockFrequency = mcFrequency;
+        handle->timestampInterval = timestampInterval;
 
-/* None */
+        Enet_Type enetType;
+        uint32_t instId;
+        EnetApp_getEnetInstInfo(CONFIG_ENET_CPSW0, &enetType, &instId);
 
-/* ========================================================================== */
-/*                          Function Declarations                             */
-/* ========================================================================== */
-
-/*!
- * \brief Initialize DP83TC811 PHY specific config params.
- *
- * Initializes the DP83TC811 PHY specific configuration parameters.
- *
- * \param cfg       DP83TC811 PHY config structure pointer
- */
-void Dp83tg721_initCfg(Dp83tg721_Cfg *cfg);
-
-/* ========================================================================== */
-/*                        Deprecated Function Declarations                    */
-/* ========================================================================== */
-
-/* None */
-
-/* ========================================================================== */
-/*                       Static Function Definitions                          */
-/* ========================================================================== */
-
-/* None */
-
-#ifdef __cplusplus
+        handle->hEnet = Enet_getHandle(enetType, instId);
+        handle->coreId = EnetSoc_getCoreId();
+        EnetAppUtils_assert(handle->hEnet != NULL);
+        return handle;
+    }
+    else
+    {
+        return NULL;
+    }
 }
-#endif
 
-#endif /* DP83TG721_H_ */
+int32_t MCC_getTimestamp(MCC_handle handle, uint64_t* timestamp)
+{
+    int32_t status = ENET_EFAIL;
+    EnetPhy_GetEventTimestampOutArgs outArgs;
+    do
+    {
+        Enet_IoctlPrms prms;
+        EnetPhy_GenericInArgs inArgs;
 
-/*! @} */
+        inArgs.macPort = ENET_MAC_PORT_1;
+
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &outArgs);
+        ENET_IOCTL(handle->hEnet, handle->coreId,
+                ENET_PHY_IOCTL_GET_EVENT_TIMESTAMP, &prms, status);
+
+        if (status != ENET_SOK)
+        {
+            DebugP_logError("Failed to get timestamp: %d\n", status);
+            break;
+        }
+    }
+    while (outArgs.eventIdx != PHY_EVENT_INDEX);
+
+    if (status == ENET_SOK)
+    {
+        *timestamp = outArgs.ts64;
+    }
+
+    return status;
+}
