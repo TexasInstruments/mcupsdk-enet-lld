@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM261x_ZFG" --part "AM2612" --package "ZFG" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2612" --package "NFBGA (ZFG)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.22.0+3893"}
  */
 
 /**
@@ -230,27 +230,35 @@ enet_cpsw1.DisableMacPort2       = true;
 enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_MAC";
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
-enet_cpsw1.RMII.$assign          = "RMII1";
-enet_cpsw1.RMII.CRS_DV.$assign   = "GPIO105";
+enet_cpsw1.RMII1.$assign         = "RMII1";
+enet_cpsw1.RMII2.$assign         = "RMII2";
 
-const ethphy_cpsw_icssg              = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
-const ethphy_cpsw_icssg1             = ethphy_cpsw_icssg.addInstance({}, false);
-ethphy_cpsw_icssg1.$name             = "CONFIG_ENET_ETHPHY0";
-ethphy_cpsw_icssg1.enableCustomBoard = scripting.forceWrite(false);
-enet_cpsw1.ethphy1                   = ethphy_cpsw_icssg1;
+const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
+const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
+ethphy_cpsw_icssg1.$name = "CONFIG_ENET_ETHPHY0";
+enet_cpsw1.ethphy1       = ethphy_cpsw_icssg1;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-enet_cpsw1.MDIO.$suggestSolution         = "MDIO0";
-enet_cpsw1.MDIO.MDC.$suggestSolution     = "GPIO42";
-enet_cpsw1.MDIO.MDIO.$suggestSolution    = "GPIO41";
-enet_cpsw1.RMII.RXD0.$suggestSolution    = "GPIO109";
-enet_cpsw1.RMII.RXD1.$suggestSolution    = "GPIO110";
-enet_cpsw1.RMII.RX_ER.$suggestSolution   = "GPIO103";
-enet_cpsw1.RMII.TXD0.$suggestSolution    = "GPIO115";
-enet_cpsw1.RMII.TXD1.$suggestSolution    = "GPIO116";
-enet_cpsw1.RMII.REF_CLK.$suggestSolution = "GPIO107";
-enet_cpsw1.RMII.TX_EN.$suggestSolution   = "GPIO114";
+enet_cpsw1.MDIO.$suggestSolution          = "MDIO0";
+enet_cpsw1.MDIO.MDC.$suggestSolution      = "GPIO42";
+enet_cpsw1.MDIO.MDIO.$suggestSolution     = "GPIO41";
+enet_cpsw1.RMII1.RXD0.$suggestSolution    = "GPIO109";
+enet_cpsw1.RMII1.RXD1.$suggestSolution    = "GPIO110";
+enet_cpsw1.RMII1.RX_ER.$suggestSolution   = "GPIO103";
+enet_cpsw1.RMII1.TXD0.$suggestSolution    = "GPIO115";
+enet_cpsw1.RMII1.TXD1.$suggestSolution    = "GPIO116";
+enet_cpsw1.RMII1.CRS_DV.$suggestSolution  = "GPIO105";
+enet_cpsw1.RMII1.REF_CLK.$suggestSolution = "GPIO107";
+enet_cpsw1.RMII1.TX_EN.$suggestSolution   = "GPIO114";
+enet_cpsw1.RMII2.RXD0.$suggestSolution    = "GPIO93";
+enet_cpsw1.RMII2.RXD1.$suggestSolution    = "GPIO94";
+enet_cpsw1.RMII2.RX_ER.$suggestSolution   = "GPIO87";
+enet_cpsw1.RMII2.TXD0.$suggestSolution    = "GPIO99";
+enet_cpsw1.RMII2.TXD1.$suggestSolution    = "GPIO100";
+enet_cpsw1.RMII2.CRS_DV.$suggestSolution  = "GPIO89";
+enet_cpsw1.RMII2.REF_CLK.$suggestSolution = "GPIO91";
+enet_cpsw1.RMII2.TX_EN.$suggestSolution   = "GPIO98";

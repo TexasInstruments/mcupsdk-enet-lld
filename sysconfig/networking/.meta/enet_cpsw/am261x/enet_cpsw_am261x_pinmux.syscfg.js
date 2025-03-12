@@ -201,16 +201,17 @@ function pinmuxRequirements(inst) {
     }
     else if( inst.phyToMacInterfaceMode === "RMII")
     {
-        let rmii = getPeripheralRequirements(inst, "RMII", "RMII");
+        let rmii1 = getPeripheralRequirements(inst, "RMII", "RMII1");
+        let rmii2 = getPeripheralRequirements(inst, "RMII", "RMII2");
 
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII1_TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII1_TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII1_TX_EN", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII2_TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII2_TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii, "RMII2_TX_EN", "rx", false);
-
-        perRequirements.push(rmii);
+        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD0", "rx", false);
+        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD1", "rx", false);
+        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TX_EN", "rx", false);
+        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD0", "rx", false);
+        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD1", "rx", false);
+        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TX_EN", "rx", false);
+        perRequirements.push(rmii1);
+        perRequirements.push(rmii2);
     }
     else
     {
@@ -238,7 +239,8 @@ function getInterfaceNameList(inst) {
     }
     else if (inst.phyToMacInterfaceMode === "RMII")
     {
-        interfaceNameList.push(getInterfaceName(inst, "RMII"));
+        interfaceNameList.push(getInterfaceName(inst, "RMII1"));
+        interfaceNameList.push(getInterfaceName(inst, "RMII2"));
     }
     else
     {
