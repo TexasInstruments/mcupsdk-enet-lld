@@ -2,7 +2,7 @@
 # Auto generated makefile
 #
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -21,30 +21,26 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=gptp_app.$(PROFILE).out
+OUTNAME:=enet_cpsw_loopback_phy_end.$(PROFILE).out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=gptp_app.$(PROFILE).appimage
-BOOTIMAGE_NAME_XIP:=gptp_app.$(PROFILE).appimage_xip
-BOOTIMAGE_NAME_SIGNED:=gptp_app.$(PROFILE).appimage.signed
-BOOTIMAGE_RPRC_NAME:=gptp_app.$(PROFILE).rprc
-BOOTIMAGE_RPRC_NAME_XIP:=gptp_app.$(PROFILE).rprc_xip
-BOOTIMAGE_RPRC_NAME_TMP:=gptp_app.$(PROFILE).rprc_tmp
-BOOTIMAGE_NAME_HS:=gptp_app.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=gptp_app.$(PROFILE).appimage.hs_fs
+BOOTIMAGE_NAME:=enet_cpsw_loopback_phy_end.$(PROFILE).appimage
+BOOTIMAGE_NAME_XIP:=enet_cpsw_loopback_phy_end.$(PROFILE).appimage_xip
+BOOTIMAGE_NAME_SIGNED:=enet_cpsw_loopback_phy_end.$(PROFILE).appimage.signed
+BOOTIMAGE_RPRC_NAME:=enet_cpsw_loopback_phy_end.$(PROFILE).rprc
+BOOTIMAGE_RPRC_NAME_XIP:=enet_cpsw_loopback_phy_end.$(PROFILE).rprc_xip
+BOOTIMAGE_RPRC_NAME_TMP:=enet_cpsw_loopback_phy_end.$(PROFILE).rprc_tmp
+BOOTIMAGE_NAME_HS:=enet_cpsw_loopback_phy_end.$(PROFILE).appimage.hs
+BOOTIMAGE_NAME_HS_FS:=enet_cpsw_loopback_phy_end.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
 endif
 
 FILES_common := \
-	gptp_init.c \
-	default_flow_cfg.c \
-	tsninit.c \
-	debug_log.c \
-	enetapp_cpsw.c \
-	tsnapp_cpsw_main.c \
-	default_flow_cpsw.c \
+	loopback_cfg.c \
+	loopback_test.c \
+	loopback_main.c \
 	main.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
@@ -60,9 +56,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../.. \
-	../../../.. \
-	../../../../nrt_flow \
+	../../../../../ \
 	generated \
 
 INCLUDES_common := \
@@ -84,23 +78,10 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am62dx \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_combase/tilld/sitara \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/gptpconf \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf/yangs \
 	-Igenerated \
 
 DEFINES_common := \
 	-DSOC_AM62DX \
-	-DENET_ENABLE_PER_CPSW=1 \
-	-DPRINT_FORMAT_NO_WARNING \
-	-DSITARA \
-	-DGPTP_ENABLED=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -112,7 +93,6 @@ CFLAGS_common := \
 	-g \
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-unused-function \
-	--include tsn_buildconf/sitara_buildconf.h \
 
 CFLAGS_release := \
 	-Os \
@@ -143,22 +123,13 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
-	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
-	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
 	-lfreertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ldrivers.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	-lboard.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-llibc.a \
-	-llibsysbm.a \
-	-ltsn_combase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ltsn_unibase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ltsn_gptp-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ltsn_uniconf-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lyangemb-freertos.am62dx.r5f.ti-arm-clang.lib \
+	-lenet-cpsw.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -182,15 +153,8 @@ LNKOPTFLAGS_release = \
 LIBS_NAME = \
 	freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	drivers.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	board.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	libc.a \
-	libsysbm.a \
-	tsn_combase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	tsn_unibase-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	tsn_gptp-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	tsn_uniconf-freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
-	yangemb-freertos.am62dx.r5f.ti-arm-clang.lib \
+	enet-cpsw.am62dx.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -200,8 +164,6 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
-	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
-	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
@@ -269,7 +231,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am62dx:mcu-r5fss0-0:freertos:ti-arm-clang gptp_app ...
+	@echo  Scrubing: am62dx:mcu-r5fss0-0:freertos:ti-arm-clang enet_cpsw_loopback_phy_end ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
