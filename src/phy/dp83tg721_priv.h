@@ -45,7 +45,7 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include "phy_common_priv.h"
+#include "../src/phy_common_priv.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -189,6 +189,10 @@ extern "C" {
 #define CRF_IP_CTL                0xD88 /* CRF IP parse control register */
 #define CRF_SAMP_CTL              0xD8A /* CRF sample control register */
 #define CRF_INT                   0xD8B /* CRF Interrupt register */
+#define CRF_BUF_RD_63_48          0xD8C /* CRF Buffer Read 63:48 */
+#define CRF_BUF_RD_47_32          0xD8D /* CRF Buffer Read 47:32 */
+#define CRF_BUF_RD_31_16          0xD8E /* CRF Buffer Read 31:16 */
+#define CRF_BUF_RD_15_0           0xD8F /* CRF Buffer Read 15:0 */
 #define CRF_TS_INTRVL_RD          0xDA6 /* CRF Timestamp Interval Read register */
 #define CRF_INT_2                 0xDB1 /* CRF interrupt register 2 */
 #define AUDIO_CLK_CTRL            0xDC1 /* Audio Clock Gating Control */
