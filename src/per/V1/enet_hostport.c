@@ -199,7 +199,7 @@ uint32_t EnetHostPortDma_getTotalRxFlowCount(const EnetRm_ResPrms *resPrms)
     rxFlowCount = 0;
     for (i = 0; i < resPrms->numCores; i++)
     {
-        rxFlowCount += resPrms->coreDmaResInfo[i].numRxFlows;
+        rxFlowCount += resPrms->coreResInfo[i].numRxFlows;
     }
 
     return rxFlowCount;

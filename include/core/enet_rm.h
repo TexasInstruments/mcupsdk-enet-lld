@@ -161,6 +161,24 @@ typedef enum EnetRm_Ioctls_e
      * - outArgs: None
      */
     ENET_RM_IOCTL_FREE_TX_CH_PEERID = ENET_RM_PUBLIC_IOCTL(5U),
+
+    /*!
+     * \brief Alloc HW Push instance.
+     *
+     * IOCTL parameters:
+     * -  inArgs: uint32_t coreKey
+     * - outArgs: #EnetRm_AllocHwPushOutArgs
+     */
+    ENET_RM_IOCTL_ALLOC_HW_PUSH_INST = ENET_RM_PUBLIC_IOCTL(6U),
+
+    /*!
+     * \brief Free HW Push instance.
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetRm_FreeHwPushInArgs
+     * - outArgs: None
+     */
+    ENET_RM_IOCTL_FREE_HW_PUSH_INST = ENET_RM_PUBLIC_IOCTL(7U),
 } EnetRm_Ioctls;
 
 /*!
@@ -190,6 +208,9 @@ typedef struct EnetRm_ResourceInfo_s
 
     /*! Number of MAC addresses */
     uint32_t numMacAddress;
+
+    /*! Number of Hw Push instances */
+    uint32_t numHwPush;
 } EnetRm_ResourceInfo;
 
 /*!
@@ -204,7 +225,7 @@ typedef struct EnetRm_ResPrms_s
     uint32_t numCores;
 
     /*! DMA Resource Information of all cores */
-    EnetRm_ResourceInfo coreDmaResInfo[ENET_CFG_REMOTE_CLIENT_CORES_MAX];
+    EnetRm_ResourceInfo coreResInfo[ENET_CFG_REMOTE_CLIENT_CORES_MAX];
 } EnetRm_ResPrms;
 
 /*!
@@ -347,6 +368,28 @@ typedef struct EnetRm_ResCfg_s
     /*! MAC address list to be managed by RM */
     EnetRm_MacAddressPool macList;
 } EnetRm_ResCfg;
+
+
+/*!
+ * \brief Output args for #ENET_RM_IOCTL_ALLOC_HW_PUSH_INST command.
+ */
+typedef struct EnetRm_AllocHwPushOutArgs_s
+{
+    /*! Hardware push instance number */
+    uint32_t hwPushNum;
+} EnetRm_AllocHwPushOutArgs;
+
+/*!
+ * \brief Input args for #ENET_RM_IOCTL_FREE_HW_PUSH_INST command.
+ */
+typedef struct EnetRm_FreeHwPushInArgs_s
+{
+    /*! Core key */
+    uint32_t coreKey;
+
+    /*! Hardware push instance number */
+    uint32_t hwPushNum;
+} EnetRm_FreeHwPushInArgs;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */

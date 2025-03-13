@@ -101,6 +101,9 @@ typedef struct CpswSoc_Cfg_s
 
     /* CPTS Hardware Push Event Count */
     uint32_t cptsHwPushCount;
+
+    /*! Soc Hardware Push Event Count */
+    uint32_t hwPushCnt;
 } CpswSoc_Cfg;
 
 /* ========================================================================== */
@@ -151,6 +154,7 @@ CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     .txChCount       = ENET_CPDMA_CPSW_MAX_TX_CH, /* TODO: set to 8 eventually */
     .rxChCount       = ENET_CPDMA_CPSW_MAX_RX_CH, /* TODO: set to 8 eventually */
     .cptsHwPushCount = 4U,
+    .hwPushCnt       = 0U,
 };
 
 /* CPSW_3G MAC port template */
@@ -757,6 +761,12 @@ uint32_t EnetSoc_getRxFlowCount(Enet_Type enetType,
     return gEnetSoc_cpsw3gSocCfg.rxChCount;
 }
 
+uint32_t EnetSoc_getHwPushCount(Enet_Type enetType,
+                               uint32_t instId)
+{
+    return gEnetSoc_cpsw3gSocCfg.hwPushCnt;
+}
+
 uint32_t EnetSoc_getTxChPeerId(Enet_Type enetType,
                                uint32_t instId,
                                uint32_t chNum)
@@ -788,7 +798,7 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
  */
 static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
 {
-    .coreDmaResInfo =
+    .coreResInfo =
     {
         [0] =
         {
@@ -796,6 +806,7 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
             .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
             .numRxFlows    = ENET_SYSCFG_RX_FLOWS_NUM,    /* numRxFlows */
             .numMacAddress = 4U,    /* numMacAddress */
+            .numHwPush     = 0U,
         },
     },
     .numCores = 1U,
@@ -820,7 +831,7 @@ const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
     if (rmInitPrms != NULL)
     {
         /* Update coreid to the local core */
-        rmInitPrms->coreDmaResInfo[0].coreId = EnetSoc_getCoreId();
+        rmInitPrms->coreResInfo[0].coreId = EnetSoc_getCoreId();
     }
 
     return(rmInitPrms);

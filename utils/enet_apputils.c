@@ -932,11 +932,11 @@ static void EnetAppUtils_reduceCoreMacAllocation(EnetRm_ResPrms *resPrms,
 
     for (i = 0; (i < resPrms->numCores) && (*pReduceCount > 0); i++)
     {
-        if ((resPrms->coreDmaResInfo[i].numMacAddress > coreMinCount)
+        if ((resPrms->coreResInfo[i].numMacAddress > coreMinCount)
             &&
-            ((skipCore == false) || (skipCoreId != resPrms->coreDmaResInfo[i].coreId)))
+            ((skipCore == false) || (skipCoreId != resPrms->coreResInfo[i].coreId)))
         {
-            uint32_t coreMacAddrReducedCount = (resPrms->coreDmaResInfo[i].numMacAddress - coreMinCount);
+            uint32_t coreMacAddrReducedCount = (resPrms->coreResInfo[i].numMacAddress - coreMinCount);
 
             if (*pReduceCount >= coreMacAddrReducedCount)
             {
@@ -950,10 +950,10 @@ static void EnetAppUtils_reduceCoreMacAllocation(EnetRm_ResPrms *resPrms,
 
             EnetAppUtils_print("EnetAppUtils_reduceCoreMacAllocation: "
                                "Reduced Mac Address Allocation for CoreId:%u From %u To %u \r\n",
-                               resPrms->coreDmaResInfo[i].coreId,
-                               resPrms->coreDmaResInfo[i].numMacAddress,
-                               (resPrms->coreDmaResInfo[i].numMacAddress - coreMacAddrReducedCount));
-            resPrms->coreDmaResInfo[i].numMacAddress  -= coreMacAddrReducedCount;
+                               resPrms->coreResInfo[i].coreId,
+                               resPrms->coreResInfo[i].numMacAddress,
+                               (resPrms->coreResInfo[i].numMacAddress - coreMacAddrReducedCount));
+            resPrms->coreResInfo[i].numMacAddress  -= coreMacAddrReducedCount;
         }
     }
 }
@@ -968,7 +968,7 @@ static void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
     totalResPartMacCnt = 0;
     for (i = 0; i < resPrms->numCores; i++)
     {
-        totalResPartMacCnt += resPrms->coreDmaResInfo[i].numMacAddress;
+        totalResPartMacCnt += resPrms->coreResInfo[i].numMacAddress;
     }
 
     if (totalResPartMacCnt > availMacCount)
@@ -1210,6 +1210,61 @@ int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcast
         EnetAppUtils_print("failed to remove the mcast entry from ALE table: %d\n", status);
     }
 
+    return status;
+}
+
+int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
+                                     uint32_t coreKey,
+                                     uint32_t coreId,
+                                     uint32_t *hwPushNum)
+{
+    int32_t status = ENET_SOK;
+#if ENET_CFG_IS_ON(RM_PRESENT)
+
+    Enet_IoctlPrms prms;
+    EnetRm_AllocHwPushOutArgs allocHwPushOutArgs;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &coreKey, &allocHwPushOutArgs);
+    ENET_IOCTL(hEnet, coreId, ENET_RM_IOCTL_ALLOC_HW_PUSH_INST, &prms, status);
+
+    if (status == ENET_SOK)
+    {
+        *hwPushNum = allocHwPushOutArgs.hwPushNum;
+    }
+    else
+    {
+        EnetAppUtils_print("EnetAppUtils_allocHwPushInst() failed : %d\n", status);
+    }
+#else
+    status = ENET_ENOTSUPPORTED;
+#endif
+    return status;
+}
+
+int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
+                                    uint32_t coreKey,
+                                    uint32_t coreId,
+                                    uint32_t hwPushNum)
+{
+    int32_t status = ENET_SOK;
+#if ENET_CFG_IS_ON(RM_PRESENT)
+
+    Enet_IoctlPrms prms;
+    EnetRm_FreeHwPushInArgs freeHwPushInArgs;
+
+    freeHwPushInArgs.coreKey = coreKey;
+    freeHwPushInArgs.hwPushNum = hwPushNum;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &freeHwPushInArgs);
+    ENET_IOCTL(hEnet, coreId, ENET_RM_IOCTL_FREE_HW_PUSH_INST, &prms, status);
+
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("EnetAppUtils_freeHwPushInst() failed : %d\n", status);
+    }
+#else
+    status = ENET_ENOTSUPPORTED;
+#endif
     return status;
 }
 

@@ -110,6 +110,8 @@ int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ALLOC_RX_FLOW(EnetRm_Handle hRm, Enet
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_FREE_RX_FLOW(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ALLOC_TX_CH_PEERID(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_FREE_TX_CH_PEERID(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
+int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ALLOC_HW_PUSH_INST(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
+int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_FREE_HW_PUSH_INST(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_VALIDATE_PERMISSION(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ATTACH(EnetRm_Handle hRm, Enet_IoctlPrms *prms);
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_DETACH(EnetRm_Handle hRm, Enet_IoctlPrms *prms);

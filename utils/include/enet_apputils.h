@@ -593,6 +593,16 @@ void EnetApp_getNonPtpTxDmaInfo(Enet_Type enetType,
                                 uint32_t nonPtpTxFlowId[],
                                 uint8_t *nonPtpTxFlowNum);
 
+int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
+                                     uint32_t coreKey,
+                                     uint32_t coreId,
+                                     uint32_t *hwPushNum);
+
+int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
+                                    uint32_t coreKey,
+                                    uint32_t coreId,
+                                    uint32_t hwPushNum);
+
 /* ========================================================================== */
 /*                       Static Function Definitions                          */
 /* ========================================================================== */

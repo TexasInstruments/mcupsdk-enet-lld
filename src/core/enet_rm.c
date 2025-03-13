@@ -58,7 +58,8 @@ typedef enum  EnetRm_ResourceType_tag
     ENET_RM_RESOURCE_TXCH,
     ENET_RM_RESOURCE_RXFLOW,
     ENET_RM_RESOURCE_MACADDRESS,
-    ENET_RM_RESOURCE_LAST = ENET_RM_RESOURCE_MACADDRESS,
+    ENET_RM_RESOURCE_HWPUSHINSTANCES,
+    ENET_RM_RESOURCE_LAST = ENET_RM_RESOURCE_HWPUSHINSTANCES,
 } EnetRm_ResourceType_e;
 
 #define ENET_RM_RESOURCE_COUNT                      (ENET_RM_RESOURCE_LAST + 1)
@@ -118,15 +119,18 @@ static void EnetRm_initRxObj(EnetRm_RxFlowIdxObj *rxObj,
                              const EnetRm_Cfg *rmCfg,
                              uint32_t chIdx);
 
+static void EnetRm_initHwPushObj(EnetRm_HwPushObj *hwPushObj,
+                                 const EnetRm_Cfg *rmCfg);
+
 static void EnetRm_initMacObj(EnetRm_MacAddressObj *macObj,
                               const EnetRm_Cfg *rmCfg);
 
 static void EnetRm_initAttachObj(EnetRm_CoreAttachInfo *coreAttachObj);
 
 static int32_t EnetRm_validateResPartInfo(const EnetRm_Cfg *rmCfg,
-                                                    uint32_t maxTxResCnt,
-                                                    uint32_t maxRxResCnt,
-                                                    uint32_t maxMacResCnt);
+                                          uint32_t maxTxResCnt,
+                                          uint32_t maxRxResCnt,
+                                          uint32_t maxMacResCnt);
 
 int32_t EnetRm_validateCoreKey(EnetRm_Handle hRm,
                                uint32_t coreKey);
@@ -177,6 +181,14 @@ static Enet_IoctlValidate gEnetRm_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_RM_IOCTL_FREE_TX_CH_PEERID,
                           sizeof(EnetRm_FreeTxChInArgs),
                           0U),
+
+    ENET_IOCTL_VALID_PRMS(ENET_RM_IOCTL_ALLOC_HW_PUSH_INST,
+                          sizeof(uint32_t),
+                          sizeof(EnetRm_AllocHwPushOutArgs)),
+
+    ENET_IOCTL_VALID_PRMS(ENET_RM_IOCTL_FREE_HW_PUSH_INST,
+                          sizeof(EnetRm_FreeHwPushInArgs),
+                          0U),
 };
 
 /* Private RM IOCTL validation data. */
@@ -220,6 +232,8 @@ static EnetRmIoctlHandlerRegistry_t EnetRmIoctlHandlerRegistry[] =
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_FREE_RX_FLOW),
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_ALLOC_TX_CH_PEERID),
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_FREE_TX_CH_PEERID),
+    ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_ALLOC_HW_PUSH_INST),
+    ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_FREE_HW_PUSH_INST),
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_VALIDATE_PERMISSION), /*Private IOCTL*/
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_ATTACH), /*Private IOCTL*/
     ENET_RM_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_RM_IOCTL_DETACH), /*Private IOCTL*/
@@ -269,6 +283,7 @@ int32_t EnetRm_open(EnetMod_Handle hMod,
         hRm->cfg = *rmCfg;
         EnetRm_initTxObj(&hRm->txObj, rmCfg);
         EnetRm_initMacObj(&hRm->macObj, rmCfg);
+        EnetRm_initHwPushObj(&hRm->hwPushObj, rmCfg);
         EnetRm_initAttachObj(&hRm->coreAttachObj);
 
         hRm->numRxCh = rmCfg->numRxCh;
@@ -310,13 +325,13 @@ void EnetRm_close(EnetMod_Handle hMod)
         Enet_assert((hRm->rxObj[j].internalAllocCoreId == ENET_RM_INVALIDCORE) &&
                     (hRm->rxObj[j].internalAllocCount == 0U));
     }
-    Enet_assert(resInfo->numCores <= ENET_ARRAYSIZE(resInfo->coreDmaResInfo));
+    Enet_assert(resInfo->numCores <= ENET_ARRAYSIZE(resInfo->coreResInfo));
 
     for (i = 0U; i < resInfo->numCores; i++)
     {
-        EnetRm_detachCore(hRm, ENET_COREID_2_COREKEY(resInfo->coreDmaResInfo[i].coreId));
+        EnetRm_detachCore(hRm, ENET_COREID_2_COREKEY(resInfo->coreResInfo[i].coreId));
 
-        pQ = EnetRm_getFreeQ(&hRm->txObj.txResTbl, resInfo->coreDmaResInfo[i].coreId);
+        pQ = EnetRm_getFreeQ(&hRm->txObj.txResTbl, resInfo->coreResInfo[i].coreId);
         if (NULL != pQ)
         {
             txFreeResCnt += EnetQueue_getQCount(pQ);
@@ -324,14 +339,14 @@ void EnetRm_close(EnetMod_Handle hMod)
 
         for (j = 0U; j < hRm->numRxCh; j++)
         {
-            pQ = EnetRm_getFreeQ(&hRm->rxObj[j].rxResTbl, resInfo->coreDmaResInfo[i].coreId);
+            pQ = EnetRm_getFreeQ(&hRm->rxObj[j].rxResTbl, resInfo->coreResInfo[i].coreId);
             if (NULL != pQ)
             {
                 rxFreeResCnt[j] += EnetQueue_getQCount(pQ);
             }
         }
 
-        pQ = EnetRm_getFreeQ(&hRm->macObj.macTbl, resInfo->coreDmaResInfo[i].coreId);
+        pQ = EnetRm_getFreeQ(&hRm->macObj.macTbl, resInfo->coreResInfo[i].coreId);
         if (NULL != pQ)
         {
             macFreeResCnt += EnetQueue_getQCount(pQ);
@@ -559,7 +574,7 @@ static void EnetRm_initTxObj(EnetRm_TxChObj *txObj,
     allocResCnt = 0U;
     for (i = 0U; i < rmCfg->resPartInfo.numCores; i++)
     {
-        coreCnt = rmCfg->resPartInfo.coreDmaResInfo[i].numTxCh;
+        coreCnt = rmCfg->resPartInfo.coreResInfo[i].numTxCh;
 
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
         Enet_assert((allocResCnt + coreCnt) <= txChPeerId);
@@ -571,7 +586,7 @@ static void EnetRm_initTxObj(EnetRm_TxChObj *txObj,
         Enet_assert((allocResCnt + coreCnt) <= resTableSize);
 
         EnetRm_initCoreResourceQ(&txObj->txResTbl.coreResTbl[i],
-                                 rmCfg->resPartInfo.coreDmaResInfo[i].coreId,
+                                 rmCfg->resPartInfo.coreResInfo[i].coreId,
                                  &txObj->txRes[allocResCnt],
                                  (resTableSize - allocResCnt),
                                  allocResCnt,
@@ -599,13 +614,13 @@ static void EnetRm_initRxObj(EnetRm_RxFlowIdxObj *rxObj,
     allocResCnt = 0U;
     for (i = 0U; i < rmCfg->resPartInfo.numCores; i++)
     {
-        coreCnt = rmCfg->resPartInfo.coreDmaResInfo[i].numRxFlows;
+        coreCnt = rmCfg->resPartInfo.coreResInfo[i].numRxFlows;
 
         Enet_assert((allocResCnt + coreCnt) <= socRxFlowCnt);
         Enet_assert((allocResCnt + coreCnt) <= resTableSize);
 
         EnetRm_initCoreResourceQ(&rxObj->rxResTbl.coreResTbl[i],
-                                 rmCfg->resPartInfo.coreDmaResInfo[i].coreId,
+                                 rmCfg->resPartInfo.coreResInfo[i].coreId,
                                  &rxObj->rxRes[allocResCnt],
                                  resTableSize - allocResCnt,
                                  allocResCnt,
@@ -616,6 +631,39 @@ static void EnetRm_initRxObj(EnetRm_RxFlowIdxObj *rxObj,
     rxObj->resCnt       = allocResCnt;
     rxObj->internalAllocCount  = 0U;
     rxObj->internalAllocCoreId = ENET_RM_INVALIDCORE;
+}
+
+static void EnetRm_initHwPushObj(EnetRm_HwPushObj *hwPushObj,
+                                 const EnetRm_Cfg *rmCfg)
+{
+    const uint32_t resTableSize = ENET_ARRAYSIZE(hwPushObj->hwPushRes);
+    uint32_t allocResCnt;
+    uint32_t socHwPushCnt;
+    uint32_t coreCnt;
+    uint32_t i;
+
+    socHwPushCnt = EnetSoc_getHwPushCount(rmCfg->enetType, rmCfg->instId);
+
+    hwPushObj->hwPushResTbl.numCores = rmCfg->resPartInfo.numCores;
+
+    allocResCnt = 0U;
+    for (i = 0U; i < rmCfg->resPartInfo.numCores; i++)
+    {
+        coreCnt = rmCfg->resPartInfo.coreResInfo[i].numHwPush;
+
+        Enet_assert((allocResCnt + coreCnt) <= socHwPushCnt);
+        Enet_assert((allocResCnt + coreCnt) <= resTableSize);
+
+        EnetRm_initCoreResourceQ(&hwPushObj->hwPushResTbl.coreResTbl[i],
+                                 rmCfg->resPartInfo.coreResInfo[i].coreId,
+                                 &hwPushObj->hwPushRes[allocResCnt],
+                                 resTableSize - allocResCnt,
+                                 allocResCnt,
+                                 coreCnt);
+        allocResCnt += coreCnt;
+    }
+
+    hwPushObj->resCnt = allocResCnt;
 }
 
 static void EnetRm_initMacObj(EnetRm_MacAddressObj *macObj,
@@ -631,13 +679,13 @@ static void EnetRm_initMacObj(EnetRm_MacAddressObj *macObj,
     allocResCnt = 0U;
     for (i = 0U; i < rmCfg->resPartInfo.numCores; i++)
     {
-        coreCnt = rmCfg->resPartInfo.coreDmaResInfo[i].numMacAddress;
+        coreCnt = rmCfg->resPartInfo.coreResInfo[i].numMacAddress;
 
         Enet_assert((allocResCnt + coreCnt) <= resTableSize);
         Enet_assert((allocResCnt + coreCnt) <= rmCfg->macList.numMacAddress);
 
         EnetRm_initCoreResourceQ(&macObj->macTbl.coreResTbl[i],
-                                 rmCfg->resPartInfo.coreDmaResInfo[i].coreId,
+                                 rmCfg->resPartInfo.coreResInfo[i].coreId,
                                  &macObj->macRes[allocResCnt],
                                  (resTableSize - allocResCnt),
                                  allocResCnt,
@@ -671,7 +719,7 @@ static int32_t EnetRm_validateResPartInfo(const EnetRm_Cfg *rmCfg,
     socTxChCnt = EnetSoc_getTxChCount(rmCfg->enetType, rmCfg->instId);
 
     if (resPartInfo->numCores >
-        ENET_ARRAYSIZE(resPartInfo->coreDmaResInfo))
+        ENET_ARRAYSIZE(resPartInfo->coreResInfo))
     {
         status = ENET_EINVALIDPARAMS;
     }
@@ -680,9 +728,9 @@ static int32_t EnetRm_validateResPartInfo(const EnetRm_Cfg *rmCfg,
     {
         for (i = 0U; i < resPartInfo->numCores; i++)
         {
-            txChCnt    += resPartInfo->coreDmaResInfo[i].numTxCh;
-            rxFlowCnt  += resPartInfo->coreDmaResInfo[i].numRxFlows;
-            macAddrCnt += resPartInfo->coreDmaResInfo[i].numMacAddress;
+            txChCnt    += resPartInfo->coreResInfo[i].numTxCh;
+            rxFlowCnt  += resPartInfo->coreResInfo[i].numRxFlows;
+            macAddrCnt += resPartInfo->coreResInfo[i].numMacAddress;
         }
 
         for (i = 0U; i < ENET_RM_NUM_RXCHAN_MAX; i++)
@@ -789,10 +837,10 @@ static EnetRm_ResourceInfo *EnetRm_getCoreResourceInfo(EnetRm_Cfg *cfg,
     EnetRm_ResourceInfo *resInfo;
     uint32_t i;
 
-    Enet_assert(cfg->resPartInfo.numCores <= ENET_ARRAYSIZE(cfg->resPartInfo.coreDmaResInfo));
+    Enet_assert(cfg->resPartInfo.numCores <= ENET_ARRAYSIZE(cfg->resPartInfo.coreResInfo));
     for (i = 0U; i < cfg->resPartInfo.numCores; i++)
     {
-        if (cfg->resPartInfo.coreDmaResInfo[i].coreId == coreId)
+        if (cfg->resPartInfo.coreResInfo[i].coreId == coreId)
         {
             break;
         }
@@ -800,7 +848,7 @@ static EnetRm_ResourceInfo *EnetRm_getCoreResourceInfo(EnetRm_Cfg *cfg,
 
     if (i < cfg->resPartInfo.numCores)
     {
-        resInfo = &cfg->resPartInfo.coreDmaResInfo[i];
+        resInfo = &cfg->resPartInfo.coreResInfo[i];
     }
     else
     {

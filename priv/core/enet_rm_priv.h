@@ -299,6 +299,18 @@ typedef struct EnetRm_RxFlowIdxObj_s
     EnetRm_ResEntry_t rxRes[ENET_CFG_RM_RX_CH_MAX];
 } EnetRm_RxFlowIdxObj;
 
+typedef struct EnetRm_HwPushObj_s
+{
+    /*! Resource count */
+    uint32_t resCnt;
+
+    /*! Hw Push resource table for all applicable cores */
+    EnetRm_CoreResTbl_t hwPushResTbl;
+
+    /*! HW resource entries */
+    EnetRm_ResEntry_t hwPushRes[ENET_CFG_RM_HW_PUSH_MAX];
+} EnetRm_HwPushObj;
+
 /*!
  * \brief MAC address resources.
  */
@@ -348,6 +360,9 @@ typedef struct EnetRm_Obj_s
 
     /*! MAC addresses pool being managed */
     EnetRm_MacAddressObj macObj;
+
+    /*! CPTS Hw Push resource being managed */
+    EnetRm_HwPushObj hwPushObj;
 
     /*! Information about attached cores */
     EnetRm_CoreAttachInfo coreAttachObj;

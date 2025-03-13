@@ -1530,6 +1530,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg1DMacSocCfg[ICSSG_MAC_PORT_MAX] =
         .rxChPeerThreadId = CSL_PSILCFG_DMSS_ICSS_G1_PSILS_THREAD_OFFSET,
         .txChCount        = ICSSG_DUALMAC_TX_CH_NUM,
         .rxFlowCount      = ICSSG_DUALMAC_RX_FLOW_NUM,
+        .hwPushCnt        = 0U,
     },
     {
         .dmscDevId        = TISCI_DEV_PRU_ICSSG1,
@@ -1539,6 +1540,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg1DMacSocCfg[ICSSG_MAC_PORT_MAX] =
                             1U,
         .txChCount        = ICSSG_DUALMAC_TX_CH_NUM,
         .rxFlowCount      = ICSSG_DUALMAC_RX_FLOW_NUM,
+        .hwPushCnt        = 0U,
     }
 };
 
@@ -1550,6 +1552,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg1SwtSocCfg =
     .rxChPeerThreadId = CSL_PSILCFG_DMSS_ICSS_G1_PSILS_THREAD_OFFSET,
     .txChCount        = ICSSG_SWITCH_TX_CH_NUM,
     .rxFlowCount      = ICSSG_SWITCH_RX_FLOW_NUM,
+    .hwPushCnt        = 0U,
 };
 
 /* ICSSG0 Dual-MAC DMA SoC data: 4 TX channels and 9 RX flows per slice */
@@ -1561,6 +1564,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg0DMacSocCfg[ICSSG_MAC_PORT_MAX] =
         .rxChPeerThreadId = CSL_PSILCFG_DMSS_ICSS_G0_PSILS_THREAD_OFFSET,
         .txChCount        = ICSSG_DUALMAC_TX_CH_NUM,
         .rxFlowCount      = ICSSG_DUALMAC_RX_FLOW_NUM,
+        .hwPushCnt        = 0U,
     },
     {
         .dmscDevId        = TISCI_DEV_PRU_ICSSG0,
@@ -1570,6 +1574,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg0DMacSocCfg[ICSSG_MAC_PORT_MAX] =
                             1U,
         .txChCount        = ICSSG_DUALMAC_TX_CH_NUM,
         .rxFlowCount      = ICSSG_DUALMAC_RX_FLOW_NUM,
+        .hwPushCnt        = 0U,
     },
 };
 
@@ -1581,6 +1586,7 @@ const IcssgSoc_Cfg gEnetSoc_icssg0SwtSocCfg =
     .rxChPeerThreadId = CSL_PSILCFG_DMSS_ICSS_G0_PSILS_THREAD_OFFSET,
     .txChCount        = ICSSG_SWITCH_TX_CH_NUM,
     .rxFlowCount      = ICSSG_SWITCH_RX_FLOW_NUM,
+    .hwPushCnt        = 0U,
 };
 
 const  Icssg_FwPoolMem *Icssq_FwPoolMemInfo[2][4] =
@@ -2050,6 +2056,52 @@ uint32_t EnetSoc_getRxFlowCount(Enet_Type enetType,
     return rxFlowCount;
 }
 
+uint32_t EnetSoc_getHwPushCount(Enet_Type enetType,
+                                uint32_t instId)
+{
+    uint32_t hwPushCount = 0U;
+    if (enetType == ENET_ICSSG_DUALMAC)
+    {
+        switch (instId)
+        {
+            case 0:
+                hwPushCount = gEnetSoc_icssg0DMacSocCfg[0].hwPushCnt;
+                break;
+            case 1:
+                hwPushCount = gEnetSoc_icssg0DMacSocCfg[1].hwPushCnt;
+                break;
+            case 2:
+                hwPushCount = gEnetSoc_icssg1DMacSocCfg[0].hwPushCnt;
+                break;
+            case 3:
+                hwPushCount = gEnetSoc_icssg1DMacSocCfg[1].hwPushCnt;
+                break;
+            default:
+                EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+                break;
+        }
+    }
+    else if (enetType == ENET_ICSSG_SWITCH)
+    {
+        switch (instId)
+        {
+            case 0:
+                hwPushCount = gEnetSoc_icssg0SwtSocCfg.hwPushCnt;
+                break;
+            case 1:
+                hwPushCount = gEnetSoc_icssg1SwtSocCfg.hwPushCnt;
+                break;
+            default:
+                EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+                break;
+        }
+    }
+    
+    EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
+
+    return hwPushCount;
+}
+
 uint32_t EnetSoc_getTxChPeerId(Enet_Type enetType,
                                uint32_t instId,
                                uint32_t chNum)
@@ -2213,7 +2265,7 @@ bool EnetSoc_isCoreAllowed(Enet_Type enetType,
  */
 static EnetRm_ResPrms gEnetAppRmDefCfg_iccsgDMac =
 {
-    .coreDmaResInfo =
+    .coreResInfo =
     {
         [0] =
         {
@@ -2221,6 +2273,7 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_iccsgDMac =
             .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
             .numRxFlows    = ENET_SYSCFG_RX_FLOWS_NUM,    /* numRxFlows */
             .numMacAddress = 1U,
+            .numHwPush     = 0U,
         },
     },
     .numCores = 1U,
@@ -2228,7 +2281,7 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_iccsgDMac =
 
 static EnetRm_ResPrms gEnetAppRmDefCfg_iccsgSwt =
 {
-    .coreDmaResInfo =
+    .coreResInfo =
     {
         [0] =
         {
@@ -2236,6 +2289,7 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_iccsgSwt =
             .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
             .numRxFlows    = ENET_SYSCFG_RX_FLOWS_NUM,    /* numRxFlows */
             .numMacAddress = 4U,
+            .numHwPush     = 0U,
         },
     },
     .numCores = 1U,

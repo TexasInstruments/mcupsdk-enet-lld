@@ -90,6 +90,14 @@ static int32_t EnetRm_freeTxChNum(EnetRm_Handle hRm,
                                   uint32_t coreKey,
                                   uint32_t txChNum);
 
+static int32_t EnetRm_allocHwPushInst(EnetRm_Handle hRm,
+                                      uint32_t coreKey,
+                                      uint32_t *hwPushNum);
+
+static int32_t EnetRm_freeHwPushInst(EnetRm_Handle hRm,
+                                    uint32_t coreKey,
+                                    uint32_t hwPushInst);
+
 static int32_t EnetRm_validateCoreIoctlPrivilege(EnetRm_Obj *hRm,
                                                  uint32_t cmd,
                                                  uint32_t coreId);
@@ -278,6 +286,28 @@ int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_VALIDATE_RX_FLOW(EnetRm_Handle hRm, E
     return status;
 }
 
+int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ALLOC_HW_PUSH_INST(EnetRm_Handle hRm, Enet_IoctlPrms *prms)
+{
+    uint32_t coreKey = *((uint32_t *)prms->inArgs);
+    EnetRm_AllocHwPushOutArgs *outArgs = (EnetRm_AllocHwPushOutArgs *)prms->outArgs;
+    int32_t status = ENET_SOK;
+
+    status = EnetRm_allocHwPushInst(hRm, coreKey, &outArgs->hwPushNum);
+
+    return status;
+}
+
+int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_FREE_HW_PUSH_INST(EnetRm_Handle hRm, Enet_IoctlPrms *prms)
+{
+    uint32_t coreKey = *((uint32_t *)prms->inArgs);
+    EnetRm_FreeHwPushInArgs *inArgs = (EnetRm_FreeHwPushInArgs *)prms->inArgs;
+    int32_t status = ENET_SOK;
+
+    status = EnetRm_freeHwPushInst(hRm, coreKey, inArgs->hwPushNum);
+
+    return status;
+}
+
 static int32_t EnetRm_allocMacAddr(EnetRm_Handle hRm,
                                    uint32_t coreKey,
                                    uint8_t macAddr[])
@@ -435,6 +465,60 @@ static int32_t EnetRm_freeTxChNum(EnetRm_Handle hRm,
                                      hRm->txObj.resCnt,
                                      coreId,
                                      txChOffset);
+    }
+
+    return status;
+}
+
+static int32_t EnetRm_allocHwPushInst(EnetRm_Handle hRm,
+                                      uint32_t coreKey,
+                                      uint32_t *hwPushNum)
+{
+    int32_t status;
+
+    status = EnetRm_validateCoreKey(hRm, coreKey);
+
+    if (status == ENET_SOK)
+    {
+        EnetRm_ResEntry_t *hwPushRes;
+        uint32_t coreId = ENET_COREKEY_2_COREID(coreKey);
+
+        hwPushRes = EnetRm_allocResource(&hRm->hwPushObj.hwPushResTbl, coreId);
+        if (hwPushRes != NULL)
+        {
+            Enet_assert(hwPushRes->ownerCoreId == coreId);
+            Enet_assert(hwPushRes->id < hRm->hwPushObj.resCnt);
+
+            *hwPushNum = (hwPushRes->id);
+            status = ENET_SOK;
+        }
+        else
+        {
+            status = ENET_EALLOC;
+        }
+    }
+
+    return status;
+}
+
+static int32_t EnetRm_freeHwPushInst(EnetRm_Handle hRm,
+                                    uint32_t coreKey,
+                                    uint32_t hwPushInst)
+{
+    int32_t status = ENET_SOK;
+
+    status = EnetRm_validateCoreKey(hRm, coreKey);
+    if (status == ENET_SOK)
+    {
+        uint32_t coreId = ENET_COREKEY_2_COREID(coreKey);
+
+        Enet_assert(hRm->hwPushObj.resCnt <= ENET_ARRAYSIZE(hRm->hwPushObj.hwPushRes));
+
+        status = EnetRm_freeResource(&hRm->hwPushObj.hwPushResTbl,
+                                     hRm->hwPushObj.hwPushRes,
+                                     hRm->hwPushObj.resCnt,
+                                     coreId,
+                                     hwPushInst);
     }
 
     return status;
