@@ -439,6 +439,7 @@ int32_t IcssgTas_setTriggerForListChange(IcssgTas_Handle hTas,
     uint64_t cycleTime;
     uint64_t baseTime;
     uint32_t cycleCount;
+	uint32_t extensionTime;
     int64_t temp = 0;
     int32_t status = ENET_SOK;
 
@@ -461,9 +462,11 @@ int32_t IcssgTas_setTriggerForListChange(IcssgTas_Handle hTas,
         cycleCount = (uint32_t)(temp);
     }
 
+	extensionTime = baseTime % cycleTime;
     HWREG(dmemOffset + TAS_ADMIN_CYCLE_TIME) = cycleTime;
     HWREG(dmemOffset + TAS_CONFIG_CHANGE_CYCLE_COUNT) = cycleCount;
     HWREGB(dmemOffset + TAS_ADMIN_LIST_LENGTH) = hTas->adminList.listLength;
+	HWREG(dmemOffset + TAS_CONFIG_EXTN_TIME) = extensionTime;
 
     hTas->configStatus->configChange = 1U;
     /* indicates firmware can now copy data list from DMEM and put in BSRAM */

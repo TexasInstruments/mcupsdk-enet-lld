@@ -430,7 +430,8 @@ int32_t IcssgTimeSync_setClockTime(IcssgTimeSync_Handle hTimeSync,
         }
 
         hTimeSync->setClockOngoing = true;
-
+		
+		HWREG(sharedRam + TIMESYNC_CYCLE_EXTN_TIME)=0; /*Clear the Cycle extenstion adjustments*/
         // FIXME - When is clock setting done?
         //hTimeSync->setClockOngoing = false;
     }
@@ -564,6 +565,7 @@ int32_t IcssgTimeSync_getClockTime(IcssgTimeSync_Handle hTimeSync,
         /* Compute 64 bit nanoseconds.
          * It can hold only 48 bit seconds. IEP count is 32 bit nanoseconds */
         *tsVal = ((uint64_t)(iepCntHi | (rolloverCntHi << IEP_COUNT_HI_BIT_WIDTH_FW)) * 1000000 /*hTimeSync->pn_handle->cycleTime*/) + iepCntLo;
+		*tsVal += HWREG(sharedRam + TIMESYNC_CYCLE_EXTN_TIME); /*Add Cycle extenstion adjustments accumulated overtime*/
     }
 
     return status;

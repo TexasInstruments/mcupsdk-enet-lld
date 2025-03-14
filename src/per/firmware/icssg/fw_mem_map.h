@@ -189,6 +189,8 @@
 #define P2_PORT_DF_VLAN_OFFSET                             0x0024
 /*Same as P2_PORT_DF_VLAN_OFFSET*/
 #define EMAC_ICSSG_SWITCH_PORT2_DEFAULT_VLAN_OFFSET        P2_PORT_DF_VLAN_OFFSET
+/*Time adjustment to be done due to Cycle extenstion*/
+#define TIMESYNC_CYCLE_EXTN_TIME                           0x0028
 /*VLAN-FID Table offset. 4096 VIDs. 2B per VID = 8KB = 0x2000*/
 #define VLAN_STATIC_REG_TABLE_OFFSET                       0x0100
 /*VLAN-FID Table offset for EMAC*/
@@ -285,6 +287,8 @@
 #define EXPRESS_PRE_EMPTIVE_Q_MAP                          0x0034
 /*Stores the table used for priority mapping. 1B per PCP/Queue*/
 #define PORT_Q_PRIORITY_MAPPING_OFFSET                     0x003C
+/*Memory to store time value to be used for Cycle extension*/
+#define TAS_CONFIG_EXTN_TIME                               0x00A4
 /*Used to notify the FW of the current link speed*/
 #define PORT_LINK_SPEED_OFFSET                             0x00A8
 /*2k memory pointer reserved for default writes by PRU0*/
@@ -371,34 +375,34 @@
 #define NRT_RTU0_PACKET_DROPPED_SLICE1_PASTATID            0x008C
 /*Port1 Tx Q Overflow Counters*/
 #define NRT_PORT1_Q0_OVERFLOW_PASTATID                     0x0090
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q1_OVERFLOW_PASTATID                     0x0094
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q2_OVERFLOW_PASTATID                     0x0098
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q3_OVERFLOW_PASTATID                     0x009C
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q4_OVERFLOW_PASTATID                     0x00A0
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q5_OVERFLOW_PASTATID                     0x00A4
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q6_OVERFLOW_PASTATID                     0x00A8
-/*Port1 Tx Q Overflow Counters*/
-#define NRT_PORT1_Q7_OVERFLOW_PASTATID                     0x00AC
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q0_OVERFLOW_PASTATID                     0x00B0
+#define NRT_PORT2_Q0_OVERFLOW_PASTATID                     0x0094
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q1_OVERFLOW_PASTATID                     0x0098
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q1_OVERFLOW_PASTATID                     0x00B4
+#define NRT_PORT2_Q1_OVERFLOW_PASTATID                     0x009C
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q2_OVERFLOW_PASTATID                     0x00A0
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q2_OVERFLOW_PASTATID                     0x00B8
+#define NRT_PORT2_Q2_OVERFLOW_PASTATID                     0x00A4
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q3_OVERFLOW_PASTATID                     0x00A8
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q3_OVERFLOW_PASTATID                     0x00BC
+#define NRT_PORT2_Q3_OVERFLOW_PASTATID                     0x00AC
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q4_OVERFLOW_PASTATID                     0x00B0
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q4_OVERFLOW_PASTATID                     0x00C0
+#define NRT_PORT2_Q4_OVERFLOW_PASTATID                     0x00B4
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q5_OVERFLOW_PASTATID                     0x00B8
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q5_OVERFLOW_PASTATID                     0x00C4
+#define NRT_PORT2_Q5_OVERFLOW_PASTATID                     0x00BC
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q6_OVERFLOW_PASTATID                     0x00C0
 /*Port2 Tx Q Overflow Counters*/
-#define NRT_PORT2_Q6_OVERFLOW_PASTATID                     0x00C8
+#define NRT_PORT2_Q6_OVERFLOW_PASTATID                     0x00C4
+/*Port1 Tx Q Overflow Counters*/
+#define NRT_PORT1_Q7_OVERFLOW_PASTATID                     0x00C8
 /*Port2 Tx Q Overflow Counters*/
 #define NRT_PORT2_Q7_OVERFLOW_PASTATID                     0x00CC
 /*Host Tx Q Overflow Counters*/
@@ -432,87 +436,89 @@
 /*RTU1 diagnostic counter increments when RTU detects Data Status invalid condition*/
 #define RX_EOF_RTU_DS_INVALID_SLICE1_PASTATID              0x010C
 /*Counter for packets dropped via NRT TX Port1*/
-#define NRT_TX_PORT1_DROPPED_PACKET_PASTATID               0x0128
+#define NRT_TX_PORT1_DROPPED_PACKET_PASTATID               0x0110
 /*Counter for packets dropped via NRT TX Port2*/
-#define NRT_TX_PORT2_DROPPED_PACKET_PASTATID               0x012C
+#define NRT_TX_PORT2_DROPPED_PACKET_PASTATID               0x0114
 /*Counter for packets with TS flag dropped via NRT TX Port1*/
-#define NRT_TX_PORT1_TS_DROPPED_PACKET_PASTATID            0x0130
+#define NRT_TX_PORT1_TS_DROPPED_PACKET_PASTATID            0x0118
 /*Counter for packets with TS flag dropped via NRT TX Port2*/
-#define NRT_TX_PORT2_TS_DROPPED_PACKET_PASTATID            0x0134
+#define NRT_TX_PORT2_TS_DROPPED_PACKET_PASTATID            0x011C
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to port is disabled*/
-#define NRT_INF_PORT_DISABLED_SLICE0_PASTATID              0x0138
+#define NRT_INF_PORT_DISABLED_SLICE0_PASTATID              0x0120
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to port is disabled*/
-#define NRT_INF_PORT_DISABLED_SLICE1_PASTATID              0x013C
+#define NRT_INF_PORT_DISABLED_SLICE1_PASTATID              0x0124
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to SA violation*/
-#define NRT_INF_SAV_SLICE0_PASTATID                        0x0140
+#define NRT_INF_SAV_SLICE0_PASTATID                        0x0128
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to SA violation*/
-#define NRT_INF_SAV_SLICE1_PASTATID                        0x0144
+#define NRT_INF_SAV_SLICE1_PASTATID                        0x012C
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to SA black listed*/
-#define NRT_INF_SA_BL_SLICE0_PASTATID                      0x0148
+#define NRT_INF_SA_BL_SLICE0_PASTATID                      0x0130
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to SA black listed*/
-#define NRT_INF_SA_BL_SLICE1_PASTATID                      0x014C
+#define NRT_INF_SA_BL_SLICE1_PASTATID                      0x0134
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to port blocked and not a special frame*/
-#define NRT_INF_PORT_BLOCKED_SLICE0_PASTATID               0x0150
+#define NRT_INF_PORT_BLOCKED_SLICE0_PASTATID               0x0138
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to port blocked and not a special frame*/
-#define NRT_INF_PORT_BLOCKED_SLICE1_PASTATID               0x0154
+#define NRT_INF_PORT_BLOCKED_SLICE1_PASTATID               0x013C
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to tagged*/
-#define NRT_INF_AFT_DROP_TAGGED_SLICE0_PASTATID            0x0158
+#define NRT_INF_AFT_DROP_TAGGED_SLICE0_PASTATID            0x0140
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to tagged*/
-#define NRT_INF_AFT_DROP_TAGGED_SLICE1_PASTATID            0x015C
+#define NRT_INF_AFT_DROP_TAGGED_SLICE1_PASTATID            0x0144
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to priority tagged*/
-#define NRT_INF_AFT_DROP_PRIOTAGGED_SLICE0_PASTATID        0x0160
+#define NRT_INF_AFT_DROP_PRIOTAGGED_SLICE0_PASTATID        0x0148
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to priority tagged*/
-#define NRT_INF_AFT_DROP_PRIOTAGGED_SLICE1_PASTATID        0x0164
+#define NRT_INF_AFT_DROP_PRIOTAGGED_SLICE1_PASTATID        0x014C
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to untagged*/
-#define NRT_INF_AFT_DROP_NOTAG_SLICE0_PASTATID             0x0168
+#define NRT_INF_AFT_DROP_NOTAG_SLICE0_PASTATID             0x0150
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to untagged*/
-#define NRT_INF_AFT_DROP_NOTAG_SLICE1_PASTATID             0x016C
+#define NRT_INF_AFT_DROP_NOTAG_SLICE1_PASTATID             0x0154
 /*PRU0 diagnostic error counter which increments when RX frame is dropped due to port not member of VLAN*/
-#define NRT_INF_AFT_DROP_NOTMEMBER_SLICE0_PASTATID         0x0170
+#define NRT_INF_AFT_DROP_NOTMEMBER_SLICE0_PASTATID         0x0158
 /*PRU1 diagnostic error counter which increments when RX frame is dropped due to port not member of VLAN*/
-#define NRT_INF_AFT_DROP_NOTMEMBER_SLICE1_PASTATID         0x0174
-/*PRU diagnostic error counter which increments when an entry couldn't be learned*/
-#define NRT_FDB_NO_SPACE_TO_LEARN                          0x0178
+#define NRT_INF_AFT_DROP_NOTMEMBER_SLICE1_PASTATID         0x015C
 /*PRU0 Bad fragment Error Counter*/
-#define NRT_PREEMPT_BAD_FRAG_SLICE0_PASTATID               0x0180
+#define NRT_PREEMPT_BAD_FRAG_SLICE0_PASTATID               0x0160
 /*PRU1 Bad fragment Error Counter*/
-#define NRT_PREEMPT_BAD_FRAG_SLICE1_PASTATID               0x0184
+#define NRT_PREEMPT_BAD_FRAG_SLICE1_PASTATID               0x0164
 /*PRU0 Fragment assembly Error Counter*/
-#define NRT_PREEMPT_ASSEMBLY_ERROR_SLICE0_PASTATID         0x0188
+#define NRT_PREEMPT_ASSEMBLY_ERROR_SLICE0_PASTATID         0x0168
 /*PRU1 Fragment assembly Error Counter*/
-#define NRT_PREEMPT_ASSEMBLY_ERROR_SLICE1_PASTATID         0x018C
+#define NRT_PREEMPT_ASSEMBLY_ERROR_SLICE1_PASTATID         0x016C
 /*PRU0 Fragment count in TX*/
-#define NRT_PREEMPT_FRAG_COUNT_TX_SLICE0_PASTATID          0x0190
+#define NRT_PREEMPT_FRAG_COUNT_TX_SLICE0_PASTATID          0x0170
 /*PRU1 Fragment count in TX*/
-#define NRT_PREEMPT_FRAG_COUNT_TX_SLICE1_PASTATID          0x0194
+#define NRT_PREEMPT_FRAG_COUNT_TX_SLICE1_PASTATID          0x0174
 /*PRU0 Assembly Completed*/
-#define NRT_PREEMPT_ASSEMBLY_OK_SLICE0_PASTATID            0x0198
+#define NRT_PREEMPT_ASSEMBLY_OK_SLICE0_PASTATID            0x0178
 /*PRU1 Assembly Completed*/
-#define NRT_PREEMPT_ASSEMBLY_OK_SLICE1_PASTATID            0x019C
+#define NRT_PREEMPT_ASSEMBLY_OK_SLICE1_PASTATID            0x017C
 /*PRU0 Fragments received*/
-#define NRT_PREEMPT_FRAG_COUNT_RX_SLICE0_PASTATID          0x01A0
+#define NRT_PREEMPT_FRAG_COUNT_RX_SLICE0_PASTATID          0x0180
 /*PRU1 Fragments received*/
-#define NRT_PREEMPT_FRAG_COUNT_RX_SLICE1_PASTATID          0x01A4
+#define NRT_PREEMPT_FRAG_COUNT_RX_SLICE1_PASTATID          0x0184
 /*PRU0 diagnostic error counter which increments if EOF task is scheduled without seeing RX_B1*/
-#define RX_EOF_SHORT_FRAMEERR_SLICE0_PASTATID              0x01E8
+#define RX_EOF_SHORT_FRAMEERR_SLICE0_PASTATID              0x0188
 /*PRU1 diagnostic error counter which increments if EOF task is scheduled without seeing RX_B1*/
-#define RX_EOF_SHORT_FRAMEERR_SLICE1_PASTATID              0x01EC
+#define RX_EOF_SHORT_FRAMEERR_SLICE1_PASTATID              0x018C
 /*PRU0 diagnostic counter which increments when frame if droped due to Early EOF received in B0*/
-#define RX_B0_DROP_EARLY_EOF_SLICE0_PASTATID               0x0208
+#define RX_B0_DROP_EARLY_EOF_SLICE0_PASTATID               0x0190
 /*PRU1 diagnostic counter which increments when frame if droped due to Early EOF received in B0*/
-#define RX_B0_DROP_EARLY_EOF_SLICE1_PASTATID               0x020C
+#define RX_B0_DROP_EARLY_EOF_SLICE1_PASTATID               0x0194
 /*Tx PRU0 diagnostic counter which increments when frame is cut off to prevent packet size > 2000B*/
-#define TX_JUMBO_FRAME_CUTOFF_SLICE0_PASTATID              0x0210
+#define TX_JUMBO_FRAME_CUTOFF_SLICE0_PASTATID              0x0198
 /*Tx PRU1 diagnostic counter which increments when frame is cut off to prevent packet size > 2000B*/
-#define TX_JUMBO_FRAME_CUTOFF_SLICE1_PASTATID              0x0214
+#define TX_JUMBO_FRAME_CUTOFF_SLICE1_PASTATID              0x019C
 /*Rx PRU0 diagnostic counter which increments when express frame is received in same queue as previous fragment*/
-#define RX_EXPRESS_FRAG_Q_DROP_SLICE0_PASTATID             0x0238
+#define RX_EXPRESS_FRAG_Q_DROP_SLICE0_PASTATID             0x01A0
 /*Rx PRU1 diagnostic counter which increments when express frame is received in same queue as previous fragment*/
-#define RX_EXPRESS_FRAG_Q_DROP_SLICE1_PASTATID             0x023C
+#define RX_EXPRESS_FRAG_Q_DROP_SLICE1_PASTATID             0x01A4
 /*RX fifo overrun for slice 0*/
-#define RX_FIFO_OVERRUN_SLICE0_PASTATID                    0x0240
+#define RX_FIFO_OVERRUN_SLICE0_PASTATID                    0x01A8
 /*RX fifo overrun for slice 1*/
-#define RX_FIFO_OVERRUN_SLICE1_PASTATID                    0x0244
+#define RX_FIFO_OVERRUN_SLICE1_PASTATID                    0x01AC
+/*Cut-through packet Counter*/
+#define NRT_CUT_THR_PKT_SLICE0_PASTATID                    0x01B0
+/*Cut-through packet Counter*/
+#define NRT_CUT_THR_PKT_SLICE1_PASTATID                    0x01B4
 /*Number of valid packets sent by Rx PRU to Host on PSI*/
 #define NRT_HOST_RX_PKT_COUNT_MAC_SLICE0_PASTATID          0x0248
 /*Number of valid packets sent by Rx PRU to Host on PSI*/
@@ -529,9 +535,7 @@
 #define NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE0_PASTATID 0x0260
 /*Host Egress Q (Pre-emptible) Overflow Counter*/
 #define NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE1_PASTATID 0x0264
-/*Cut-through packet Counter*/
-#define NRT_CUT_THR_PKT_SLICE0_PASTATID                    0x0268
-/*Cut-through packet Counter*/
-#define NRT_CUT_THR_PKT_SLICE1_PASTATID                    0x026C
+/*PRU diagnostic error counter which increments when an entry couldn't be learned*/
+#define NRT_FDB_NO_SPACE_TO_LEARN                          0x0268
 
-#endif /* ____fw_mem_map_h*/
+#endif /* ____switch_mem_map_h*/
