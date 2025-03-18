@@ -445,7 +445,6 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         {
             pInterface->hRxProxyArp->mapPortToNetif[macPort] = netif;
         }
-        pInterface->hRxProxyArp->mapPortToNetif[1U] = netif;
     }
     else
     {

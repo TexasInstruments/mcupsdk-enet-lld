@@ -62,7 +62,7 @@ extern "C" {
 #include <enet.h>
 #include <enet_cfg.h>
 #include <intercore/intercore.h>
-#include <lwipific/inc/bufpool.h>
+#include <bufpool.h>
 
 /* ========================================================================== */
 /*                                 Macros                                     */

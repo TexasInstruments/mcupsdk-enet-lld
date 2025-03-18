@@ -348,9 +348,9 @@ bool EnetApp_isPortLinked(Enet_Handle hEnet)
 }
 %}
 
-static int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
-                                  uint32_t maxMacEntries,
-                                  uint32_t *pAvailMacEntries)
+int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
+                                   uint32_t maxMacEntries,
+                                   uint32_t *pAvailMacEntries)
 {
     uint32_t numEfusedMacAddrs;
     uint32_t numBoardMacAddrs;

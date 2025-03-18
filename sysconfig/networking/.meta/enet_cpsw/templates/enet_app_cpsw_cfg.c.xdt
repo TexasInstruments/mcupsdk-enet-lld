@@ -520,7 +520,7 @@ int32_t EnetApp_filterPriorityPacketsCfg(Enet_Handle hEnet, uint32_t coreId)
     params.macPort = ENET_MAC_PORT_1;
 
     params.priorityRegenMap.priorityMap[0] =0U;
-    for (int i = 1; i < 8U; i++)
+    for (uint32_t i = 1; i < 8U; i++)
     {
         params.priorityRegenMap.priorityMap[i] =1U;  // Map all priorities from (1 to 7) to priority 1, these packets will be received on DMA channel 1.
     }
