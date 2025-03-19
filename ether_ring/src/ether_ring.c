@@ -453,7 +453,7 @@ void EtherRing_periodicTick(void *hEtherRing)
     Enet_assert(hEtherRing != NULL);
 
     EtherRing_Handle pRingHandle = (EtherRing_Handle) hEtherRing;
-    EtherRingStats etherRingStats = pRingHandle->etherRingStats;
+    EtherRingStats *etherRingStats = &(pRingHandle->etherRingStats);
 
-    memset(etherRingStats.etherRingSeqLookUp, 0, ETHERRING_LOOKUP_TABLE_SIZE);
+    memset(&etherRingStats->etherRingSeqLookUp, 0, ETHERRING_LOOKUP_TABLE_SIZE);
 }

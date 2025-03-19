@@ -71,7 +71,7 @@ extern "C" {
 #define ETHERRING_PROFILING
 
 /* \brief Size of Lookup table for Duplicate packet rejection */
-#define ETHERRING_LOOKUP_TABLE_SIZE                                 (256U*256U)
+#define ETHERRING_LOOKUP_TABLE_SIZE                                           (256U*256U)
 
 #ifdef ETHERRING_PROFILING
 /*! \brief Value of Maximum Rx TimeStamps stored in the EtherRing stats */
