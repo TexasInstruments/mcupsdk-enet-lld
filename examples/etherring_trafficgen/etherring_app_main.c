@@ -42,7 +42,7 @@
 /* ========================================================================== */
 #include "cpsw_config/etherring_cpsw_config.h"
 #include "etherring_trafficgen_config.h"
-
+#include "back_ground_tcp_app/tcp_config.h"
 /* ========================================================================== */
 /*                         Global Variables                                   */
 /* ========================================================================== */
@@ -91,6 +91,31 @@ void EnetApp_mainTask(void *args)
 
     /* Initialize all the streams(Class-A) */
     EnetApp_initAllTrafficObj();
+
+#ifdef ENETAPP_ENABLE_TCP_BG_TRAFFIC
+    SemaphoreP_constructBinary(&gEnetAppCfg.lwipSemObj, 0);
+    EnetApp_setupNetworkStack();
+
+    while (false == EnetApp_isNetworkUp(netif_default))
+    {
+        EnetAppUtils_print("Waiting for network UP ...\r\n");
+        ClockP_sleep(3U);
+    }
+
+    EnetAppUtils_print("Network is UP ...\r\n");
+
+    /* Devices acts as either TCP Server or Client based on NodeId */
+    if (gEnetAppCfg.nodeId % 2 == 0)
+    {
+        EnetAppUtils_print("Acts as TCP Server\r\n");
+        EnetApp_startTcpServer();
+    }
+    else
+    {
+        EnetAppUtils_print("Acts as TCP Client\r\n");
+        EnetApp_startTcpClient();
+    }
+#endif
 
     /* Configures the streams based on TrafficProfile(TxHeavy, RxHeavy) */
     if (gTrafficProfile == TRAFFIC_PROFILE_A)
@@ -177,11 +202,11 @@ void EnetApp_configureTrafficProfileA()
     {
         for (uint32_t objIndex = 0; objIndex < ENETAPP_NUM_CLASSA_STREAMS ;objIndex++)
         {
-        	if (gEnetAppCfg.nodeId == ENETAPP_MAX_NODES_IN_RING/2 &&
-        	    objIndex == ENETAPP_NUM_CLASSA_STREAMS - 1)
-        	{
-        		continue;
-        	}
+            if (gEnetAppCfg.nodeId == ENETAPP_MAX_NODES_IN_RING/2 &&
+                objIndex == ENETAPP_NUM_CLASSA_STREAMS - 1)
+            {
+                continue;
+            }
             TrafficGen_ClassAList[objIndex].isEnabled = true;
             TrafficGen_ClassAList[objIndex].destinationNodeId = ENETAPP_MAX_NODES_IN_RING + 1;
         }

@@ -560,6 +560,9 @@ void EnetApp_createEtherRingClearTask()
 void EnetApp_hwTimerISR(void)
 {
     static uint32_t etherRingCounter  = 0;
+#ifdef ENETAPP_ENABLE_TCP_BG_TRAFFIC
+    static uint32_t lwipCounter  = 0;
+#endif
 
     if(isStreamsEnabled)
     {
@@ -572,5 +575,14 @@ void EnetApp_hwTimerISR(void)
             SemaphoreP_post(&gEnetAppCfg.etherringSemObj);
             etherRingCounter = 0;
         }
+#ifdef ENETAPP_ENABLE_TCP_BG_TRAFFIC
+        lwipCounter++;
+        /* Sends BackGround TCP packet periodically */
+        if(lwipCounter % 8)
+        {
+            SemaphoreP_post(&gEnetAppCfg.lwipSemObj);
+            lwipCounter = 0;
+        }
+#endif
     }
 }

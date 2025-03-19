@@ -312,6 +312,14 @@ struct netif* LwipifEnetApp_netifOpen(LwipifEnetApp_Handle handle, uint32_t neti
                  );
         LWIPIF_LWIP_start(enetType, instId, &pObj->gNetif[netifIdx], netifIdx);
 
+%if(device == 'am263px-lp' || device == 'am263x-lp' || device === 'am263x-cc' || device === 'am263px-cc'){
+ %if( module.getNetifEtherringSupport(instance) == true){
+        /* Send only LWIP Directed packets(Port2) when Ether-Ring Topology is used */
+		Lwip2Enet_netif_t* pInterface  = (Lwip2Enet_netif_t*) pObj->gNetif[netifIdx].state;
+		pInterface->macPort = ENET_MAC_PORT_2;
+
+ %}
+%}
         if(netifIdx == ENET_SYSCFG_DEFAULT_NETIF_IDX)
         {
             netif_set_default(&pObj->gNetif[netifIdx]);

@@ -469,6 +469,11 @@ function getNetifPacketDequeueMode(instance){
     return enableTimerBasedPoll;     
 }
 
+function getNetifEtherringSupport(instance){
+    let etherringLwipSupport = getNetifConfig(instance, 0).etherRingLwipSupport;
+    return etherringLwipSupport;     
+}
+
 function verifyNetifPacketDequeueMode(instance){
     let timerEnabledNetifcount = 0;
     let firstNetifMode = getNetifConfig(instance, 0).packetDequeueMode;
@@ -749,6 +754,7 @@ let enet_cpsw_module = {
     getNetifCount,
     getNetifConfig,
     getNetifPacketDequeueMode,
+    getNetifEtherringSupport,
     getDefaultNetifIdx,
     getMiiConfig,
     validate: validate,

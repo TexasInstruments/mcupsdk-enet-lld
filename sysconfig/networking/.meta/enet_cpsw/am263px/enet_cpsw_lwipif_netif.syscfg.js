@@ -221,6 +221,12 @@ let enet_cpsw_lwipif_netif_module = {
             ],
             hidden: false,
         },
+        {
+            name: "etherRingLwipSupport",
+            description: "Enable this only If both Ether-Ring and LWIP Support is required",
+            displayName: "Ether-Ring LWIP Support",
+            default: false,
+        },
     ],
     getTotalNetIfCount,
     getInstanceConfig,

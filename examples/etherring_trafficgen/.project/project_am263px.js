@@ -8,6 +8,8 @@ const files = {
         "etherring_app_main.c",
         "etherring_cpsw_config.c",
         "etherring_trafficgen.c",
+        "tcp_app.c",
+        "tcp_config.c"
     ],
 };
 
@@ -17,6 +19,7 @@ const files = {
 const filedirs = {
     common: [
         "../../..", /* Example base */
+        "../../../back_ground_tcp_app",
         "../../../cpsw_config",
         "..",
           ],
@@ -29,6 +32,7 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
     ],
 };
 
@@ -51,6 +55,12 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/etherring_trafficgen/",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263px/enet",
     ],
 };
 
@@ -59,7 +69,10 @@ const libs_freertos_r5f = {
         "freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "drivers.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "enet-cpsw.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "lwipif-cpsw-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "lwip-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "board.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "lwip-contrib-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
     ],
 };
 

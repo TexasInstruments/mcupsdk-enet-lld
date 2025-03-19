@@ -48,6 +48,8 @@ FILES_common := \
 	etherring_app_main.c \
 	etherring_cpsw_config.c \
 	etherring_trafficgen.c \
+	tcp_app.c \
+	tcp_config.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -62,6 +64,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	../../.. \
+	../../../back_ground_tcp_app \
 	../../../cpsw_config \
 	.. \
 	generated \
@@ -86,6 +89,12 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/etherring_trafficgen/ \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/include \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/include \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263px/enet \
 	-Igenerated \
 
 DEFINES_common := \
@@ -137,13 +146,17 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
 	-lfreertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ldrivers.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	-lenet-cpsw.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	-llwipif-cpsw-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	-llwip-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	-lboard.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	-llwip-contrib-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -169,7 +182,10 @@ LIBS_NAME = \
 	freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	drivers.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	enet-cpsw.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	lwipif-cpsw-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	lwip-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	board.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
+	lwip-contrib-freertos.am263px.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -179,6 +195,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
