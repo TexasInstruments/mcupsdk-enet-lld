@@ -11,7 +11,7 @@
 
     <project
         title="Cpsw Lwip Https"
-        name = "cpsw_lwip_https_am261x-lp-dp83826/am261x-lp_r5fss0-0_freertos_ti-arm-clang"
+        name = "cpsw_lwip_https_am261x-lp-dp83826_am261x-lp_r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Release,
