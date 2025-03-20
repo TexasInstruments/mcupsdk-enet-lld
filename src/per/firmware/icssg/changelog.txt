@@ -1,7 +1,8 @@
-Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.00 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.04
+Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.00 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.05
 
 - Updated mask to get receive frame error bits status (from 0x0000 to 0x3180)
 - Changed TX PRU wait on TX L1 FIFO level from 6B to 8B, for 100M speed.
 - Moved some of the R30 register persistent bits from lower host configurable bits to upper firmware managed bits.
 - TAS interface updates to support updating TAS schedule at basetime which is not a multiple of cycle-time
 - PA_STAT offset cleanups
+- Fixed the firmware offset handling of Port specific forwarding overflow debug PA_STAT counters post the PA_STAT offset cleanup
