@@ -60,8 +60,8 @@
  * @{
  */
 
-#ifndef MDIO_H_
-#define MDIO_H_
+#ifndef MDIO_ENET_H_
+#define MDIO_ENET_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
@@ -180,6 +180,6 @@ void Mdio_initCfg(Mdio_Cfg *mdioCfg);
 }
 #endif
 
-#endif /* MDIO_H_ */
+#endif /* MDIO_ENET_H_ */
 
 /*! @} */
