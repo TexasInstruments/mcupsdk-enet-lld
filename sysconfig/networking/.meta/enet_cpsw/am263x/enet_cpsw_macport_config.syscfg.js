@@ -215,7 +215,10 @@ const enet_cpsw_macport_config = {
                     displayName: "Port VLAN ID",
                     default: 0,
                     readOnly: true,
-                    getValue: function(inst) { return inst.vlanId_macPort1 },
+                    getValue: function(inst) {
+                        const portNumber = this.name.match(/\d+/)[0];
+                        return inst["vlanId_macPort" + portNumber];
+                    },
                     isInteger: true,
                     range: [0, 4094],
                     displayFormat: "hex",
@@ -227,7 +230,10 @@ const enet_cpsw_macport_config = {
                     displayName: "Port VLAN Priority",
                     default: 0,
                     readOnly: true,
-                    getValue: function(inst) { return inst.vlanPrio_macPort1 },
+                    getValue: function(inst) {
+                        const portNumber = this.name.match(/\d+/)[0];
+                        return inst["vlanPrio_macPort" + portNumber];
+                    },
                     isInteger: true,
                     range: [0, 7],
                     hidden: false,
@@ -238,7 +244,10 @@ const enet_cpsw_macport_config = {
                     displayName: "Set Port CFI Bit",
                     default: false,
                     readOnly: true,
-                    getValue: function(inst) { return inst.vlanCfiBit_macPort1 },
+                    getValue: function(inst) {
+                        const portNumber = this.name.match(/\d+/)[0];
+                        return inst["vlanCfiBit_macPort" + portNumber]
+                    },
                     hidden: false,
                 },
             ],
