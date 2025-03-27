@@ -42,6 +42,7 @@
 
 #include <stdint.h>
 #include <tsn_combase/combase.h>
+#include <tsn_combase/combase_link.h>
 #include "nrt_flow/dataflow.h"
 #include "debug_log.h"
 #include "tsninit.h"
@@ -243,6 +244,14 @@ void EnetApp_mainTask(void *args)
     }
 }
 
+static void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
+                                                        bool isLinkUp, void *appArg)
+{
+    EnetAppUtils_print("MAC Port %u: link %s\r\n",
+    ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
+    notify_linkchange();
+}
+
 void EnetApp_updateIcssgInitCfg(Enet_Type enetType, uint32_t instId, Icssg_Cfg *icssgCfg)
 {
     #if (ENET_SYSCFG_ENABLE_MDIO_MANUALMODE == 1U)
@@ -253,6 +262,9 @@ void EnetApp_updateIcssgInitCfg(Enet_Type enetType, uint32_t instId, Icssg_Cfg *
     icssgCfg->mdioLinkIntCfg.mdioLinkStateChangeCbArg = NULL;
     EnetApp_updateMdioLinkIntCfg(enetType, instId, &icssgCfg->mdioLinkIntCfg);
     #endif
+
+    icssgCfg->portLinkIntCfg.portLinkStateChangeCb    = &EnetApp_portLinkStatusChangeCb;
+    icssgCfg->portLinkIntCfg.portLinkStateChangeCbArg = NULL;
 }
 
 static void EnetApp_closePort(EnetApp_PerCtxt *perCtxts,

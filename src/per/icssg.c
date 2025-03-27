@@ -191,11 +191,11 @@ static int32_t Icssg_ioctlFdbRemoveAllAgeableEntries(Icssg_Handle hIcssg,
 
 static int32_t Icssg_ioctlFdbReadSlotEntries(Icssg_Handle hIcssg,
                                       Enet_MacPort macPort,
-                                      Icssg_FdbEntry_ReadSlotInArgs *fdbSlotCfg);                                      
+                                      Icssg_FdbEntry_ReadSlotInArgs *fdbSlotCfg);
 
 static int32_t Icssg_ioctlFdbGetSlotEntries(Icssg_Handle hIcssg,
-                                      Enet_MacPort macPort,                                      
-                                      Icssg_FdbEntry_GetSlotOutArgs *fdbSlotResult);                                       
+                                      Enet_MacPort macPort,
+                                      Icssg_FdbEntry_GetSlotOutArgs *fdbSlotResult);
 
 static void Icssg_ioctlSetMacAddress(Icssg_Handle hIcssg,
                                      IcssgMacPort_SetMacAddressInArgs *macAddressCfg);
@@ -439,14 +439,14 @@ static Enet_IoctlValidate gIcssg_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES,
                           0U,
                           0U),
-    
+
     ENET_IOCTL_VALID_PRMS(ICSSG_FDB_IOCTL_READ_SLOT_ENTRIES,
                           sizeof(Icssg_FdbEntry_ReadSlotInArgs),
                           0U),
 
     ENET_IOCTL_VALID_PRMS(ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES,
                           0U,
-                          sizeof(Icssg_FdbEntry_GetSlotOutArgs)),  
+                          sizeof(Icssg_FdbEntry_GetSlotOutArgs)),
 
     ENET_IOCTL_VALID_PRMS(ICSSG_MACPORT_IOCTL_SET_MACADDR,
                           sizeof(IcssgMacPort_SetMacAddressInArgs),
@@ -1060,6 +1060,9 @@ int32_t Icssg_open(EnetPer_Handle hPer,
     hIcssg->disablePhyDriver = icssgCfg->disablePhyDriver;
     hIcssg->qosLevels        = icssgCfg->qosLevels;
     hIcssg->isPremQueEnable  = icssgCfg->isPremQueEnable;
+
+    /* Copy the port Link Change callback information. */
+    hIcssg->portLinkIntCfg = icssgCfg->portLinkIntCfg;
 
     /* Create handle to the corresponding PRU instance to use with PRUICSS driver */
     if (status == ENET_SOK)
@@ -1730,6 +1733,12 @@ void Icssg_periodicTick(EnetPer_Handle hPer)
     uint32_t portId;
     uint32_t i;
     int32_t status = ENET_EFAIL;
+    uint32_t numPortCb = 0;
+    struct Icssg_PortLinkCbInfoList_s
+    {
+        bool linked;
+        Enet_MacPort macPort;
+    } portCbInfoList[ICSSG_MAC_PORT_MAX];
 
     /* Run PHY tick */
     for (i = 0U; i < ICSSG_MAC_PORT_MAX; i++)
@@ -1759,9 +1768,34 @@ void Icssg_periodicTick(EnetPer_Handle hPer)
                 ENETTRACE_ERR_IF((status != ENET_SOK),
                                  "%s: Port %u: Failed to handle link change: %d\r\n",
                                  ENET_PER_NAME(hIcssg), portId, status);
+                /* Call application callback when port link is up - at this point app can
+                 * start data flow */
+                if ((status == ENET_SOK) && (hIcssg->portLinkIntCfg.portLinkStateChangeCb != NULL))
+                {
+                    /* Add port's to callback info list.
+                        * All portLinkStatus Cb functions are invoked at the
+                        * end of function after relinquishing locks */
+                    Enet_devAssert(numPortCb < ENET_ARRAYSIZE(portCbInfoList),
+                                    "Invalid port number %u, expected < %u\r\n",
+                                    numPortCb, ENET_ARRAYSIZE(portCbInfoList));
+                    portCbInfoList[numPortCb].macPort = macPort;
+                    portCbInfoList[numPortCb].linked  = linked;
+                    numPortCb++;
+                }
             }
 
             //EnetOsal_unlockMutex(hIcssg->lock);
+        }
+    }
+
+    for (i = 0U; i < numPortCb; i++)
+    {
+        if (hIcssg->portLinkIntCfg.portLinkStateChangeCb != NULL)
+        {
+            /* Call application's port link status change callback */
+            hIcssg->portLinkIntCfg.portLinkStateChangeCb(portCbInfoList[i].macPort,
+                                    portCbInfoList[i].linked,
+                                    hIcssg->portLinkIntCfg.portLinkStateChangeCbArg);
         }
     }
 }
@@ -2158,10 +2192,10 @@ static int32_t Icssg_ioctlFdbRemoveAllAgeableEntries(Icssg_Handle hIcssg,
 
 static int32_t Icssg_ioctlFdbReadSlotEntries(Icssg_Handle hIcssg,
                                       Enet_MacPort macPort,
-                                      Icssg_FdbEntry_ReadSlotInArgs *fdbSlotCfg)                                      
+                                      Icssg_FdbEntry_ReadSlotInArgs *fdbSlotCfg)
 {
     int32_t status = ENET_EINVALIDPARAMS;
-       
+
     status = IcssgUtils_sendFdbCmd(hIcssg,
                                     macPort,
                                     ICSSG_IOCTL_SUBCMD_FDB_ENTRY_READ_SLOT,
@@ -2173,10 +2207,10 @@ static int32_t Icssg_ioctlFdbReadSlotEntries(Icssg_Handle hIcssg,
 }
 
 static int32_t Icssg_ioctlFdbGetSlotEntries(Icssg_Handle hIcssg,
-                                      Enet_MacPort macPort,                                      
+                                      Enet_MacPort macPort,
                                       Icssg_FdbEntry_GetSlotOutArgs *fdbSlotResult)
 {
-    int32_t status = ENET_SOK;    
+    int32_t status = ENET_SOK;
     uintptr_t dram = Icssg_getDramAddr(hIcssg, macPort);
     /*Packing the FDB result into the outArg*/
     for(uint32_t entryNum = 0U; entryNum < ICSSG_NUM_FDB_BUCKET_ENTRIES; entryNum++)
@@ -2189,7 +2223,7 @@ static int32_t Icssg_ioctlFdbGetSlotEntries(Icssg_Handle hIcssg,
         fdbSlotResult->fdbSlotEntries[entryNum].fid_c1 = Icssg_rd8(hIcssg, dram + FDB_CMD_BUFFER + (entryNum*8) + ENET_MAC_ADDR_LEN);
 
         fdbSlotResult->fdbSlotEntries[entryNum].fid_c2 = Icssg_rd8(hIcssg, dram + FDB_CMD_BUFFER + (entryNum*8) + ENET_MAC_ADDR_LEN + 1);
- 
+
     }
 
     return status;
@@ -2688,7 +2722,7 @@ static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
                            Icssg_gSpeedNames[phyLinkCfg.speed],
                            Icssg_gDuplexNames[phyLinkCfg.duplexity]);
 
-            /*Set port state to ICSSG_PORT_STATE_FORWARD on link up*/            
+            /*Set port state to ICSSG_PORT_STATE_FORWARD on link up*/
             IcssgUtils_ioctlR30Cmd cmd = ICSSG_UTILS_R30_CMD_FORWARD;
 
             status = Icssg_R30SendSyncIoctl(hIcssg,
@@ -2697,7 +2731,7 @@ static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
 
             ENETTRACE_ERR_IF((status != ENET_SOK),
                                 "%s: port %u: failed to set port state: %d\r\n",
-                                ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);            
+                                ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
         }
     }
     else
@@ -2728,7 +2762,7 @@ static int32_t Icssg_handleLinkDown(Icssg_Handle hIcssg,
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: port %u: failed to set port state: %d\r\n",
                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
-                        
+
     return status;
 }
 
@@ -3074,7 +3108,7 @@ static int32_t Icssg_setAcceptableFrameCheckSync(Icssg_Handle hIcssg,
 static int32_t Icssg_setNoClassification(Icssg_Handle hIcssg,
                                          Enet_MacPort macPort)
 {
-    /* 
+    /*
      * All classifiers are kept disabled in case no packet classification is needed
      * All packets will use Queue 0/Flow 0 (except for special packets)
      */
@@ -3247,7 +3281,7 @@ static int32_t Icssg_setPcpBasedClassification(Icssg_Handle hIcssg,
                                                Enet_MacPort macPort,
                                                EnetPort_PriorityMap *priMap)
 {
-    /* 
+    /*
      * PCP based classification:
      * Mapping: PCP0 -> Q0, ... PCP7 -> Q7
      * Managed using FT3[0:7] and Classifier[0:7]
@@ -4438,7 +4472,7 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES(EnetPer_Handle hPer
                                                         Enet_IoctlPrms *prms)
 {
     Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    int32_t status = ENET_SOK;    
+    int32_t status = ENET_SOK;
     Icssg_FdbEntry_GetSlotOutArgs *outArgs = (Icssg_FdbEntry_GetSlotOutArgs *)prms->outArgs;
     Enet_assert(cmd == ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES);
     /* It's a peripheral level IOCTL but command is issued as if it were for port 1 */

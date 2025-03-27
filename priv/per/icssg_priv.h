@@ -378,6 +378,9 @@ typedef struct Icssg_Obj_s
 
     Icssg_MdioLinkIntCtx mdioLinkIntCtx;
 
+    /*! Port link interrupt config */
+    Icssg_portLinkIntCfg portLinkIntCfg;
+
     /*! Disable Enet LLD PHY driver - Disables use on PHY driver inside the
      *  Enet LLD. All PHY functionality including PHY state machine is bypassed
      *  Application will use this mode if ethernet PHY is managed outside the Enet LLD
