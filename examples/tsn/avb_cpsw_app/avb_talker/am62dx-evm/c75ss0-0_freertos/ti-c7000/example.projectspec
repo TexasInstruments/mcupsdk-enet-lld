@@ -36,14 +36,12 @@
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am62dx/c75x
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn/avb_cpsw_app
             -mv7504
-            --abi=eabi
             -q
             -mo
             -pden
             -pds=238
             -pds=880
             -pds1110
-            --endian=little
             --disable_inlining
             -ea.se71
             --emit_warnings_as_errors
@@ -65,13 +63,11 @@
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -m=avbtalker_app.${ConfigName}.map
-            --silicon_version=7504
             -z
             --emit_warnings_as_errors
             --diag_suppress=10063
             --ram_model
             --warn_sections
-            -q
             -x
         "
 
