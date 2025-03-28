@@ -91,12 +91,10 @@ enet_cpsw1.rxDmaChannel[0].PacketsCount = 5;
 ethphy_cpsw_icssg1.$name     = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1           = ethphy_cpsw_icssg1;
 ethphy_cpsw_icssg1.phySelect = "DP83TG721";
-ethphy_cpsw_icssg1.phyAddr   = 10;
 
 ethphy_cpsw_icssg2.$name          = "CONFIG_ENET_ETHPHY1";
 enet_cpsw1.ethphy2                = ethphy_cpsw_icssg2;
 ethphy_cpsw_icssg2.phySelect      = "DP83TG721";
-ethphy_cpsw_icssg2.phyAddr        = 15;
 ethphy_cpsw_icssg2.extendedConfig = ".isMDIMaster = 1,";
 
 const udma         = scripting.addModule("/drivers/udma/udma", {}, false);
