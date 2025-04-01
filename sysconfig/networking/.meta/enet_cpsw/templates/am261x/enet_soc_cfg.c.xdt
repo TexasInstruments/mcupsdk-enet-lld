@@ -48,6 +48,7 @@
 #define CPSW_INTR_NUM                                (4U)
 
 /* ENET_CTRL_MODE value for different MII modes */
+#define CPSW_ENET_CTRL_MODE_MII                      (0U)
 #define CPSW_ENET_CTRL_MODE_RMII                     (1U)
 #define CPSW_ENET_CTRL_MODE_RGMII                    (2U)
 
@@ -675,7 +676,11 @@ int32_t EnetSoc_getMacPortMii(Enet_Type enetType,
                 *enetLayer    = ENET_MAC_LAYER_GMII;
                 *enetSublayer = ENET_MAC_SUBLAYER_REDUCED;
                 break;
-
+            /* MII */
+            case CPSW_ENET_CTRL_MODE_MII:
+                *enetLayer    = ENET_MAC_LAYER_MII;
+                *enetSublayer = ENET_MAC_SUBLAYER_STANDARD;
+                break;
             default:
                 status = ENET_EINVALIDPARAMS;
                 break;
@@ -710,6 +715,7 @@ static uint32_t EnetSoc_getMcuEnetControl(Enet_MacPort macPort,
     {
         switch (*modeSel)
         {
+            case CPSW_ENET_CTRL_MODE_MII:
             case CPSW_ENET_CTRL_MODE_RMII:
             case CPSW_ENET_CTRL_MODE_RGMII:
                 break;

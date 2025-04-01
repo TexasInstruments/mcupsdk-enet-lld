@@ -72,6 +72,7 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
                                          11 = Not Supported
 */
 
+#define MSS_CPSW_CONTROL_PORT_MODE_MII                                    (0x0U)
 #define MSS_CPSW_CONTROL_PORT_MODE_RMII                                   (0x1U)
 #define MSS_CPSW_CONTROL_PORT_MODE_RGMII                                  (0x2U)
 
@@ -203,11 +204,16 @@ void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii)
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
     mii->layerType      = ENET_MAC_LAYER_GMII;
     mii->variantType    = ENET_MAC_VARIANT_FORCED;
-% } else {
+    mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+% } else if (cpsw_instance.phyToMacInterfaceMode == "RMII") {
     mii->layerType      = ENET_MAC_LAYER_MII;
     mii->variantType  = ENET_MAC_VARIANT_NONE;
-%}
     mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+%} else if (cpsw_instance.phyToMacInterfaceMode == "MII") {
+    mii->layerType      = ENET_MAC_LAYER_MII;
+    mii->variantType  = ENET_MAC_VARIANT_NONE;
+    mii->sublayerType   = ENET_MAC_SUBLAYER_STANDARD;
+% }
 }
 
 int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
@@ -216,7 +222,6 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     CSL_mss_ctrlRegs *mssCtrlRegs = (CSL_mss_ctrlRegs *)CSL_MSS_CTRL_U_BASE;
 
     DebugP_assert(numEthPorts == 1);
-    DebugP_assert(ethPorts->mii.sublayerType == ENET_MAC_SUBLAYER_REDUCED);
 
     EnetBoard_enableExternalMux();
 
@@ -226,8 +231,10 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII1_ID_MODE, `Number(cpsw_instance.disableRgmiiIntDelay1)`U);
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
-% } else {
+% } else if (cpsw_instance.phyToMacInterfaceMode == "RMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
+% } else {
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_MII);
 %}
 %if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
             EnetBoard_setMacPort1IOExpanderCfg();
@@ -237,8 +244,10 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII2_ID_MODE, `Number(cpsw_instance.disableRgmiiIntDelay2)`U);
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
-% } else {
+% } else if (cpsw_instance.phyToMacInterfaceMode == "RMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
+% } else {
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_MII);
 %}
 %if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
             EnetBoard_setMacPort2IOExpanderCfg();
