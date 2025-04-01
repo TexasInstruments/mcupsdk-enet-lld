@@ -394,7 +394,7 @@ static bool EnetEstApp_isPTPClockStateSync(EnetQoSApp_AppCtx_t *ctx,
             uint8_t portState = 0; // 6: master port, 9: slave port
             uint32_t gmState=0; //0: no sync, 1: sync, 2: sync stable
             bool asCapable=false;
-            int8_t portIdx = EnetQoSApp_getPortIdx(ctx, netdev);
+            uint16_t portIdx = EnetQoSApp_getPortIdx(ctx, netdev);
             DebugP_assert(portIdx >= 0 && portIdx < ctx->netdevSize);
 
             int gdi=ydbi_gptpinstdomain2dbinst_pt(ydbi_access_handle(), 0, 0);
