@@ -93,6 +93,7 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     /* Note- Though CPSW supports 64 distinct flow Ids, there are only
      * 8 policer/classifier so can effectively assign only 8 flow ids in CPSW3G */
     .rxFlowCount     = 8U,
+    .hwPushCnt       = 0U,
 };
 
 /* CPSW_3G MAC port template */
@@ -415,6 +416,7 @@ static uint32_t EnetSoc_getCoreDevId(void)
 
 
 
+
 uint32_t EnetSoc_getClkFreq(Enet_Type enetType,
                             uint32_t instId,
                             uint32_t clkId)
@@ -558,12 +560,13 @@ int32_t EnetSoc_getEFusedMacAddrs(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
         *num = 1U;
     }
 #else
-    macAddr[0][0] = 0xF4;
-    macAddr[0][1] = 0x84;
-    macAddr[0][2] = 0x4c;
-    macAddr[0][3] = 0xf9;
-    macAddr[0][4] = 0x4d;
-    macAddr[0][5] = 0x29;
+    //70:ff:76:1e:9c:50
+    macAddr[0][0] = 0x70;
+    macAddr[0][1] = 0xFF;
+    macAddr[0][2] = 0x76;
+    macAddr[0][3] = 0x1E;
+    macAddr[0][4] = 0x9C;
+    macAddr[0][5] = 0x51;
     *num = 1U;
 #endif
     return ENET_SOK;
@@ -707,6 +710,20 @@ uint32_t EnetSoc_getRxFlowCount(Enet_Type enetType,
     return rxFlowCount;
 }
 
+uint32_t EnetSoc_getHwPushCount(Enet_Type enetType,
+                                uint32_t instId)
+{
+    uint32_t hwPushCount = 0U;
+    /* Get SoC array index */
+    if (enetType == ENET_CPSW_3G)
+    {
+        hwPushCount = gEnetSoc_cpsw3gSocCfg.hwPushCnt;
+    }
+    EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
+
+    return hwPushCount;
+}
+
 uint32_t EnetSoc_getTxChPeerId(Enet_Type enetType,
                                uint32_t instId,
                                uint32_t chNum)
@@ -769,7 +786,7 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
  */
 static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
 {
-    .coreDmaResInfo =
+    .coreResInfo =
     {
         [0] =
         {
@@ -777,6 +794,7 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
             .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
             .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),    /* numRxFlows. Need one additional flow for reserved flow  */
             .numMacAddress = 4U,    /* numMacAddress */
+            .numHwPush     = 0U,
         },
     },
     .numCores = 1U,

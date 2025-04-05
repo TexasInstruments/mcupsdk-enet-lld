@@ -90,6 +90,10 @@
 #include <soc/k3/j722s/enet_soc.h>
 #include <soc/k3/k3_soc.h>
 #include <drivers/udma/soc/j722s/udma_soc.h>
+#elif defined (SOC_TDA54)
+#include <soc/k3/tda54/enet_soc.h>
+#include <soc/k3/k3_soc.h>
+#include <drivers/udma/soc/tda54/udma_soc.h>
 #endif
 #ifdef __cplusplus
 extern "C" {

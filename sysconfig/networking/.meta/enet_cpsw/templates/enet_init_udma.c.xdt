@@ -284,19 +284,6 @@ static void EnetAppUtils_closeRxFlowForChIdx(Enet_Type enetType,
     EnetAppUtils_assert(status == ENET_SOK);
 }
 
-
-static void EnetApp_txPktNotifyCb(void *cbArg)
-{
-
-
-}
-
-static void EnetApp_rxPktNotifyCb(void *cbArg)
-{
-
-
-}
-
 static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
                               uint32_t numTxPkts,
                               Enet_Handle hEnet,
@@ -312,8 +299,8 @@ static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
     /* This param is dont care for UDMA LCDMA variant */
     enetTxChCfg.useProxy  = false;
     enetTxChCfg.numTxPkts = numTxPkts;
-    enetTxChCfg.cbArg     = tx;
-    enetTxChCfg.notifyCb  = EnetApp_txPktNotifyCb;
+    enetTxChCfg.cbArg     = NULL;
+    enetTxChCfg.notifyCb  = NULL;
     enetTxChCfg.useGlobalEvt = txCfg->useGlobalEvt;
 
 
@@ -349,9 +336,9 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
 
     EnetDma_initRxChParams(&enetRxFlowCfg);
     EnetAppUtils_setCommonRxFlowPrms(&enetRxFlowCfg);
-    enetRxFlowCfg.notifyCb  = EnetApp_rxPktNotifyCb;
+    enetRxFlowCfg.notifyCb  = NULL;
     enetRxFlowCfg.numRxPkts = numRxPkts;
-    enetRxFlowCfg.cbArg     = rx;
+    enetRxFlowCfg.cbArg     = NULL;
     enetRxFlowCfg.hUdmaDrv  = rxCfg->hUdmaDrv;
     /* This param is dont care for UDMA LCDMA variant */
     enetRxFlowCfg.useProxy  = false;

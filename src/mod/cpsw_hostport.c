@@ -110,6 +110,12 @@
 #define CPSW_HOSTPORT_VER_REVRTL_AM261X        (0x00000000U)
 #define CPSW_HOSTPORT_VER_ID_AM261X            (0x00006BA8U)
 
+/* Supported J722S version */
+#define CPSW_HOSTPORT_VER_REVMAJ_J722S        (0x00000001U)
+#define CPSW_HOSTPORT_VER_REVMIN_J722S        (0x00000005U)
+#define CPSW_HOSTPORT_VER_REVRTL_J722S        (0x00000000U)
+#define CPSW_HOSTPORT_VER_ID_J722S            (0x00006BA8U)
+
 /*! \brief Default value used for host port RX MTU. */
 #define CPSW_HOSTPORT_RX_MTU_DEFAULT          (1518U)
 
@@ -207,6 +213,12 @@ static CSL_CPSW_VERSION CpswHostPort_gSupportedVer[] =
         .rtlVer   = CPSW_HOSTPORT_VER_REVRTL_AM261X,
         .id       = CPSW_HOSTPORT_VER_ID_AM261X,
     },
+    {   /* J722S */
+        .majorVer = CPSW_HOSTPORT_VER_REVMAJ_J722S,
+        .minorVer = CPSW_HOSTPORT_VER_REVMIN_J722S,
+        .rtlVer   = CPSW_HOSTPORT_VER_REVRTL_J722S,
+        .id       = CPSW_HOSTPORT_VER_ID_J722S,
+    },
 };
 
 /* Public host port IOCTL validation data. */
@@ -282,6 +294,36 @@ void CpswHostPort_initCfg(CpswHostPort_Cfg *hostPortCfg)
     hostPortCfg->rxCsumOffloadEn   = true;
     hostPortCfg->txCsumOffloadEn   = true;
 }
+#if ENET_CFG_IS_ON(NPAC_PORT)
+int32_t CpswNpacPort_open(EnetMod_Handle hMod,
+                          Enet_Type enetType,
+                          uint32_t instId,
+                          const void *cfg,
+                          uint32_t cfgSize)
+{
+    CpswHostPort_Handle hPort = (CpswHostPort_Handle)hMod;
+    const CpswHostPort_Cfg *hostPortCfg = (const CpswHostPort_Cfg *)cfg;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    uint32_t status = ENET_SOK;
+
+    /* Save peripheral info to use it later to query SoC parameters */
+    hPort->enetType = enetType;
+    hPort->instId = instId;
+
+#if ENET_CFG_IS_ON(CPSW_CPPI_CAST)
+    if (hostPortCfg->crcType == ENET_CRC_ETHERNET)
+    {
+        CSL_CPSW_disableNpacTxCastagnoliCRC(regs);
+    }
+    else
+    {
+        CSL_CPSW_enableNpacTxCastagnoliCRC(regs);
+    }
+#endif
+
+    return status;
+}
+#endif
 
 int32_t CpswHostPort_open(EnetMod_Handle hMod,
                           Enet_Type enetType,
@@ -372,7 +414,9 @@ int32_t CpswHostPort_open(EnetMod_Handle hMod,
     cppiP0ControlCfg.p0RxRemapDscpIpv6 = hostPortCfg->rxDscpIPv6RemapEn ? TRUE : FALSE;
 
     CSL_CPSW_setCppiP0Control(regs, &cppiP0ControlCfg);
-
+#if ENET_CFG_IS_ON(NPAC_PORT)
+    CpswNpacPort_open(hMod, enetType, instId, cfg, cfgSize);
+#endif
     return status;
 }
 

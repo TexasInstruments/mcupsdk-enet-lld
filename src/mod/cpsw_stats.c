@@ -109,6 +109,12 @@
 #define CPSW_STATS_VER_REVRTL_AM261X        (0x00000000U)
 #define CPSW_STATS_VER_ID_AM261X            (0x00006BA8U)
 
+/* Supported J722S version */
+#define CPSW_STATS_VER_REVMAJ_J722S        (0x00000001U)
+#define CPSW_STATS_VER_REVMIN_J722S        (0x00000005U)
+#define CPSW_STATS_VER_REVRTL_J722S        (0x00000000U)
+#define CPSW_STATS_VER_ID_J722S            (0x00006BA8U)
+
 #define CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT(x)    \
           {.cmd = x,                            \
            .fxn = &CpswStats_ioctl_handler_##x}
@@ -209,6 +215,12 @@ static CSL_CPSW_VERSION CpswStats_gSupportedVer[] =
         .rtlVer   = CPSW_STATS_VER_REVRTL_AM261X,
         .id       = CPSW_STATS_VER_ID_AM261X,
     },
+    {   /* J722S */
+        .majorVer = CPSW_STATS_VER_REVMAJ_J722S,
+        .minorVer = CPSW_STATS_VER_REVMIN_J722S,
+        .rtlVer   = CPSW_STATS_VER_REVRTL_J722S,
+        .id       = CPSW_STATS_VER_ID_J722S,
+    },
 };
 
 /* Public statistics IOCTL validation data. */
@@ -297,6 +309,9 @@ int32_t CpswStats_open(EnetMod_Handle hMod,
 
     /* Enable statistics on all applicable ports */
     portStat.p0StatEnable = true;
+#if ENET_CFG_IS_ON(NPAC_PORT)
+    portStat.npacStatEnable = true;
+#endif
     if (enetType == ENET_CPSW_9G)
     {
         portStat.p1StatEnable = true;

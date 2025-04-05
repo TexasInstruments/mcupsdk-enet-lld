@@ -1224,7 +1224,7 @@ static int32_t EnetPer_open(EnetPer_Handle hPer,
         if (status == ENET_SOK)
         {
             hPer->magic = ENET_MAGIC;
-            ENETTRACE_VERBOSE("%s: Peripheral is now open\n", hPer->name);
+            ENETTRACE_VERBOSE("%s: CPSW Peripheral is now open\n", hPer->name);
         }
         else
         {

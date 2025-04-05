@@ -611,7 +611,22 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
         {
             EnetAppUtils_print("EnetApp_enablePorts() failed CPSW_ALE_IOCTL_SET_PORT_STATE: %d\r\n", status);
         }
-
+%if((device == 'j722s' || device == 'tda54')){
+        /* Set port state forwarding for NPAC port */
+        setPortStateInArgs.portNum   = CPSW_ALE_NUM_PORTS;
+        setPortStateInArgs.portState = CPSW_ALE_PORTSTATE_FORWARD;
+        ENET_IOCTL_SET_IN_ARGS(&prms, &setPortStateInArgs);
+        prms.outArgs = NULL_PTR;
+        ENET_IOCTL(hEnet,
+                   coreId,
+                   CPSW_ALE_IOCTL_SET_PORT_STATE,
+                   &prms,
+                   status);
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print("EnetApp_enablePorts() failed NPAC port CPSW_ALE_IOCTL_SET_PORT_STATE: %d\r\n", status);
+        }
+%}
         if (status == ENET_SOK)
         {
             ENET_IOCTL_SET_NO_ARGS(&prms);

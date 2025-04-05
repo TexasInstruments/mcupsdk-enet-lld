@@ -53,7 +53,6 @@
 #include <include/per/cpsw.h>
 
 #include <drivers/uart.h>
-
 #include <drivers/sciclient.h>
 
 #include "include/enet_apputils.h"
@@ -96,13 +95,13 @@ void EnetAppUtils_setDeviceState(uint32_t moduleId,
                                  uint32_t requiredState,
                                  uint32_t appFlags)
 {
+#if !defined (SOC_TDA54)
     int32_t status;
     uint32_t moduleState      = 0U;
     uint32_t resetState       = 0U;
     uint32_t contextLossState = 0U;
     bool turnOn;
     bool turnOff;
-
     /* Get the module state */
     status = Sciclient_pmGetModuleState(moduleId,
                                         &moduleState,
@@ -139,7 +138,7 @@ void EnetAppUtils_setDeviceState(uint32_t moduleId,
             assert(status == CSL_PASS);
         }
     }
-
+#endif
 }
 
 void EnetAppUtils_clkRateSetState(uint32_t moduleId,
@@ -147,6 +146,7 @@ void EnetAppUtils_clkRateSetState(uint32_t moduleId,
                                      uint32_t additionalFlag,
                                      uint32_t state)
 {
+#if !defined (SOC_TDA54)
     int32_t status;
 
     status = Sciclient_pmModuleClkRequest
@@ -161,13 +161,14 @@ void EnetAppUtils_clkRateSetState(uint32_t moduleId,
                            moduleId, clockId);
         EnetAppUtils_assert(false);
     }
+#endif
 }
 
 void EnetAppUtils_clkRateSet(uint32_t moduleId,
                              uint32_t clkId,
                              uint64_t clkRateHz)
 {
-#if !defined(SOC_AM64X) && !defined(SOC_AM243X) && !defined(SOC_AM62AX) && !defined(SOC_AM62PX) && !defined(SOC_AM62DX) && !defined(SOC_AM62X) && !defined(SOC_AM275X) && !defined (SOC_J722S)
+#if !defined(SOC_AM64X) && !defined(SOC_AM243X) && !defined(SOC_AM62AX) && !defined(SOC_AM62PX) && !defined(SOC_AM62DX) && !defined(SOC_AM62X) && !defined(SOC_AM275X) && !defined (SOC_J722S) && !defined (SOC_TDA54)
     int32_t status;
     uint64_t currClkFreqHz;
 
@@ -250,6 +251,7 @@ static EnetAppUtils_MmrLockState EnetAppUtils_lockMmr(volatile uint32_t *kick0,
 EnetAppUtils_MmrLockState EnetAppUtils_mcuMmrCtrl(EnetAppUtils_CtrlMmrType mmrNum,
                                                   EnetAppUtils_MmrLockState lock)
 {
+#if !defined (SOC_TDA54)
     CSL_mcu_ctrl_mmr_cfg0Regs *regs =
         (CSL_mcu_ctrl_mmr_cfg0Regs *)(uintptr_t)CSL_CTRL_MMR0_CFG0_BASE;
     volatile uint32_t *kick0 = NULL, *kick1 = NULL;
@@ -303,11 +305,15 @@ EnetAppUtils_MmrLockState EnetAppUtils_mcuMmrCtrl(EnetAppUtils_CtrlMmrType mmrNu
     }
 
     return prevLockState;
+#else
+    return ENETAPPUTILS_LOCK_MMR; 
+#endif
 }
 
 EnetAppUtils_MmrLockState EnetAppUtils_mainMmrCtrl(EnetAppUtils_CtrlMmrType mmrNum,
                                                    EnetAppUtils_MmrLockState lock)
 {
+#if !defined (SOC_TDA54)
     CSL_main_ctrl_mmr_cfg0Regs *regs =
         (CSL_main_ctrl_mmr_cfg0Regs *)(uintptr_t)CSL_CTRL_MMR0_CFG0_BASE;
     volatile uint32_t *kick0 = NULL, *kick1 = NULL;
@@ -342,14 +348,14 @@ EnetAppUtils_MmrLockState EnetAppUtils_mainMmrCtrl(EnetAppUtils_CtrlMmrType mmrN
             kick1 = &regs->LOCK4_KICK1;
             break;
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
         case ENETAPPUTILS_MMR_LOCK6:
             kick0 = &regs->LOCK6_KICK0;
             kick1 = &regs->LOCK6_KICK1;
             break;
 #endif
 
-#if !defined(SOC_AM64X) && !defined(SOC_AM243X) && !defined(SOC_AM62AX) && !defined(SOC_AM62PX) && !defined(SOC_AM62DX) && !defined(SOC_AM62X) && !defined(SOC_AM275X) && !defined (SOC_J722S)
+#if !defined(SOC_AM64X) && !defined(SOC_AM243X) && !defined(SOC_AM62AX) && !defined(SOC_AM62PX) && !defined(SOC_AM62DX) && !defined(SOC_AM62X) && !defined(SOC_AM275X) && !defined (SOC_J722S) && !defined (SOC_TDA54)
         case ENETAPPUTILS_MMR_LOCK7:
             kick0 = &regs->LOCK7_KICK0;
             kick1 = &regs->LOCK7_KICK1;
@@ -374,11 +380,15 @@ EnetAppUtils_MmrLockState EnetAppUtils_mainMmrCtrl(EnetAppUtils_CtrlMmrType mmrN
     }
 
     return prevLockState;
+#else
+    return ENETAPPUTILS_LOCK_MMR;
+#endif
 }
 
 void EnetAppUtils_enableClkOut(Enet_Type enetType,
                                EnetAppUtils_ClkOutFreqType clkOut)
 {
+#if !defined (SOC_TDA54)
     EnetAppUtils_MmrLockState prevLockState;
     uint32_t clkVal;
 
@@ -394,7 +404,7 @@ void EnetAppUtils_enableClkOut(Enet_Type enetType,
 
     switch (enetType)
     {
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X)|| defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
     case ENET_CPSW_3G:
         {
             CSL_main_ctrl_mmr_cfg0Regs *mainRegs;
@@ -421,18 +431,19 @@ void EnetAppUtils_enableClkOut(Enet_Type enetType,
             EnetAppUtils_assert(false);
             break;
     }
-
+#endif
 }
 
 #if (ENET_ENABLE_PER_CPSW == 1)
 static void EnetAppUtils_selectCptsClock(Enet_Type enetType,
                                          EnetAppUtils_CptsClkSelMux clkSelMux)
 {
+#if !defined (SOC_TDA54)
     uint32_t muxVal;
 
     muxVal = (uint32_t) clkSelMux;
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
     switch (enetType)
     {
         case ENET_CPSW_3G:
@@ -452,6 +463,7 @@ static void EnetAppUtils_selectCptsClock(Enet_Type enetType,
 #else
 #error "Unsupported platform"
 #endif
+#endif
 }
 #endif
 
@@ -461,6 +473,7 @@ static void EnetAppUtils_selectCptsClock(Enet_Type enetType,
 
 void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
 {
+#if !defined (SOC_TDA54)
     uint32_t moduleId = 0U;
     uint32_t appFlags = 0U;
     uint64_t cppiClkFreqHz;
@@ -475,7 +488,7 @@ void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
 
     switch (enetType)
     {
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
         case ENET_CPSW_3G:
         {
             moduleId = TISCI_DEV_CPSW0;
@@ -537,7 +550,7 @@ void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
     if (Enet_isCpswFamily(enetType))
     {
         EnetAppUtils_CptsClkSelMux clkSelMux;
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
         //confirm this
         clkSelMux = ENETAPPUTILS_CPTS_CLKSEL_CPSWHSDIV_CLKOUT2;
 #endif
@@ -545,10 +558,12 @@ void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
         EnetAppUtils_selectCptsClock(enetType, clkSelMux);
     }
 #endif
+#endif
 }
 
 void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
 {
+#if !defined (SOC_TDA54)
     uint32_t moduleId = 0U;
     uint32_t appFlags = 0U;
     uint32_t cppiClkId;
@@ -560,7 +575,7 @@ void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
 
     switch (enetType)
     {
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
         case ENET_CPSW_3G:
         {
             moduleId = TISCI_DEV_CPSW0;
@@ -631,13 +646,14 @@ void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
 
     /* Set module set to HW AUTO */
     EnetAppUtils_setDeviceState(moduleId, TISCI_MSG_VALUE_DEVICE_SW_STATE_AUTO_OFF, appFlags);
+#endif
 }
 
 int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint32_t input, uint32_t output)
 {
     int32_t  status = ENET_SOK;
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined (SOC_TDA54)
     EnetAppUtils_assert(enetType == ENET_CPSW_3G);
 #endif
 

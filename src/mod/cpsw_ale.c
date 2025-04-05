@@ -92,6 +92,12 @@
 #define CPSW_ALE_VER_RTL_AM261X                 (0x00000002U)
 #define CPSW_ALE_VER_ID_AM261X                  (0x00000029U)
 
+/* Supported J722S version */
+#define CPSW_ALE_VER_REVMAJ_J722S              (0x00000001U)
+#define CPSW_ALE_VER_REVMIN_J722S              (0x00000005U)
+#define CPSW_ALE_VER_RTL_J722S                 (0x00000004U)
+#define CPSW_ALE_VER_ID_J722S                  (0x00000029U)
+
 /* Number of ALE table entries and policers per CPSW variant */
 #if defined(SOC_AM273X) || defined(SOC_AWR294X) || defined(SOC_AWR2544)
 #define CPSW_ALE_2G_ALE_ENTRIES_MAX             (32U)
@@ -104,7 +110,13 @@
 #define CPSW_ALE_2G_POLICERS_MAX                (8U)
 #endif
 #define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
+#if defined(SOC_TDA54)
+#define CPSW_ALE_3G_POLICERS_MAX                (128U)
+#elif defined(SOC_J722S)
+#define CPSW_ALE_3G_POLICERS_MAX                (96)
+#else
 #define CPSW_ALE_3G_POLICERS_MAX                (32U)
+#endif
 #define CPSW_ALE_5G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_5G_POLICERS_MAX                (64U)
 #define CPSW_ALE_9G_ALE_ENTRIES_MAX             (1024U)
@@ -342,6 +354,12 @@ static CSL_CPSW_VERSION CpswAle_gSupportedVer[] =
         .minorVer = CPSW_ALE_VER_REVMIN_AM261X,
         .rtlVer   = CPSW_ALE_VER_RTL_AM261X,
         .id       = CPSW_ALE_VER_ID_AM261X,
+    },
+    {   /* J722S */
+        .majorVer = CPSW_ALE_VER_REVMAJ_J722S,
+        .minorVer = CPSW_ALE_VER_REVMIN_J722S,
+        .rtlVer   = CPSW_ALE_VER_RTL_J722S,
+        .id       = CPSW_ALE_VER_ID_J722S,
     },
 };
 
@@ -1125,6 +1143,16 @@ static void CpswAle_setAleModeFlags(CSL_AleRegs *regs,
 
     /* Update ALE control register */
     CSL_CPSW_setAleControlReg(regs, aleCtlVal);
+#if ENET_CFG_IS_ON(NPAC_PORT)
+    if ((modeFlags & CPSW_ALE_CFG_MULTIHOST) != 0U)
+    {
+        CSL_CPSW_setMultihost(regs, 1);
+    }
+    else
+    {
+        CSL_CPSW_setMultihost(regs, 0);
+    }
+#endif
 }
 
 static void CpswAle_setAleAging(CSL_AleRegs *regs,

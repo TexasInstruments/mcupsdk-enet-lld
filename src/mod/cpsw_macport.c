@@ -115,6 +115,12 @@
 #define CPSW_MACPORT_VER_REVRTL_AM261X         (0x00000000U)
 #define CPSW_MACPORT_VER_ID_AM261X             (0x00006BA8U)
 
+/* Supported J722S version */
+#define CPSW_MACPORT_VER_REVMAJ_J722S         (0x00000001U)
+#define CPSW_MACPORT_VER_REVMIN_J722S         (0x00000005U)
+#define CPSW_MACPORT_VER_REVRTL_J722S         (0x00000000U)
+#define CPSW_MACPORT_VER_ID_J722S             (0x00006BA8U)
+
 /*! \brief Default value used for MAC port RX MTU (MRU). */
 #define CPSW_MACPORT_RX_MTU_DEFAULT           (1518U)
 
@@ -292,6 +298,12 @@ static CSL_CPSW_VERSION CpswMacPort_gSupportedVer[] =
         .minorVer = CPSW_MACPORT_VER_REVMIN_AM261X,
         .rtlVer   = CPSW_MACPORT_VER_REVRTL_AM261X,
         .id       = CPSW_MACPORT_VER_ID_AM261X,
+    },
+    {   /* J722S */
+        .majorVer = CPSW_MACPORT_VER_REVMAJ_J722S,
+        .minorVer = CPSW_MACPORT_VER_REVMIN_J722S,
+        .rtlVer   = CPSW_MACPORT_VER_REVRTL_J722S,
+        .id       = CPSW_MACPORT_VER_ID_J722S,
     },
 };
 
@@ -665,7 +677,9 @@ int32_t CpswMacPort_open(EnetMod_Handle hMod,
         }
     }
 #endif
-
+#if defined (SOC_TDA54) || defined(SOC_J722S)
+    CSL_CPGMAC_SL_disableIdleMode(regs, portNum);
+#endif
     return status;
 }
 
@@ -877,6 +891,7 @@ static void CpswMacPort_reset(CSL_Xge_cpswRegs *regs,
 
     /* Soft-reset the Ethernet MAC logic */
     CSL_CPGMAC_SL_resetMac(regs, portNum);
+
     do
     {
         done = CSL_CPGMAC_SL_isMACResetDone(regs, portNum);
@@ -1030,6 +1045,9 @@ static int32_t CpswMacPort_setInterface(CSL_Xge_cpswRegs *regs,
     if (status == ENET_SOK)
     {
         CSL_CPGMAC_SL_setMacControlReg(regs, portNum, macControl);
+#if defined (SOC_TDA54) || defined(SOC_J722S)
+        CSL_CPGMAC_SL_enableRxCEF(regs, portNum);
+#endif
     }
 
     ENETTRACE_ERR_IF(status != ENET_SOK,

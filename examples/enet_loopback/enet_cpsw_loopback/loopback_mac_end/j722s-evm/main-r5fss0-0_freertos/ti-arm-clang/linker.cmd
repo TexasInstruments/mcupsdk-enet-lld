@@ -31,7 +31,7 @@ __IRQ_STACK_SIZE = 4096;
  * - In both NORTOS and FreeRTOS nesting is disabled for FIQ
  */
 __FIQ_STACK_SIZE = 256;
-__SVC_STACK_SIZE = 4096; /* This is the size of stack when R5 is in SVC mode */
+__SVC_STACK_SIZE = 256; /* This is the size of stack when R5 is in SVC mode */
 __ABORT_STACK_SIZE = 256;  /* This is the size of stack when R5 is in ABORT mode */
 __UNDEFINED_STACK_SIZE = 256;  /* This is the size of stack when R5 is in UNDEF mode */
 
@@ -103,7 +103,7 @@ SECTIONS
 #if (ENET_SYSCFG_PKT_POOL_ENABLE == 1)
     *(*ENET_DMA_PKT_MEMPOOL)
 #endif
-    } > DDR_CODE_DATA
+    } > DDR_PKT_MEM
 }
 
 MEMORY
@@ -112,5 +112,6 @@ MEMORY
     R5F_TCMA  : ORIGIN = 0x00000040 , LENGTH = 0x00007FC0
     R5F_TCMB0 : ORIGIN = 0x41010000 , LENGTH = 0x00004000
 
-    DDR_CODE_DATA                 : ORIGIN = 0xA2200000, LENGTH = 0xE00000   /* Code/Data            */
+    DDR_CODE_DATA                 : ORIGIN = 0x00008000 LENGTH = 0x7D8000   /* Code/Data            */
+    DDR_PKT_MEM                   : ORIGIN = 0x7E0000   LENGTH = 0x20000
 }

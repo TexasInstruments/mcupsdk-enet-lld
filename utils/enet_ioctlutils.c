@@ -189,8 +189,9 @@ void EnetAppUtils_addHostPortEntry(Enet_Handle hEnet,
         EnetAppUtils_print("EnetAppUtils_addHostPortEntry() failed CPSW_ALE_IOCTL_ADD_UCAST: %d\r\n",
                            status);
     }
-
-    EnetAppUtils_assert(status == ENET_SOK);
+#if defined (SOC_TDA54) || defined(SOC_J722S)
+   EnetAppUtils_assert(status == ENET_SOK);
+#endif
 }
 
 void EnetAppUtils_delAddrEntry(Enet_Handle hEnet,

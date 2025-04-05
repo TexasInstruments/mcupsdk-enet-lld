@@ -99,6 +99,12 @@
 #define CPSW_CPTS_VER_REVRTL_AM261X          (0x00000001U)
 #define CPSW_HOSTPORT_VER_ID_AM261X          (0x00004E8AU)
 
+/* Supported J722S versions */
+#define CPSW_CPTS_VER_REVMAJ_J722S          (0x00000001U)
+#define CPSW_CPTS_VER_REVMIN_J722S          (0x0000000FU)
+#define CPSW_CPTS_VER_REVRTL_J722S          (0x00000000U)
+#define CPSW_HOSTPORT_VER_ID_J722S          (0x00004E8AU)
+
 #define CPSW_CPTS_IOCTL_HANDLER_ENTRY_INIT(x)    \
           {.cmd = x,                            \
            .fxn = &CpswCpts_ioctl_handler_##x}
@@ -187,6 +193,12 @@ static CSL_CPSW_VERSION CpswCpts_gSupportedVer[] =
         .minorVer = CPSW_CPTS_VER_REVMIN_AM261X,
         .rtlVer   = CPSW_CPTS_VER_REVRTL_AM261X,
         .id       = CPSW_HOSTPORT_VER_ID_AM261X,
+    },
+    {   /* J722S CPSW_3G */
+        .majorVer = CPSW_CPTS_VER_REVMAJ_J722S,
+        .minorVer = CPSW_CPTS_VER_REVMIN_J722S,
+        .rtlVer   = CPSW_CPTS_VER_REVRTL_J722S,
+        .id       = CPSW_HOSTPORT_VER_ID_J722S,
     },
 };
 
