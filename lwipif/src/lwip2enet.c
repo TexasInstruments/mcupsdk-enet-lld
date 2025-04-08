@@ -437,6 +437,8 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     {
         const uint32_t rxChId = proxyArpRxChIdList[0U];
         pInterface->hRxProxyArp = Lwip2Enet_allocateRxHandle(hLwip2Enet, enetType, instId, rxChId);
+
+        Lwip2Enet_assert(pInterface->hRxProxyArp != NULL);
         Lwip2Enet_initRxObj(enetType, instId, rxChId, pInterface->hRxProxyArp);
         LwipifEnetApp_setupProxyArphandler(enetType, instId, pInterface->hRxProxyArp);
 
