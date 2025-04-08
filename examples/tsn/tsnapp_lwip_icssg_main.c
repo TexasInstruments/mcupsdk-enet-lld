@@ -62,6 +62,7 @@
 #include "ti_enet_lwipif.h"
 #include <tsn_combase/combase.h>
 #include <tsn_combase/combase_link.h>
+#include <tsn_combase/tilld/cb_lld_ethernet.h>
 #include "debug_log.h"
 #include "nrt_flow/dataflow.h"
 #include "tsninit.h"
@@ -458,5 +459,5 @@ static void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
 {
     EnetAppUtils_print("MAC Port %u: link %s\r\n",
                        ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
-    notify_linkchange();
+    cb_lld_notify_linkchange();
 }

@@ -43,11 +43,11 @@
 #include <stdint.h>
 #include <tsn_combase/combase.h>
 #include <tsn_combase/combase_link.h>
+#include <tsn_combase/tilld/cb_lld_ethernet.h>
 #include "nrt_flow/dataflow.h"
 #include "debug_log.h"
 #include "tsninit.h"
 #include "enetapp_icssg.h"
-
 /* ========================================================================== */
 /*                                Function Declarations                       */
 /* ========================================================================== */
@@ -249,7 +249,7 @@ static void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
 {
     EnetAppUtils_print("MAC Port %u: link %s\r\n",
     ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
-    notify_linkchange();
+    cb_lld_notify_linkchange();
 }
 
 void EnetApp_updateIcssgInitCfg(Enet_Type enetType, uint32_t instId, Icssg_Cfg *icssgCfg)
