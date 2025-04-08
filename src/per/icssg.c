@@ -2482,11 +2482,9 @@ static inline int32_t Icssg_ioctlEnableHsrTagRemovalOffload(Icssg_Handle hIcssg,
     if ((macPort == ENET_MAC_PORT_1) ||
         (macPort == ENET_MAC_PORT_2))
     {
-        retVal = Icssg_R30SendAsyncIoctl(hIcssg,
+        retVal = Icssg_R30SendSyncIoctl(hIcssg,
                                          macPort,
-                                         ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_ENABLE,
-                                         &hIcssg->asyncIoctlSeqNum,
-                                         &hIcssg->asyncIoctlType);
+                                         ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_ENABLE);
     }
 
     return retVal;
@@ -2500,11 +2498,9 @@ static inline int32_t Icssg_ioctlDisableHsrTagRemovalOffload(Icssg_Handle hIcssg
     if ((macPort == ENET_MAC_PORT_1) ||
         (macPort == ENET_MAC_PORT_2))
     {
-        retVal = Icssg_R30SendAsyncIoctl(hIcssg,
+        retVal = Icssg_R30SendSyncIoctl(hIcssg,
                                          macPort,
-                                         ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_DISABLE,
-                                         &hIcssg->asyncIoctlSeqNum,
-                                         &hIcssg->asyncIoctlType);
+                                         ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_DISABLE);
     }
 
     return retVal;

@@ -812,6 +812,7 @@ void EnetUdma_initTxChParams(EnetUdma_OpenTxChPrms *pTxChPrms)
     pTxChPrms->cbArg   = NULL;
 
     pTxChPrms->useProxy = false;
+    pTxChPrms->perMode  = ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE;
 
     /* auto-reclaim initialization */
     pTxChPrms->autoReclaimPrms.enableFlag       = false;
@@ -1728,11 +1729,11 @@ int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
                                         pSubmitQ,
                                         hRxFlow->hDmaDescPool,
                                         hRxFlow->rxFlowPrms.disableCacheOpsFlag,
-                                        ENET_UDMA_DIR_RX
+                                        ENET_UDMA_DIR_RX,
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                                        ,
-                                        hRxFlow->hUdmaProxy
+                                        hRxFlow->hUdmaProxy,
 #endif
+                                        ENET_UDMA_ICSSG_LRE_RX_OFFLOAD_DISABLE
                                         );
         }
 
@@ -1976,11 +1977,11 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
                                          pSubmitQ,
                                          hTxCh->hDmaDescPool,
                                          hTxCh->txChPrms.disableCacheOpsFlag,
-                                         ENET_UDMA_DIR_TX
+                                         ENET_UDMA_DIR_TX,
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                                         ,
-                                         hTxCh->hUdmaProxy
+                                         hTxCh->hUdmaProxy,
 #endif
+                                         hTxCh->txChPrms.perMode
                                          );
         }
 
@@ -2041,11 +2042,11 @@ int32_t EnetDma_submitTxPkt(EnetDma_TxChHandle hTxCh,
                                             ringHandle,
                                             pPkt,
                                             hTxCh->hDmaDescPool,
-                                            hTxCh->txChPrms.disableCacheOpsFlag
+                                            hTxCh->txChPrms.disableCacheOpsFlag,
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                                            ,
-                                            hTxCh->hUdmaProxy
+                                            hTxCh->hUdmaProxy,
 #endif
+                                            hTxCh->txChPrms.perMode
                                             );
 
         /* If fqRing ran out of space it is not an error, packets will be re-submitted by application*/

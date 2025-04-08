@@ -195,6 +195,11 @@ extern "C" {
 /*! \brief CPPI RX Control Word 1 - Timestamp Enabled bit mask. */
 #define ENETUDMA_CPPI_RXCTRL_WORD1_TSEN_MASK                 (((uint32_t) 0x1U) << ENETUDMA_CPPI_RXCTRL_WORD1_TSEN_SHIFT)
 
+/*! \brief CPPI RX Control Word 1 - LRE Tagging Enable bit shift. */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN_SHIFT           (30U)
+
+/*! \brief CPPI RX Control Word 1 - LRE Tagging Enable bit mask. */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN_MASK            (((uint32_t) 0x1U) << ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN_SHIFT)
 
 /* -------------------- CPPI RX Control Word 2 definitions --------------------- */
 
@@ -271,6 +276,10 @@ extern "C" {
 /*! \brief Set Timestamp enable bit into CPPI RX Control Word. 1 */
 #define ENETUDMA_CPPIPSI_SET_TSEN(tsInfo, val) \
                 ENET_FINS(tsInfo, ENETUDMA_CPPI_RXCTRL_WORD1_TSEN, val)
+
+/*! \brief Set LRE Tagging enable bit into CPPI RX Control Word. 1 */
+#define ENETUDMA_CPPIPSI_SET_LRE_TAGEN(tsInfo, val) \
+                ENET_FINS(tsInfo, ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN, val)
 
 /*! \brief Set domain value into CPPI RX Control Word 1. */
 #define ENETUDMA_CPPIPSI_SET_DOMAIN(tsInfo, val) \

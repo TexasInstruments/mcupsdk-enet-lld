@@ -88,6 +88,10 @@ typedef struct EnetAppTxDmaCfg_Info_s
     uint32_t instId;
     
     uint32_t txNumPkts;
+
+    /*! Member to pass mode/state value which we use for handling hsr/prp related handling 
+     * while sending out data from enet udma driver. */
+    uint32_t perMode;
 } EnetAppTxDmaCfg_Info;
 
 static void EnetAppUtils_absFlowIdx2FlowIdxOffset(Enet_Handle hEnet,

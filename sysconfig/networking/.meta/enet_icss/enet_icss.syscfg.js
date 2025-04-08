@@ -1159,8 +1159,11 @@ let enet_icss_module = {
                 if (inst.derivedMode !== "NONE") {
                     inst.mode = "SWITCH";
                     ui.mode.hidden = true;
+                    inst.PremptionEnable = false;
+                    ui.PremptionEnable.hidden = true;
                 } else {
                     ui.mode.hidden = false;
+                    ui.PremptionEnable.hidden = false;
                 }
             },
             hidden: true,   // internal only, used by ICSDK examples

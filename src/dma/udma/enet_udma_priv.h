@@ -644,10 +644,11 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                            EnetDma_PktQ *pToHwQueue,
                            EnetUdma_DmaDescQ *pDmaDescQ,
                            bool disableCacheOpsFlag,
-                           EnetUdma_Dir transferDir
+                           EnetUdma_Dir transferDir,
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                           , Udma_ProxyHandle hUdmaProxy
+                           Udma_ProxyHandle hUdmaProxy,
 #endif
+                           uint32_t perMode
                            );
 
 int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
@@ -665,11 +666,11 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
                                    Udma_RingHandle hUdmaRing,
                                    EnetDma_Pkt *pPkt,
                                    EnetUdma_DmaDescQ *pDmaDescQ,
-                                   bool disableCacheOpsFlag
+                                   bool disableCacheOpsFlag,
 #if (UDMA_SOC_CFG_PROXY_PRESENT == 1)
-                                   ,
-                                   Udma_ProxyHandle hUdmaProxy
+                                   Udma_ProxyHandle hUdmaProxy,
 #endif
+                                   uint32_t perMode
                                   );
 
 int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,

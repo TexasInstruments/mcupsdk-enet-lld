@@ -138,6 +138,18 @@ extern "C" {
 /*! \brief UDMA descriptor address alignment requirement */
 #define ENET_UDMA_DESC_ALIGNMENT               (64U)
 
+/*! \brief ICSSG Disable TX Offload for LRE Mode (HSR/PRP) */
+#define ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE  (0U)
+
+/*! \brief ICSSG Enable TX Offload for LRE Mode (HSR/PRP) */
+#define ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_ENABLE   (1U)
+
+/*! \brief ICSSG Disable RX Offload for LRE Mode (HSR/PRP) */
+#define ENET_UDMA_ICSSG_LRE_RX_OFFLOAD_DISABLE  (0U)
+
+/*! \brief ICSSG Enable RX Offload for LRE Mode (HSR/PRP) */
+#define ENET_UDMA_ICSSG_LRE_RX_OFFLOAD_ENABLE   (1U)
+
 /*! @} */
 
 /*!
@@ -332,9 +344,6 @@ typedef struct EnetUdma_PktInfo_s
 
     /*! Transmit timestamp id. Used to correlate request with response */
     uint32_t txTsId;
-    
-    /*! Additional DMA metadata flags used to communicate with ICSSG based protocols */
-    uint32_t perDmaFlags;
 
     /*! Scatter Gather list information for packets to be transmitted.
      * A single tx packet can be fragmented across multiple chunks,
@@ -738,6 +747,9 @@ typedef struct EnetUdma_OpenTxChPrms_s
     /*! Whether to use the shared global event or not. If set to false, a dedicated event
      *  will be used for this channel. */
     bool useGlobalEvt;
+
+    /*! Member to pass ICSSG protocol specific configuration */
+    uint32_t perMode;
 
     /*! Enet UDMA event callback function - this function will be called when
      *  the registered packets are transmitted on TX channel */
