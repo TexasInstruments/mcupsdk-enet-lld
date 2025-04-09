@@ -229,7 +229,7 @@ void EnetApp_configureTrafficProfileB()
     {
         for (uint32_t objIndex = 0; objIndex < ENETAPP_NUM_CLASSA_STREAMS ;objIndex++)
         {
-            if (gEnetAppCfg.nodeId == objIndex || gEnetAppCfg.nodeId == 0)
+            if (gEnetAppCfg.nodeId == objIndex || gEnetAppCfg.nodeId == ENETAPP_MAX_NODES_IN_RING/2)
             {
                 continue;
             }

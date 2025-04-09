@@ -131,7 +131,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_ETHERRING";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_ETHERRING_TRAFFICGEN";
 
 const templates_freertos_r5f =
 [
