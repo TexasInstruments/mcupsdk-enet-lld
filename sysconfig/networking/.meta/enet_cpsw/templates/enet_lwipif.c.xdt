@@ -376,24 +376,8 @@ void LwipifEnetAppCb_getEnetLwipIfInstInfo(Enet_Type enetType, uint32_t instId, 
     outArgs->pPbufInfoSize = sizeof(gFreePbufArr)/sizeof(pbufNode);
     LWIP_MEMPOOL_INIT(RX_POOL);
 
-#if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
-    int32_t status;
-    /* Confirm HW checksum offload is enabled when LWIP chksum offload is enabled */
-        Enet_IoctlPrms prms;
-        bool csumOffloadFlg;
-        ENET_IOCTL_SET_OUT_ARGS(&prms, &csumOffloadFlg);
-        ENET_IOCTL(handleInfo.hEnet,
-                   coreId,
-                   ENET_HOSTPORT_IS_CSUM_OFFLOAD_ENABLED,
-                   &prms,
-                   status);
-        if (status != ENET_SOK)
-        {
-            EnetAppUtils_print("() Failed to get checksum offload info: %d\r\n", status);
-        }
-
-        EnetAppUtils_assert(true == csumOffloadFlg);
-#endif
+    /* TX Checksum offload check is removed here. Based on Sysconfig checksum offload
+     * configuration, getLwipChecksumDisableFlags() API is updating the Tx,Rx checksum flags in LWIP Stack */
 }
 
 void LwipifEnetAppCb_getTxHandleInfo(LwipifEnetAppIf_GetTxHandleInArgs *inArgs,
