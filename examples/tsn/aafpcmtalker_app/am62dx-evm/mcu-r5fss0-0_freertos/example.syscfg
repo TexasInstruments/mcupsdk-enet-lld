@@ -1,8 +1,9 @@
 /**
  * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
- * @cliArgs --device "AM62Dx" --package "ANF" --part "AM62D24-G" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.20.999+143"}
+ * @cliArgs --device "AM62Dx" --part "AM62D24-G" --package "ANF" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
+ * @v2CliArgs --device "AM62D-Q1" --package "FCBGA (ANF)" --variant "AM62D24-G" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
+ * @versions {"tool":"1.23.0+4000"}
  */
 
 /**
@@ -10,6 +11,8 @@
  */
 const eeprom     = scripting.addModule("/board/eeprom/eeprom", {}, false);
 const eeprom1    = eeprom.addInstance();
+const eeprom2    = eeprom.addInstance();
+const eeprom3    = eeprom.addInstance();
 const i2c        = scripting.addModule("/drivers/i2c/i2c", {}, false);
 const i2c1       = i2c.addInstance();
 const debug_log  = scripting.addModule("/kernel/dpl/debug_log");
@@ -30,9 +33,17 @@ const enet_cpsw1 = enet_cpsw.addInstance();
  */
 eeprom1.$name = "CONFIG_EEPROM0";
 
+eeprom2.$name      = "RGMII1_EEPROM";
+eeprom2.i2cAddress = 0x57;
+
+eeprom3.$name      = "RGMII2_EEPROM";
+eeprom3.i2cAddress = 0x56;
+
 i2c1.$name                   = "CONFIG_I2C0";
 eeprom1.peripheralDriver     = i2c1;
 i2c1.useMcuDomainPeripherals = false;
+eeprom2.peripheralDriver     = i2c1;
+eeprom3.peripheralDriver     = i2c1;
 i2c1.I2C_child.$name         = "drivers_i2c_v0_i2c_v0_template1";
 i2c1.I2C.$assign             = "I2C0";
 
@@ -81,7 +92,6 @@ enet_cpsw1.hostportRxMtu                  = 1522;
 enet_cpsw1.macport1RxMtu                  = 1522;
 enet_cpsw1.macport2RxMtu                  = 1522;
 enet_cpsw1.mdioMode                       = "MDIO_MODE_MANUAL";
-enet_cpsw1.macAddrConfig                  = "Manual Entry";
 enet_cpsw1.macAddrList                    = "70:ff:76:1d:e7:f2,70:ff:76:1d:e8:e3";
 enet_cpsw1.enableTsOut                    = true;
 enet_cpsw1.txDmaChannel.create(3);
