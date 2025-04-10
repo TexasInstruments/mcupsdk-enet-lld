@@ -55,6 +55,11 @@
 #define I2C_EEPROM_MAC_CTRL_OFFSET (0x40)
 #define I2C_EEPROM_MAC_DATA_OFFSET (0x42)
 
+#define EEPROM_DATATYPE_MAC_OFFSET    (0x38)
+#define EEPROM_DATATYPE_MAC           (0x13)
+#define EEPROM_MAC_ADDR_START         (EEPROM_DATATYPE_MAC_OFFSET+5)
+#define IS_MAC_ADDR_VALID(mac)        (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
+
 static void EnetBoard_setMacPortIOExpanderCfg(void);
 
 /* PHY drivers */
@@ -266,44 +271,77 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
 {
-/* AM62Dx EEPROM is not flashed with MAC Addressess yet. Update this after EEPROM update */
-#if 0
-    int32_t status = ENET_SOK;
-    uint32_t macAddrCnt;
-    uint32_t i;
-    uint8_t macAddrBuf[ENET_BOARD_NUM_MACADDR_MAX * ENET_MAC_ADDR_LEN];
-    uint8_t numMacMax;
-    uint8_t validNumMac = 0;
+    /* For AM62D-EVM, the MAC Addresses are programmed on the Addon cards.
+    Check if the EEPROM Instances are added, if yes, read from those instances. */
+    int32_t status;
+    /* One Mac address is programmed in each EEPROM. */
+    uint32_t eepromInstanceArray[ENET_BOARD_NUM_MACADDR_MAX];
+    uint32_t eepromInstanceCount = 0;
 
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0],  I2C_EEPROM_MAC_CTRL_OFFSET, &numMacMax, sizeof(uint8_t));
-    EnetAppUtils_assert(status == ENET_SOK);
-    EnetAppUtils_assert(ENET_GET_NUM_MAC_ADDR(numMacMax) <= ENET_BOARD_NUM_MACADDR_MAX);
-    macAddrCnt = EnetUtils_min(ENET_GET_NUM_MAC_ADDR(numMacMax), maxMacEntries);
-
-    EnetAppUtils_assert(pAvailMacEntries != NULL);
-
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBuf, (macAddrCnt * ENET_MAC_ADDR_LEN));
-    EnetAppUtils_assert(status == ENET_SOK);
-
-    /* Save only those required to meet the max number of MAC entries */
-    /* Validating that the MAC addresses from the EEPROM are not MULTICAST addresses */
-    for (i = 0U; i < macAddrCnt; i++)
-    {
-        if(!(macAddrBuf[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
-            memcpy(macAddr[validNumMac], &macAddrBuf[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
-            validNumMac++;
-        }
-    }
-
-    *pAvailMacEntries = validNumMac;
-
-    if (macAddrCnt == 0U)
-    {
-        EnetAppUtils_print("EnetBoard_getMacAddrList Failed - IDK not present\n");
-        EnetAppUtils_assert(false);
-    }
+#ifdef RGMII1_EEPROM
+    eepromInstanceArray[eepromInstanceCount] = RGMII1_EEPROM;
+    eepromInstanceCount += 1;
 #endif
-    *pAvailMacEntries = 0;
+
+#ifdef RGMII2_EEPROM
+    eepromInstanceArray[eepromInstanceCount] = RGMII2_EEPROM;
+    eepromInstanceCount += 1;
+#endif
+
+    /* There is one MAC Address in Each EEPROM.
+    take number of mac reads as min(eepromInstanceCount, maxMacEntries) */
+    eepromInstanceCount = EnetUtils_min(eepromInstanceCount, maxMacEntries);
+
+    /* To keep track of number of filled addresses. */
+    uint32_t macFilledCount = 0;
+
+    for (int i = 0; i < eepromInstanceCount; i++)
+    {
+        EnetAppUtils_print("EEPROM %d MAC addr: ", i);
+        uint8_t macAddrBuf[ENET_MAC_ADDR_LEN];
+        uint32_t eepromInstance = eepromInstanceArray[i];
+
+        /* Check the mac address type word. */
+        uint8_t typeWord = 0;
+        status = EEPROM_read(gEepromHandle[eepromInstance], EEPROM_DATATYPE_MAC_OFFSET,
+                             &typeWord, sizeof(typeWord));
+
+        if (status != SystemP_SUCCESS)
+        {
+            EnetAppUtils_print("Unable to read from eeprom instance number %d\r\n", eepromInstance);
+            continue;
+        }
+
+        if (typeWord != EEPROM_DATATYPE_MAC)
+        {
+            EnetAppUtils_print("MAC is not fused in eeprom instance number %d, Invalid typeword %02X\r\n", eepromInstance, (int)typeWord);
+            continue;
+        }
+
+        /* Both read EEPROM and typeword check is success.
+        Now, read MAC Address from EEPROM. */
+        int32_t status = EEPROM_read(gEepromHandle[eepromInstance], EEPROM_MAC_ADDR_START,
+                                     macAddrBuf, sizeof(macAddrBuf));
+        if (status != SystemP_SUCCESS)
+        {
+            EnetAppUtils_print("Unable to read from eeprom instance number %d\r\n", eepromInstance);
+            continue;
+        }
+
+        /* Validate the MAC Addresses. */
+        if (!IS_MAC_ADDR_VALID(macAddrBuf))
+        {
+            EnetAppUtils_print("Invalid MAC Address from eeprom instance number %d\r\n", eepromInstance);
+            continue;
+        }
+
+        /* Copy the MAC address to the output buffer */
+        memcpy(macAddr[macFilledCount], macAddrBuf, ENET_MAC_ADDR_LEN);
+
+        macFilledCount += 1;
+    }
+
+    *pAvailMacEntries = macFilledCount;
 }
 
 #define IO_EXP_ADDR    0x22U
