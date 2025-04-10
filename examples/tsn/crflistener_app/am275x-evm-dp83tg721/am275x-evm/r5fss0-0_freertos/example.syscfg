@@ -76,7 +76,6 @@ enet_cpsw1.hostportRxMtu                  = 1522;
 enet_cpsw1.macport1RxMtu                  = 1522;
 enet_cpsw1.macport2RxMtu                  = 1522;
 enet_cpsw1.mdioMode                       = "MDIO_MODE_MANUAL";
-enet_cpsw1.macAddrConfig                  = "Manual Entry";
 enet_cpsw1.LargePoolPktCount              = 56;
 enet_cpsw1.TimestampSource                = "LLDTSYNC_TS_SOURCE_PHY";
 enet_cpsw1.DisableMacPort2                = true;

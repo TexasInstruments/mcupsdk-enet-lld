@@ -80,7 +80,6 @@ enet_cpsw1.macOnlyEn_macPort1             = true;
 enet_cpsw1.macOnlyEn_macPort2             = true;
 enet_cpsw1.LargePoolPktCount              = 40;
 enet_cpsw1.mdioPollEnMask                 = [];
-enet_cpsw1.macAddrConfig                  = "Manual Entry";
 enet_cpsw1.DisableMacPort2                = true;
 enet_cpsw1.TimestampSource                = "LLDTSYNC_TS_SOURCE_PHY";
 enet_cpsw1.macport1LinkSpeed              = "ENET_SPEED_1GBIT";
@@ -112,7 +111,6 @@ enet_cpsw1.rxDmaChannel[2].useDefaultFlow = false;
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
 ethphy_cpsw_icssg1.phySelect      = "DP83TG721";
-ethphy_cpsw_icssg1.phyAddr        = 0;
 ethphy_cpsw_icssg1.extendedConfig = ".isMDIMaster = true,\n.enablePTPstatusFrames = true,\n.srcMacStatusFrameType = 0,\n.clockSource = 1,\n.enableMediaClock = 1,\n.mediaClockMode = 0,";
 
 const udma         = scripting.addModule("/drivers/udma/udma", {}, false);
