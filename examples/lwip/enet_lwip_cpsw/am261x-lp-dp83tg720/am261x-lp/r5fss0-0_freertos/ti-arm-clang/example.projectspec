@@ -19,7 +19,7 @@
         "
         connection="TIXDS110_Connection.xml"
         toolChain="TICLANG"
-        cgtVersion="4.0.1"
+        cgtVersion="4.0.1.LTS"
         device="Cortex R.AM261x"
         deviceCore="Cortex_R5_0"
         ignoreDefaultDeviceSettings="true"
@@ -86,7 +86,7 @@
 
         enableSysConfigTool="true"
         sysConfigBuildOptions="
-            --context r5fss0-0 --part AM2611 --package ZCZ
+            --context r5fss0-0 --part AM2612 --package ZFG
         "
 
         description="A Enet Lwip Cpsw FREERTOS project">
