@@ -1,8 +1,9 @@
 /**
  * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
- * @cliArgs --device "AM62Ax" --package "AMB" --part "Default" --context "a53ss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.20.0+3587"}
+ * @cliArgs --device "AM62Ax" --part "Default" --package "AMB" --context "a53ss0-0" --product "MCU_PLUS_SDK@07.03.01"
+ * @v2CliArgs --device "AM62A7" --package "FCBGA (AMB)" --variant "AM62A74-M" --context "a53ss0-0" --product "MCU_PLUS_SDK@07.03.01"
+ * @versions {"tool":"1.21.2+3837"}
  */
 
 /**
@@ -57,11 +58,16 @@ mmu_armv83.attribute = "MAIR7";
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
 enet_cpsw1.macAddrConfig                  = "Manual Entry";
 enet_cpsw1.LargePoolPktCount              = 80;
+enet_cpsw1.PktPoolEnable                  = false;
+enet_cpsw1.PktInfoOnlyEnable              = true;
+enet_cpsw1.PktInfoOnlyCount               = 48;
 enet_cpsw1.txDmaChannel[0].$name          = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel.create(2);
 enet_cpsw1.rxDmaChannel[0].$name          = "ENET_DMA_RX_CH0";
+enet_cpsw1.rxDmaChannel[0].PacketsCount   = 16;
 enet_cpsw1.rxDmaChannel[1].$name          = "ENET_DMA_RX_CH1";
 enet_cpsw1.rxDmaChannel[1].useDefaultFlow = false;
+enet_cpsw1.rxDmaChannel[1].PacketsCount   = 16;
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
