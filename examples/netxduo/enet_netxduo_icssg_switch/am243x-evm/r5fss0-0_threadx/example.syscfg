@@ -105,11 +105,16 @@ enet_icss1.phyToMacInterfaceMode        = "RGMII";
 enet_icss1.mdioMode                     = "MDIO_MODE_MANUAL";
 enet_icss1.QoS                          = 3;
 enet_icss1.LargePoolPktCount            = 80;
+enet_icss1.PktPoolEnable                = false;
+enet_icss1.PktInfoOnlyEnable            = true;
+enet_icss1.PktInfoOnlyCount             = 48;
 enet_icss1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_icss1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
+enet_icss1.rxDmaChannel[0].PacketsCount = 16;
 enet_icss1.rxDmaChannel[1].$name        = "ENET_DMA_RX_CH1";
 enet_icss1.rxDmaChannel[1].macAddrCount = 0;
 enet_icss1.rxDmaChannel[1].chIdx        = 1;
+enet_icss1.rxDmaChannel[1].PacketsCount = 16;
 enet_icss1.PRU_ICSSG1_RGMII1.$assign    = "PRU_ICSSG1_RGMII1";
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);

@@ -166,6 +166,13 @@ int netxduo_icssg_main(ULONG arg)
         }
     }
 
+    /* Initialize the NetX system.  */
+    nx_system_initialize();
+
+    /* Create a packet pool.  */
+    status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
+    EnetAppUtils_assert(status == NX_SUCCESS);
+
 
     /* Allocate NetX Rx channel and corresponding buffers. */
     for(size_t k = 0u; k < ENET_SYSCFG_RX_FLOWS_NUM; k++) {
@@ -176,7 +183,7 @@ int netxduo_icssg_main(ULONG arg)
         EnetApp_getRxDmaHandle(k, &inArgs, &outArgs);
 
         EnetAppUtils_assert(outArgs.hRxCh != NULL);
-        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &rxChs[k]);
+        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &gPacketPool, &rxChs[k]);
     }
 
     /* Allocate NetX Tx channel and corresponding buffers. */
@@ -204,7 +211,7 @@ int netxduo_icssg_main(ULONG arg)
         ifTxChs[k] = txChs[chIds[k]];
     }
     NetxEnetApp_getEnetTypeAndIdFromIfIdx(0u, 0u, &enetType, &instId);
-    macPort = NetxEnetApp_getMacPort(enetType, instId);
+    macPort = NetxEnetApp_getMacPort(0, 0);
 
     status = EnetApp_setMacAddress(enetType, instId, &outArgs.macAddr[0][0]);
     DebugP_assert(status == ENET_SOK);
@@ -213,21 +220,10 @@ int netxduo_icssg_main(ULONG arg)
 
 
 
-    /* Initialize the NetX system.  */
-    nx_system_initialize();
-
-    /* Create a packet pool.  */
-    status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
-    EnetAppUtils_assert(status == NX_SUCCESS);
-
     /* Create an IP instance.  */
     status = nx_ip_create(&gIp, "NetX IP Instance 0", IP_ADDRESS(0, 0, 0, 0), 0xFFFFFF00UL, &gPacketPool, _nx_enet_driver, (void *)&gIpThreadStack[0], IP_THREAD_STACK_SIZE, 1);
     EnetAppUtils_assert(status == NX_SUCCESS);
 
-#if (NETXDUO_IF_COUNT > 1u)
-    status = nx_ip_interface_attach(&gIp, "SEC", IP_ADDRESS(0, 0, 0, 0), 0xFFFFFF00UL, _nx_enet_driver);
-    EnetAppUtils_assert(status == NX_SUCCESS);
-#endif
 
     /* Enable ARP */
     status = nx_arp_enable(&gIp, (void *)&gIpArpThreadStack[0], IP_ARP_THREAD_STACK_SIZE);

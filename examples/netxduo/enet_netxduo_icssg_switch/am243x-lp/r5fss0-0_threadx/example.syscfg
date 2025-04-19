@@ -84,14 +84,17 @@ enet_icss1.phyToMacInterfaceMode         = "RGMII";
 enet_icss1.mdioDisableStateMachineOnInit = true;
 enet_icss1.mdioMode                      = "MDIO_MODE_MANUAL";
 enet_icss1.QoS                           = 3;
-enet_icss1.LargePoolPktCount             = 32;
+enet_icss1.LargePoolPktCount             = 80;
+enet_icss1.PktPoolEnable                 = false;
+enet_icss1.PktInfoOnlyEnable             = true;
+enet_icss1.PktInfoOnlyCount              = 48;
 enet_icss1.txDmaChannel[0].$name         = "ENET_DMA_TX_CH0";
 enet_icss1.rxDmaChannel[0].$name         = "ENET_DMA_RX_CH0";
-enet_icss1.rxDmaChannel[0].PacketsCount  = 8;
+enet_icss1.rxDmaChannel[0].PacketsCount  = 16;
 enet_icss1.rxDmaChannel[1].$name         = "ENET_DMA_RX_CH1";
 enet_icss1.rxDmaChannel[1].chIdx         = 1;
 enet_icss1.rxDmaChannel[1].macAddrCount  = 0;
-enet_icss1.rxDmaChannel[1].PacketsCount  = 8;
+enet_icss1.rxDmaChannel[1].PacketsCount  = 16;
 enet_icss1.PRU_ICSSG1_RGMII1.$assign     = "PRU_ICSSG1_RGMII1";
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
@@ -123,8 +126,9 @@ enet_icss1.udmaDrv = udma1;
 netxduo1.$name                                   = "CONFIG_NETXDUO0";
 netxduo1.netxduoIfInstance.create(1);
 netxduo1.netxduoIfInstance[0].$name              = "CONFIG_NETX_IF0";
-netxduo1.netxduoIfInstance[0].enet_instance_name = "CONFIG_ENET_ICSS0";
 netxduo1.netxduoIfInstance[0].isDefault          = true;
+netxduo1.netxduoIfInstance[0].enet_instance_name = "CONFIG_ENET_ICSS0";
+netxduo1.netxduoIfInstance[0].rxDmaChNum         = ["0","1"];
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

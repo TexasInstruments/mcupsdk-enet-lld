@@ -69,7 +69,6 @@ i2c1.I2C.$assign         = "I2C0";
 i2c1.I2C_child.$name     = "drivers_i2c_v0_i2c_v0_template1";
 
 debug_log.enableUartLog        = true;
-debug_log.enableCssLog         = false;
 debug_log.uartLog.$name        = "CONFIG_UART0";
 debug_log.uartLog.UART.$assign = "USART0";
 
@@ -114,8 +113,6 @@ general1.$name           = "CONFIG_GENERAL0";
 general1.heap_size       = 34000;
 general1.additional_data = "#include \"ti_enet_config.h\"";
 general1.stack_size      = 8192;
-general1.irq_stack_size  = 4096;
-general1.fiq_stack_size  = 4096;
 general1.linker.$name    = "TIARMCLANG0";
 
 region1.$name                               = "MEMORY_REGION_CONFIGURATION0";
@@ -244,10 +241,19 @@ section9.output_section[1].alignment = 128;
 section9.output_section[2].$name     = ".bss:ENET_ICSSG_OCMC_MEM";
 section9.output_section[2].alignment = 128;
 
-enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
-enet_cpsw1.macAddrConfig         = "Manual Entry";
-enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
-enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
+enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
+enet_cpsw1.mdioMode                     = "MDIO_MODE_MANUAL";
+enet_cpsw1.macOnlyEn_hostPort           = true;
+enet_cpsw1.macOnlyEn_macPort1           = true;
+enet_cpsw1.macOnlyEn_macPort2           = true;
+enet_cpsw1.PktPoolEnable                = false;
+enet_cpsw1.PktInfoOnlyEnable            = true;
+enet_cpsw1.PktInfoOnlyCount             = 32;
+enet_cpsw1.MDIO.MDC.$assign             = "PRG1_MDIO0_MDC";
+enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
+enet_cpsw1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
+enet_cpsw1.rxDmaChannel[0].macAddrCount = 2;
+enet_cpsw1.rxDmaChannel[0].PacketsCount = 16;
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
@@ -278,8 +284,7 @@ i2c1.I2C.SDA.$suggestSolution                   = "I2C0_SDA";
 debug_log.uartLog.UART.RXD.$suggestSolution     = "UART0_RXD";
 debug_log.uartLog.UART.TXD.$suggestSolution     = "UART0_TXD";
 enet_cpsw1.MDIO.$suggestSolution                = "MDIO0";
-enet_cpsw1.MDIO.MDC.$suggestSolution            = "PRG0_PRU1_GPO19";
-enet_cpsw1.MDIO.MDIO.$suggestSolution           = "PRG0_PRU1_GPO18";
+enet_cpsw1.MDIO.MDIO.$suggestSolution           = "PRG1_MDIO0_MDIO";
 enet_cpsw1.RGMII.$suggestSolution               = "CPSW";
 enet_cpsw1.RGMII.RGMII1_RD0.$suggestSolution    = "PRG0_PRU1_GPO7";
 enet_cpsw1.RGMII.RGMII1_RD1.$suggestSolution    = "PRG0_PRU1_GPO9";

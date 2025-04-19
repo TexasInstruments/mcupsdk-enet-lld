@@ -71,8 +71,9 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define PACKET_SIZE  1536
-#define POOL_SIZE    ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_RX_PKT + ENET_SYSCFG_TOTAL_NUM_TX_PKT))
+#define PACKET_SIZE                    (1536u)
+#define USER_POOL_SIZE                 ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_TX_PKT / 2))
+#define INTERNAL_POOL_SIZE             ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_TX_PKT / 2 + ENET_SYSCFG_TOTAL_NUM_RX_PKT))
 
 #define IP_THREAD_STACK_SIZE           (8192u)
 #define IP_ARP_THREAD_STACK_SIZE       (8192u)
@@ -88,10 +89,12 @@ static const uint8_t BROADCAST_MAC_ADDRESS[ENET_MAC_ADDR_LEN] = { 0xFF, 0xFF, 0x
 
 static uint8_t gIpThreadStack[IP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
 static uint8_t gIpArpThreadStack[IP_ARP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
-static uint8_t gPoolMem[POOL_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
+static uint8_t gUserPoolMem[USER_POOL_SIZE]__attribute__ ((aligned(ENETDMA_CACHELINE_ALIGNMENT), section(".bss:ENET_DMA_PKT_MEMPOOL")));
+static uint8_t gInternalPoolMem[INTERNAL_POOL_SIZE]__attribute__ ((aligned(ENETDMA_CACHELINE_ALIGNMENT), section(".bss:ENET_DMA_PKT_MEMPOOL")));
 
 static char gTransmitBuf[PACKET_SIZE];
-static NX_PACKET_POOL gPacketPool;
+static NX_PACKET_POOL gUserPacketPool;
+static NX_PACKET_POOL gInternalPacketPool;
 static NX_IP gIp;
 static NX_DHCP gDhcpClient;
 static NX_TCP_SOCKET gClientSocket;
@@ -149,6 +152,18 @@ int netxduo_cpsw_main(ULONG arg)
     EnetApp_addMCastEntry(enetType, instId, EnetSoc_getCoreId(), BROADCAST_MAC_ADDRESS, CPSW_ALE_ALL_PORTS_MASK);
 
 
+    /* Initialize the NetX system.  */
+    nx_system_initialize();
+
+    /* Create the NetX internal packet pool.  */
+    status = nx_packet_pool_create(&gInternalPacketPool, "NetX internal packet pool", PACKET_SIZE, &gInternalPoolMem[0], INTERNAL_POOL_SIZE);
+    EnetAppUtils_assert(status == NX_SUCCESS);
+
+    /* Create the user transmit packet pool.  */
+    status = nx_packet_pool_create(&gUserPacketPool, "User TX packet pool", PACKET_SIZE, &gUserPoolMem[0], USER_POOL_SIZE);
+    EnetAppUtils_assert(status == NX_SUCCESS);
+
+
     /* Allocate NetX Rx channel and corresponding buffers. */
     for(size_t k = 0u; k < ENET_SYSCFG_RX_FLOWS_NUM; k++) {
 
@@ -158,7 +173,7 @@ int netxduo_cpsw_main(ULONG arg)
         EnetApp_getRxDmaHandle(k, &inArgs, &outArgs);
 
         EnetAppUtils_assert(outArgs.hRxCh != NULL);
-        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &rxChs[k]);
+        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &gInternalPacketPool, &rxChs[k]);
     }
 
     /* Allocate NetX Tx channel and corresponding buffers. */
@@ -214,16 +229,9 @@ int netxduo_cpsw_main(ULONG arg)
     }
 
 
-    /* Initialize the NetX system.  */
-    nx_system_initialize();
-
-    /* Create a packet pool.  */
-    status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
-    EnetAppUtils_assert(status == NX_SUCCESS);
-
 
     /* Create an IP instance.  */
-    status = nx_ip_create(&gIp, "NetX IP Instance 0", IP_ADDRESS(0, 0, 0, 0), 0xFFFFFF00UL, &gPacketPool, _nx_enet_driver, (void *)&gIpThreadStack[0], IP_THREAD_STACK_SIZE, 1);
+    status = nx_ip_create(&gIp, "NetX IP Instance 0", IP_ADDRESS(0, 0, 0, 0), 0xFFFFFF00UL, &gInternalPacketPool, _nx_enet_driver, (void *)&gIpThreadStack[0], IP_THREAD_STACK_SIZE, 1);
     EnetAppUtils_assert(status == NX_SUCCESS);
 
 
@@ -320,13 +328,13 @@ int netxduo_cpsw_main(ULONG arg)
         {
 
             /* Allocate a packet.  */
-            status =  nx_packet_allocate(&gPacketPool, &pPacket, NX_TCP_PACKET, NX_WAIT_FOREVER);
+            status =  nx_packet_allocate(&gUserPacketPool, &pPacket, NX_TCP_PACKET, NX_WAIT_FOREVER);
             EnetAppUtils_assert(status == NX_SUCCESS);
 
             /* Append data to the packet. */
             memset(&gTransmitBuf, 0, sizeof(gTransmitBuf));
             bufLength = snprintf(gTransmitBuf, sizeof(gTransmitBuf), "Hello over TCP %d", packetIx+1);
-            nx_packet_data_append(pPacket, gTransmitBuf, bufLength, &gPacketPool, TX_WAIT_FOREVER);
+            nx_packet_data_append(pPacket, gTransmitBuf, bufLength, &gUserPacketPool, TX_WAIT_FOREVER);
 
             status =  nx_packet_length_get(pPacket, &packetLength);
             EnetAppUtils_assert((status == NX_SUCCESS) && (packetLength == bufLength));
