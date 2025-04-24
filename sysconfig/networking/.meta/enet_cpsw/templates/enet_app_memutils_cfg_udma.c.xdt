@@ -32,15 +32,9 @@
 #include "ti_enet_config.h"
 
 #include <drivers/hw_include/cslr_soc.h>
-#include <drivers/udma/include/udma_types.h>
+#include <drivers/udma.h>
 %if ((soc === "am64x") || (soc === "am243x")){
 #include <drivers/udma/soc/am64x_am243x/udma_soc.h>
-%}
-%if (soc === "am62ax"){
-#include <drivers/udma/soc/am62ax/udma_soc.h>
-%}
-%if (soc === "am62x"){
-#include <drivers/udma/soc/am62x/udma_soc.h>
 %}
 #include <networking/enet/hw_include/csl_cpswitch.h>
 #include <networking/enet/core/src/dma/udma/enet_udma_priv.h>

@@ -43,7 +43,7 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 #include <include/core/enet_dma.h>
-#include <drivers/udma/soc/udma_soc.h>
+#include <drivers/udma.h>
 
 #ifdef __cplusplus
 extern "C" {

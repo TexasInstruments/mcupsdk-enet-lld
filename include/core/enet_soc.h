@@ -56,24 +56,24 @@
 #elif defined(SOC_AM62AX)
 #include <soc/k3/am62ax/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/am62ax/udma_soc.h>
+#include <drivers/udma.h>
 #elif defined(SOC_AM62PX)
 #include <soc/k3/am62px/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/am62px/udma_soc.h>
+#include <drivers/udma.h>
 #elif defined(SOC_AM275X)
 #include <soc/k3/am275x/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/am275x/udma_soc.h>
+#include <drivers/udma.h>
 #elif defined(SOC_AM62X)
 #include <soc/k3/am62x/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/am62x/udma_soc.h>
+#include <drivers/udma.h>
 
 #elif defined(SOC_AM62DX)
 #include <soc/k3/am62dx/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/am62dx/udma_soc.h>
+#include <drivers/udma.h>
 #elif defined (SOC_AM273X)
 #include <soc/am273x/enet_soc.h>
 #elif defined(SOC_AWR294X)
@@ -89,7 +89,7 @@
 #elif defined (SOC_J722S)
 #include <soc/k3/j722s/enet_soc.h>
 #include <soc/k3/k3_soc.h>
-#include <drivers/udma/soc/j722s/udma_soc.h>
+#include <drivers/udma.h>
 #elif defined (SOC_TDA54)
 #include <soc/k3/tda54/enet_soc.h>
 #include <soc/k3/k3_soc.h>

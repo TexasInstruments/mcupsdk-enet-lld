@@ -56,7 +56,7 @@
 
 #include <priv/per/enet_hostport_udma.h>
 #include <drivers/sciclient.h>
-#include <drivers/udma/soc/udma_soc.h>
+#include <drivers/udma.h>
 
 #include "enet_udma_priv.h"
 /* hack to access gUdmaTxMappedChRingAttributes */
