@@ -604,13 +604,12 @@ Icssg_Pruss gEnetSoc_PruIcssg1 =
     .iep0InUse   = false,
 };
 
+static Icssg_Obj gEnetSoc_icssgDmac[4]=
+{
 % for(let i in instances){
 %if (module.isIcssgIfEnabled(instances[i], "DUAL MAC", "ICSSG0", "ENET_MAC_PORT_1")) {
 /* ICSSG0 Dual-MAC Port 1 (ENET_ICSSG_DUALMAC, 0) */
-static Icssg_Obj gEnetSoc_icssg0DMacp1 =
-{
-    .enetPer =
-    {
+    [0]={
         .name         = "icssg0-1",
         .enetType     = ENET_ICSSG_DUALMAC,
         .instId       = 0U,
@@ -619,130 +618,78 @@ static Icssg_Obj gEnetSoc_icssg0DMacp1 =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    /* Shared between ICSSG0 Port 1 and Port 2 objects */
-    .pruss = &gEnetSoc_PruIcssg0,
+        /* Shared between ICSSG0 Port 1 and Port 2 objects */
+        .pruss = &gEnetSoc_PruIcssg0,
 
-    /* Dual-MAC firmware for slice 0 */
-    .fw =
-    {
+        /* Dual-MAC firmware for slice 0 */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE0_b00_DMac,
-            .pruSize   = sizeof(RX_PRU_SLICE0_b00_DMac),
-            .rtu       = RTU0_SLICE0_b00_DMac,
-            .rtuSize   = sizeof(RTU0_SLICE0_b00_DMac),
-            .txpru     = TX_PRU_SLICE0_b00_DMac,
-            .txpruSize = sizeof(TX_PRU_SLICE0_b00_DMac)
+            {
+                .pru       = RX_PRU_SLICE0_b00_DMac,
+                .pruSize   = sizeof(RX_PRU_SLICE0_b00_DMac),
+                .rtu       = RTU0_SLICE0_b00_DMac,
+                .rtuSize   = sizeof(RTU0_SLICE0_b00_DMac),
+                .txpru     = TX_PRU_SLICE0_b00_DMac,
+                .txpruSize = sizeof(TX_PRU_SLICE0_b00_DMac)
+            },
         },
-    },
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg0-1.timesync",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg0-1.mdio",
             .physAddr   = CSL_PRU_ICSSG0_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg0-1.stats",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
+                
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg0-1.tas",
                 .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg0-1.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
 % }
 %if (module.isIcssgIfEnabled(instances[i], "DUAL MAC", "ICSSG0", "ENET_MAC_PORT_2")) {
 /* ICSSG0 Dual-MAC Port 2 (ENET_ICSSG_DUALMAC, 1) */
-static Icssg_Obj gEnetSoc_icssg0DMacp2 =
-{
-    .enetPer =
-    {
+    [1]={
         .name         = "icssg0-2",
         .enetType     = ENET_ICSSG_DUALMAC,
         .instId       = 1U,
@@ -751,130 +698,77 @@ static Icssg_Obj gEnetSoc_icssg0DMacp2 =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    /* Shared between ICSSG0 Port 1 and Port 2 objects */
-    .pruss = &gEnetSoc_PruIcssg0,
+        /* Shared between ICSSG0 Port 1 and Port 2 objects */
+        .pruss = &gEnetSoc_PruIcssg0,
 
-    /* Dual-MAC firmware for slice 1 */
-    .fw =
-    {
+        /* Dual-MAC firmware for slice 1 */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE1_b00_DMac,
-            .pruSize   = sizeof(RX_PRU_SLICE1_b00_DMac),
-            .rtu       = RTU0_SLICE1_b00_DMac,
-            .rtuSize   = sizeof(RTU0_SLICE1_b00_DMac),
-            .txpru     = TX_PRU_SLICE1_b00_DMac,
-            .txpruSize = sizeof(TX_PRU_SLICE1_b00_DMac)
+            {
+                .pru       = RX_PRU_SLICE1_b00_DMac,
+                .pruSize   = sizeof(RX_PRU_SLICE1_b00_DMac),
+                .rtu       = RTU0_SLICE1_b00_DMac,
+                .rtuSize   = sizeof(RTU0_SLICE1_b00_DMac),
+                .txpru     = TX_PRU_SLICE1_b00_DMac,
+                .txpruSize = sizeof(TX_PRU_SLICE1_b00_DMac)
+            },
         },
-    },
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg0-2.timesync",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg0-2.mdio",
             .physAddr   = CSL_PRU_ICSSG0_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg0-2.stats",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg0-2.tas",
                 .physAddr   = CSL_PRU_ICSSG0_DRAM1_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg0-2.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
 % }
 %if (module.isIcssgIfEnabled(instances[i], "DUAL MAC", "ICSSG1", "ENET_MAC_PORT_1")) {
 /* ICSSG1 Dual-MAC Port 1 (ENET_ICSSG_DUALMAC, 2) */
-static Icssg_Obj gEnetSoc_icssg1DMacp1 =
-{
-    .enetPer =
-    {
+    [2]={
         .name         = "icssg1-1",
         .enetType     = ENET_ICSSG_DUALMAC,
         .instId       = 2U,
@@ -883,130 +777,77 @@ static Icssg_Obj gEnetSoc_icssg1DMacp1 =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    /* Shared between ICSSG1 Port 1 and Port 2 objects */
-    .pruss = &gEnetSoc_PruIcssg1,
+        /* Shared between ICSSG1 Port 1 and Port 2 objects */
+        .pruss = &gEnetSoc_PruIcssg1,
 
-    /* Dual-MAC firmware for slice 0 */
-    .fw =
-    {
+        /* Dual-MAC firmware for slice 0 */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE0_b00_DMac,
-            .pruSize   = sizeof(RX_PRU_SLICE0_b00_DMac),
-            .rtu       = RTU0_SLICE0_b00_DMac,
-            .rtuSize   = sizeof(RTU0_SLICE0_b00_DMac),
-            .txpru     = TX_PRU_SLICE0_b00_DMac,
-            .txpruSize = sizeof(TX_PRU_SLICE0_b00_DMac)
+            {
+                .pru       = RX_PRU_SLICE0_b00_DMac,
+                .pruSize   = sizeof(RX_PRU_SLICE0_b00_DMac),
+                .rtu       = RTU0_SLICE0_b00_DMac,
+                .rtuSize   = sizeof(RTU0_SLICE0_b00_DMac),
+                .txpru     = TX_PRU_SLICE0_b00_DMac,
+                .txpruSize = sizeof(TX_PRU_SLICE0_b00_DMac)
+            },
         },
-    },
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg1-1.timesync",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg1-1.mdio",
             .physAddr   = CSL_PRU_ICSSG1_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg1-1.stats",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg1-1.tas",
                 .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg1-1.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
 % }
 %if (module.isIcssgIfEnabled(instances[i], "DUAL MAC", "ICSSG1", "ENET_MAC_PORT_2")) {
 /* ICSSG1 Dual-MAC Port 2 (ENET_ICSSG_DUALMAC, 3) */
-static Icssg_Obj gEnetSoc_icssg1DMacp2 =
-{
-    .enetPer =
-    {
+    [3]={
         .name         = "icssg1-2",
         .enetType     = ENET_ICSSG_DUALMAC,
         .instId       = 3U,
@@ -1015,130 +856,83 @@ static Icssg_Obj gEnetSoc_icssg1DMacp2 =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    /* Shared between ICSSG1 Port 1 and Port 2 objects */
-    .pruss = &gEnetSoc_PruIcssg1,
+        /* Shared between ICSSG1 Port 1 and Port 2 objects */
+        .pruss = &gEnetSoc_PruIcssg1,
 
-    /* Dual-MAC firmware for slice 1 */
-    .fw =
-    {
+        /* Dual-MAC firmware for slice 1 */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE1_b00_DMac,
-            .pruSize   = sizeof(RX_PRU_SLICE1_b00_DMac),
-            .rtu       = RTU0_SLICE1_b00_DMac,
-            .rtuSize   = sizeof(RTU0_SLICE1_b00_DMac),
-            .txpru     = TX_PRU_SLICE1_b00_DMac,
-            .txpruSize = sizeof(TX_PRU_SLICE1_b00_DMac)
+            {
+                .pru       = RX_PRU_SLICE1_b00_DMac,
+                .pruSize   = sizeof(RX_PRU_SLICE1_b00_DMac),
+                .rtu       = RTU0_SLICE1_b00_DMac,
+                .rtuSize   = sizeof(RTU0_SLICE1_b00_DMac),
+                .txpru     = TX_PRU_SLICE1_b00_DMac,
+                .txpruSize = sizeof(TX_PRU_SLICE1_b00_DMac)
+            },
         },
-    },
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg1-2.timesync",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg1-2.mdio",
             .physAddr   = CSL_PRU_ICSSG1_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg1-2.stats",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg1-2.tas",
                 .physAddr   = CSL_PRU_ICSSG1_DRAM1_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg1-2.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
 % }
+%}
+};
+
+static Icssg_Obj gEnetSoc_icssgSwt[2]=
+{
+% for(let i in instances){
 %if (module.isIcssgIfEnabled(instances[i], "SWITCH", "ICSSG0")) {
 /* ICSSG0 Switch (ENET_ICSSG_SWITCH, 0) */
-static Icssg_Obj gEnetSoc_icssg0Swt =
-{
-    .enetPer =
-    {
+    [0]={
         .name         = "icssg0",
         .enetType     = ENET_ICSSG_SWITCH,
         .instId       = 0U,
@@ -1147,154 +941,94 @@ static Icssg_Obj gEnetSoc_icssg0Swt =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    .pruss = &gEnetSoc_PruIcssg0,
+        .pruss = &gEnetSoc_PruIcssg0,
 
-    %if (instances[i].derivedMode === "NONE") {     // This check is used by ICSDK examples
-    /* Switch firmware for both slices */
-    .fw =
-    {
+        %if (instances[i].derivedMode === "NONE") {     // This check is used by ICSDK examples
+        /* Switch firmware for both slices */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE0_b00_Swt,
-            .pruSize   = sizeof(RX_PRU_SLICE0_b00_Swt),
-            .rtu       = RTU0_SLICE0_b00_Swt,
-            .rtuSize   = sizeof(RTU0_SLICE0_b00_Swt),
-            .txpru     = TX_PRU_SLICE0_b00_Swt,
-            .txpruSize = sizeof(TX_PRU_SLICE0_b00_Swt)
+            {
+                .pru       = RX_PRU_SLICE0_b00_Swt,
+                .pruSize   = sizeof(RX_PRU_SLICE0_b00_Swt),
+                .rtu       = RTU0_SLICE0_b00_Swt,
+                .rtuSize   = sizeof(RTU0_SLICE0_b00_Swt),
+                .txpru     = TX_PRU_SLICE0_b00_Swt,
+                .txpruSize = sizeof(TX_PRU_SLICE0_b00_Swt)
+            },
+            {
+                .pru       = RX_PRU_SLICE1_b00_Swt,
+                .pruSize   = sizeof(RX_PRU_SLICE1_b00_Swt),
+                .rtu       = RTU0_SLICE1_b00_Swt,
+                .rtuSize   = sizeof(RTU0_SLICE1_b00_Swt),
+                .txpru     = TX_PRU_SLICE1_b00_Swt,
+                .txpruSize = sizeof(TX_PRU_SLICE1_b00_Swt)
+            },
         },
-        {
-            .pru       = RX_PRU_SLICE1_b00_Swt,
-            .pruSize   = sizeof(RX_PRU_SLICE1_b00_Swt),
-            .rtu       = RTU0_SLICE1_b00_Swt,
-            .rtuSize   = sizeof(RTU0_SLICE1_b00_Swt),
-            .txpru     = TX_PRU_SLICE1_b00_Swt,
-            .txpruSize = sizeof(TX_PRU_SLICE1_b00_Swt)
-        },
-    },
-    % }
-    `icsdk.assignHsrPrpFirmware(instances[i])`
+        % }
+        `icsdk.assignHsrPrpFirmware(instances[i])`
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg0.timesync",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg0.mdio",
             .physAddr   = CSL_PRU_ICSSG0_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg0.stats",
             .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg0-1.tas",
                 .physAddr   = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
-        },
-        {
-            .enetMod =
             {
                 .name       = "icssg0-2.tas",
                 .physAddr   = CSL_PRU_ICSSG0_DRAM1_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG0_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg0.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
 %}
 %if (module.isIcssgIfEnabled(instances[i], "SWITCH", "ICSSG1")) {
 /* ICSSG1 Switch (ENET_ICSSG_SWITCH, 1) */
-static Icssg_Obj gEnetSoc_icssg1Swt =
-{
-    .enetPer =
-    {
+    [1]={
         .name         = "icssg1",
         .enetType     = ENET_ICSSG_SWITCH,
         .instId       = 1U,
@@ -1303,219 +1037,100 @@ static Icssg_Obj gEnetSoc_icssg1Swt =
         .physAddr2    = 0U,
         .features     = ENET_FEAT_BASE,
         .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Icssg_initCfg,
-        .open         = &Icssg_open,
-        .close        = &Icssg_close,
-        .rejoin       = &Icssg_rejoin,
-        .ioctl        = &Icssg_ioctl,
-        .poll         = &Icssg_poll,
-        .convertTs    = &Icssg_convertTs,
-%if(instances[i].ExternalPhyMgmtEnable == false){
-        .periodicTick = &Icssg_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb   = &Icssg_registerEventCb,
-        .unregisterEventCb = &Icssg_unregisterEventCb,
-    },
 
-    .pruss = &gEnetSoc_PruIcssg1,
+        .pruss = &gEnetSoc_PruIcssg1,
 
-    %if (instances[i].derivedMode === "NONE") {
-    /* Switch firmware for both slices */
-    .fw =
-    {
+        %if (instances[i].derivedMode === "NONE") {
+        /* Switch firmware for both slices */
+        .fw =
         {
-            .pru       = RX_PRU_SLICE0_b00_Swt,
-            .pruSize   = sizeof(RX_PRU_SLICE0_b00_Swt),
-            .rtu       = RTU0_SLICE0_b00_Swt,
-            .rtuSize   = sizeof(RTU0_SLICE0_b00_Swt),
-            .txpru     = TX_PRU_SLICE0_b00_Swt,
-            .txpruSize = sizeof(TX_PRU_SLICE0_b00_Swt)
+            {
+                .pru       = RX_PRU_SLICE0_b00_Swt,
+                .pruSize   = sizeof(RX_PRU_SLICE0_b00_Swt),
+                .rtu       = RTU0_SLICE0_b00_Swt,
+                .rtuSize   = sizeof(RTU0_SLICE0_b00_Swt),
+                .txpru     = TX_PRU_SLICE0_b00_Swt,
+                .txpruSize = sizeof(TX_PRU_SLICE0_b00_Swt)
+            },
+            {
+                .pru       = RX_PRU_SLICE1_b00_Swt,
+                .pruSize   = sizeof(RX_PRU_SLICE1_b00_Swt),
+                .rtu       = RTU0_SLICE1_b00_Swt,
+                .rtuSize   = sizeof(RTU0_SLICE1_b00_Swt),
+                .txpru     = TX_PRU_SLICE1_b00_Swt,
+                .txpruSize = sizeof(TX_PRU_SLICE1_b00_Swt)
+            },
         },
-        {
-            .pru       = RX_PRU_SLICE1_b00_Swt,
-            .pruSize   = sizeof(RX_PRU_SLICE1_b00_Swt),
-            .rtu       = RTU0_SLICE1_b00_Swt,
-            .rtuSize   = sizeof(RTU0_SLICE1_b00_Swt),
-            .txpru     = TX_PRU_SLICE1_b00_Swt,
-            .txpruSize = sizeof(TX_PRU_SLICE1_b00_Swt)
-        },
-    },
-    % }
-    `icsdk.assignHsrPrpFirmware(instances[i])`
+        % }
+        `icsdk.assignHsrPrpFirmware(instances[i])`
 
-    /* TimeSync module object */
-    .timeSyncObj =
-    {
-        .enetMod =
+        /* TimeSync module object */
+        .timeSyncObj =
         {
             .name       = "icssg1.timesync",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_PR1_IEP0_SLV_REGS_BASE,
             .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgTimeSync_open,
-            .rejoin     = &IcssgTimeSync_rejoin,
-            .ioctl      = &IcssgTimeSync_ioctl,
-            .close      = &IcssgTimeSync_close,
         },
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
             .name       = "icssg1.mdio",
             .physAddr   = CSL_PRU_ICSSG1_PR1_MDIO_V1P7_MDIO_BASE,
             .features   = MDIO_FEATURE_CLAUSE45,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
         },
-    },
 
-    /* Stats module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Stats module object */
+        .statsObj =
         {
             .name       = "icssg1.stats",
             .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE,
             .physAddr2  = 0,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &IcssgStats_open,
-            .rejoin     = &IcssgStats_rejoin,
-            .ioctl      = &IcssgStats_ioctl,
-            .close      = &IcssgStats_close,
         },
-    },
 
-    /* Tas module object */
-    .tasObj =
-    {
+        /* Tas module object */
+        .tasObj =
         {
-            .enetMod =
             {
                 .name       = "icssg1-1.tas",
                 .physAddr   = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
-        },
-        {
-            .enetMod =
             {
                 .name       = "icssg1-2.tas",
                 .physAddr   = CSL_PRU_ICSSG1_DRAM1_SLV_RAM_BASE,
                 .physAddr2  = CSL_PRU_ICSSG1_DRAM0_SLV_RAM_BASE + CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE,
                 .features   = ENET_FEAT_BASE,
                 .errata     = ENET_ERRATA_NONE,
-                .open       = &IcssgTas_open,
-                .rejoin     = &IcssgTas_rejoin,
-                .ioctl      = &IcssgTas_ioctl,
-                .close      = &IcssgTas_close,
             },
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "icssg1.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
-};
+    %}
 % }
-%}
+};
+
 /* ---------------------------- Enet Peripherals ---------------------------- */
 %{ let numPerInstances = 0;
-Enet_Obj gEnetSoc_perObj[] =
-{
-    /* CPSW_3G Enet driver/peripheral */
-    {
-        .enetPer = NULL,
-    },
-
-    /* ICSSG0 Dual-MAC Port 1 Enet driver/peripheral */
-    {
-%if (isIcssgAnyEn(instances, "DUAL MAC", "ICSSG0", "ENET_MAC_PORT_1")) {
-%   numPerInstances++;
-        .enetPer = &gEnetSoc_icssg0DMacp1.enetPer,
-%} else {
-        .enetPer = NULL,
+%for(let i in instances)
+%{
+    %numPerInstances++;
 %}
-    },
-
-    {
-%if (isIcssgAnyEn(instances, "DUAL MAC", "ICSSG0", "ENET_MAC_PORT_2")) {
-%   numPerInstances++;
-        /* ICSSG0 Dual-MAC Port 2 Enet driver/peripheral */
-        .enetPer = &gEnetSoc_icssg0DMacp2.enetPer,
-%} else {
-        .enetPer = NULL,
-%}
-    },
-
-    {
-%if (isIcssgAnyEn(instances, "DUAL MAC", "ICSSG1", "ENET_MAC_PORT_1")) {
-%   numPerInstances++;
-        /* ICSSG1 Dual-MAC Port 1 Enet driver/peripheral */
-        .enetPer = &gEnetSoc_icssg1DMacp1.enetPer,
-%} else {
-        .enetPer = NULL,
-%}
-    },
-
-    {
-%if (isIcssgAnyEn(instances, "DUAL MAC", "ICSSG1", "ENET_MAC_PORT_2")) {
-%   numPerInstances++;
-        /* ICSSG1 Dual-MAC Port 2 Enet driver/peripheral */
-        .enetPer = &gEnetSoc_icssg1DMacp2.enetPer,
-%} else {
-        .enetPer = NULL,
-%}
-    },
-
-    {
-%if (isIcssgAnyEn(instances, "SWITCH", "ICSSG0")) {
-%   numPerInstances++;
-        /* ICSSG0 Switch Enet driver/peripheral */
-        .enetPer = &gEnetSoc_icssg0Swt.enetPer,
-%} else {
-        .enetPer = NULL,
-%}
-    },
-
-    {
-%if (isIcssgAnyEn(instances, "SWITCH", "ICSSG1")) {
-%   numPerInstances++;
-        /* ICSSG0 Switch Enet driver/peripheral */
-        .enetPer = &gEnetSoc_icssg1Swt.enetPer,
-%} else {
-        .enetPer = NULL,
-%}
-    },
-
-};
 
 EnetUdma_DrvObj gEnetSoc_dmaObj[`Number(numPerInstances)`U];
 %}
@@ -1756,49 +1371,73 @@ EnetDma_Handle EnetSoc_getDmaHandle(Enet_Type enetType,
 
 }
 
-Enet_Handle EnetSoc_getEnetHandleByIdx(uint32_t idx)
+uint32_t EnetSoc_getEnetHandleByIdx(uint32_t idx)
 {
-    Enet_Handle hEnet = NULL;
+    uint32_t hEnet = 0U;
 
-    if (idx < ENET_ARRAYSIZE(gEnetSoc_perObj))
+    if (idx < ENET_ARRAYSIZE(gEnetSoc_icssgDmac))
     {
-        hEnet = &gEnetSoc_perObj[idx];
+        hEnet += gEnetSoc_icssgDmac[idx].enetType;
+        hEnet <<=16;
+        hEnet += (gEnetSoc_icssgDmac[idx].instId) & (0x0000FFFFU);
+    }
+    else if ( (idx >= ENET_ARRAYSIZE(gEnetSoc_icssgDmac)) && (idx < ENET_ARRAYSIZE(gEnetSoc_icssgSwt) + ENET_ARRAYSIZE(gEnetSoc_icssgDmac)) )
+    {
+        hEnet += gEnetSoc_icssgSwt[idx-ENET_ARRAYSIZE(gEnetSoc_icssgDmac)].enetType;
+        hEnet <<=16;
+        hEnet += (gEnetSoc_icssgSwt[idx-ENET_ARRAYSIZE(gEnetSoc_icssgDmac)].instId) & (0x0000FFFFU);
+    }
+    else
+    {
+        hEnet = -1;
     }
 
-    EnetSoc_assert((hEnet != NULL), "Unsupported  peripheral index (index=%u )\n", idx);
+    EnetSoc_assert((hEnet != -1), "Unsupported  peripheral index (index=%u )\n", idx);
     return hEnet;
 }
 
-Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
+uint32_t EnetSoc_getEnetHandle(Enet_Type enetType,
                                   uint32_t instId)
 {
-    Enet_Handle hEnet = NULL;
+    uint32_t hEnet = 0U;
 
     switch (enetType)
     {
         case ENET_CPSW_3G:
             if (instId == 0U)
             {
-                hEnet = &gEnetSoc_perObj[0U];
+                hEnet += enetType;
+                hEnet <<=16;
+                hEnet += (instId) & (0x0000FFFFU);
             }
+            hEnet = -1;
             break;
 
         case ENET_ICSSG_DUALMAC:
             switch (instId)
             {
                 case 0:
-                    hEnet = &gEnetSoc_perObj[1U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 case 1:
-                    hEnet = &gEnetSoc_perObj[2U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 case 2:
-                    hEnet = &gEnetSoc_perObj[3U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 case 3:
-                    hEnet = &gEnetSoc_perObj[4U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 default:
+                    hEnet = -1;
                     EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
                     break;
             }
@@ -1808,15 +1447,22 @@ Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
             switch (instId)
             {
                 case 0:
-                    hEnet = &gEnetSoc_perObj[5U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 case 1:
-                    hEnet = &gEnetSoc_perObj[6U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 case 2:
-                    hEnet = &gEnetSoc_perObj[7U];
+                    hEnet += enetType;
+                    hEnet <<=16;
+                    hEnet += (instId) & (0x0000FFFFU);
                     break;
                 default:
+                    hEnet = -1;
                     EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
                     break;
             }
@@ -1824,11 +1470,12 @@ Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
 
         default:
             {
+                hEnet = -1;
                 EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
             }
             break;
     }
-    EnetSoc_assert((hEnet != NULL), "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+    EnetSoc_assert((hEnet != -1), "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
     return hEnet;
 }
 
@@ -1846,7 +1493,7 @@ static bool  EnetSoc_isValidEnetType(Enet_Type enetType)
 
 uint32_t EnetSoc_getEnetNum(void)
 {
-    return ENET_ARRAYSIZE(gEnetSoc_perObj);
+    return ENET_ARRAYSIZE(gEnetSoc_icssgDmac) + ENET_ARRAYSIZE(gEnetSoc_icssgSwt);
 }
 
 uint32_t EnetSoc_getMacPortMax(Enet_Type enetType,
@@ -2346,6 +1993,33 @@ const EnetRm_IoctlPermissionTable *EnetAppRm_getIoctlPermissionInfo(Enet_Type en
     }
 
     return(ioctlPerm);
+}
+
+Icssg_Handle Icssg_getHandle(uint32_t hEnet)
+{
+    Enet_Type enetType = ((hEnet) & (0xFFFF0000U))>>16;
+    uint32_t instId = (hEnet) & (0x0000FFFFU);
+
+    Icssg_Handle hIcssg = NULL;
+
+    switch (enetType)
+    {
+        case ENET_ICSSG_DUALMAC:
+            hIcssg = &gEnetSoc_icssgDmac[instId];
+            break;
+
+        case ENET_ICSSG_SWITCH:
+            hIcssg = &gEnetSoc_icssgSwt[instId];
+            break;
+
+        default:
+            {
+                EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+            }
+            break;
+    }
+    EnetSoc_assert((hIcssg != NULL), "Invalid handle (eneType=%u instId=%u)\n", enetType, instId);
+    return hIcssg;
 }
 
 

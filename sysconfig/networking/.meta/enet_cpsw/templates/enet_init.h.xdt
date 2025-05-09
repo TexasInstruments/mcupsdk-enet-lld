@@ -70,7 +70,7 @@ void EnetApp_phyStateHandler();
 void EnetApp_phyStateHandler(void * appHandle);
 %}
 
-void EnetApp_doIetVerification(Enet_Handle hEnet, uint32_t coreId, Enet_MacPort macPort);
+void EnetApp_doIetVerification(uint32_t hEnet, uint32_t coreId, Enet_MacPort macPort);
 
 /* ========================================================================== */
 /*                       Static Function Definitions                          */

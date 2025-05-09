@@ -49,6 +49,7 @@
 /* ========================================================================== */
 static uint32_t EnetSoc_getMcuEnetControl(Enet_MacPort macPort,
                                           uint32_t *modeSel);
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -97,24 +98,17 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
 };
 
 /* CPSW_3G MAC port template */
-#define ENET_SOC_CPSW3G_MACPORT(n)                                    \
-{                                                                     \
-    .enetMod =                                                        \
-    {                                                                 \
-        .name       = "cpsw3G.macport" #n,                            \
-        .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),         \
-        .physAddr2  = (CSL_CPSW0_NUSS_BASE + CPSW_SGMII0_OFFSET(0U)), \
-        .features   = (ENET_FEAT_BASE |                               \
-                       CPSW_MACPORT_FEATURE_EST |                     \
-                       CPSW_MACPORT_FEATURE_SGMII |                   \
-                       CPSW_MACPORT_FEATURE_INTERVLAN),               \
-        .errata     = ENET_ERRATA_NONE,                               \
-        .open       = &CpswMacPort_open,                              \
-        .rejoin     = &CpswMacPort_rejoin,                            \
-        .ioctl      = &CpswMacPort_ioctl,                             \
-        .close      = &CpswMacPort_close,                             \
-    },                                                                \
-    .macPort = ENET_MAC_PORT_ ## n,                                   \
+#define ENET_SOC_CPSW3G_MACPORT(n)                                \
+{                                                                 \
+    .name       = "cpsw3G.macport" #n,                            \
+    .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),         \
+    .physAddr2  = (CSL_CPSW0_NUSS_BASE + CPSW_SGMII0_OFFSET(0U)), \
+    .features   = (ENET_FEAT_BASE |                               \
+                   CPSW_MACPORT_FEATURE_EST |                     \
+                   CPSW_MACPORT_FEATURE_SGMII |                   \
+                   CPSW_MACPORT_FEATURE_INTERVLAN),               \
+    .errata     = ENET_ERRATA_NONE,                               \
+    .macPort = ENET_MAC_PORT_ ## n,                               \
 }
 
 /* CPSW_3G MAC ports */
@@ -126,153 +120,88 @@ CpswMacPort_Obj gEnetSoc_cpsw3gMacObj[] =
 
 
 /* CPSW 3G Peripheral */
-Cpsw_Obj gEnetSoc_cpsw3g =
+Cpsw_Obj gEnetSoc_cpsw3g[] =
 {
-    .enetPer =
     {
-        .name         = "cpsw3g",
-        .enetType     = ENET_CPSW_3G,
-        .instId       = 0U,
-        .magic        = ENET_NO_MAGIC,
-        .physAddr     = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
-        .physAddr2    = (CSL_CPSW0_NUSS_BASE + CPSW_NUSS_OFFSET),
-        .features     = (ENET_FEAT_BASE |
-                         CPSW_FEATURE_EST |
-                         CPSW_FEATURE_INTERVLAN |
-                         CPSW_FEATURE_CUTTHRU ),
-        .errata       = ENET_ERRATA_NONE,
-        .initCfg      = &Cpsw_initCfg,
-        .open         = &Cpsw_open,
-        .rejoin       = &Cpsw_rejoin,
-        .ioctl        = &Cpsw_ioctl,
-        .poll         = &Cpsw_poll,
-        .convertTs    = NULL,
-%if(instance.ExternalPhyMgmtEnable == false){
-        .periodicTick = &Cpsw_periodicTick,
-%} else {
-        .periodicTick = NULL,
-%}
-        .registerEventCb = NULL,
-        .unregisterEventCb = NULL,
-        .close        = &Cpsw_close,
-    },
+            .name         = "cpsw3g",
+            .enetType     = ENET_CPSW_3G,
+            .instId       = 0U,
+            .magic        = ENET_NO_MAGIC,
+            .physAddr     = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+            .physAddr2    = (CSL_CPSW0_NUSS_BASE + CPSW_NUSS_OFFSET),
+            .features     = (ENET_FEAT_BASE |
+                            CPSW_FEATURE_EST |
+                            CPSW_FEATURE_INTERVLAN |
+                            CPSW_FEATURE_CUTTHRU ),
+            .errata       = ENET_ERRATA_NONE,
 
-    /* Host port module object */
-    .hostPortObj =
-    {
-        .enetMod =
+        /* Host port module object */
+        .hostPortObj =
         {
             .name       = "cpsw3g.hostport",
             .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswHostPort_open,
-            .rejoin     = &CpswHostPort_rejoin,
-            .ioctl      = &CpswHostPort_ioctl,
-            .close      = &CpswHostPort_close,
-        }
-    },
+        },
 
-    /* MAC port module objects */
-    .macPortObj = gEnetSoc_cpsw3gMacObj,
-    .macPortNum = ENET_ARRAYSIZE(gEnetSoc_cpsw3gMacObj),
+        /* MAC port module objects */
+        .macPortObj = gEnetSoc_cpsw3gMacObj,
+        .macPortNum = ENET_ARRAYSIZE(gEnetSoc_cpsw3gMacObj),
 
-    /* ALE module object */
-    .aleObj =
-    {
-        .enetMod =
+        /* ALE module object */
+        .aleObj =
         {
             .name       = "cpsw3g.ale",
             .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_ALE_OFFSET),
             .features   = (ENET_FEAT_BASE |
-                           CPSW_ALE_FEATURE_FLOW_PRIORITY |
-                           CPSW_ALE_FEATURE_IP_HDR_WHITELIST),
+                            CPSW_ALE_FEATURE_FLOW_PRIORITY |
+                            CPSW_ALE_FEATURE_IP_HDR_WHITELIST),
             .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswAle_open,
-            .rejoin     = &CpswAle_rejoin,
-            .ioctl      = &CpswAle_ioctl,
-            .close      = &CpswAle_close,
         },
-    },
 
-    /* CPTS module object */
-    .cptsObj =
-    {
-        .enetMod =
+        /* CPTS module object */
+        .cptsObj =
         {
             .name       = "cpsw3g.cpts",
             .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_CPTS_OFFSET),
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswCpts_open,
-            .rejoin     = &CpswCpts_rejoin,
-            .ioctl      = &CpswCpts_ioctl,
-            .close      = &CpswCpts_close,
+            .hwPushCnt      = 8U,
         },
-        .hwPushCnt      = 8U,
-    },
 
-    /* MDIO module object */
-    .mdioObj =
-    {
-        .enetMod =
+        /* MDIO module object */
+        .mdioObj =
         {
-            .name       = "cpsw3g.mdio",
-            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_MDIO_OFFSET),
-            .features   = (ENET_FEAT_BASE |
-                           MDIO_FEATURE_CLAUSE45),
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
+                .name       = "cpsw3g.mdio",
+                .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_MDIO_OFFSET),
+                .features   = (ENET_FEAT_BASE |
+                            MDIO_FEATURE_CLAUSE45),
+                .errata     = ENET_ERRATA_NONE,
         },
-    },
 
-    /* Statistics module object */
-    .statsObj =
-    {
-        .enetMod =
+        /* Statistics module object */
+        .statsObj =
         {
             .name       = "cpsw3g.stats",
             .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswStats_open,
-            .rejoin     = &CpswStats_rejoin,
-            .ioctl      = &CpswStats_ioctl,
-            .close      = &CpswStats_close,
         },
-    },
 
-    /* RM module object */
-    .rmObj =
-    {
-        .enetMod =
+        /* RM module object */
+        .rmObj =
         {
             .name       = "cpsw3g.rm",
             .physAddr   = 0U,
             .features   = ENET_FEAT_BASE,
             .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
         },
     },
 };
 
 /* ---------------------------- Enet Peripherals ---------------------------- */
 
-Enet_Obj gEnetSoc_perObj[] =
-{
-    /* CPSW_3G Enet driver/peripheral */
-    {
-        .enetPer = &gEnetSoc_cpsw3g.enetPer,
-    },
-};
-
-EnetUdma_DrvObj gEnetSoc_dmaObj[ENET_ARRAYSIZE(gEnetSoc_perObj)];
+EnetUdma_DrvObj gEnetSoc_dmaObj[ENET_ARRAYSIZE(gEnetSoc_cpsw3g)];
 
 EnetUdma_DrvObjMemInfo gEnetSoc_dmaObjMemInfo =
 {
@@ -316,40 +245,64 @@ EnetDma_Handle EnetSoc_getDmaHandle(Enet_Type enetType,
 
 }
 
-Enet_Handle EnetSoc_getEnetHandleByIdx(uint32_t idx)
+uint32_t EnetSoc_getEnetHandleByIdx(uint32_t idx)
 {
-    Enet_Handle hEnet = NULL;
+    uint32_t hEnet = 0U;
 
-    if (idx < ENET_ARRAYSIZE(gEnetSoc_perObj))
+    if (idx < ENET_ARRAYSIZE(gEnetSoc_cpsw3g))
     {
-        hEnet = &gEnetSoc_perObj[idx];
+        hEnet += gEnetSoc_cpsw3g[idx].enetType;
+        hEnet <<=16;
+        hEnet += (gEnetSoc_cpsw3g[idx].instId) & (0x0000FFFFU);
+    }
+    else
+    {
+        hEnet = -1U;
     }
 
-    EnetSoc_assert((hEnet != NULL), "Unsupported  peripheral index (index=%u )\n", idx);
+    EnetSoc_assert((hEnet != -1), "Unsupported  peripheral index (index=%u )\n", idx);
     return hEnet;
 }
 
-Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
+uint32_t EnetSoc_getEnetHandle(Enet_Type enetType,
                                   uint32_t instId)
 {
-    Enet_Handle hEnet = NULL;
+    uint32_t hEnet = 0U;
 
     switch (enetType)
     {
+        case ENET_CPSW_2G:
+            hEnet += enetType;
+            hEnet <<=16;
+            hEnet += (instId) & (0x0000FFFFU);
+            break;
+        
         case ENET_CPSW_3G:
-            if (instId == 0U)
-            {
-                hEnet = &gEnetSoc_perObj[0U];
-            }
+            hEnet += enetType;
+            hEnet <<=16;
+            hEnet += (instId) & (0x0000FFFFU);
+            break;
+
+        case ENET_CPSW_5G:
+            hEnet += enetType;
+            hEnet <<=16;
+            hEnet += (instId) & (0x0000FFFFU);
+            break;
+
+        case ENET_CPSW_9G:
+            hEnet += enetType;
+            hEnet <<=16;
+            hEnet += (instId) & (0x0000FFFFU);
             break;
 
         default:
             {
+                hEnet = -1U;
                 EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
             }
             break;
     }
-    EnetSoc_assert((hEnet != NULL), "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+    EnetSoc_assert((hEnet != -1), "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
     return hEnet;
 }
 
@@ -366,7 +319,7 @@ static bool  EnetSoc_isValidEnetType(Enet_Type enetType)
 
 uint32_t EnetSoc_getEnetNum(void)
 {
-    return ENET_ARRAYSIZE(gEnetSoc_perObj);
+    return ENET_ARRAYSIZE(gEnetSoc_cpsw3g);
 }
 
 uint32_t EnetSoc_getMacPortMax(Enet_Type enetType,
@@ -856,4 +809,39 @@ const EnetRm_IoctlPermissionTable *EnetAppRm_getIoctlPermissionInfo(Enet_Type en
 void EnetSoC_toggleCPSWResetBit(void *pArg)
 {
     EnetAppUtils_print("CPSW Reset is not supported in this platform");
+}
+
+Cpsw_Handle Cpsw_getHandle(uint32_t hEnet)
+{
+    Enet_Type enetType = ((hEnet) & (0xFFFF0000U))>>16;
+    uint32_t instId = (hEnet) & (0x0000FFFFU);
+
+    Cpsw_Handle hCpsw = NULL;
+
+    switch (enetType)
+    {
+        case ENET_CPSW_2G:
+            hCpsw = NULL;
+            break;
+
+        case ENET_CPSW_3G:
+            hCpsw = &gEnetSoc_cpsw3g[instId];
+            break;
+
+        case ENET_CPSW_5G:
+            hCpsw = NULL;
+            break;
+
+        case ENET_CPSW_9G:
+            hCpsw = NULL;
+            break;
+
+        default:
+            {
+                EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
+            }
+            break;
+    }
+    EnetSoc_assert((hCpsw != NULL), "Invalid handle (eneType=%u instId=%u)\n", enetType, instId);
+    return hCpsw;
 }

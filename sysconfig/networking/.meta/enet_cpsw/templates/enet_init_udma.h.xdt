@@ -65,14 +65,14 @@ typedef struct EnetAppTxDmaCfg_Info_s
     Udma_DrvHandle hUdmaDrv;
 } EnetAppTxDmaCfg_Info;
 
-static void EnetAppUtils_absFlowIdx2FlowIdxOffset(Enet_Handle hEnet,
+static void EnetAppUtils_absFlowIdx2FlowIdxOffset(uint32_t hEnet,
                                                   uint32_t coreId,
                                                   uint32_t absRxFlowId,
                                                   uint32_t *pStartFlowIdx,
                                                   uint32_t *pFlowIdxOffset);
 
 static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
-                                            Enet_Handle hEnet,
+                                            uint32_t hEnet,
                                             uint32_t coreKey,
                                             uint32_t coreId,
                                             bool useDfltFlow,
@@ -85,7 +85,7 @@ static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
                                             EnetUdma_OpenRxFlowPrms *pRxFlowPrms);
 
 static void EnetAppUtils_closeRxFlowForChIdx(Enet_Type enetType,
-                                            Enet_Handle hEnet,
+                                            uint32_t hEnet,
                                             uint32_t coreKey,
                                             uint32_t coreId,
                                             bool useDfltFlow,
@@ -100,7 +100,7 @@ static void EnetAppUtils_closeRxFlowForChIdx(Enet_Type enetType,
 
 static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
                               uint32_t numRxPkts,
-                              Enet_Handle hEnet, 
+                              uint32_t hEnet, 
                               uint32_t coreKey,
                               uint32_t coreId,
                               uint32_t allocMacAddrCnt,
@@ -108,7 +108,7 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
 
 static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
                               uint32_t numTxPkts,
-                              Enet_Handle hEnet, 
+                              uint32_t hEnet, 
                               uint32_t coreKey,
                               uint32_t coreId,
                               EnetAppTxDmaCfg_Info *txCfg);

@@ -430,7 +430,7 @@ static bool IsMacAddrSet(uint8_t *mac)
     return ((mac[0]|mac[1]|mac[2]|mac[3]|mac[4]|mac[5]) != 0);
 }
 
-static int AddVlan(Enet_Handle hEnet, uint32_t coreId, uint32_t vlanId)
+static int AddVlan(uint32_t hEnet, uint32_t coreId, uint32_t vlanId)
 {
     CpswAle_VlanEntryInfo inArgs;
     uint32_t outArgs;
@@ -463,7 +463,7 @@ static int AddVlan(Enet_Handle hEnet, uint32_t coreId, uint32_t vlanId)
     return status;
 }
 
-int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr,
+int32_t EnetApp_applyClassifier(uint32_t hEnet, uint32_t coreId, uint8_t *dstMacAddr,
                                 uint32_t vlanId, uint32_t ethType, uint32_t rxFlowIdx)
 {
     Enet_IoctlPrms prms;
@@ -511,7 +511,7 @@ int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dst
     return status;
 }
 
-int32_t EnetApp_filterPriorityPacketsCfg(Enet_Handle hEnet, uint32_t coreId)
+int32_t EnetApp_filterPriorityPacketsCfg(uint32_t hEnet, uint32_t coreId)
 {
     EnetMacPort_SetPriorityRegenMapInArgs params;
     Enet_IoctlPrms prms;

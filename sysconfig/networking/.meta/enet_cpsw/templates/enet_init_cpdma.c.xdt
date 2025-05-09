@@ -59,7 +59,7 @@ static void EnetAppUtils_openTxCh(Enet_Handle hEnet,
                                   EnetDma_TxChHandle *pTxChHandle,
                                   EnetCpdma_OpenTxChPrms *pCpswTxChCfg)
 {
-    EnetDma_Handle hDma = Enet_getDmaHandle(hEnet);
+    EnetDma_Handle hDma = EnetSoc_getDmaHandle((hEnet&0xFFFF0000U)>>16, (hEnet&0x0000FFFFU));
     int32_t status;
 
     EnetAppUtils_assert(hDma != NULL);
@@ -110,7 +110,7 @@ static void EnetAppUtils_openRxCh(Enet_Handle hEnet,
                                   uint32_t allocMacAddrCnt,
                                   uint8_t macAddr[ENET_MAX_NUM_MAC_PER_PHER][ENET_MAC_ADDR_LEN])
 {
-    EnetDma_Handle hDma = Enet_getDmaHandle(hEnet);
+    EnetDma_Handle hDma = EnetSoc_getDmaHandle((hEnet&0xFFFF0000U)>>16, (hEnet&0x0000FFFFU));
     int32_t status;
     uint32_t rxFlowStartIdx;
     uint32_t rxFlowIdx;

@@ -76,7 +76,7 @@ typedef struct EnetAppDmaSysCfg_Obj_s
 typedef struct EnetAppSysCfg_Obj_s
 {
 
-    Enet_Handle hEnet;
+    uint32_t hEnet;
 
     EnetAppDmaSysCfg_Obj dma;
 
@@ -103,7 +103,7 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
                           const bool isInNoPhyMode,
                           EnetPer_PortLinkCfg *linkArgs);
 
-static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
+static int32_t EnetApp_enablePorts(uint32_t hEnet,
                                    Enet_Type enetType,
                                    uint32_t instId,
                                    uint32_t coreId,
@@ -121,17 +121,17 @@ void EnetApp_getMacPortLinkCfg(EnetMacPort_LinkCfg *pMacPortLinkCfg, const Enet_
 static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
                                     Enet_Type enetType,
                                     uint32_t instId,
-                                    Enet_Handle hEnet,
+                                    uint32_t hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId);
 
 static void EnetApp_openAllRxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet,
+                                         uint32_t hEnet,
                                          uint32_t coreKey,
                                          uint32_t coreId);
 
 static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet,
+                                         uint32_t hEnet,
                                          uint32_t coreKey,
                                          uint32_t coreId);
 
@@ -149,22 +149,20 @@ void EnetApp_phyStateHandler();
 void EnetApp_phyStateHandler(void * appHandle);
 %}
 
-static Enet_Handle EnetApp_doCpswOpen(Enet_Type enetType, uint32_t instId, const Cpsw_Cfg *cpswCfg)
+static uint32_t EnetApp_doCpswOpen(Enet_Type enetType, uint32_t instId, const Cpsw_Cfg *cpswCfg)
 {
-    void *perCfg = NULL_PTR;
-    uint32_t cfgSize;
-    Enet_Handle hEnet;
+    uint32_t hEnet =-1;
+    int32_t status =ENET_SOK;
+
+    hEnet = EnetSoc_getEnetHandle(enetType, instId);
 
     EnetAppUtils_assert(true == Enet_isCpswFamily(enetType));
 
-    perCfg = (void *)cpswCfg;
-    cfgSize = sizeof(*cpswCfg);
-
-    hEnet = Enet_open(enetType, instId, perCfg, cfgSize);
-    if(hEnet == NULL_PTR)
+    status = Cpsw_open(hEnet, enetType, instId, cpswCfg);
+    if(status != ENET_SOK)
     {
-        EnetAppUtils_print("Enet_open failed\r\n");
-        EnetAppUtils_assert(hEnet != NULL_PTR);
+        EnetAppUtils_print("Cpsw_open failed\r\n");
+        EnetAppUtils_assert(hEnet != -1);
     }
 
     return hEnet;
@@ -191,7 +189,7 @@ void EnetApp_phyStateHandler(void * appHandle)
     {
         SemaphoreP_pend(timerSem, SystemP_WAIT_FOREVER);
         /* Enet_periodicTick should be called from only task context */
-        Enet_periodicTick(hEnetAppObj->hEnet);
+        Cpsw_periodicTick(hEnetAppObj->hEnet);
     }
     hEnetAppObj->timerTaskShutDownDoneFlag = true;
     TaskP_destruct(&hEnetAppObj->task_phyStateHandlerObj);
@@ -248,7 +246,7 @@ static int32_t EnetApp_createPhyStateHandlerTask(EnetAppSysCfg_Obj *hEnetAppObj)
 %if(instance.RtosVariant == "NoRTOS"){
 void EnetApp_phyStateHandler()
 {
-    Enet_periodicTick(gEnetAppSysCfgObj.hEnet);
+    Cpsw_periodicTick(gEnetAppSysCfgObj.hEnet);
 }
 % }
 % }
@@ -259,13 +257,11 @@ void EnetApp_driverInit()
  * Initialization should be done only once.
  */
     int32_t status = ENET_SOK;
-    EnetOsal_Cfg osalPrms;
     EnetUtils_Cfg utilsPrms;
 
     /* Initialize Enet driver with default OSAL, utils */
-    Enet_initOsalCfg(&osalPrms);
     Enet_initUtilsCfg(&utilsPrms);
-    Enet_init(&osalPrms, &utilsPrms);
+    Cpsw_init(&utilsPrms);
 
     status = EnetMem_init();
     EnetAppUtils_assert(ENET_SOK == status);
@@ -281,8 +277,9 @@ void EnetApp_driverDeInit()
  */
 
     EnetMem_deInit();
-    Enet_deinit();
+    Cpsw_deinit();
 }
+
 
 int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 {
@@ -316,7 +313,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 % }
     selfCoreId   = EnetSoc_getCoreId();
     cpswCfg.dmaCfg = (void *)&dmaCfg;
-    Enet_initCfg(enetType, instId, &cpswCfg, sizeof(cpswCfg));
+    Cpsw_initCfg(&cpswCfg);
     cpswCfg.dmaCfg = (void *)&dmaCfg;
 
     EnetApp_getCpswInitCfg(enetType, instId, &cpswCfg);
@@ -337,7 +334,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 %}
 
     gEnetAppSysCfgObj.hEnet = EnetApp_doCpswOpen(enetType, instId, &cpswCfg);
-    EnetAppUtils_assert(NULL != gEnetAppSysCfgObj.hEnet);
+    EnetAppUtils_assert(-1 != gEnetAppSysCfgObj.hEnet);
 
     EnetApp_enablePorts(gEnetAppSysCfgObj.hEnet, enetType, instId, selfCoreId, macPortList, numMacPorts);
 
@@ -399,7 +396,7 @@ static void EnetApp_ConfigureDscpMapping(Enet_Type enetType,
     uint32_t pri;
     uint8_t i;
 
-    Enet_Handle hEnet = Enet_getHandle(enetType, instId);
+    uint32_t hEnet = EnetSoc_getEnetHandle(enetType, instId);
     memset(&setMacDscpInArgs, 0, sizeof(setMacDscpInArgs));
     /* Each Port can have different dscp priority mapping values */
     for (i = 0U; i < numMacPorts; i++)
@@ -555,7 +552,7 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
 
 }
 
-static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
+static int32_t EnetApp_enablePorts(uint32_t hEnet,
                                    Enet_Type enetType,
                                    uint32_t instId,
                                    uint32_t coreId,
@@ -690,7 +687,7 @@ void EnetApp_driverClose(Enet_Type enetType, uint32_t instId)
     uint32_t i;
     Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
     uint8_t numMacPorts;
-    Enet_Handle hEnet = Enet_getHandle(enetType, instId);
+    uint32_t hEnet = EnetSoc_getEnetHandle(enetType, instId);
 
     EnetAppUtils_assert(Enet_isCpswFamily(enetType) == true);
     selfCoreId   = EnetSoc_getCoreId();
@@ -726,7 +723,7 @@ void EnetApp_driverClose(Enet_Type enetType, uint32_t instId)
         }
     }
 
-    Enet_close(hEnet);
+    Cpsw_close(hEnet);
 }
 
 % }
@@ -773,7 +770,7 @@ static uint32_t EnetApp_retrieveFreeTxPkts(EnetDma_TxChHandle hTxCh, EnetDma_Pkt
 static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
                                     Enet_Type enetType,
                                     uint32_t instId,
-                                    Enet_Handle hEnet,
+                                    uint32_t hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId)
 {
@@ -794,7 +791,7 @@ static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
  * Application needs to call this after link-up, Verify timeout
  * is set based on the link-speed from ENET handle.
  */
-void EnetApp_doIetVerification(Enet_Handle hEnet,
+void EnetApp_doIetVerification(uint32_t hEnet,
                                uint32_t coreId,
                                Enet_MacPort macPort)
 {
@@ -863,7 +860,7 @@ static void EnetApp_setPortTsEventPrms(CpswMacPort_TsEventCfg *tsPortEventCfg)
     tsPortEventCfg->domainOffset = 4;
 }
 
-int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId, uint32_t macPort[], uint32_t numPorts)
+int32_t EnetApp_enablePortTsEvent(uint32_t hEnet, uint32_t coreId, uint32_t macPort[], uint32_t numPorts)
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -885,7 +882,7 @@ int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId, uint32_t m
     return status;
 }
 
-int32_t EnetApp_getRxTimeStamp(Enet_Handle hEnet, uint32_t coreId, EnetTimeSync_GetEthTimestampInArgs* inArgs, uint64_t *ts)
+int32_t EnetApp_getRxTimeStamp(uint32_t hEnet, uint32_t coreId, EnetTimeSync_GetEthTimestampInArgs* inArgs, uint64_t *ts)
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -896,7 +893,7 @@ int32_t EnetApp_getRxTimeStamp(Enet_Handle hEnet, uint32_t coreId, EnetTimeSync_
     return status;
 }
 
-int32_t EnetApp_setTimeStampComplete(Enet_Handle hEnet, uint32_t coreId)
+int32_t EnetApp_setTimeStampComplete(uint32_t hEnet, uint32_t coreId)
 {
     int32_t status = ENET_SOK;
     /* Not supported for CPSW, the completion ioctl is only vaild for ICSSG */

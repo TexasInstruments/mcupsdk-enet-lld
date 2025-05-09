@@ -253,7 +253,7 @@ void EnetApp_releaseHandleInfo(Enet_Type enetType, uint32_t instId)
 void EnetApp_acquireHandleInfo(Enet_Type enetType, uint32_t instId,
                                    EnetApp_HandleInfo *handleInfo)
 {
-    handleInfo->hEnet = Enet_getHandle(enetType, instId);
+    handleInfo->hEnet = EnetSoc_getEnetHandle(enetType, instId);
     handleInfo->hUdmaDrv = &gUdmaDrvObj[CONFIG_UDMA_PKTDMA_0];
 }
 
@@ -263,7 +263,7 @@ void EnetApp_coreAttach(Enet_Type enetType, uint32_t instId,
 {
     Enet_IoctlPrms prms;
     int32_t status;
-    Enet_Handle hEnet = Enet_getHandle(enetType, instId);
+    uint32_t hEnet = EnetSoc_getEnetHandle(enetType, instId);
 
     if (NULL_PTR != attachInfo)
     {
@@ -291,7 +291,7 @@ void EnetApp_coreDetach(Enet_Type enetType, uint32_t instId,
 {
     Enet_IoctlPrms prms;
     int32_t status;
-    Enet_Handle hEnet = Enet_getHandle(enetType, instId);
+    uint32_t hEnet = EnetSoc_getEnetHandle(enetType, instId);
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &coreKey);
     ENET_IOCTL(hEnet,
@@ -313,7 +313,7 @@ void EnetApp_releaseHandleInfo(Enet_Type enetType, uint32_t instId)
 % }
 
 %if(instance.ExternalPhyMgmtEnable == false){
-bool EnetApp_isPortLinked(Enet_Handle hEnet)
+bool EnetApp_isPortLinked(uint32_t hEnet)
 {
     Enet_Type enetType;
     uint32_t instId;
@@ -326,7 +326,7 @@ bool EnetApp_isPortLinked(Enet_Handle hEnet)
     uint32_t i;
     uint32_t coreId = EnetSoc_getCoreId();
 
-    status = Enet_getHandleInfo(hEnet, &enetType, &instId);
+    status = Icssg_getHandleInfo(hEnet, &enetType, &instId);
     EnetAppUtils_assert(status == ENET_SOK);
     EnetApp_getEnetInstMacInfo(enetType, instId, macPortList, &numMacPorts);
     for (i = 0; i < numMacPorts; i++)

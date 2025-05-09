@@ -262,7 +262,7 @@ function getTxDmaCfgInitArray(module, instances, indent) {
 %%}
 
 static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
-                                            Enet_Handle hEnet,
+                                            uint32_t hEnet,
                                             uint32_t coreKey,
                                             uint32_t coreId,
                                             bool useDefaultFlow,
@@ -274,7 +274,7 @@ static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
                                             EnetDma_RxChHandle *pRxFlowHandle,
                                             EnetUdma_OpenRxFlowPrms *pRxFlowPrms)
 {
-    EnetDma_Handle hDma = Enet_getDmaHandle(hEnet);
+    EnetDma_Handle hDma = EnetSoc_getDmaHandle((hEnet&0xFFFF0000U)>>16, (hEnet&0x0000FFFFU));
     int32_t status = ENET_SOK;
 
     EnetAppUtils_assert(hDma != NULL);
@@ -306,7 +306,7 @@ static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
 }
 
 static void EnetAppUtils_closeRxFlowForChIdx(Enet_Type enetType,
-                                            Enet_Handle hEnet,
+                                            uint32_t hEnet,
                                             uint32_t coreKey,
                                             uint32_t coreId,
                                             bool useDefaultFlow,
@@ -362,7 +362,7 @@ static void EnetApp_rxPktNotifyCb(void *cbArg)
 
 static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
                               uint32_t numTxPkts,
-                              Enet_Handle hEnet, 
+                              uint32_t hEnet, 
                               uint32_t coreKey,
                               uint32_t coreId,
                               EnetAppTxDmaCfg_Info *txCfg)
@@ -389,7 +389,7 @@ static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
 }
 
 static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
-                              Enet_Handle hEnet, 
+                              uint32_t hEnet, 
                               uint32_t coreKey,
                               uint32_t coreId,
                               uint32_t chIdx,
@@ -401,7 +401,7 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
     Enet_Type enetType;
     uint32_t instId;
 
-    status = Enet_getHandleInfo(hEnet,
+    status = Icssg_getHandleInfo(hEnet,
                                 &enetType,
                                 &instId);
     EnetAppUtils_assert(status == ENET_SOK);
@@ -458,7 +458,7 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
 }
 
 void EnetApp_closeTxDma(uint32_t enetTxDmaChId,
-                        Enet_Handle hEnet, 
+                        uint32_t hEnet, 
                         uint32_t coreKey,
                         uint32_t coreId,
                         EnetDma_PktQ *fqPktInfoQ,
@@ -483,7 +483,7 @@ void EnetApp_closeTxDma(uint32_t enetTxDmaChId,
 }
 
 void EnetApp_closeRxDma(uint32_t enetRxDmaChId,
-                        Enet_Handle hEnet, 
+                        uint32_t hEnet, 
                         uint32_t coreKey,
                         uint32_t coreId,
                         EnetDma_PktQ *fqPktInfoQ,
@@ -498,7 +498,7 @@ void EnetApp_closeRxDma(uint32_t enetRxDmaChId,
     
     };
 
-    status = Enet_getHandleInfo(hEnet,
+    status = Icssg_getHandleInfo(hEnet,
                                 &enetType,
                                 &instId);
     EnetAppUtils_assert(status == ENET_SOK);
@@ -731,7 +731,7 @@ void EnetApp_getRxDmaHandle(uint32_t enetRxDmaChId,
 }
 
 static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet, 
+                                         uint32_t hEnet, 
                                          uint32_t coreKey,
                                          uint32_t coreId)
 {
@@ -745,9 +745,11 @@ static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
                             `getTxDmaCfgInitArray(module, instances, 4)`
                            };
 
+    Enet_Type enetType = (hEnet & (0xFFFF0000U))>>16;
+    uint32_t instId = hEnet & (0x0000FFFFU);
     for (uint32_t chIdx = 0; chIdx < ENET_SYSCFG_TX_CHANNELS_NUM; chIdx++)
     {
-        if (hEnet->enetPer->enetType == txDmaCfg[chIdx].enetType && hEnet->enetPer->instId == txDmaCfg[chIdx].instId)
+        if (enetType == txDmaCfg[chIdx].enetType && instId == txDmaCfg[chIdx].instId)
         {
             txDmaCfg[chIdx].hUdmaDrv     = EnetApp_getUdmaInstanceHandle();
             EnetApp_openTxDma(&dma->tx[chIdx], txNumPkts[chIdx], hEnet, coreKey, coreId, &txDmaCfg[chIdx]);
@@ -756,7 +758,7 @@ static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
 }
 
 static void EnetApp_openAllRxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet, 
+                                         uint32_t hEnet, 
                                          uint32_t coreKey,
                                          uint32_t coreId)
 {
@@ -769,9 +771,11 @@ static void EnetApp_openAllRxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
 
     hUdmaDrv = EnetApp_getUdmaInstanceHandle();
 
+    Enet_Type enetType = (hEnet & (0xFFFF0000U))>>16;
+    uint32_t instId = hEnet & (0x0000FFFFU);
     for (flowIdx = 0; flowIdx<ENET_SYSCFG_RX_FLOWS_NUM; flowIdx++)
     {
-        if(hEnet->enetPer->enetType == rxDmaCfg[flowIdx].enetType && hEnet->enetPer->instId == rxDmaCfg[flowIdx].instId)
+        if(enetType == rxDmaCfg[flowIdx].enetType && instId == rxDmaCfg[flowIdx].instId)
         {
             EnetApp_openRxDma(&dma->rx[flowIdx], hEnet, coreKey, coreId,  rxDmaCfg[flowIdx].chIdx, hUdmaDrv, &rxDmaCfg[flowIdx]);
         }
