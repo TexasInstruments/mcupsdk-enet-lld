@@ -186,8 +186,29 @@ typedef struct CpswCpts_EventStats_s
  */
 typedef struct CpswCpts_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Flag to indicate that a SW push event is already active */
     volatile bool tsPushInFifo;
@@ -256,76 +277,72 @@ typedef CpswCpts_Obj *CpswCpts_Handle;
 /*!
  * \brief Open and initialize CPSW CPTS.
  *
- * \param hMod      Enet Module handle
+ * \param hCpts     CPSW CPTS Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param cptsCfg   CPSW CPTS Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswCpts_open(EnetMod_Handle hMod,
+int32_t CpswCpts_open(CpswCpts_Handle hCpts,
                       Enet_Type enetType,
                       uint32_t instId,
-                      const void *cfg,
-                      uint32_t cfgSize);
+                      const CpswCpts_Cfg *cptsCfg);
 
 /*!
  * \brief Rejoin a running CPSW CPTS module.
  *
- * \param hMod      Enet Module handle
+ * \param hCpts     CPSW CPTS Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswCpts_rejoin(EnetMod_Handle hMod,
+int32_t CpswCpts_rejoin(CpswCpts_Handle hCpts,
                         Enet_Type enetType,
                         uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on CPSW CPTS.
  *
- * \param hMod         Enet Module handle
+ * \param hCpts        CPSW CPTS Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswCpts_ioctl(EnetMod_Handle hMod,
+int32_t CpswCpts_ioctl(CpswCpts_Handle hCpts,
                        uint32_t cmd,
                        Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close CPSW CPTS.
  *
- * \param hMod         Enet Module handle
+ * \param hCpts     CPSW CPTS Module handle
  */
-void CpswCpts_close(EnetMod_Handle hMod);
+void CpswCpts_close(CpswCpts_Handle hCpts);
 
 /*!
  * \brief Saves and Close CPSW CPTS.
  *
- * \param hMod         Enet Module handle
+ * \param hCpts     CPSW CPTS Module handle
  */
-void CpswCpts_saveCtxt(EnetMod_Handle hMod);
+void CpswCpts_saveCtxt(CpswCpts_Handle hCpts);
 
 /*!
  * \brief Restores and Open CPSW CPTS.
  *
- * \param hMod      Enet Module handle
+ * \param hCpts     CPSW CPTS Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param cptsCfg   CPSW CPTS Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswCpts_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswCpts_restoreCtxt(CpswCpts_Handle hCpts,
                              Enet_Type enetType,
                              uint32_t instId,
-                             const void *cfg,
-                             uint32_t cfgSize);
+                             const CpswCpts_Cfg *cptsCfg);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -49,6 +49,7 @@
 #include <include/phy/enetphy.h>
 #include "enetphy_priv.h"
 #include "generic_phy.h"
+#include <include/common/enet_phymdio_dflt.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -270,7 +271,7 @@ EnetPhy_Handle EnetPhy_open(const EnetPhy_Cfg *phyCfg,
                             const EnetPhy_LinkCfg *linkCfg,
                             uint32_t macPortCaps,
                             EnetPhy_MdioHandle hMdio,
-                            void *mdioArgs)
+                            Mdio_Obj * mdioArgs)
 {
     Enet_devAssert(ETHPHYDRV_MAX_OBJ_SIZE >= sizeof(Phy_Obj_t));    
     
@@ -526,32 +527,15 @@ EnetPhy_LinkStatus EnetPhy_tick(EnetPhy_Handle hPhy)
 
 bool EnetPhy_isAlive(EnetPhy_Handle hPhy)
 {
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
-    uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     bool isAlive = false;
-    uint16_t val = 0U;
     int32_t status;
 
     /* Get PHY alive status */
-    if (hMdio->isAlive != NULL)
-    {
-        /* Get alive status from MDIO driver (i.e. hardware assisted) */
-        status = hMdio->isAlive(phyAddr, &isAlive, hPhy->mdioArgs);
-        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
-                         "PHY %u: Failed to get alive status: %d\r\n", phyAddr, status);
-    }
-    else
-    {
-        /* Alternatively, read BMSR - PHY is alive if transaction is successful */
-        status = hMdio->readC22(phyGroup, phyAddr, PHY_BMSR, &val, hPhy->mdioArgs);
-        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
-                         "PHY %u: Failed to read reg %u: %d\r\n", phyAddr, PHY_BMSR, status);
-        if (status == ENETPHY_SOK)
-        {
-            isAlive = true;
-        }
-    }
+    /* Get alive status from MDIO driver (i.e. hardware assisted) */
+    status = EnetPhyMdioDflt_isAlive(phyAddr, &isAlive, hPhy->mdioArgs);
+    ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                    "PHY %u: Failed to get alive status: %d\r\n", phyAddr, status);
 
     return isAlive;
 }
@@ -631,17 +615,15 @@ int32_t EnetPhy_getLinkCfg(EnetPhy_Handle hPhy,
     return status;
 }
 
-int32_t EnetPhy_readReg(void* pArgs,
+int32_t EnetPhy_readReg(EnetPhy_Handle hPhy,
                         uint32_t reg,
                         uint16_t *val)
 {
-	EnetPhy_Handle hPhy = (EnetPhy_Handle)pArgs;
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
     uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     int32_t status;
 
-    status = hMdio->readC22(phyGroup, phyAddr, reg, val, hPhy->mdioArgs);
+    status = EnetPhyMdioDflt_readC22(phyGroup, phyAddr, reg, val, hPhy->mdioArgs);
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: Failed to read reg %u: %d\r\n", phyAddr, reg, status);
     ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
@@ -650,17 +632,15 @@ int32_t EnetPhy_readReg(void* pArgs,
     return status;
 }
 
-int32_t EnetPhy_writeReg(void* pArgs,
+int32_t EnetPhy_writeReg(EnetPhy_Handle hPhy,
                          uint32_t reg,
                          uint16_t val)
 {
-	EnetPhy_Handle hPhy = (EnetPhy_Handle)pArgs;
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
     uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     int32_t status;
 
-    status = hMdio->writeC22(phyGroup, phyAddr, reg, val, hPhy->mdioArgs);
+    status = EnetPhyMdioDflt_writeC22(phyGroup, phyAddr, reg, val, hPhy->mdioArgs);
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: Failed to write reg %u: %d\r\n", phyAddr, reg, status);
     ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
@@ -669,12 +649,11 @@ int32_t EnetPhy_writeReg(void* pArgs,
     return status;
 }
 
-int32_t EnetPhy_rmwReg(void* pArgs,
+int32_t EnetPhy_rmwReg(EnetPhy_Handle hPhy,
                        uint32_t reg,
                        uint16_t mask,
                        uint16_t val)
 {
-	EnetPhy_Handle hPhy = (EnetPhy_Handle)pArgs;
     EnetPhy_MdioHandle hMdio = hPhy->hMdio;
     uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
@@ -701,11 +680,10 @@ int32_t EnetPhy_rmwReg(void* pArgs,
     return status;
 }
 
-int32_t EnetPhy_readExtReg(void* pArgs,
+int32_t EnetPhy_readExtReg(EnetPhy_Handle hPhy,
                            uint32_t reg,
                            uint16_t *val)
 {
-	EnetPhy_Handle hPhy = (EnetPhy_Handle)pArgs;
     int32_t status = ENETPHY_ENOTSUPPORTED;
 
     if ((hPhy->hDrvIf.fxn.name != NULL) &&
@@ -717,11 +695,10 @@ int32_t EnetPhy_readExtReg(void* pArgs,
     return status;
 }
 
-int32_t EnetPhy_writeExtReg(void *pArgs,
+int32_t EnetPhy_writeExtReg(EnetPhy_Handle hPhy,
                             uint32_t reg,
                             uint16_t val)
 {
-    EnetPhy_Handle hPhy = (EnetPhy_Handle)pArgs;
     int32_t status = ENETPHY_ENOTSUPPORTED;
 
     if ((hPhy->hDrvIf.fxn.name != NULL) &&
@@ -763,12 +740,11 @@ int32_t EnetPhy_readC45Reg(EnetPhy_Handle hPhy,
                            uint32_t reg,
                            uint16_t *val)
 {
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
     uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     int32_t status;
 
-    status = hMdio->readC45(phyGroup, phyAddr, mmd, reg, val, hPhy->mdioArgs);
+    status = EnetPhyMdioDflt_readC45(phyGroup, phyAddr, mmd, reg, val, hPhy->mdioArgs);
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: Failed to read MMD %u reg %u: %d\r\n", phyAddr, mmd, reg, status);
     ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
@@ -782,12 +758,11 @@ int32_t EnetPhy_writeC45Reg(EnetPhy_Handle hPhy,
                             uint32_t reg,
                             uint16_t val)
 {
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
     uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     int32_t status;
 
-    status = hMdio->writeC45(phyGroup, phyAddr, mmd, reg, val, hPhy->mdioArgs);
+    status = EnetPhyMdioDflt_writeC45(phyGroup, phyAddr, mmd, reg, val, hPhy->mdioArgs);
     ENETTRACE_ERR_IF(status != ENETPHY_SOK,
                      "PHY %u: Failed to write MMD %u reg %u: %d\r\n", phyAddr, mmd, reg, status);
     ENETTRACE_VERBOSE_IF(status == ENETPHY_SOK,
@@ -1773,33 +1748,15 @@ static uint32_t EnetPhy_findCommonNwayCaps(EnetPhy_Handle hPhy)
 
 static bool EnetPhy_isPhyLinked(EnetPhy_Handle hPhy)
 {
-    EnetPhy_MdioHandle hMdio = hPhy->hMdio;
-    uint32_t phyGroup = hPhy->group;
     uint32_t phyAddr = hPhy->addr;
     bool isLinked = false;
-    uint16_t val = 0U;
     int32_t status;
 
     /* Get PHY link status */
-    if (hMdio->isLinked != NULL)
-    {
-        /* Get link status from MDIO driver (i.e. hardware assisted) */
-        status = hMdio->isLinked(phyAddr, &isLinked, hPhy->mdioArgs);
-        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
-                         "PHY %u: Failed to get link status: %d\r\n", phyAddr, status);
-    }
-    else
-    {
-        /* Alternatively, BMSR[2] Link Status bit can be checked */
-        status = hMdio->readC22(phyGroup, phyAddr, PHY_BMSR, &val, hPhy->mdioArgs);
-        ENETTRACE_ERR_IF(status != ENETPHY_SOK,
-                         "PHY %u: Failed to read reg %u: %d\r\n", phyAddr, PHY_BMSR, status);
-        if ((status == ENETPHY_SOK) &&
-            ((val & BMSR_LINKSTS) != 0U))
-        {
-            isLinked = true;
-        }
-    }
+    /* Get link status from MDIO driver (i.e. hardware assisted) */
+    status = EnetPhyMdioDflt_isLinked(phyAddr, &isLinked, hPhy->mdioArgs);
+    ENETTRACE_ERR_IF(status != ENETPHY_SOK,
+                    "PHY %u: Failed to get link status: %d\r\n", phyAddr, status);
 
     return isLinked;
 }
@@ -1856,7 +1813,7 @@ static int32_t EnetPhy_bindDriver(EnetPhy_Handle hPhy)
                         .EnetPhy_readExtReg = EnetPhy_readExtReg,
                         .EnetPhy_writeExtReg = EnetPhy_writeExtReg,
                         .EnetPhy_rmwReg = EnetPhy_rmwReg,
-                        .pArgs = (void *) hPhy,
+                        .pArgs = hPhy,
                 };
 
                 hPhy->hDrvIf.fxn = hDrvIf.fxn;

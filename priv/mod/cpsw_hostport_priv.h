@@ -46,6 +46,7 @@
 /* ========================================================================== */
 
 #include <include/core/enet_mod_hostport.h>
+#include <include/mod/cpsw_hostport.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -99,8 +100,29 @@ typedef enum CpswHostPort_PrivIoctls_e
  */
 typedef struct CpswHostPort_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Ethernet peripheral type. Required to query SoC parameters (clock freq) */
     Enet_Type enetType;
@@ -127,76 +149,72 @@ typedef CpswHostPort_Obj *CpswHostPort_Handle;
 /*!
  * \brief Open and initialize CPSW host port.
  *
- * \param hMod      Enet Module handle
- * \param enetType  Enet Peripheral type
- * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param hPort       Cpsw Host Port handle
+ * \param enetType    Enet Peripheral type
+ * \param instId      Enet Peripheral instance id
+ * \param hostPortCfg Cpsw host port Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswHostPort_open(EnetMod_Handle hMod,
+int32_t CpswHostPort_open(CpswHostPort_Handle hPort,
                           Enet_Type enetType,
                           uint32_t instId,
-                          const void *cfg,
-                          uint32_t cfgSize);
+                          const CpswHostPort_Cfg *hostPortCfg);
 
 /*!
  * \brief Rejoin a running CPSW host port.
  *
- * \param hMod      Enet Module handle
+ * \param hPort     Cpsw Host Port handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswHostPort_rejoin(EnetMod_Handle hMod,
+int32_t CpswHostPort_rejoin(CpswHostPort_Handle hPort,
                             Enet_Type enetType,
                             uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on CPSW host port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort        Cpsw Host Port handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswHostPort_ioctl(EnetMod_Handle hMod,
+int32_t CpswHostPort_ioctl(CpswHostPort_Handle hPort,
                            uint32_t cmd,
                            Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close CPSW host port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort       Cpsw Host Port handle
  */
-void CpswHostPort_close(EnetMod_Handle hMod);
+void CpswHostPort_close(CpswHostPort_Handle hPort);
 
 /*!
  * \brief Saves and Close CPSW host port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort       Cpsw Host Port handle
  */
-void CpswHostPort_saveCtxt(EnetMod_Handle hMod);
+void CpswHostPort_saveCtxt(CpswHostPort_Handle hPort);
 
 /*!
  * \brief Restores and Open CPSW host port.
  *
- * \param hMod      Enet Module handle
- * \param enetType  Enet Peripheral type
- * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param hPort       Cpsw Host Port handle
+ * \param enetType    Enet Peripheral type
+ * \param instId      Enet Peripheral instance id
+ * \param hostPortCfg Cpsw host port Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswHostPort_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswHostPort_restoreCtxt(CpswHostPort_Handle hPort,
                              Enet_Type enetType,
                              uint32_t instId,
-                             const void *cfg,
-                             uint32_t cfgSize);
+                             const CpswHostPort_Cfg *hostPortCfg);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

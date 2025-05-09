@@ -119,11 +119,10 @@ static CpswMacPortEstIoctlHandlerRegistry_t CpswMacPortEstIoctlHandlerRegistry[]
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t CpswMacPort_openEst(EnetMod_Handle hMod)
+int32_t CpswMacPort_openEst(CpswMacPort_Handle hPort)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_EST_CONFIG estCfg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     int32_t status;
@@ -144,11 +143,10 @@ int32_t CpswMacPort_openEst(EnetMod_Handle hMod)
     return status;
 }
 
-int32_t CpswMacPort_ioctlEst(EnetMod_Handle hMod,
+int32_t CpswMacPort_ioctlEst(CpswMacPort_Handle hPort,
                              uint32_t cmd,
                              Enet_IoctlPrms *prms)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
     Enet_MacPort macPort = hPort->macPort;
     uint32_t portId = ENET_MACPORT_ID(macPort);
     int32_t status = ENET_SOK;
@@ -169,9 +167,8 @@ int32_t CpswMacPort_ioctlEst(EnetMod_Handle hMod,
 
 static void CpswEst_clearEstBuf(CpswMacPort_Handle hPort)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     uint32_t i;
 
@@ -190,9 +187,8 @@ static void CpswEst_clearEstBuf(CpswMacPort_Handle hPort)
 int32_t CpswEst_setState(CpswMacPort_Handle hPort,
                          EnetTas_TasState state)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_PORT_CONTROL portControl;
     CSL_CPSW_EST_CONFIG estCfg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;

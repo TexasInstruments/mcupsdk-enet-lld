@@ -283,23 +283,16 @@ void CpswHostPort_initCfg(CpswHostPort_Cfg *hostPortCfg)
     hostPortCfg->txCsumOffloadEn   = true;
 }
 
-int32_t CpswHostPort_open(EnetMod_Handle hMod,
+int32_t CpswHostPort_open(CpswHostPort_Handle hPort,
                           Enet_Type enetType,
                           uint32_t instId,
-                          const void *cfg,
-                          uint32_t cfgSize)
+                          const CpswHostPort_Cfg *hostPortCfg)
 {
-    CpswHostPort_Handle hPort = (CpswHostPort_Handle)hMod;
-    const CpswHostPort_Cfg *hostPortCfg = (const CpswHostPort_Cfg *)cfg;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)(hPort->virtAddr);
     CSL_CPSW_CONTROL control;
     CSL_CPSW_PTYPE pType;
     CSL_CPSW_CPPI_P0_CONTROL cppiP0ControlCfg;
     uint32_t status = ENET_SOK;
-
-    Enet_devAssert(cfgSize == sizeof(CpswHostPort_Cfg),
-                   "Invalid host port config params size %u (expected %u)\n",
-                   cfgSize, sizeof(CpswHostPort_Cfg));
 
     Enet_devAssert(regs != NULL, "CPSW hostport regs address is not valid\n");
 
@@ -376,12 +369,10 @@ int32_t CpswHostPort_open(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t CpswHostPort_rejoin(EnetMod_Handle hMod,
+int32_t CpswHostPort_rejoin(CpswHostPort_Handle hPort,
                             Enet_Type enetType,
                             uint32_t instId)
 {
-    CpswHostPort_Handle hPort = (CpswHostPort_Handle)hMod;
-
     /* Save peripheral info to use it later to query SoC parameters */
     hPort->enetType = enetType;
     hPort->instId = instId;
@@ -389,9 +380,9 @@ int32_t CpswHostPort_rejoin(EnetMod_Handle hMod,
     return ENET_SOK;
 }
 
-void CpswHostPort_close(EnetMod_Handle hMod)
+void CpswHostPort_close(CpswHostPort_Handle hPort)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
 
     Enet_devAssert(regs != NULL, "CPSW hostport regs address is not valid\n");
 
@@ -399,70 +390,124 @@ void CpswHostPort_close(EnetMod_Handle hMod)
     CSL_CPSW_disablePort0(regs);
 }
 
-void CpswHostPort_saveCtxt(EnetMod_Handle hMod)
+void CpswHostPort_saveCtxt(CpswHostPort_Handle hPort)
 {
-    CpswHostPort_close(hMod);
+    ENETTRACE_VERBOSE("%s: Close module\n", hPort->name);
+
+    bool isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen)
+    {
+        CpswHostPort_close(hPort);
+        hPort->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hPort->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
+    }
 }
 
-int32_t CpswHostPort_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswHostPort_restoreCtxt(CpswHostPort_Handle hPort,
                              Enet_Type enetType,
                              uint32_t instId,
-                             const void *cfg,
-                             uint32_t cfgSize)
+                             const CpswHostPort_Cfg *hostPortCfg)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
     int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hPort->name);
 
-    /* Open the host port*/
-    status = CpswHostPort_open(hMod, enetType, instId, cfg, cfgSize);
+    bool isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
 
-    if (status == ENET_SOK)
+    if (isHostPortOpen == false)
     {
-        /* Enabling host port event */
-        CSL_CPSW_enablePort0(regs);
+        hPort->virtAddr  = (void *)EnetUtils_physToVirt(hPort->physAddr, NULL);
+        hPort->virtAddr2 = (void *)EnetUtils_physToVirt(hPort->physAddr2, NULL);
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)(hPort->virtAddr);
+
+        /* Open the host port*/
+        status = CpswHostPort_open(hPort, enetType, instId, hostPortCfg);
+
+        if (status == ENET_SOK)
+        {
+            /* Enabling host port event */
+            CSL_CPSW_enablePort0(regs);
+        }
+
+        if (status == ENET_SOK)
+        {
+            hPort->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hPort->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hPort->name, status);
+            hPort->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hPort->name);
+        status = ENET_EALREADYOPEN;
     }
 
     return status;
 }
 
-int32_t CpswHostPort_ioctl(EnetMod_Handle hMod,
+int32_t CpswHostPort_ioctl(CpswHostPort_Handle hPort,
                            uint32_t cmd,
                            Enet_IoctlPrms *prms)
 {
-    CpswHostPort_Handle hPort = (CpswHostPort_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
+    bool isHostPortOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hPort->name, cmd, prms);
+
+    isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
+    if (isHostPortOpen == true)
+    {
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)(hPort->virtAddr);
+        status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate CPSW host port IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Validate CPSW host port IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswHostPort_ioctlValidate,
-                                        ENET_ARRAYSIZE(gCpswHostPort_ioctlValidate));
-        }
-        else
-        {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswHostPort_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gCpswHostPort_privIoctlValidate));
-        }
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswHostPort_ioctlValidate,
+                                            ENET_ARRAYSIZE(gCpswHostPort_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswHostPort_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gCpswHostPort_privIoctlValidate));
+            }
 
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
-    }
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
+        if (status == ENET_SOK)
+        {
+            CpswHostPortIoctlHandler * ioctlHandlerFxn;
+
+            Enet_devAssert(regs != NULL, "CPSW hostport regs address is not valid\n");
+
+            ioctlHandlerFxn = CpswHostPort_getIoctlHandlerFxn(cmd, CpswHostPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswHostPortIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hPort, regs, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hPort->name, cmd, status);
+        }
+    }
+    else
     {
-        CpswHostPortIoctlHandler * ioctlHandlerFxn;
-
-        Enet_devAssert(regs != NULL, "CPSW hostport regs address is not valid\n");
-
-        ioctlHandlerFxn = CpswHostPort_getIoctlHandlerFxn(cmd, CpswHostPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswHostPortIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hPort, regs, prms);
+        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
     }
 
     return status;

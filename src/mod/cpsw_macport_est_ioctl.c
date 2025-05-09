@@ -214,9 +214,8 @@ int32_t CpswMacPortEst_ioctl_handler_CPSW_MACPORT_IOCTL_EST_DISABLE_TIMESTAMP(Cp
 static int32_t CpswEst_writeGateControlList(CpswMacPort_Handle hPort,
                                             const EnetTas_ControlList *controlList)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_EST_CONFIG estCfg;
     const EnetTas_GateCmdEntry *cmd;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
@@ -351,9 +350,8 @@ static int32_t CpswEst_writeGateControlList(CpswMacPort_Handle hPort,
 
 static EnetTas_OperStatus CpswEst_getOperListStatus(CpswMacPort_Handle hPort)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     EnetTas_OperStatus operStatus = ENET_TAS_OPER_LIST_NOT_YET_UPDATED;
     CSL_CPSW_PORT_CONTROL portControl;
     CSL_CPGMAC_SL_FIFOSTATUS fifoStatus;
@@ -414,9 +412,8 @@ static EnetTas_OperStatus CpswEst_getOperListStatus(CpswMacPort_Handle hPort)
 
 static EnetTas_TasState CpswEst_getState(CpswMacPort_Handle hPort)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_PORT_CONTROL portControl = {0};
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     EnetTas_TasState state;
@@ -430,9 +427,8 @@ static EnetTas_TasState CpswEst_getState(CpswMacPort_Handle hPort)
 static int32_t CpswEst_enableTimestamp(CpswMacPort_Handle hPort,
                                        const CpswMacPort_EstTimestampCfg *cfg)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_EST_CONFIG estCfg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     int32_t status = ENET_SOK;
@@ -527,9 +523,8 @@ static int32_t CpswEst_enableTimestamp(CpswMacPort_Handle hPort,
 
 static void CpswEst_disableTimestamp(CpswMacPort_Handle hPort)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     CSL_CPSW_EST_CONFIG estCfg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
 
@@ -637,9 +632,8 @@ static int32_t CpswEst_readGateControlList(CpswMacPort_Handle hPort,
                                            bool estBufUpper,
                                            EnetTas_ControlList *controlList)
 {
-    EnetMod_Handle hMod = ENET_MOD(hPort);
     Enet_MacPort macPort = hPort->macPort;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     EnetTas_GateCmdEntry *cmd;
     uint32_t portNum = ENET_MACPORT_NORM(macPort) + 1U;
     uint32_t estBufLoc;

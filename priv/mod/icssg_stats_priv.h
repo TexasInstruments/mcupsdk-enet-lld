@@ -87,8 +87,29 @@ typedef enum Icssg_StatsPrivIoctl_e
  */
 typedef struct IcssgStats_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! MAC port 1 base address */
     uintptr_t port1Addr;
@@ -121,32 +142,28 @@ typedef struct IcssgStats_Obj_s *IcssgStats_Handle;
  * Opens and initializes the ICSSG Stats module.  It doesn't take any
  * configuration parameters.
  *
- * \param hMod      Enet Module handle
+ * \param hStats    ICSSG StatsModule handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters. Must be NULL
- * \param cfgSize   Size of the configuration parameters. Must be 0
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgStats_open(EnetMod_Handle hMod,
+int32_t IcssgStats_open(IcssgStats_Handle hStats,
                         Enet_Type enetType,
-                        uint32_t instId,
-                        const void *cfg,
-                        uint32_t cfgSize);
+                        uint32_t instId);
 
 /*!
  * \brief Rejoin a running ICSSG Stats module.
  *
  * This operation is not currently supported.
  *
- * \param hMod      Enet Module handle
+ * \param hStats    ICSSG StatsModule handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \retval #ENET_ENOTSUPPORTED
  */
-int32_t IcssgStats_rejoin(EnetMod_Handle hMod,
+int32_t IcssgStats_rejoin(IcssgStats_Handle hStats,
                           Enet_Type enetType,
                           uint32_t instId);
 
@@ -155,22 +172,22 @@ int32_t IcssgStats_rejoin(EnetMod_Handle hMod,
  *
  * Runs a Enet Stats IOCTL operation on the ICSSG Stats module.
  *
- * \param hMod         Enet Module handle
+ * \param hStats    ICSSG StatsModule handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgStats_ioctl(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl(IcssgStats_Handle hStats,
                          uint32_t cmd,
                          Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close ICSSG Stats module.
  *
- * \param hMod         Enet Module handle
+ * \param hStats    ICSSG StatsModule handle
  */
-void IcssgStats_close(EnetMod_Handle hMod);
+void IcssgStats_close(IcssgStats_Handle hStats);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

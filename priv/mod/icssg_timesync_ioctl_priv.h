@@ -72,23 +72,23 @@ extern "C" {
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms);
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms);
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(IcssgTimeSync_Handle hTimeSync,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms);
 
-int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                                                              uint32_t cmd,
                                                                              Enet_IoctlPrms *prms);
 

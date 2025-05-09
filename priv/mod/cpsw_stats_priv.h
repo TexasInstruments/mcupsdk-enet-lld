@@ -99,8 +99,29 @@ typedef enum CpswStats_PrivIoctls_e
  */
 typedef struct CpwStats_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Ethernet peripheral type, used to differentiate the statistics counters
      *  in CPSW_2G vs CPSW_9G. */
@@ -142,76 +163,68 @@ typedef CpswStats_Obj *CpswStats_Handle;
 /*!
  * \brief Open and initialize CPSW stats.
  *
- * \param hMod      Enet Module handle
+ * \param hStats    CPSW Statistics Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswStats_open(EnetMod_Handle hMod,
+int32_t CpswStats_open(CpswStats_Handle hStats,
                        Enet_Type enetType,
-                       uint32_t instId,
-                       const void *cfg,
-                       uint32_t cfgSize);
+                       uint32_t instId);
 
 /*!
  * \brief Rejoin a running CPSW stats module.
  *
- * \param hMod      Enet Module handle
+ * \param hStats    CPSW Statistics Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswStats_rejoin(EnetMod_Handle hMod,
+int32_t CpswStats_rejoin(CpswStats_Handle hStats,
                          Enet_Type enetType,
                          uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on CPSW stats.
  *
- * \param hMod         Enet Module handle
+ * \param hStats       CPSW Statistics Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswStats_ioctl(EnetMod_Handle hMod,
+int32_t CpswStats_ioctl(CpswStats_Handle hStats,
                         uint32_t cmd,
                         Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close CPSW stats.
  *
- * \param hMod         Enet Module handle
+ * \param hStats    CPSW Statistics Module handle
  */
-void CpswStats_close(EnetMod_Handle hMod);
+void CpswStats_close(CpswStats_Handle hStats);
 
 /*!
  * \brief Saves and Close CPSW stats.
  *
- * \param hMod         Enet Module handle
+ * \param hStats    CPSW Statistics Module handle
  */
-void CpswStats_saveCtxt(EnetMod_Handle hMod);
+void CpswStats_saveCtxt(CpswStats_Handle hStats);
 
 /*!
  * \brief Restores and Open CPSW stats.
  *
- * \param hMod      Enet Module handle
+ * \param hStats    CPSW Statistics Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswStats_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswStats_restoreCtxt(CpswStats_Handle hStats,
                               Enet_Type enetType,
-                              uint32_t instId,
-                              const void *cfg,
-                              uint32_t cfgSize);
+                              uint32_t instId);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

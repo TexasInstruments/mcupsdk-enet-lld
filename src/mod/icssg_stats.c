@@ -43,7 +43,8 @@
 #include <hw_include/cslr_icss.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <priv/mod/icssg_stats_priv.h>
 #include <priv/mod/icssg_stats_ioctl_priv.h>
 #include <src/per/firmware/icssg/fw_mem_map.h>
@@ -68,7 +69,7 @@
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  */
-typedef int32_t IcssgStatsIoctlHandlerFxn_t(EnetMod_Handle hMod,
+typedef int32_t IcssgStatsIoctlHandlerFxn_t(IcssgStats_Handle hStats,
                                        uint32_t cmd,
                                        Enet_IoctlPrms *prms);
 
@@ -95,16 +96,16 @@ static int32_t IcssgStats_getMacPortStats(IcssgStats_Handle hStats,
 static int32_t IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
                                          Enet_MacPort macPort);
 
-static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(EnetMod_Handle hMod,
+static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(IcssgStats_Handle hStats,
                                                                 uint32_t cmd,
                                                                 IcssgStatsIoctlHandlerTableEntry_t ioctlTbl[],
                                                                 uint32_t numEntries);
 
-int32_t IcssgStats_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_default(IcssgStats_Handle hStats,
                                             uint32_t cmd,
                                             Enet_IoctlPrms *prms);
 
-int32_t IcssgStats_ioctl_handler_ICSSG_STATS_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ICSSG_STATS_IOCTL_REGISTER_HANDLER(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 /* ========================================================================== */
@@ -233,14 +234,11 @@ static IcssgStatsIoctlHandlerTableEntry_t IcssgStatsIoctlHandlerTable[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t IcssgStats_open(EnetMod_Handle hMod,
+int32_t IcssgStats_open(IcssgStats_Handle hStats,
                         Enet_Type enetType,
-                        uint32_t instId,
-                        const void *cfg,
-                        uint32_t cfgSize)
+                        uint32_t instId)
 {
-    IcssgStats_Handle hStats = (IcssgStats_Handle)hMod;
-    uintptr_t baseAddr = (uintptr_t)hMod->virtAddr;
+    uintptr_t baseAddr = (uintptr_t)hStats->virtAddr;
     uintptr_t cfgRegs = baseAddr + CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_G_CFG_REGS_G_REGS_BASE;
 
     /* Statistics addresses need to be set according to ICSSG Enet types:
@@ -283,27 +281,46 @@ int32_t IcssgStats_open(EnetMod_Handle hMod,
     return ENET_SOK;
 }
 
-void IcssgStats_close(EnetMod_Handle hMod)
+void IcssgStats_close(IcssgStats_Handle hStats)
 {
 }
 
-int32_t IcssgStats_rejoin(EnetMod_Handle hMod,
+int32_t IcssgStats_rejoin(IcssgStats_Handle hStats,
                           Enet_Type enetType,
                           uint32_t instId)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgStats_ioctl(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl(IcssgStats_Handle hStats,
                          uint32_t cmd,
                          Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgStatsIoctlHandlerFxn_t * ioctlHandler;
+    bool isStatsOpen = true;
 
-    ioctlHandler = Icssg_getStatsIoctlHandler(hMod, cmd, IcssgStatsIoctlHandlerTable , ENET_ARRAYSIZE(IcssgStatsIoctlHandlerTable));
-    Enet_assert(ioctlHandler != NULL);
-    status = ioctlHandler(hMod, cmd, prms);
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hStats->name, cmd, prms);
+
+    isStatsOpen = (hStats->magic == ENET_MAGIC) ? true : false;
+    if (isStatsOpen == true)
+    {
+        status = ENET_SOK;
+        IcssgStatsIoctlHandlerFxn_t * ioctlHandler;
+
+        ioctlHandler = Icssg_getStatsIoctlHandler(hStats, cmd, IcssgStatsIoctlHandlerTable , ENET_ARRAYSIZE(IcssgStatsIoctlHandlerTable));
+        Enet_assert(ioctlHandler != NULL);
+        status = ioctlHandler(hStats, cmd, prms);
+
+        if(status != ENET_SOK)
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hStats->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hStats->name);
+    }
+
     return status;
 }
 
@@ -398,12 +415,10 @@ static int32_t IcssgStats_resetMacPortStats(IcssgStats_Handle hStats,
     return status;
 }
 
-int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(EnetMod_Handle hMod,
+int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(IcssgStats_Handle hStats,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgStats_Handle hStats = (IcssgStats_Handle)hMod;
-
     Enet_assert(cmd == ENET_STATS_IOCTL_GET_HOSTPORT_STATS);
 
     IcssgStats_Pa *stats = (IcssgStats_Pa *)prms->outArgs;
@@ -414,12 +429,10 @@ int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(EnetMod_Ha
 
 }
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(IcssgStats_Handle hStats,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgStats_Handle hStats = (IcssgStats_Handle)hMod;
-
     Enet_assert(cmd == ENET_STATS_IOCTL_GET_MACPORT_STATS);
 
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
@@ -428,12 +441,10 @@ int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(EnetMod_Hand
     return IcssgStats_getMacPortStats(hStats, macPort, stats);
 }
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(IcssgStats_Handle hStats,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgStats_Handle hStats = (IcssgStats_Handle)hMod;
-
     Enet_assert(cmd == ENET_STATS_IOCTL_RESET_MACPORT_STATS);
 
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
@@ -441,14 +452,14 @@ int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(EnetMod_Ha
     return IcssgStats_resetMacPortStats(hStats, macPort);
 }
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-static int32_t Icssg_getStatsIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t cmd, IcssgStatsIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
+static int32_t Icssg_getStatsIoctlHandlerEntry(IcssgStats_Handle hStats, uint32_t cmd, IcssgStatsIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
 {
     uint32_t i;
     int32_t status;
@@ -473,13 +484,13 @@ static int32_t Icssg_getStatsIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t cmd
     return status;
 }
 
-static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(EnetMod_Handle hMod, uint32_t cmd, IcssgStatsIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
+static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(IcssgStats_Handle hStats, uint32_t cmd, IcssgStatsIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
 {
     uint32_t entryIndex;
     int32_t status;
     IcssgStatsIoctlHandlerFxn_t *ioctlHandler = NULL;
 
-    status = Icssg_getStatsIoctlHandlerEntry(hMod, cmd, ioctlTbl, numEntries, &entryIndex);
+    status = Icssg_getStatsIoctlHandlerEntry(hStats, cmd, ioctlTbl, numEntries, &entryIndex);
     if (status == ENET_SOK)
     {
         Enet_assert(entryIndex < numEntries);
@@ -494,14 +505,14 @@ static IcssgStatsIoctlHandlerFxn_t * Icssg_getStatsIoctlHandler(EnetMod_Handle h
 }
 
 
-int32_t IcssgStats_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_default(IcssgStats_Handle hStats,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgStats_ioctl_handler_registerHandler(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_registerHandler(IcssgStats_Handle hStats,
                                                     uint32_t cmd,
                                                     Enet_IoctlPrms *prms)
 {
@@ -512,7 +523,7 @@ int32_t IcssgStats_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     uint32_t entryIndex;
 
     Enet_assert(cmd == ICSSG_STATS_IOCTL_REGISTER_HANDLER);
-    status = Icssg_getStatsIoctlHandlerEntry(hMod, ioctlHandlerToRegister->cmd,
+    status = Icssg_getStatsIoctlHandlerEntry(hStats, ioctlHandlerToRegister->cmd,
                                         IcssgStatsIoctlHandlerTable ,
                                         ENET_ARRAYSIZE(IcssgStatsIoctlHandlerTable),
                                         &entryIndex);
@@ -531,12 +542,12 @@ int32_t IcssgStats_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t IcssgStats_ioctl_handler_ICSSG_STATS_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ICSSG_STATS_IOCTL_REGISTER_HANDLER(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     int32_t status;
 
-    status = IcssgStats_ioctl_handler_registerHandler(hMod, cmd, prms);
+    status = IcssgStats_ioctl_handler_registerHandler(hStats, cmd, prms);
     return status;
 }

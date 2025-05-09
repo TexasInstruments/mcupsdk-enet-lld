@@ -68,10 +68,10 @@ extern "C" {
         regIoctlInArgs.fxn = (uintptr_t)&CpswCpts_ioctl_handler_##ioctlCmd;                      \
                                                                                                  \
         ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                                  \
-        status = EnetMod_ioctl(hCpts, CPSW_CPTS_IOCTL_REGISTER_HANDLER, &regIoctlPrms);          \
+        status = CpswCpts_ioctl(hCpts, CPSW_CPTS_IOCTL_REGISTER_HANDLER, &regIoctlPrms);          \
         if (ENET_SOK == status)                                                                  \
         {                                                                                        \
-            status = EnetMod_ioctl(hCpts, ioctlCmd,prms);                                        \
+            status = CpswCpts_ioctl(hCpts, ioctlCmd,prms);                                        \
         }                                                                                        \
     } while (0)
 

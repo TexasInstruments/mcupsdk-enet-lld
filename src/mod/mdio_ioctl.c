@@ -125,7 +125,7 @@ static void Mdio_handleIntr(CSL_mdioHandle mdioRegs,
 /* ========================================================================== */
 
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     Enet_Version *version = (Enet_Version *)prms->outArgs;
     CSL_MDIO_VERSION ver = {0};
@@ -141,7 +141,7 @@ int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
@@ -149,7 +149,7 @@ int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(EnetMod_Handle hMod, CSL_m
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     uint32_t *phyAddr = (uint32_t *)prms->inArgs;
     bool *alive = (bool *)prms->outArgs;
@@ -159,7 +159,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, 
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     uint32_t *phyAddr = (uint32_t *)prms->inArgs;
     bool *linked = (bool *)prms->outArgs;
@@ -169,7 +169,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     uint32_t *phyAddr = (uint32_t *)prms->inArgs;
     bool *enabled = (bool *)prms->outArgs;
@@ -197,7 +197,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22ReadInArgs *inArgs = (EnetMdio_C22ReadInArgs *)prms->inArgs;
     uint16_t *val = (uint16_t *)prms->outArgs;
@@ -206,7 +206,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, 
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -232,14 +232,14 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, 
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22WriteInArgs *inArgs = (EnetMdio_C22WriteInArgs *)prms->inArgs;
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -261,14 +261,14 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45ReadInArgs *inArgs = (EnetMdio_C45ReadInArgs *)prms->inArgs;
     uint16_t *val = (uint16_t *)prms->outArgs;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         status = Mdio_readRegC45(mdioRegs,
                                  (uint32_t)inArgs->group,
@@ -292,13 +292,13 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, 
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45WriteInArgs *inArgs = (EnetMdio_C45WriteInArgs *)prms->inArgs;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         status = Mdio_writeRegC45(mdioRegs,
                                   (uint32_t)inArgs->group,
@@ -322,7 +322,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22ReadInArgs *inArgs = (EnetMdio_C22ReadInArgs *)prms->inArgs;
     uint32_t ack;
@@ -330,7 +330,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -355,7 +355,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22ReadInArgs *inArgs = (EnetMdio_C22ReadInArgs *)prms->inArgs;
     uint16_t *val = (uint16_t *)prms->outArgs;
@@ -364,7 +364,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMo
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -398,7 +398,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMo
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22WriteInArgs *inArgs = (EnetMdio_C22WriteInArgs *)prms->inArgs;
     uint32_t ack;
@@ -406,7 +406,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMo
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -432,7 +432,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMo
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22WriteInArgs *inArgs = (EnetMdio_C22WriteInArgs *)prms->inArgs;
     uint32_t ack;
@@ -440,7 +440,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetM
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     uint32_t c45EnMask;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         c45EnMask = CSL_MDIO_getClause45EnableMask(mdioRegs);
         if (ENET_IS_BIT_SET(c45EnMask, inArgs->phyAddr))
@@ -473,14 +473,14 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetM
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45ReadInArgs *inArgs = (EnetMdio_C45ReadInArgs *)prms->inArgs;
     uint32_t ack;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         ack = Mdio_readRegTriggerC45(mdioRegs,
                                 (uint32_t)inArgs->group,
@@ -504,7 +504,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
@@ -512,7 +512,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMo
     uint16_t *val = (uint16_t *)prms->outArgs;
     uint32_t ack;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         ack = Mdio_readRegCompleteC45(mdioRegs,
                                  (uint32_t)inArgs->group,
@@ -544,14 +544,14 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMo
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45WriteInArgs *inArgs = (EnetMdio_C45WriteInArgs *)prms->inArgs;
     uint32_t ack;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         ack = Mdio_writeRegTriggerC45(mdioRegs,
                                   (uint32_t)inArgs->group,
@@ -576,14 +576,14 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMo
     return status;
 }
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45WriteInArgs *inArgs = (EnetMdio_C45WriteInArgs *)prms->inArgs;
     uint32_t ack;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
         ack = Mdio_writeRegCompleteC45(mdioRegs,
                                   (uint32_t)inArgs->group,
@@ -615,7 +615,7 @@ int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetM
     return status;
 }
 
-int32_t Mdio_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     Mdio_Callbacks *callbacks = (Mdio_Callbacks *)prms->inArgs;
     int32_t status = ENET_SOK;
@@ -624,7 +624,7 @@ int32_t Mdio_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(EnetMod_Handle hMod, CSL_mdioH
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
@@ -1002,149 +1002,134 @@ static void Mdio_handleIntr(CSL_mdioHandle mdioRegs,
     }
 }
 
-#define MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, cmd, status)    \
+#define MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, cmd, status)    \
 do {                                                                    \
     if (hMdio->mode == MDIO_MODE_MANUAL)                                \
     {                                                                   \
-        status = Mdio_manual_ioctl_handler_##cmd(hMod, mdioRegs, prms); \
+        status = Mdio_manual_ioctl_handler_##cmd(hMdio, mdioRegs, prms); \
     }                                                                   \
     else                                                                \
     {                                                                   \
-        status = Mdio_normal_ioctl_handler_##cmd(hMod, mdioRegs, prms); \
+        status = Mdio_normal_ioctl_handler_##cmd(hMdio, mdioRegs, prms); \
     }                                                                   \
 } while(0)
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_IS_ALIVE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_IS_ALIVE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_IS_LINKED, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_IS_LINKED, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_IS_POLL_ENABLED, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_IS_POLL_ENABLED, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_READ, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_READ, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_WRITE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_WRITE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_READ, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_READ, status);
     return status;
 }
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_WRITE, status);
-    return status;
-}
-
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
-{
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    int32_t status;
-
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_WRITE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE, status);
     return status;
 }
 
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
     int32_t status;
 
-    MDIO_INVOKE_IOCTL_HANDLER(hMod, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE, status);
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER, status);
+    return status;
+}
+
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+{
+    int32_t status;
+
+    MDIO_INVOKE_IOCTL_HANDLER(hMdio, mdioRegs, prms, ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE, status);
     return status;
 }
 

@@ -247,20 +247,13 @@ static EnetRmIoctlHandlerRegistry_t EnetRmIoctlHandlerRegistry[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t EnetRm_open(EnetMod_Handle hMod,
+int32_t EnetRm_open(EnetRm_Handle hRm,
                     Enet_Type enetType,
                     uint32_t instId,
-                    const void *cfg,
-                    uint32_t cfgSize)
+                    const EnetRm_Cfg *rmCfg)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
-    const EnetRm_Cfg *rmCfg = (const EnetRm_Cfg *)cfg;
     uint32_t i;
     int32_t status = ENET_SOK;
-
-    Enet_devAssert(cfgSize == sizeof(EnetRm_Cfg),
-                   "Invalid RM config params size %u (expected %u)\n",
-                   cfgSize, sizeof(EnetRm_Cfg));
 
     if (rmCfg == NULL)
     {
@@ -296,16 +289,15 @@ int32_t EnetRm_open(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t EnetRm_rejoin(EnetMod_Handle hMod,
+int32_t EnetRm_rejoin(EnetRm_Handle hRm,
                       Enet_Type enetType,
                       uint32_t instId)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-void EnetRm_close(EnetMod_Handle hMod)
+void EnetRm_close(EnetRm_Handle hRm)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
     EnetRm_ResPrms *resInfo = &hRm->cfg.resPartInfo;
     EnetQ *pQ;
     uint32_t txFreeResCnt = 0U;
@@ -362,41 +354,58 @@ void EnetRm_close(EnetMod_Handle hMod)
     }
 }
 
-int32_t EnetRm_ioctl(EnetMod_Handle hMod,
+int32_t EnetRm_ioctl(EnetRm_Handle hRm,
                      uint32_t cmd,
                      Enet_IoctlPrms *prms)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
+    bool isRmOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hRm->name, cmd, prms);
+
+    isRmOpen = (hRm->magic == ENET_MAGIC) ? true : false;
+    if (isRmOpen == true)
+    {
+        status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate Enet RM IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_GENERIC)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Validate Enet RM IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_GENERIC)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gEnetRm_ioctlValidate,
-                                        ENET_ARRAYSIZE(gEnetRm_ioctlValidate));
-        }
-        else
-        {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gEnetRm_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gEnetRm_privIoctlValidate));
-        }
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gEnetRm_ioctlValidate,
+                                            ENET_ARRAYSIZE(gEnetRm_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gEnetRm_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gEnetRm_privIoctlValidate));
+            }
 
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
-    }
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
-    {
-        EnetRmIoctlHandler * ioctlHandlerFxn;
+        if (status == ENET_SOK)
+        {
+            EnetRmIoctlHandler * ioctlHandlerFxn;
 
-        ioctlHandlerFxn = EnetRm_getIoctlHandlerFxn(cmd, EnetRmIoctlHandlerRegistry, ENET_ARRAYSIZE(EnetRmIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hRm, prms);
+            ioctlHandlerFxn = EnetRm_getIoctlHandlerFxn(cmd, EnetRmIoctlHandlerRegistry, ENET_ARRAYSIZE(EnetRmIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hRm, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hRm->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hRm->name);
     }
 
     return status;

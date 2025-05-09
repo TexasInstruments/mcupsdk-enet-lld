@@ -82,59 +82,59 @@ void NullMod_initCfg(NullMod_Cfg *nullModCfg)
     nullModCfg->dummy = 0xBAADBEEF;
 }
 
-int32_t NullMod_open(EnetMod_Handle hMod,
+int32_t NullMod_open(NullMod_Handle hNull,
                      Enet_Type enetType,
                      uint32_t instId,
-                     const void *cfg)
+                     const NullMod_Cfg *nullModCfg)
 {
     int32_t status = ENET_SOK;
 
-    ENETTRACE_INFO("%s: Opening null module\n", hMod->name);
+    ENETTRACE_INFO("%s: Opening null module\n", hNull->name);
 
     /* Check if dummy feature 1 is enabled */
-    if (ENET_FEAT_IS_EN(hMod->features, ENET_NULLMOD_FEAT1))
+    if (ENET_FEAT_IS_EN(hNull->features, ENET_NULLMOD_FEAT1))
     {
-        ENETTRACE_INFO("%s: Feature 1 is enabled\n", hMod->name);
+        ENETTRACE_INFO("%s: Feature 1 is enabled\n", hNull->name);
     }
 
     /* Check if dummy errata 1 is applicable */
-    if (ENET_ERRATA_IS_EN(hMod->errata, ENET_NULLMOD_ERRATA1))
+    if (ENET_ERRATA_IS_EN(hNull->errata, ENET_NULLMOD_ERRATA1))
     {
-        ENETTRACE_INFO("%s: Errata 1 is applicable\n", hMod->name);
+        ENETTRACE_INFO("%s: Errata 1 is applicable\n", hNull->name);
     }
 
     /* Check if dummy errata 2 is applicable */
-    if (ENET_ERRATA_IS_EN(hMod->errata, ENET_NULLMOD_ERRATA2))
+    if (ENET_ERRATA_IS_EN(hNull->errata, ENET_NULLMOD_ERRATA2))
     {
-        ENETTRACE_INFO("%s: Errata 2 is applicable\n", hMod->name);
+        ENETTRACE_INFO("%s: Errata 2 is applicable\n", hNull->name);
     }
 
     return status;
 }
 
-int32_t NullMod_rejoin(EnetMod_Handle hMod,
+int32_t NullMod_rejoin(NullMod_Handle hNull,
                        Enet_Type enetType,
                        uint32_t instId)
 {
     int32_t status = ENET_SOK;
 
-    ENETTRACE_INFO("%s: Rejoining null module\n", hMod->name);
+    ENETTRACE_INFO("%s: Rejoining null module\n", hNull->name);
 
     return status;
 }
 
-int32_t NullMod_ioctl(EnetMod_Handle hMod,
+int32_t NullMod_ioctl(NullMod_Handle hNull,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
-    ENETTRACE_INFO("%s: IOCTL %u on null module\n", hMod->name, cmd);
+    ENETTRACE_INFO("%s: IOCTL %u on null module\n", hNull->name, cmd);
 
     return status;
 }
 
-void NullMod_close(EnetMod_Handle hMod)
+void NullMod_close(NullMod_Handle hNull)
 {
-    ENETTRACE_INFO("%s: Closing null module\n", hMod->name);
+    ENETTRACE_INFO("%s: Closing null module\n", hNull->name);
 }

@@ -65,6 +65,8 @@ extern "C" {
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
+
+typedef struct Icssg_Obj_s Icssg_Obj;
 /*!
  * \brief ICSSG TAS module Private IOCTL commands.Invoked within Enet LLD and not by application
  */
@@ -114,11 +116,32 @@ typedef struct IcssgTas_FwList_s
  */
 typedef struct IcssgTas_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! ICSSG handle. Required internally for ICSSG R30 IOCTL access */
-    void* hIcssg;
+    Icssg_Obj * hIcssg;
 
     /*! TAS state for each port */
     EnetTas_TasState state;
@@ -162,32 +185,28 @@ typedef struct IcssgTas_Obj_s *IcssgTas_Handle;
  * Opens and initializes the ICSSG Tas module.  This functions doesn't expect
  * any config structure, \p cfgSize must be set to 0.
  *
- * \param hMod      Enet Module handle
+ * \param hTas      ICSSG Tas Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters, must be set to NULL
- * \param cfgSize   Size of the configuration parameters, must be set to 0
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgTas_open(EnetMod_Handle hMod,
+int32_t IcssgTas_open(IcssgTas_Handle hTas,
                       Enet_Type enetType,
-                      uint32_t instId,
-                      const void *cfg,
-                      uint32_t cfgSize);
+                      uint32_t instId);
 
 /*!
  * \brief Rejoin a running Tas module.
  *
  * This operation is not currently supported.
  *
- * \param hMod      Enet Module handle
+ * \param hTas      ICSSG Tas Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \retval #ENET_ENOTSUPPORTED
  */
-int32_t IcssgTas_rejoin(EnetMod_Handle hMod,
+int32_t IcssgTas_rejoin(IcssgTas_Handle hTas,
                         Enet_Type enetType,
                         uint32_t instId);
 
@@ -196,22 +215,22 @@ int32_t IcssgTas_rejoin(EnetMod_Handle hMod,
  *
  * Runs a Enet Tas IOCTL operation on the ICSSG Tas module.
  *
- * \param hMod         Enet Module handle
+ * \param hTas         ICSSG Tas Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgTas_ioctl(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl(IcssgTas_Handle hTas,
                        uint32_t cmd,
                        Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close ICSSG Tas module.
  *
- * \param hMod         Enet Module handle
+ * \param hTas         ICSSG Tas Module handle
  */
-void IcssgTas_close(EnetMod_Handle hMod);
+void IcssgTas_close(IcssgTas_Handle hTas);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -45,7 +45,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,18 +79,18 @@ extern "C" {
  *
  * \param hMod      Enet Module handle
  */
-void CpswMacPort_openInterVlan(EnetMod_Handle hMod);
+void CpswMacPort_openInterVlan(CpswMacPort_Handle hPort);
 
 /*!
  * \brief Run an InterVLAN IOCTL operation on CPSW MAC port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort        CPSW MAC port Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_ioctlInterVlan(EnetMod_Handle hMod,
+int32_t CpswMacPort_ioctlInterVlan(CpswMacPort_Handle hPort,
                                    uint32_t cmd,
                                    Enet_IoctlPrms *prms);
 

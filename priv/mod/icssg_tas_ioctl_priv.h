@@ -72,31 +72,31 @@ extern "C" {
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(IcssgTas_Handle hTas,
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(IcssgTas_Handle hTas,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(IcssgTas_Handle hTas,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(IcssgTas_Handle hTas,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(IcssgTas_Handle hTas,
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(IcssgTas_Handle hTas,
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms);
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(IcssgTas_Handle hTas,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms);
 

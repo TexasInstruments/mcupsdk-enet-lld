@@ -45,7 +45,8 @@
 #include <drivers/hw_include/hw_types.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/per/icssg.h>
 #include <src/per/icssg_utils.h>
 #include <priv/mod/icssg_timesync_priv.h>
@@ -148,11 +149,11 @@ typedef struct IcssgTimeSync_SetClkDesc_s
 /*!
  * \brief Time Sync Ioctl Handler Function.
  *
- * \param hPer      Enet Peripheral handle
+ * \param hTimeSync ICSSG TimeSync Peripheral handle
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  */
-typedef int32_t IcssgTimeSyncIoctlHandlerFxn_t(EnetMod_Handle hMod,
+typedef int32_t IcssgTimeSyncIoctlHandlerFxn_t(IcssgTimeSync_Handle hTimeSync,
                                        uint32_t cmd,
                                        Enet_IoctlPrms *prms);
 
@@ -222,16 +223,16 @@ int32_t IcssgTimeSync_configurePktTxDelay(IcssgTimeSync_Handle hTimeSync,
                                           uint8_t portSel,
                                           uint32_t TxDelay);
 
-static IcssgTimeSyncIoctlHandlerFxn_t * Icssg_getTimeSyncIoctlHandler(EnetMod_Handle hMod,
+static IcssgTimeSyncIoctlHandlerFxn_t * Icssg_getTimeSyncIoctlHandler(IcssgTimeSync_Handle hTimeSync,
                                                                 uint32_t cmd,
                                                                 IcssgTimeSyncIoctlHandlerTableEntry_t ioctlTbl[],
                                                                 uint32_t numEntries);
 
-int32_t IcssgTimeSync_ioctl_handler_ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER(IcssgTimeSync_Handle hTimeSync,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
-int32_t  IcssgTimeSync_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_default(IcssgTimeSync_Handle hTimeSync,
                                                 uint32_t cmd,
                                                 Enet_IoctlPrms *prms);
 /* ========================================================================== */
@@ -262,25 +263,18 @@ void IcssgTimeSync_initCfg(IcssgTimeSync_Cfg *timeSyncCfg)
     timeSyncCfg->syncOut_pwidth_WC = 25000U;
 }
 
-int32_t IcssgTimeSync_open(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_open(IcssgTimeSync_Handle hTimeSync,
                            Enet_Type enetType,
                            uint32_t instId,
-                           const void *cfg,
-                           uint32_t cfgSize)
+                           const IcssgTimeSync_Cfg *timeSyncCfg)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
-    IcssgTimeSync_Cfg *timeSyncCfg = (IcssgTimeSync_Cfg *)cfg;
-    uintptr_t iep0Regs = (uintptr_t)hMod->virtAddr;
+    uintptr_t iep0Regs = (uintptr_t)hTimeSync->virtAddr;
     int32_t status = ENET_SOK;
-
-    Enet_devAssert(cfgSize == sizeof(IcssgTimeSync_Cfg),
-                   "Invalid ICCSG TimeSync config params size %u (expected %u)\n",
-                   cfgSize, sizeof(IcssgTimeSync_Cfg));
 
     if ((hTimeSync->clkType == ICSSG_TIMESYNC_CLKTYPE_SYSTEM_TIME) ||
         (hTimeSync->clkType == ICSSG_TIMESYNC_CLKTYPE_GLOBAL_TIME))
     {
-        ENETTRACE_ERR("%s: Clock type (%u) not supported\n", hMod->name, hTimeSync->clkType);
+        ENETTRACE_ERR("%s: Clock type (%u) not supported\n", hTimeSync->name, hTimeSync->clkType);
         status = ENET_ENOTSUPPORTED;
     }
 
@@ -314,9 +308,9 @@ int32_t IcssgTimeSync_open(EnetMod_Handle hMod,
     return status;
 }
 
-void IcssgTimeSync_close(EnetMod_Handle hMod)
+void IcssgTimeSync_close(IcssgTimeSync_Handle hTimeSync)
 {
-    uintptr_t iep0Regs = (uintptr_t)hMod->virtAddr;
+    uintptr_t iep0Regs = (uintptr_t)hTimeSync->virtAddr;
 
     /* Deinit WorkingClock signals */
 
@@ -328,23 +322,41 @@ void IcssgTimeSync_close(EnetMod_Handle hMod)
     //HWREG(iep0Regs + CSL_ICSS_G_PR1_IEP0_SLV_GLOBAL_CFG_REG) = 0U;
 }
 
-int32_t IcssgTimeSync_rejoin(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_rejoin(IcssgTimeSync_Handle hTimeSync,
                              Enet_Type enetType,
                              uint32_t instId)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgTimeSync_ioctl(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl(IcssgTimeSync_Handle hTimeSync,
                             uint32_t cmd,
                             Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTimeSyncIoctlHandlerFxn_t * ioctlHandler;
+    bool isTimeSyncOpen = true;
 
-    ioctlHandler = Icssg_getTimeSyncIoctlHandler(hMod, cmd, IcssgTimeSyncIoctlHandlerTable , ENET_ARRAYSIZE(IcssgTimeSyncIoctlHandlerTable));
-    Enet_assert(ioctlHandler != NULL);
-    status = ioctlHandler(hMod, cmd, prms);
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hTimeSync->name, cmd, prms);
+
+    isTimeSyncOpen = (hTimeSync->magic == ENET_MAGIC) ? true : false;
+
+    if (isTimeSyncOpen == true)
+    {
+        IcssgTimeSyncIoctlHandlerFxn_t * ioctlHandler;
+
+        ioctlHandler = Icssg_getTimeSyncIoctlHandler(hTimeSync, cmd, IcssgTimeSyncIoctlHandlerTable , ENET_ARRAYSIZE(IcssgTimeSyncIoctlHandlerTable));
+        Enet_assert(ioctlHandler != NULL);
+        status = ioctlHandler(hTimeSync, cmd, prms);
+        
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hTimeSync->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hTimeSync->name);
+    }
     return status;
 }
 
@@ -353,8 +365,7 @@ int32_t IcssgTimeSync_setClockTime(IcssgTimeSync_Handle hTimeSync,
                                    uint8_t clkSign,
                                    IcssgTimeSync_Timestamp *clkTime)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTimeSync);
-    uintptr_t sharedRam = (uintptr_t)hMod->virtAddr2;
+    uintptr_t sharedRam = (uintptr_t)hTimeSync->virtAddr2;
     IcssgTimeSync_SetClkDesc setClkDesc;
     uint8_t *pSetClkDesc;
     uint64_t cycleCnt;
@@ -364,14 +375,14 @@ int32_t IcssgTimeSync_setClockTime(IcssgTimeSync_Handle hTimeSync,
 
     if (hTimeSync->setClockOngoing)
     {
-        ENETTRACE_ERR("%s: Cannot set new clock time, previous operation ongoing\n", hMod->name);
+        ENETTRACE_ERR("%s: Cannot set new clock time, previous operation ongoing\n", hTimeSync->name);
         status = ENET_EBUSY;
     }
 
     if (status == ENET_SOK)
     {
         /* Write setclock descriptor to ICSS */
-        Icssg_Handle hIcssg = (Icssg_Handle)hTimeSync->hIcssg;
+        Icssg_Handle hIcssg = hTimeSync->hIcssg;
         cycleTime = hIcssg->cycleTimeNs;
 
         cycleCnt = ((clkTime->seconds * 1000000000) + clkTime->nanoseconds) / cycleTime;
@@ -419,13 +430,13 @@ int32_t IcssgTimeSync_setClockTime(IcssgTimeSync_Handle hTimeSync,
             }
             else
             {
-                ENETTRACE_ERR("%s: Invalid clock sign %u\n", hMod->name, clkSign);
+                ENETTRACE_ERR("%s: Invalid clock sign %u\n", hTimeSync->name, clkSign);
                 status = ENET_EINVALIDPARAMS;
             }
         }
         else
         {
-            ENETTRACE_ERR("%s: Invalid clock mode %u\n", hMod->name, clkMode);
+            ENETTRACE_ERR("%s: Invalid clock mode %u\n", hTimeSync->name, clkMode);
             status = ENET_EINVALIDPARAMS;
         }
 
@@ -442,8 +453,7 @@ int32_t IcssgTimeSync_adjustClock(IcssgTimeSync_Handle hTimeSync,
                                   int32_t drift,
                                   uint32_t syncInterval)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTimeSync);
-    uintptr_t iep0Regs = (uintptr_t)hMod->virtAddr;
+    uintptr_t iep0Regs = (uintptr_t)hTimeSync->virtAddr;
     uint32_t globalCfg = 0U;
     uint32_t compensationPeriod = 0U;
     uint32_t driftCompensationTime = 0U;
@@ -455,7 +465,7 @@ int32_t IcssgTimeSync_adjustClock(IcssgTimeSync_Handle hTimeSync,
     {
         if (driftAbs > syncInterval)
         {
-            ENETTRACE_ERR("%s: Drift is too large %d (exp abs(%d)< %u)\n", hMod->name, drift, syncInterval);
+            ENETTRACE_ERR("%s: Drift is too large %d (exp abs(%d)< %u)\n", hTimeSync->name, drift, syncInterval);
             status = ENET_EINVALIDPARAMS;
         }
 
@@ -497,7 +507,7 @@ int32_t IcssgTimeSync_adjustClock(IcssgTimeSync_Handle hTimeSync,
         if ((compensationPeriod > 0) && (compensationPeriod < 10))
         {
             ENETTRACE_ERR("%s: Invalid compensation period %u, exp < 10\n",
-                          hMod->name, compensationPeriod);
+                          hTimeSync->name, compensationPeriod);
             status = ENET_EINVALIDPARAMS;
         }
     }
@@ -522,9 +532,8 @@ int32_t IcssgTimeSync_adjustClock(IcssgTimeSync_Handle hTimeSync,
 int32_t IcssgTimeSync_getClockTime(IcssgTimeSync_Handle hTimeSync,
                                    uint64_t *tsVal)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTimeSync);
-    uintptr_t iep0Regs = (uintptr_t)hMod->virtAddr;
-    uintptr_t sharedRam = (uintptr_t)hMod->virtAddr2;
+    uintptr_t iep0Regs = (uintptr_t)hTimeSync->virtAddr;
+    uintptr_t sharedRam = (uintptr_t)hTimeSync->virtAddr2;
     uint32_t iepCntHi = 0U;
     uint32_t iepCntHiR = 0U;
     uint32_t iepCntLo = 0U;
@@ -534,7 +543,7 @@ int32_t IcssgTimeSync_getClockTime(IcssgTimeSync_Handle hTimeSync,
 
     if (hTimeSync->setClockOngoing)
     {
-        ENETTRACE_ERR("%s: Cannot set get clock time, previous operation ongoing\n", hMod->name);
+        ENETTRACE_ERR("%s: Cannot set get clock time, previous operation ongoing\n", hTimeSync->name);
         status = ENET_EBUSY;
     }
 
@@ -573,21 +582,20 @@ int32_t IcssgTimeSync_configurePktTxDelay(IcssgTimeSync_Handle hTimeSync,
                                           uint8_t portSel,
                                           uint32_t txDelay)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTimeSync);
-    uintptr_t sharedRam = (uintptr_t)hMod->virtAddr2;
+    uintptr_t sharedRam = (uintptr_t)hTimeSync->virtAddr2;
     int32_t status = ENET_SOK;
 
-    ENETTRACE_DBG("%s: portSel=%u, txDelay=0x%08x\n", hMod->name, portSel, txDelay);
+    ENETTRACE_DBG("%s: portSel=%u, txDelay=0x%08x\n", hTimeSync->name, portSel, txDelay);
 
     if ((portSel != 1) && (portSel != 2))
     {
-        ENETTRACE_ERR("%s: Invalid port number %u\n", hMod->name, portSel);
+        ENETTRACE_ERR("%s: Invalid port number %u\n", hTimeSync->name, portSel);
         status = ENET_EINVALIDPARAMS;
     }
 
     if (txDelay > MAX_PKTTXDELAY)
     {
-        ENETTRACE_ERR("%s: Invalid TX delay %u (exp <= %u)\n", hMod->name, txDelay, MAX_PKTTXDELAY);
+        ENETTRACE_ERR("%s: Invalid TX delay %u (exp <= %u)\n", hTimeSync->name, txDelay, MAX_PKTTXDELAY);
         status = ENET_EINVALIDPARAMS;
     }
 
@@ -606,11 +614,10 @@ int32_t IcssgTimeSync_configurePktTxDelay(IcssgTimeSync_Handle hTimeSync,
     return status;
 }
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP);
@@ -619,17 +626,16 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP(E
 
     status = IcssgTimeSync_getClockTime(hTimeSync, tsVal);
     ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: Failed to get clock time: %d\n", hMod->name, status);
+                        "%s: Failed to get clock time: %d\n", hTimeSync->name, status);
 
     return status;
 
 }
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP);
@@ -645,17 +651,16 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP(EnetMod_H
 
     status = IcssgTimeSync_setClockTime(hTimeSync, clkMode, clkSign, &clkTime);
     ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: Failed to set clock time: %d\n", hMod->name, status);
+                        "%s: Failed to set clock time: %d\n", hTimeSync->name, status);
 
     return status;
 
 }
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP);
@@ -666,17 +671,16 @@ int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(EnetMo
                                         tsAdj->adjValInNsecs,
                                         tsAdj->intervalInNsecs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: Failed to adjust clock: %d\n", hMod->name, status);
+                        "%s: Failed to adjust clock: %d\n", hTimeSync->name, status);
 
     return status;
 
 }
 
-int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(EnetMod_Handle hMod,
+int32_t  IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE(IcssgTimeSync_Handle hTimeSync,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_TIMESYNC_IOCTL_SET_TIMESTAMP_COMPLETE);
@@ -694,8 +698,7 @@ static int32_t IcssgTimeSync_getTxTs(IcssgTimeSync_Handle hTimeSync,
 {
     int32_t hwQLevel;
     int32_t status = ENET_SOK;
-    Icssg_Handle hIcssg = (Icssg_Handle)hTimeSync->hIcssg;
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
+    Icssg_Handle hIcssg = hTimeSync->hIcssg;
     uint32_t *pMgmtPkt = NULL;
     uint32_t txTsId = 0;
     uint64_t tsVal = 0;
@@ -711,7 +714,7 @@ static int32_t IcssgTimeSync_getTxTs(IcssgTimeSync_Handle hTimeSync,
              txTsId = pMgmtPkt[2];
              tsVal = pMgmtPkt[4];
              tsVal = tsVal << 32U | pMgmtPkt[3];
-             tsVal = Icssg_convertTs(hPer, tsVal);
+             tsVal = Icssg_convertTs(hIcssg, tsVal);
 
              /* Pop from port-dependent HwQ, but push into specific HwQ as indicated
               * by bit 23 of word 0, irrespective of port number */
@@ -730,11 +733,10 @@ static int32_t IcssgTimeSync_getTxTs(IcssgTimeSync_Handle hTimeSync,
     return status;
 }
 
-int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(IcssgTimeSync_Handle hTimeSync,
                                                                              uint32_t cmd,
                                                                              Enet_IoctlPrms *prms)
 {
-    IcssgTimeSync_Handle hTimeSync = (IcssgTimeSync_Handle)hMod;
     const EnetTimeSync_GetEthTimestampInArgs *inArgs =
            (const EnetTimeSync_GetEthTimestampInArgs *)prms->inArgs;
     uint64_t *ts = (uint64_t *)prms->outArgs;
@@ -753,7 +755,7 @@ int32_t IcssgTimeSync_ioctl_handler_ENET_TIMESYNC_IOCTL_GET_ETH_TX_TIMESTAMP(Ene
 
 }
 
-static int32_t Icssg_getTimeSyncIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t cmd, IcssgTimeSyncIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
+static int32_t Icssg_getTimeSyncIoctlHandlerEntry(IcssgTimeSync_Handle hTimeSync, uint32_t cmd, IcssgTimeSyncIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
 {
     uint32_t i;
     int32_t status;
@@ -778,13 +780,13 @@ static int32_t Icssg_getTimeSyncIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t 
     return status;
 }
 
-static IcssgTimeSyncIoctlHandlerFxn_t * Icssg_getTimeSyncIoctlHandler(EnetMod_Handle hMod, uint32_t cmd, IcssgTimeSyncIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
+static IcssgTimeSyncIoctlHandlerFxn_t * Icssg_getTimeSyncIoctlHandler(IcssgTimeSync_Handle hTimeSync, uint32_t cmd, IcssgTimeSyncIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
 {
     uint32_t entryIndex;
     int32_t status;
     IcssgTimeSyncIoctlHandlerFxn_t *ioctlHandler = NULL;
 
-    status = Icssg_getTimeSyncIoctlHandlerEntry(hMod, cmd, ioctlTbl, numEntries, &entryIndex);
+    status = Icssg_getTimeSyncIoctlHandlerEntry(hTimeSync, cmd, ioctlTbl, numEntries, &entryIndex);
     if (status == ENET_SOK)
     {
         Enet_assert(entryIndex < numEntries);
@@ -799,14 +801,14 @@ static IcssgTimeSyncIoctlHandlerFxn_t * Icssg_getTimeSyncIoctlHandler(EnetMod_Ha
 }
 
 
-int32_t IcssgTimeSync_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_default(IcssgTimeSync_Handle hTimeSync,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgTimeSync_ioctl_handler_registerHandler(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_registerHandler(IcssgTimeSync_Handle hTimeSync,
                                                     uint32_t cmd,
                                                     Enet_IoctlPrms *prms)
 {
@@ -817,7 +819,7 @@ int32_t IcssgTimeSync_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     uint32_t entryIndex;
 
     Enet_assert(cmd == ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER);
-    status = Icssg_getTimeSyncIoctlHandlerEntry(hMod, ioctlHandlerToRegister->cmd,
+    status = Icssg_getTimeSyncIoctlHandlerEntry(hTimeSync, ioctlHandlerToRegister->cmd,
                                         IcssgTimeSyncIoctlHandlerTable ,
                                         ENET_ARRAYSIZE(IcssgTimeSyncIoctlHandlerTable),
                                         &entryIndex);
@@ -836,12 +838,12 @@ int32_t IcssgTimeSync_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t IcssgTimeSync_ioctl_handler_ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl_handler_ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER(IcssgTimeSync_Handle hTimeSync,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     int32_t status;
 
-    status = IcssgTimeSync_ioctl_handler_registerHandler(hMod, cmd, prms);
+    status = IcssgTimeSync_ioctl_handler_registerHandler(hTimeSync, cmd, prms);
     return status;
 }

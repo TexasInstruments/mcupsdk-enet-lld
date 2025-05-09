@@ -274,8 +274,29 @@ typedef struct CpswMacPort_ModCfg_s
  */
 typedef struct CpswMacPort_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! MAC port number */
     Enet_MacPort macPort;
@@ -331,76 +352,72 @@ typedef CpswMacPort_Obj *CpswMacPort_Handle;
 /*!
  * \brief Open and initialize CPSW MAC port.
  *
- * \param hMod      Enet Module handle
+ * \param hPort     CPSW MAC port Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param macModCfg CPSW MAC port Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_open(EnetMod_Handle hMod,
+int32_t CpswMacPort_open(CpswMacPort_Handle hPort,
                          Enet_Type enetType,
                          uint32_t instId,
-                         const void *cfg,
-                         uint32_t cfgSize);
+                         const CpswMacPort_ModCfg *macModCfg);
 
 /*!
  * \brief Rejoin a running CPSW MAC port.
  *
- * \param hMod      Enet Module handle
+ * \param hPort     CPSW MAC port Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_rejoin(EnetMod_Handle hMod,
+int32_t CpswMacPort_rejoin(CpswMacPort_Handle hPort,
                            Enet_Type enetType,
                            uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on CPSW MAC port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort        CPSW MAC port Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_ioctl(EnetMod_Handle hMod,
+int32_t CpswMacPort_ioctl(CpswMacPort_Handle hPort,
                           uint32_t cmd,
                           Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close CPSW MAC port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort        CPSW MAC port Module handle
  */
-void CpswMacPort_close(EnetMod_Handle hMod);
+void CpswMacPort_close(CpswMacPort_Handle hPort);
 
 /*!
  * \brief Saves and Close CPSW MAC port.
  *
- * \param hMod         Enet Module handle
+ * \param hPort        CPSW MAC port Module handle
  */
-void CpswMacPort_saveCtxt(EnetMod_Handle hMod);
+void CpswMacPort_saveCtxt(CpswMacPort_Handle hPort);
 
 /*!
  * \brief Restores and Open CPSW MAC port.
  *
- * \param hMod      Enet Module handle
+ * \param hPort     CPSW MAC port Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param macModCfg CPSW MAC port Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswMacPort_restoreCtxt(CpswMacPort_Handle hPort,
                                 Enet_Type enetType,
                                 uint32_t instId,
-                                const void *cfg,
-                                uint32_t cfgSize);
+                                const CpswMacPort_ModCfg *macModCfg);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

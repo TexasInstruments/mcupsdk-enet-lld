@@ -1463,8 +1463,7 @@ static int32_t CpswAle_addIPv6Addr(CpswAle_Handle hAle,
 static int32_t CpswAle_setReceiveFilter(CpswAle_Handle hAle,
                                         CpswAle_RxFilter rxFilter)
 {
-    EnetMod_Handle hMod = (EnetMod_Handle)hAle;
-    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+    CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
     int32_t status;
 
     switch (rxFilter)
@@ -2523,13 +2522,12 @@ static int32_t CpswAle_getPolicerDefaultThreadConfig(CpswAle_Handle hAle,
                                                      CSL_AleRegs *regs,
                                                      CpswAle_DfltThreadCfg *defaultThreadCfg)
 {
-    EnetMod_Handle hMod = (EnetMod_Handle)hAle;
     CSL_CPSW_ALE_POLICER_GLOB_CONFIG defThreadConfig = {0};
     CSL_CPSW_ALE_POLICER_CONTROL policerControl;
 
     CSL_CPSW_getAlePolicerGlobConfig(regs, &defThreadConfig);
 
-    if (ENET_FEAT_IS_EN(hMod->features, CPSW_ALE_FEATURE_FLOW_PRIORITY))
+    if (ENET_FEAT_IS_EN(hAle->features, CPSW_ALE_FEATURE_FLOW_PRIORITY))
     {
         /* disableMacPort and priorityOrEn are part of policer control register */
         CSL_CPSW_getAlePolicerControlReg(regs, &policerControl);

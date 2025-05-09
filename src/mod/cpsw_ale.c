@@ -658,24 +658,17 @@ void CpswAle_initCfg(CpswAle_Cfg *aleCfg)
     }
 }
 
-int32_t CpswAle_open(EnetMod_Handle hMod,
+int32_t CpswAle_open(CpswAle_Handle hAle,
                      Enet_Type enetType,
                      uint32_t instId,
-                     const void *cfg,
-                     uint32_t cfgSize)
+                     const CpswAle_Cfg *aleCfg)
 {
-    CpswAle_Handle hAle = (CpswAle_Handle)hMod;
-    const CpswAle_Cfg *aleCfg = (const CpswAle_Cfg *)cfg;
-    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+    CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
 #if ENET_CFG_IS_ON(DEV_ERROR)
     uint32_t numEntries;
     uint32_t numPolicers;
 #endif
     int32_t status = ENET_SOK;
-
-    Enet_devAssert(cfgSize == sizeof(CpswAle_Cfg),
-                   "Invalid ALE config params size %u (expected %u)\n",
-                   cfgSize, sizeof(CpswAle_Cfg));
 
     /* Check supported ALE module versions */
 #if ENET_CFG_IS_ON(DEV_ERROR)
@@ -768,17 +761,16 @@ int32_t CpswAle_open(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t CpswAle_rejoin(EnetMod_Handle hMod,
+int32_t CpswAle_rejoin(CpswAle_Handle hAle,
                        Enet_Type enetType,
                        uint32_t instId)
 {
     return ENET_SOK;
 }
 
-void CpswAle_close(EnetMod_Handle hMod)
+void CpswAle_close(CpswAle_Handle hAle)
 {
-    CpswAle_Handle hAle = (CpswAle_Handle)hMod;
-    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+    CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
     uint32_t i;
 
     hAle->softTimerActive = false;
@@ -793,67 +785,119 @@ void CpswAle_close(EnetMod_Handle hMod)
 
 }
 
-void CpswAle_saveCtxt(EnetMod_Handle hMod)
+void CpswAle_saveCtxt(CpswAle_Handle hAle)
 {
-    CpswAle_close(hMod);
+    ENETTRACE_VERBOSE("%s: Close module\n", hAle->name);
+
+    bool isHostPortOpen = (hAle->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen)
+    {
+        CpswAle_close(hAle);
+        hAle->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hAle->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hAle->name);
+    }
 }
 
-int32_t CpswAle_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswAle_restoreCtxt(CpswAle_Handle hAle,
                             Enet_Type enetType,
                             uint32_t instId,
-                            const void *cfg,
-                            uint32_t cfgSize)
+                            const CpswAle_Cfg *aleCfg)
 {
     int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hAle->name);
 
-    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+    bool isHostPortOpen = (hAle->magic == ENET_MAGIC) ? true : false;
 
-    status = CpswAle_open(hMod, enetType, instId, cfg, cfgSize);
-    if(status == ENET_SOK)
+    if (isHostPortOpen == false)
     {
-        /* Setting ALE host port to Forward state */
-        status = CpswAle_setAlePortState(regs, CPSW_ALE_HOST_PORT_NUM, CSL_ALE_PORTSTATE_FORWARD);
+        hAle->virtAddr  = (void *)EnetUtils_physToVirt(hAle->physAddr, NULL);
+        hAle->virtAddr2 = (void *)EnetUtils_physToVirt(hAle->physAddr2, NULL);
+
+        CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
+
+        status = CpswAle_open(hAle, enetType, instId, aleCfg);
+        if(status == ENET_SOK)
+        {
+            /* Setting ALE host port to Forward state */
+            status = CpswAle_setAlePortState(regs, CPSW_ALE_HOST_PORT_NUM, CSL_ALE_PORTSTATE_FORWARD);
+        }
+
+        if (status == ENET_SOK)
+        {
+            hAle->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hAle->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hAle->name, status);
+            hAle->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hAle->name);
+        status = ENET_EALREADYOPEN;
     }
 
     return status;
 }
 
-int32_t CpswAle_ioctl(EnetMod_Handle hMod,
+int32_t CpswAle_ioctl(CpswAle_Handle hAle,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
+    bool isHostPortOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hAle->name, cmd, prms);
+
+    isHostPortOpen = (hAle->magic == ENET_MAGIC) ? true : false;
+    if (isHostPortOpen == true)
+    {
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate CPSW ALE IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Validate CPSW ALE IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswAle_ioctlValidate,
-                                        ENET_ARRAYSIZE(gCpswAle_ioctlValidate));
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswAle_ioctlValidate,
+                                            ENET_ARRAYSIZE(gCpswAle_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswAle_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gCpswAle_privIoctlValidate));
+            }
+
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
+#endif
+
+        if (status == ENET_SOK)
+        {
+            CpswAleIoctlHandler * ioctlHandlerFxn;
+            CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
+
+            ioctlHandlerFxn = CpswAle_getIoctlHandlerFxn(cmd, CpswAleIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswAleIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hAle, regs, prms);
         }
         else
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswAle_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gCpswAle_privIoctlValidate));
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hAle->name, cmd, status);
         }
-
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
     }
-#endif
-
-    if (status == ENET_SOK)
+    else
     {
-        CpswAleIoctlHandler * ioctlHandlerFxn;
-        CpswAle_Handle hAle = (CpswAle_Handle)hMod;
-        CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
-
-        ioctlHandlerFxn = CpswAle_getIoctlHandlerFxn(cmd, CpswAleIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswAleIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hAle, regs, prms);
+        ENETTRACE_ERR("%s: Module is not open\n", hAle->name);
     }
 
     return status;
@@ -1033,8 +1077,7 @@ static void CpswAle_setAleCfg(CpswAle_Handle hAle,
 
 static int32_t CpswAle_addDefaultEntries(CpswAle_Handle hAle)
 {
-    EnetMod_Handle hMod = (EnetMod_Handle)hAle;
-    CSL_AleRegs *regs = (CSL_AleRegs *)hMod->virtAddr;
+    CSL_AleRegs *regs = (CSL_AleRegs *)hAle->virtAddr;
     CpswAle_PortVlanCfg *pvidCfg;
     uint32_t entryIdx;
     uint32_t i;
@@ -1336,7 +1379,6 @@ int32_t CpswAle_setPolicerDefaultThreadCfg(CpswAle_Handle hAle,
                                            bool priorityOREn,
                                            bool macPortDefaultThreadDis)
 {
-    EnetMod_Handle hMod = (EnetMod_Handle)hAle;
     CSL_CPSW_ALE_POLICER_GLOB_CONFIG defThreadCfg;
     CSL_CPSW_ALE_POLICER_CONTROL policerControl;
 
@@ -1345,7 +1387,7 @@ int32_t CpswAle_setPolicerDefaultThreadCfg(CpswAle_Handle hAle,
 
     CSL_CPSW_setAlePolicerGlobConfig(regs, &defThreadCfg);
 
-    if (ENET_FEAT_IS_EN(hMod->features, CPSW_ALE_FEATURE_FLOW_PRIORITY))
+    if (ENET_FEAT_IS_EN(hAle->features, CPSW_ALE_FEATURE_FLOW_PRIORITY))
     {
         /* disableMacPort and priorityOrEn are part of policer control register */
         CSL_CPSW_getAlePolicerControlReg(regs, &policerControl);
@@ -1668,7 +1710,6 @@ int32_t CpswAle_findVlan(CpswAle_Handle hAle,
                          bool *disallowFrag,
                          uint32_t *entryIdx)
 {
-    EnetMod_Handle hMod = (EnetMod_Handle)hAle;
     CSL_CPSW_ALETABLE_TYPE tableType = hAle->tableType;
     CSL_CPSW_ALE_POLICER_ENTRYTYPE polEntryType;
     uint32_t tableDepth = CpswAle_getMaxAleEntries(regs);
@@ -1730,7 +1771,7 @@ int32_t CpswAle_findVlan(CpswAle_Handle hAle,
                         matchForceUntaggedEgress = vlanEntry.forceUntaggedEgress;
                         matchNoLearnMask         = vlanEntry.noLearnMask;
                         matchIngressCheck        = vlanEntry.ingressCheckFlag;
-                        if (ENET_FEAT_IS_EN(hMod->features, CPSW_ALE_FEATURE_IP_HDR_WHITELIST))
+                        if (ENET_FEAT_IS_EN(hAle->features, CPSW_ALE_FEATURE_IP_HDR_WHITELIST))
                         {
                             matchLimitIpNxtHdr = vlanEntry.limitIPNxtHdr;
                             matchDisallowFrag  = vlanEntry.disallowIPFragmentation;

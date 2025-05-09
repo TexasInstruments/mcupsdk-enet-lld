@@ -52,7 +52,8 @@
 #include <enet_cfg.h>
 #include <include/core/enet_osal.h>
 #include <include/core/enet_queue.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/core/enet_rm.h>
 
 #ifdef __cplusplus
@@ -343,8 +344,29 @@ typedef struct EnetRm_CoreAttachInfo_s
  */
 typedef struct EnetRm_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Configuration parameters passed at open time to the RM module */
     EnetRm_Cfg cfg;
@@ -386,52 +408,50 @@ typedef EnetRm_Obj *EnetRm_Handle;
 /*!
  * \brief Open and initialize Enet RM module.
  *
- * \param hMod      Enet Module handle
+ * \param hRm       Enet RM Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param rmCfg     RM Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t EnetRm_open(EnetMod_Handle hMod,
+int32_t EnetRm_open(EnetRm_Handle hRm,
                     Enet_Type enetType,
                     uint32_t instId,
-                    const void *cfg,
-                    uint32_t cfgSize);
+                    const EnetRm_Cfg *rmCfg);
 
 /*!
  * \brief Rejoin Enet RM module for a running peripheral.
  *
- * \param hMod      Enet Module handle
+ * \param hRm       Enet RM Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t EnetRm_rejoin(EnetMod_Handle hMod,
+int32_t EnetRm_rejoin(EnetRm_Handle hRm,
                       Enet_Type enetType,
                       uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on Enet RM.
  *
- * \param hMod      Enet Module handle
+ * \param hRm       Enet RM Module handle
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t EnetRm_ioctl(EnetMod_Handle hMod,
+int32_t EnetRm_ioctl(EnetRm_Handle hRm,
                      uint32_t cmd,
                      Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close Enet RM module.
  *
- * \param hMod      Enet Module handle
+ * \param hRm       Enet RM Module handle
  */
-void EnetRm_close(EnetMod_Handle hMod);
+void EnetRm_close(EnetRm_Handle hRm);
 
 /*! @} */
 

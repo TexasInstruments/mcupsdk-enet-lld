@@ -45,7 +45,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/mod/cpsw_cpts.h>
 
 #ifdef __cplusplus
@@ -77,7 +78,7 @@ extern "C" {
  *
  * \param hMod         Enet Module handle
  */
-int32_t CpswMacPort_openEst(EnetMod_Handle hMod);
+int32_t CpswMacPort_openEst(CpswMacPort_Handle hPort);
 
 /*!
  * \brief Run a TAS IOCTL operation on CPSW MAC port.
@@ -88,7 +89,7 @@ int32_t CpswMacPort_openEst(EnetMod_Handle hMod);
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswMacPort_ioctlEst(EnetMod_Handle hMod,
+int32_t CpswMacPort_ioctlEst(CpswMacPort_Handle hPort,
                              uint32_t cmd,
                              Enet_IoctlPrms *prms);
 
