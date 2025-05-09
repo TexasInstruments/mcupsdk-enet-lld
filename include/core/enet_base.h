@@ -49,6 +49,7 @@
 #include <include/core/enet_types.h>
 #include <include/core/enet_per.h>
 #include <include/core/enet_trace.h>
+#include <include/core/enet_osal.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -94,7 +95,7 @@ typedef struct Enet_Obj_s
     Enet_Magic magic;
 
     /*! Main, API-level Lock */
-    void *lock;
+    SemaphoreP_enetOsal * lock;
 } Enet_Obj;
 
 /*!

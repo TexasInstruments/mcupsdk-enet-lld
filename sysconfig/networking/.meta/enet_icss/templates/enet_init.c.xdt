@@ -330,13 +330,11 @@ void EnetApp_driverInit()
  * Initialization should be done only once.
  */
     int32_t status = ENET_SOK;
-    EnetOsal_Cfg osalPrms;
     EnetUtils_Cfg utilsPrms;
 
-    /* Initialize Enet driver with default OSAL, utils */
-    Enet_initOsalCfg(&osalPrms);
+    /* Initialize Enet driver with default utils */
     Enet_initUtilsCfg(&utilsPrms);
-    Enet_init(&osalPrms, &utilsPrms);
+    Enet_init(&utilsPrms);
 
     status = EnetMem_init();
     EnetAppUtils_assert(ENET_SOK == status);

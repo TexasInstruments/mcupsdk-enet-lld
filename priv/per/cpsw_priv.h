@@ -199,13 +199,13 @@ typedef struct Cpsw_Obj_s
     Cpsw_PortLinkState portLinkState[CPSW_MAC_PORT_NUM];
 
     /*! Statistics interrupt handle */
-    void *hStatsIntr;
+    HwiP_enetOsal * hStatsIntr;
 
     /*! MDIO interrupt handle */
-    void *hMdioIntr;
+    HwiP_enetOsal * hMdioIntr;
 
     /*! CPTS interrupt handle */
-    void *hCptsIntr;
+    HwiP_enetOsal * hCptsIntr;
 
     /*! MDIO link state change interrupt context */
     Cpsw_MdioLinkIntCtx mdioLinkIntCtx;

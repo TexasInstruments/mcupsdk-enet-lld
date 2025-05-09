@@ -143,20 +143,6 @@ EnetTrace_TraceLevel Enet_setTraceLevel(EnetTrace_TraceLevel level);
 EnetTrace_TraceLevel Enet_getTraceLevel(void);
 
 /*!
- * \brief Initialize OSAL configuration.
- *
- * Initializes the passed OSAL configuration structure with a default
- * implementation which is based on the PDK OSAL library if
- * ENET_CFG_HAS_DEFAULT_OSAL config flag is enabled. Otherwise, the
- * configuration structure will be cleared.
- *
- * The caller can overwrite any OSAL functions after calling this API.
- *
- * \param osalCfg   OSAL configuration parameters
- */
-void Enet_initOsalCfg(EnetOsal_Cfg *osalCfg);
-
-/*!
  * \brief Initialize utils configuration.
  *
  * Initializes the passed utils configuration structure with a default
@@ -172,26 +158,14 @@ void Enet_initOsalCfg(EnetOsal_Cfg *osalCfg);
 void Enet_initUtilsCfg(EnetUtils_Cfg *utilsCfg);
 
 /*!
- * \brief Initialize Enet LLD.
- *
- * One-time initialization of the Enet LLD driver.  This function initializes
- * the OSAL and utils infrastructure that the driver requires for handling
- * multiple peripherals as well as logging and tracing.
- *
- * The Enet LLD provides a default OSAL implementation which is based on PDK
- * OSAL library if ENET_CFG_HAS_DEFAULT_OSAL config flag is enabled.  The
- * default OSAL implementation can be used if the caller passes a NULL
- * \p osalCfg.
  *
  * Similarly, the Enet LLD provides a default utils implementation if
  * ENET_CFG_HAS_DEFAULT_UTILS config flag is set.  The default utils
  * implementation can be used if the caller passes a NULL \p utilsCfg.
  *
- * \param osalCfg   OSAL configuration parameters
  * \param utilsCfg  Utils configuration parameters
  */
-void Enet_init(const EnetOsal_Cfg *osalCfg,
-               const EnetUtils_Cfg *utilsCfg);
+void Enet_init(const EnetUtils_Cfg *utilsCfg);
 
 /*!
  * \brief De-initialize Enet LLD.

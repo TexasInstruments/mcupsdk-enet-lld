@@ -218,16 +218,16 @@ typedef struct Cpsw_Obj_s
     CSL_Xge_cpswRegs *cpswRegs;
 
     /*! CPDMA Rx Threshold interrupt handle */
-    void *hDmaRxThreshIntr;
+    HwiP_enetOsal * hDmaRxThreshIntr;
 
     /*! CPDMA Rx interrupt handle */
-    void *hDmaRxIntr;
+    HwiP_enetOsal * hDmaRxIntr;
 
     /*! CPDMA Tx interrupt handle */
-    void *hDmaTxIntr;
+    HwiP_enetOsal * hDmaTxIntr;
 
     /*! CPDMA Miscellaneous interrupt handle */
-    void *hDmaMiscIntr;
+    HwiP_enetOsal * hDmaMiscIntr;
 
     /*! MDIO link state change interrupt context */
     Cpsw_MdioLinkIntCtx mdioLinkIntCtx;

@@ -50,7 +50,7 @@
 #include <include/core/enet_queue.h>
 #include <priv/core/enet_base_priv.h>
 #include <priv/core/enet_trace_priv.h>
-#include <include/common/enet_osal_dflt.h>
+#include <include/core/enet_osal.h>
 #include <include/common/enet_utils_dflt.h>
 #include <include/core/enet_rm.h>
 #include <include/core/enet_dma.h>

@@ -292,7 +292,7 @@ static err_t LWIPIF_LWIP_IC_send(struct netif *netif,
         pDriverBuf->payloadLen = pStackBuf->tot_len;
     }
 
-    EnetOsal_cacheWb((const void *)pDriverBuf, sizeof(BufPool_Buf));
+    EnetOsal_cacheWb((void *)pDriverBuf, sizeof(BufPool_Buf));
 
     /* Populate the queue node */
     nodeEnq.pDataBuffer = (void*)(pDriverBuf);
@@ -384,7 +384,7 @@ static void LWIPIF_LWIP_IC_recv(void *arg0)
             /* The dequeued node contains pointer to the driver buffer */
             pDriverBuf = (BufPool_Buf*)(pNodeDeq->pDataBuffer);
 
-            EnetOsal_cacheInv((const void*)pDriverBuf, sizeof(BufPool_Buf));
+            EnetOsal_cacheInv((void*)pDriverBuf, sizeof(BufPool_Buf));
 
             if(pDriverBuf->payloadLen > ETH_FRAME_SIZE)
             {

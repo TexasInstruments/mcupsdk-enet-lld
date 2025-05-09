@@ -190,7 +190,7 @@ typedef struct Icssg_Pruss_s
     /*! PRUSS instance lock to be used to protect any operations that involve
      *  any fields of this structure, i.e. using PRUSS driver.
      *  This lock is to be initialized by SoC layer. */
-    void *lock;
+    SemaphoreP_enetOsal *lock;
 } Icssg_Pruss;
 
 /*!
@@ -281,7 +281,7 @@ typedef struct Icssg_MdioLinkIntCtx_s
     /*! PRU Interrupt Event Number */
     uint32_t pruEvtNum[ICSSG_MAC_PORT_MAX];
     /*! MDIO interrupt handle */
-    void *hMdioIntr;
+    HwiP_enetOsal * hMdioIntr;
     const PRUICSS_IntcInitData  *prussIntcInitData;
 } Icssg_MdioLinkIntCtx;
 

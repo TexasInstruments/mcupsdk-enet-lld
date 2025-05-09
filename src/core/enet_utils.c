@@ -96,7 +96,7 @@ typedef struct EnetUtils_Obj_s
     Enet_PhysToVirt physToVirt;
 
     /*! Lock used in print functions */
-    void *printLock;
+    SemaphoreP_enetOsal *printLock;
 
     /*! Print buffer */
     char printBuf[ENET_CFG_PRINT_BUF_LEN];

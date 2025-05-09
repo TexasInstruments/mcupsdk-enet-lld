@@ -58,7 +58,7 @@
 #include <include/core/enet_mod_tas.h>
 #include <priv/core/enet_base_priv.h>
 #include <priv/core/enet_trace_priv.h>
-#include <include/common/enet_osal_dflt.h>
+#include <include/core/enet_osal.h>
 #include <include/common/enet_utils_dflt.h>
 #include <drivers/soc.h>
 
@@ -720,15 +720,6 @@ EnetTrace_TraceLevel Enet_getTraceLevel(void)
     return EnetTrace_getLevel();
 }
 
-void Enet_initOsalCfg(EnetOsal_Cfg *cfg)
-{
-#if ENET_CFG_IS_ON(HAS_DEFAULT_OSAL)
-    EnetOsalDflt_initCfg(cfg);
-#else
-    memset(cfg, 0, sizeof(*cfg));
-#endif
-}
-
 void Enet_initUtilsCfg(EnetUtils_Cfg *cfg)
 {
 #if ENET_CFG_IS_ON(HAS_DEFAULT_UTILS)
@@ -807,28 +798,17 @@ void Enet_initCfg(Enet_Type enetType,
     }
 }
 
-void Enet_init(const EnetOsal_Cfg *osalCfg,
-               const EnetUtils_Cfg *utilsCfg)
+void Enet_init(const EnetUtils_Cfg *utilsCfg)
 {
     Enet_Handle hEnet;
     uint32_t count;
     uint32_t i;
-#if ENET_CFG_IS_ON(HAS_DEFAULT_OSAL)
-    EnetOsal_Cfg dfltOsalCfg;
-#endif
 #if ENET_CFG_IS_ON(HAS_DEFAULT_UTILS)
     EnetUtils_Cfg dfltUtilsCfg;
 #endif
 
-    /* If defaut OSAL and/or utils is enabled, use them in case
+    /* If utils is enabled, use them in case
      * the application hasn't provided any */
-#if ENET_CFG_IS_ON(HAS_DEFAULT_OSAL)
-    if (osalCfg == NULL)
-    {
-        EnetOsalDflt_initCfg(&dfltOsalCfg);
-        osalCfg = &dfltOsalCfg;
-    }
-#endif
 #if ENET_CFG_IS_ON(HAS_DEFAULT_UTILS)
     if (utilsCfg == NULL)
     {
@@ -837,7 +817,6 @@ void Enet_init(const EnetOsal_Cfg *osalCfg,
     }
 #endif
 
-    EnetOsal_init(osalCfg);
     EnetUtils_init(utilsCfg);
     EnetSoc_init();
 
@@ -875,7 +854,6 @@ void Enet_deinit(void)
 
     EnetSoc_deinit();
     EnetUtils_deinit();
-    EnetOsal_deinit();
 }
 
 Enet_Handle Enet_getHandle(Enet_Type enetType,
