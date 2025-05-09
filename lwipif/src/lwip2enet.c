@@ -178,7 +178,7 @@ static void Lwip2Enet_freeTxPktCb(void *cbArg,
                                   EnetDma_PktQ *fqPktInfoQ,
                                   EnetDma_PktQ *cqPktInfoQ);
 
-static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, Enet_Handle hEnet,uint8_t macAddr[ENET_MAC_ADDR_LEN]);
+static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, uint32_t hEnet,uint8_t macAddr[ENET_MAC_ADDR_LEN]);
 
 Lwip2Enet_RxMode_t LwipifEnetAppCb_getRxMode(Enet_Type enetType, uint32_t instId);
 
@@ -530,17 +530,19 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif)
         Lwip2Enet_print(hLwip2Enet, "Lwip2Enet_close() failed to retrieve all PktInfo\n");
     }
 
+    Enet_Type enetType = Enet_getEnetType(pInterface->hEnet);
+    uint32_t instId = Enet_getInstId(pInterface->hEnet);
     /* Deinit TX and RX objects, delete task, semaphore, etc */
     for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
     {
-        Lwip2Enet_deinitTxObj(pInterface->hEnet->enetPer->enetType, pInterface->hEnet->enetPer->instId, pInterface->hTx[idx]);
+        Lwip2Enet_deinitTxObj(enetType, instId, pInterface->hTx[idx]);
         hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hTx[idx]->freePktInfoQ);
         pInterface->hTx[idx] = NULL;
     }
 
     for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
     {
-        Lwip2Enet_deinitRxObj(pInterface->hEnet->enetPer->enetType, pInterface->hEnet->enetPer->instId, pInterface->hRx[idx]);
+        Lwip2Enet_deinitRxObj(enetType, instId, pInterface->hRx[idx]);
 
         hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hRx[idx]->readyRxPktQ);
         hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hRx[idx]->freeRxPktInfoQ);
@@ -1649,7 +1651,7 @@ static void Lwip2Enet_createTimer(Lwip2Enet_Handle hLwip2Enet)
 }
 
 #if ENET_ENABLE_PER_ICSSG
-static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, Enet_Handle hEnet, uint8_t macAddr[ENET_MAC_ADDR_LEN])
+static int32_t Lwip2Enet_setMacAddress(const Enet_Type enetType, uint32_t instId, uint32_t hEnet, uint8_t macAddr[ENET_MAC_ADDR_LEN])
 {
     int32_t  status = ENET_SOK;
     uint32_t coreId = EnetSoc_getCoreId();

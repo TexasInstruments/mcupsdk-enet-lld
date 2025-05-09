@@ -178,7 +178,7 @@ EnetDma_Handle EnetSoc_getDmaHandle(Enet_Type enetType,
  * \return Eth driver handle. NULL if index is greater than the number of
  *         peripherals present in the SoC.
  */
-Enet_Handle EnetSoc_getEnetHandleByIdx(uint32_t idx);
+uint32_t EnetSoc_getEnetHandleByIdx(uint32_t idx);
 
 /*!
  * \brief Get handle of the Enet driver for a given Ethernet peripheral.
@@ -191,7 +191,7 @@ Enet_Handle EnetSoc_getEnetHandleByIdx(uint32_t idx);
  *
  * \return Eth driver handle. NULL if no driver was found.
  */
-Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
+uint32_t EnetSoc_getEnetHandle(Enet_Type enetType,
                                   uint32_t instId);
 
 /*!

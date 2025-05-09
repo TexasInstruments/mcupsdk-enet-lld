@@ -185,22 +185,71 @@ extern "C" {
  *                     #ENET_SINPROGRESS if operation is asynchronous and was initiated successfully.
  *                     \ref Enet_ErrorCodes in case of any failure.
  */
+#ifdef ENET_CPSW
 #define ENET_IOCTL(hEnet, coreId, ioctlCmd, prms, status)                         \
     do {                                                                          \
-        extern int32_t Enet_ioctl(Enet_Handle enetHandle,                         \
-                   uint32_t ioctlCoreId,                                          \
-                   uint32_t cmd,                                                  \
-                   Enet_IoctlPrms *ioctlPrms);                                    \
+        extern int32_t Cpsw_ioctl(uint32_t enetHandle,                                 \
+                                      uint32_t cmd,                               \
+                                      Enet_IoctlPrms *ioctlPrms);                 \
+        extern int32_t Enet_ioctl_register_##ioctlCmd(uint32_t enetHandle,             \
+                                                      uint32_t ioctlCoreId);      \
                                                                                   \
+        status = Enet_ioctl_register_##ioctlCmd(hEnet, coreId);                   \
+        if (ENET_SOK == status)                                                   \
+        {                                                                         \
+                status = Cpsw_ioctl(hEnet, ioctlCmd, prms);                       \
+        }                                                                         \
+    } while (0)
+#endif
+
+#ifdef ENET_ICSSG
+#define ENET_IOCTL(hEnet, coreId, ioctlCmd, prms, status)                         \
+    do {                                                                          \
+       extern int32_t Icssg_ioctl(uint32_t enetHandle,                         \
+                                      uint32_t cmd,                               \
+                                      Enet_IoctlPrms *ioctlPrms);                 \
+        extern int32_t Enet_ioctl_register_##ioctlCmd(uint32_t enetHandle,     \
+                                                      uint32_t ioctlCoreId);      \
+                                                                                  \
+        status = Enet_ioctl_register_##ioctlCmd(hEnet, coreId);                   \
+        if (ENET_SOK == status)                                                   \
+        {                                                                         \
+                status = Icssg_ioctl(hEnet, ioctlCmd, prms);                      \
+        }                                                                         \
+    } while (0)
+#endif
+
+#ifdef ENET_CPSW_AND_ICSSG
+#define ENET_IOCTL(hEnet, coreId, ioctlCmd, prms, status)                         \
+    do {                                                                          \
+        bool isCpsw = ((hEnet->enetPer->enetType == ENET_GMAC_3G) ||              \
+                       (hEnet->enetPer->enetType == ENET_CPSW_2G) ||              \
+                       (hEnet->enetPer->enetType == ENET_CPSW_3G) ||              \
+                       (hEnet->enetPer->enetType == ENET_CPSW_5G) ||              \
+                       (hEnet->enetPer->enetType == ENET_CPSW_9G));               \
+        extern int32_t Cpsw_ioctl(Enet_Handle enetHandle,                         \
+                                      uint32_t cmd,                               \
+                                      Enet_IoctlPrms *ioctlPrms);                 \
+       extern int32_t Icssg_ioctl(Enet_Handle enetHandle,                         \
+                                      uint32_t cmd,                               \
+                                      Enet_IoctlPrms *ioctlPrms);                 \
         extern int32_t Enet_ioctl_register_##ioctlCmd(Enet_Handle enetHandle,     \
                                                       uint32_t ioctlCoreId);      \
                                                                                   \
         status = Enet_ioctl_register_##ioctlCmd(hEnet, coreId);                   \
         if (ENET_SOK == status)                                                   \
         {                                                                         \
-            status = Enet_ioctl(hEnet, coreId, ioctlCmd, prms);                   \
+            if(isCpsw == true)                                                    \
+            {                                                                     \
+                status = Cpsw_ioctl(hEnet, ioctlCmd, prms);                       \
+            }                                                                     \
+            else                                                                  \
+            {                                                                     \
+                status = Icssg_ioctl(hEnet, ioctlCmd, prms);                      \
+            }                                                                     \
         }                                                                         \
     } while (0)
+#endif
 
 
 /* ========================================================================== */

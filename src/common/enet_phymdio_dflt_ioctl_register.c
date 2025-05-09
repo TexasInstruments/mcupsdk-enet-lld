@@ -55,6 +55,51 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
+#ifdef ENET_CPSW
+#define ENET_PHY_MDIO_DEFAULT_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                       \
+int32_t Enet_ioctl_register_##x(uint32_t hEnet, uint32_t coreId)                      \
+                                                                                      \
+{                                                                                     \
+    int32_t  status;                                                                  \
+    Enet_IoctlPrms prms;                                                              \
+    Enet_IoctlRegisterHandlerInArgs inArgs;                                           \
+                                                                                      \
+    extern int32_t Cpsw_ioctl(uint32_t enetHandle,                                    \
+        uint32_t cmd,                                                                 \
+        Enet_IoctlPrms *ioctlPrms);                                                   \
+                                                                                      \
+    inArgs.cmd = x;                                                                   \
+    inArgs.fxn = (uintptr_t)&EnetPhyMdioDflt_ioctl_handler_##x;                       \
+                                                                                      \
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
+    status = Cpsw_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms);         \
+    return  status;                                                                   \
+}
+#endif
+
+#ifdef ENET_ICSSG
+#define ENET_PHY_MDIO_DEFAULT_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                       \
+int32_t Enet_ioctl_register_##x(uint32_t hEnet, uint32_t coreId)                   \
+                                                                                      \
+{                                                                                     \
+    int32_t  status;                                                                  \
+    Enet_IoctlPrms prms;                                                              \
+    Enet_IoctlRegisterHandlerInArgs inArgs;                                           \
+                                                                                      \
+    extern int32_t Icssg_ioctl(uint32_t enetHandle,                                \
+        uint32_t cmd,                                                                 \
+        Enet_IoctlPrms *ioctlPrms);                                                   \
+                                                                                      \
+    inArgs.cmd = x;                                                                   \
+    inArgs.fxn = (uintptr_t)&EnetPhyMdioDflt_ioctl_handler_##x;                       \
+                                                                                      \
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
+    status = Icssg_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms);        \
+    return  status;                                                                   \
+}
+#endif
+
+#ifdef ENET_CPSW_AND_ICSSG
 #define ENET_PHY_MDIO_DEFAULT_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                       \
 int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)                   \
                                                                                       \
@@ -63,14 +108,36 @@ int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)             
     Enet_IoctlPrms prms;                                                              \
     Enet_IoctlRegisterHandlerInArgs inArgs;                                           \
                                                                                       \
+    bool isCpsw = ((hEnet->enetPer->enetType == ENET_GMAC_3G) ||                      \
+                       (hEnet->enetPer->enetType == ENET_CPSW_2G) ||                  \
+                       (hEnet->enetPer->enetType == ENET_CPSW_3G) ||                  \
+                       (hEnet->enetPer->enetType == ENET_CPSW_5G) ||                  \
+                       (hEnet->enetPer->enetType == ENET_CPSW_9G));                   \
+                                                                                      \
+    extern int32_t Cpsw_ioctl(Enet_Handle enetHandle,                                 \
+        uint32_t cmd,                                                                 \
+        Enet_IoctlPrms *ioctlPrms);                                                   \
+                                                                                      \
+    extern int32_t Icssg_ioctl(Enet_Handle enetHandle,                                \
+        uint32_t cmd,                                                                 \
+        Enet_IoctlPrms *ioctlPrms);                                                   \
+                                                                                      \
     inArgs.cmd = x;                                                                   \
     inArgs.fxn = (uintptr_t)&EnetPhyMdioDflt_ioctl_handler_##x;                       \
                                                                                       \
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
-    status = Enet_ioctl(hEnet, coreId, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
+    if(isCpsw)                                                                        \
+    {                                                                                 \
+        status = Cpsw_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms);     \
+    }                                                                                 \
+    else                                                                              \
+    {                                                                                 \
+        status = Icssg_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms);    \
+    }                                                                                 \
     return  status;                                                                   \
                                                                                       \
 }
+#endif
 
 
 /* ========================================================================== */

@@ -82,6 +82,10 @@ extern "C" {
 /*                         Structures and Enums                               */
 /* ========================================================================== */
 
+typedef struct SemaphoreP_enetOsal_s SemaphoreP_enetOsal;
+
+typedef struct HwiP_enetOsal_s HwiP_enetOsal;
+
 /*!
  * \brief MDIO status change (MDIO_LINKINT) context.
  */
@@ -129,8 +133,39 @@ typedef struct Cpsw_PortLinkState_s
  */
 typedef struct Cpsw_Obj_s
 {
-    /*! Enet peripheral object. Must be first member */
-    EnetPer_Obj enetPer;
+    /*! Peripheral name */
+    const char *name;
+
+    /*! Peripheral type */
+    Enet_Type enetType;
+
+    /*! Peripheral instance id */
+    uint32_t instId;
+
+    /*! Peripheral initialization magic */
+    Enet_Magic magic;
+
+    /*! Peripheral's physical address. Used for peripherals that have registers
+     *  that are not part of any module (i.e. peripherals that have a wrapper
+     *  subsystem).
+     *  It can be set to 0 for peripherals that  don't have have additional
+     *  registers other than those of their modules. */
+    uint64_t physAddr;
+
+    /*! Peripheral's virtual address */
+    void *virtAddr;
+
+    /*! Peripheral's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Peripheral's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Peripheral features */
+    uint32_t features;
+
+    /*! Peripheral applicable errata */
+    uint32_t errata;
 
     /*! Host port module */
     CpswHostPort_Obj hostPortObj;
@@ -168,29 +203,8 @@ typedef struct Cpsw_Obj_s
     /*! CPSW DMA Rx Reserved flow Id */
     uint32_t rsvdFlowId;
 
-    /*! Host port handle */
-    EnetMod_Handle hHostPort;
-
-    /*! MAC port handles */
-    EnetMod_Handle hMacPort[CPSW_MAC_PORT_NUM];
-
     /*! PHY handles */
     EnetPhy_Handle hPhy[CPSW_MAC_PORT_NUM];
-
-    /*! ALE handle */
-    EnetMod_Handle hAle;
-
-    /*! CPTS handle */
-    EnetMod_Handle hCpts;
-
-    /*! MDIO handle */
-    EnetMod_Handle hMdio;
-
-    /*! Network statistics handle */
-    EnetMod_Handle hStats;
-
-    /*! Resource Manager handle */
-    EnetMod_Handle hRm;
 
     /*! Core on which Cpsw_Open() is executed */
     uint32_t selfCoreId;
@@ -199,13 +213,13 @@ typedef struct Cpsw_Obj_s
     Cpsw_PortLinkState portLinkState[CPSW_MAC_PORT_NUM];
 
     /*! Statistics interrupt handle */
-    void *hStatsIntr;
+    HwiP_enetOsal * hStatsIntr;
 
     /*! MDIO interrupt handle */
-    void *hMdioIntr;
+    HwiP_enetOsal * hMdioIntr;
 
     /*! CPTS interrupt handle */
-    void *hCptsIntr;
+    HwiP_enetOsal * hCptsIntr;
 
     /*! MDIO link state change interrupt context */
     Cpsw_MdioLinkIntCtx mdioLinkIntCtx;
@@ -240,6 +254,9 @@ typedef struct Cpsw_Obj_s
 
     /* Saving CpswCfg before resetting */
     Cpsw_Cfg context;
+
+    /*! Main, API-level Lock */
+    SemaphoreP_enetOsal * lock;
 } Cpsw_Obj;
 
 /*!
@@ -258,21 +275,48 @@ typedef Cpsw_Obj *Cpsw_Handle;
 /* ========================================================================== */
 
 /*!
+ * \brief Initialize Enet LLD.
+ *
+ * One-time initialization of the Enet LLD driver.  This function initializes
+ * the OSAL and utils infrastructure that the driver requires for handling
+ * multiple peripherals as well as logging and tracing.
+ *
+ * The Enet LLD provides a default OSAL implementation which is based on PDK
+ * OSAL library if ENET_CFG_HAS_DEFAULT_OSAL config flag is enabled.  The
+ * default OSAL implementation can be used if the caller passes a NULL
+ * \p osalCfg.
+ *
+ * Similarly, the Enet LLD provides a default utils implementation if
+ * ENET_CFG_HAS_DEFAULT_UTILS config flag is set.  The default utils
+ * implementation can be used if the caller passes a NULL \p utilsCfg.
+ *
+ * \param osalCfg   OSAL configuration parameters
+ * \param utilsCfg  Utils configuration parameters
+ */
+
+void Cpsw_init(const EnetUtils_Cfg *utilsCfg);
+
+/*!
+ * \brief De-initialize Enet LLD.
+ *
+ * One-time de-initialization of the Enet LLD driver.  This function clears
+ * the OSAL and utils config parameters passed during Enet_init().
+ *
+ * It's expected to be called once all Ethernet peripherals have been closed
+ * via Enet_close().
+ */
+
+void Cpsw_deinit(void);
+
+/*!
  * \brief Initialize CPSW peripheral's configuration parameters.
  *
  * Initializes the configuration parameter of the CPSW peripheral.
  *
- * \param hPer      Enet Peripheral handle
- * \param enetType  Enet Peripheral type
- * \param cfg       Configuration parameters to be initialized.  The config
+ * \param cpswCfg   Configuration parameters to be initialized.  The config
  *                  is of type #Cpsw_Cfg.
- * \param cfgSize   Size of the configuration parameters.  It must be the size
- *                  of #Cpsw_Cfg config structure.
  */
-void Cpsw_initCfg(EnetPer_Handle hPer,
-                  Enet_Type enetType,
-                  void *cfg,
-                  uint32_t cfgSize);
+void Cpsw_initCfg(Cpsw_Cfg *cpswCfg);
 
 /*!
  * \brief Open and initialize the CPSW Peripheral.
@@ -290,11 +334,10 @@ void Cpsw_initCfg(EnetPer_Handle hPer,
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_open(EnetPer_Handle hPer,
+int32_t Cpsw_open(uint32_t hEnet,
                   Enet_Type enetType,
                   uint32_t instId,
-                  const void *cfg,
-                  uint32_t cfgSize);
+                  const Cpsw_Cfg *cpswCfg);
 
 /*!
  * \brief Rejoin a running CPSW peripheral.
@@ -311,7 +354,7 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_rejoin(EnetPer_Handle hPer,
+int32_t Cpsw_rejoin(uint32_t hEnet,
                     Enet_Type enetType,
                     uint32_t instId);
 
@@ -322,7 +365,7 @@ int32_t Cpsw_rejoin(EnetPer_Handle hPer,
  *
  * \param hPer        Enet Peripheral handle
  */
-void Cpsw_close(EnetPer_Handle hPer);
+void Cpsw_close(uint32_t hEnet);
 
 /*!
  * \brief Issue an operation on the CPSW peripheral.
@@ -335,7 +378,7 @@ void Cpsw_close(EnetPer_Handle hPer);
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_ioctl(EnetPer_Handle hPer,
+int32_t Cpsw_ioctl(uint32_t hEnet,
                    uint32_t cmd,
                    Enet_IoctlPrms *prms);
 
@@ -350,7 +393,7 @@ int32_t Cpsw_ioctl(EnetPer_Handle hPer,
  *                     poll event type
  * \param argSize      Size of \p arg
  */
-void Cpsw_poll(EnetPer_Handle hPer,
+void Cpsw_poll(uint32_t hEnet,
                Enet_Event evt,
                const void *arg,
                uint32_t argSize);
@@ -363,7 +406,7 @@ void Cpsw_poll(EnetPer_Handle hPer,
  *
  * \param hPer        Enet Peripheral handle
  */
-void Cpsw_periodicTick(EnetPer_Handle hPer);
+void Cpsw_periodicTick(uint32_t hEnet);
 
 /*!
  * \brief Saves and Close the CPSW peripheral.
@@ -372,7 +415,7 @@ void Cpsw_periodicTick(EnetPer_Handle hPer);
  *
  * \param hPer        Enet Peripheral handle
  */
-void Cpsw_saveCtxt(EnetPer_Handle hPer);
+void Cpsw_saveCtxt(Cpsw_Handle hCpsw);
 
 /*!
  * \brief Restoes and Open the CPSW Peripheral.
@@ -386,9 +429,15 @@ void Cpsw_saveCtxt(EnetPer_Handle hPer);
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_restoreCtxt(EnetPer_Handle hPer,
+int32_t Cpsw_restoreCtxt(Cpsw_Handle hCpsw,
                          Enet_Type enetType,
                          uint32_t instId);
+
+int32_t Cpsw_getHandleInfo(uint32_t hEnet,
+                           Enet_Type *enetType,
+                           uint32_t *instId);
+
+Cpsw_Handle Cpsw_getHandle(uint32_t hEnet);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

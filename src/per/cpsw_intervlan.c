@@ -132,11 +132,10 @@ static int32_t Cpsw_clearInterVlanRouteMultiEgress(Cpsw_Handle hCpsw,
 /* ========================================================================== */
 
 #if ENET_CFG_IS_ON(CPSW_INTERVLAN)
-int32_t Cpsw_ioctlInterVlan(EnetPer_Handle hPer,
+int32_t Cpsw_ioctlInterVlan(Cpsw_Handle hCpsw,
                             uint32_t cmd,
                             Enet_IoctlPrms *prms)
 {
-    Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
     int32_t status = ENET_SOK;
 
     switch (cmd)
@@ -212,8 +211,7 @@ static uint32_t Cpsw_normRouteId(CpswMacPort_InterVlanRouteId routeId)
 static int32_t Cpsw_validateInterVlanEgressCfg(Cpsw_Handle hCpsw,
                                                const Cpsw_InterVlanEgressPortCfg *egressCfg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hCpsw;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hCpsw->virtAddr;
     int32_t status = ENET_SOK;
 
     if (egressCfg->outPktModCfg.forceUntaggedEgress == false)
@@ -299,7 +297,7 @@ static int32_t Cpsw_setInterVlanAleCfg(Cpsw_Handle hCpsw,
 
     ENET_IOCTL_SET_INOUT_ARGS(&prms, &aleInterVlanCfgInArgs, outArgs);
 
-    CPSW_ALE_PRIV_IOCTL(hCpsw->hAle, CPSW_ALE_IOCTL_SET_INTERVLAN_CFG, &prms, status);
+    CPSW_ALE_PRIV_IOCTL(&hCpsw->aleObj, CPSW_ALE_IOCTL_SET_INTERVLAN_CFG, &prms, status);
     ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set interVLAN ALE config: %d\n", status);
 
     return status;
@@ -313,7 +311,7 @@ static int32_t Cpsw_setInterVlanGlobalConfig(Cpsw_Handle hCpsw)
 
     ENET_IOCTL_SET_OUT_ARGS(&prms, &policerGlobalCfg);
 
-    CPSW_ALE_PRIV_IOCTL(hCpsw->hAle, CPSW_ALE_IOCTL_GET_POLICER_GLOBAL_CFG, &prms, status);
+    CPSW_ALE_PRIV_IOCTL(&hCpsw->aleObj, CPSW_ALE_IOCTL_GET_POLICER_GLOBAL_CFG, &prms, status);
     if (status == ENET_SOK)
     {
         if (policerGlobalCfg.policingEn == false)
@@ -323,7 +321,7 @@ static int32_t Cpsw_setInterVlanGlobalConfig(Cpsw_Handle hCpsw)
             policerGlobalCfg.policingEn = true;
             ENET_IOCTL_SET_IN_ARGS(&prms, &policerGlobalCfg);
 
-            CPSW_ALE_PRIV_IOCTL(hCpsw->hAle, CPSW_ALE_IOCTL_SET_POLICER_GLOBAL_CFG, &prms, status);
+            CPSW_ALE_PRIV_IOCTL(&hCpsw->aleObj, CPSW_ALE_IOCTL_SET_POLICER_GLOBAL_CFG, &prms, status);
             ENETTRACE_ERR_IF(status != ENET_SOK,
                              "Failed to set policer global config: %d\n", status);
         }
@@ -345,13 +343,12 @@ static int32_t Cpsw_setInterVlanRouteUniEgress(Cpsw_Handle hCpsw,
     uint32_t portNum = ENET_MACPORT_NORM(inArgs->egressCfg.egressPort);
     int32_t status;
     Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
-    EnetMod_Handle hMacPort = hCpsw->hMacPort[portNum];
     status = Cpsw_validateInterVlanEgressCfg(hCpsw, &inArgs->egressCfg);
     if (status == ENET_SOK)
     {
         ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg.outPktModCfg, &routeId);
 
-        CPSW_MACPORT_PRIV_IOCTL(hMacPort, CPSW_MACPORT_IOCTL_SET_INTERVLAN_ROUTE, &prms, status);
+        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_SET_INTERVLAN_ROUTE, &prms, status);
         ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set interVLAN route: %d\n", status);
     }
 
@@ -378,7 +375,7 @@ static int32_t Cpsw_setInterVlanRouteUniEgress(Cpsw_Handle hCpsw,
             /* ALE IOCTL failed. Rollback the MAC Port interVLAN route allocation */
             ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg.outPktModCfg, &delRouteId);
 
-            CPSW_MACPORT_PRIV_IOCTL(hMacPort, CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE, &prms, status);
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE, &prms, status);
             ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to delete interVLAN route: %d\n", status);
 
             Enet_devAssert(status == ENET_SOK, "Error unwinding failed: %d\n", status);
@@ -411,7 +408,7 @@ static int32_t Cpsw_clearInterVlanRouteUniEgress(Cpsw_Handle hCpsw,
         CpswMacPort_InterVlanRouteId routeId;
 
         ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg.outPktModCfg, &routeId);
-        CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE, &prms, status);
+        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE, &prms, status);
         if (ENET_SOK == status)
         {
             *egressPortRouteId = routeId;
@@ -457,7 +454,7 @@ static int32_t Cpsw_findCommonFreeSlot(const Cpsw_Handle hCpsw,
         portNum = ENET_MACPORT_NORM(curEgressCfg->egressPort);
         Enet_assert(portNum < hCpsw->macPortNum, "Invalid port number %u (expected < %u)\n", portNum, hCpsw->macPortNum);
 
-        CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum],
+        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum],
                                CPSW_MACPORT_IOCTL_GET_INTERVLAN_FREEROUTES,
                                &prms,
                                status);
@@ -498,7 +495,7 @@ static int32_t Cpsw_findCommonFreeSlot(const Cpsw_Handle hCpsw,
             portNum = ENET_MACPORT_NORM(curEgressCfg->egressPort);
 
             Enet_assert(portNum < hCpsw->macPortNum);
-            CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum],
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum],
                                    CPSW_MACPORT_IOCTL_IS_INTERVLAN_ROUTE_FREE,
                                    &prms,
                                    status);
@@ -572,7 +569,7 @@ static int32_t Cpsw_setInterVlanRouteMultiEgress(const Cpsw_Handle hCpsw,
             portNum = ENET_MACPORT_NORM(inArgs->egressCfg[i].egressPort);
             Enet_assert(portNum < hCpsw->macPortNum);
 
-            CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum],
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum],
                                     CPSW_MACPORT_IOCTL_SET_SPECIFIC_INTERVLAN_ROUTE,
                                     &prms,
                                     status);
@@ -617,7 +614,7 @@ static int32_t Cpsw_setInterVlanRouteMultiEgress(const Cpsw_Handle hCpsw,
                 portNum = ENET_MACPORT_NORM(inArgs->egressCfg[i].egressPort);
                 Enet_assert(portNum < hCpsw->macPortNum);
 
-                CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum],
+                CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum],
                                        CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE,
                                        &prms,
                                        status);
@@ -655,7 +652,7 @@ static int32_t Cpsw_validateClearInterVlanRouteMultiEgress(const Cpsw_Handle hCp
         Enet_assert(portNum < hCpsw->macPortNum);
 
         ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg[i].outPktModCfg, &routeId);
-        CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], CPSW_MACPORT_IOCTL_FIND_INTERVLAN_ROUTE, &prms, status);
+        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_FIND_INTERVLAN_ROUTE, &prms, status);
         if (ENET_SOK == status)
         {
             if (0U == i)
@@ -694,7 +691,7 @@ static int32_t Cpsw_clearInterVlanAleCfg(Cpsw_Handle hCpsw,
     delPolicerInArgs.aleEntryMask = delAleEntryMask;
     ENET_IOCTL_SET_IN_ARGS(&prms, &delPolicerInArgs);
 
-    CPSW_ALE_PRIV_IOCTL(hCpsw->hAle, CPSW_ALE_IOCTL_DEL_POLICER, &prms, status);
+    CPSW_ALE_PRIV_IOCTL(&hCpsw->aleObj, CPSW_ALE_IOCTL_DEL_POLICER, &prms, status);
     ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to clear interVLAN ALE config: %d\n", status);
 
     return status;
@@ -726,7 +723,7 @@ static int32_t Cpsw_clearInterVlanRouteMultiEgress(Cpsw_Handle hCpsw,
             portNum = ENET_MACPORT_NORM(inArgs->egressCfg[i].egressPort);
             Enet_assert(portNum < hCpsw->macPortNum);
 
-            CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum],
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum],
                                    CPSW_MACPORT_IOCTL_DELETE_INTERVLAN_ROUTE,
                                    &prms,
                                    status);

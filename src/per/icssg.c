@@ -54,6 +54,8 @@
 #include <include/core/enet_soc.h>
 #include <include/core/enet_utils.h>
 #include <include/core/enet_osal.h>
+#include <include/core/enet_osal.h>
+#include <include/common/enet_utils_dflt.h>
 #include <include/core/enet_mod_hostport.h>
 #include <include/core/enet_mod_stats.h>
 #include <priv/core/enet_trace_priv.h>
@@ -107,14 +109,17 @@
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
+
+extern int32_t Enet_validateGenericIoctl(uint32_t cmd,
+                                         const Enet_IoctlPrms *prms);
 /*!
  * \brief Internal Ioctl Handler Function.
  *
- * \param hPer      Enet Peripheral handle
+ * \param hIcssg    ICSSG Peripheral handle
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  */
-typedef int32_t IcssgInternalIoctlHandlerFxn_t(EnetPer_Handle hPer,
+typedef int32_t IcssgInternalIoctlHandlerFxn_t(Icssg_Handle hIcssg,
                                        uint32_t cmd,
                                        Enet_IoctlPrms *prms);
 
@@ -131,11 +136,11 @@ typedef struct IcssgInternalIoctlHandlerTableEntry_s
 /*!
  * \brief Mac Port Ioctl Handler Function.
  *
- * \param hPer      Enet Peripheral handle
+ * \param hIcssg    ICSSG Peripheral handle
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  */
-typedef int32_t IcssgMacPortIoctlHandlerFxn_t(EnetPer_Handle hPer,
+typedef int32_t IcssgMacPortIoctlHandlerFxn_t(Icssg_Handle hIcssg,
                                        uint32_t cmd,
                                        Enet_IoctlPrms *prms);
 
@@ -152,9 +157,11 @@ typedef struct IcssgMacPortIoctlHandlerTableEntry_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static IcssgInternalIoctlHandlerFxn_t * Icssg_getInternalIoctlHandler(EnetPer_Handle hPer, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries);
+extern Icssg_Handle Icssg_getHandle(uint32_t hEnet);
 
-static IcssgMacPortIoctlHandlerFxn_t * Icssg_getMacPortIoctlHandler(EnetPer_Handle hPer, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries);
+static IcssgInternalIoctlHandlerFxn_t * Icssg_getInternalIoctlHandler(Icssg_Handle hIcssg, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries);
+
+static IcssgMacPortIoctlHandlerFxn_t * Icssg_getMacPortIoctlHandler(Icssg_Handle hIcssg, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries);
 
 static void Icssg_setPromiscMode(Icssg_Handle hIcssg,
                                           Enet_MacPort macPort,
@@ -271,7 +278,7 @@ static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
                                     uint32_t startIdx,
                                     uint32_t flowIdx);
 
-static int32_t Icssg_ioctlInternal(EnetPer_Handle hPer,
+static int32_t Icssg_ioctlInternal(Icssg_Handle hIcssg,
                                    uint32_t cmd,
                                    Enet_IoctlPrms *prms);
 
@@ -376,19 +383,19 @@ static int32_t Icssg_handleExternalPhyLinkUp(Icssg_Handle hIcssg,
                                              Enet_MacPort macPort,
                                              const EnetPhy_LinkCfg *phyLinkCfg);
 
-static int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(EnetPer_Handle hPer,
+static int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms);
 
-static int32_t Icssg_ioctl_handler_default(EnetPer_Handle hPer,
+static int32_t Icssg_ioctl_handler_default(Icssg_Handle hIcssg,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms);
 
-static int32_t IcssgMacPort_ioctl_handler_default(EnetPer_Handle hPer,
+static int32_t IcssgMacPort_ioctl_handler_default(Icssg_Handle hIcssg,
                                             uint32_t cmd,
                                             Enet_IoctlPrms *prms);
 
-static int32_t IcssgMacPort_ioctl_handler_ICSSG_MACPORT_IOCTL_REGISTER_HANDLER(EnetPer_Handle hPer,
+static int32_t IcssgMacPort_ioctl_handler_ICSSG_MACPORT_IOCTL_REGISTER_HANDLER(Icssg_Handle hIcssg,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms);
 
@@ -649,18 +656,10 @@ static const char *Icssg_gDuplexNames[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-void Icssg_initCfg(EnetPer_Handle hPer,
-                   Enet_Type enetType,
-                   void *cfg,
-                   uint32_t cfgSize)
+void Icssg_initCfg(Icssg_Cfg *icssgInitCfg)
 {
-    Icssg_Cfg *icssgInitCfg = (Icssg_Cfg *)cfg;
 
     ENETTRACE_DBG("Initialize ICSSG peripheral config\r\n");
-
-    Enet_devAssert(cfgSize == sizeof(Icssg_Cfg),
-                   "Invalid ICSSG peripheral config params size %u (expected %u)\r\n",
-                   cfgSize, sizeof(Icssg_Cfg));
 
     memset(icssgInitCfg, 0, sizeof(Icssg_Cfg));
 
@@ -714,10 +713,9 @@ void IcssgMacPort_initCfg(IcssgMacPort_Cfg *macPortCfg)
 static inline uint32_t Icssg_getChIdx(Icssg_Handle hIcssg,
                                       Enet_MacPort macPort)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t chIdx;
 
-    if (hPer->enetType == ENET_ICSSG_SWITCH)
+    if (hIcssg->enetType == ENET_ICSSG_SWITCH)
     {
         chIdx = (macPort == ENET_MAC_PORT_1) ? 0U : 1U;
     }
@@ -734,23 +732,22 @@ static int32_t Icssg_openDma(Icssg_Handle hIcssg,
                              Enet_Type enetType,
                              uint32_t instId)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     int32_t status = ENET_SOK;
 
     /* Open DMA */
     if (NULL != icssgCfg->dmaCfg)
     {
         /* Open UDMA for ICSSG NAVSS instance type */
-        hIcssg->hDma = EnetHostPortDma_open(hPer, icssgCfg->dmaCfg, &icssgCfg->resCfg);
+        hIcssg->hDma = EnetHostPortDma_open(hIcssg->enetType, hIcssg->instId, hIcssg->virtAddr, icssgCfg->dmaCfg, &icssgCfg->resCfg);
         if (NULL == hIcssg->hDma)
         {
-            ENETTRACE_ERR("%s: failed to open ICSSG Host Port RX\r\n", ENET_PER_NAME(hIcssg));
+            ENETTRACE_ERR("%s: failed to open ICSSG Host Port RX\r\n", hIcssg->name);
             status = ENET_EFAIL;
         }
     }
     else
     {
-        ENETTRACE_ERR("%s: DMA open config is NULL\r\n", ENET_PER_NAME(hIcssg));
+        ENETTRACE_ERR("%s: DMA open config is NULL\r\n", hIcssg->name);
         status = ENET_EINVALIDPARAMS;
     }
 
@@ -759,21 +756,20 @@ static int32_t Icssg_openDma(Icssg_Handle hIcssg,
 
 static int32_t Icssg_enablePruss(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     int32_t status;
 
     status = IcssgUtils_enablePruss(hIcssg, ENET_MAC_PORT_1);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                      "%s: Port %u: Failed to enable PRUSS: %d\r\n",
-                     ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(ENET_MAC_PORT_1), status);
+                     hIcssg->name, ENET_MACPORT_ID(ENET_MAC_PORT_1), status);
 
     if ((status == ENET_SOK) &&
-        (hPer->enetType == ENET_ICSSG_SWITCH))
+        (hIcssg->enetType == ENET_ICSSG_SWITCH))
     {
         status = IcssgUtils_enablePruss(hIcssg, ENET_MAC_PORT_2);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port %u: Failed to enable PRUSS: %d\r\n",
-                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(ENET_MAC_PORT_2), status);
+                         hIcssg->name, ENET_MACPORT_ID(ENET_MAC_PORT_2), status);
     }
 
     return status;
@@ -781,21 +777,20 @@ static int32_t Icssg_enablePruss(Icssg_Handle hIcssg)
 
 static int32_t Icssg_disablePruss(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     int32_t status;
 
     status = IcssgUtils_disablePruss(hIcssg, ENET_MAC_PORT_1);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                      "%s: Port %u: Failed to disable PRUSS: %d\r\n",
-                     ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(ENET_MAC_PORT_1), status);
+                     hIcssg->name, ENET_MACPORT_ID(ENET_MAC_PORT_1), status);
 
     if ((status == ENET_SOK) &&
-        (hPer->enetType == ENET_ICSSG_SWITCH))
+        (hIcssg->enetType == ENET_ICSSG_SWITCH))
     {
         status = IcssgUtils_disablePruss(hIcssg, ENET_MAC_PORT_2);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port %u: Failed to enable PRUSS: %d\r\n",
-                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(ENET_MAC_PORT_2), status);
+                         hIcssg->name, ENET_MACPORT_ID(ENET_MAC_PORT_2), status);
     }
 
     return status;
@@ -841,28 +836,27 @@ static Enet_MacPort Icssg_getMacFromInstId(uint32_t instId)
 static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
                                          const Icssg_Cfg *cfg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     int32_t status = ENET_SOK;
     const Icssg_FwPoolMem *fwPoolMem;
-    fwPoolMem = EnetCb_GetFwPoolMem(hPer->enetType, hPer->instId);
+    fwPoolMem = EnetCb_GetFwPoolMem(hIcssg->enetType, hIcssg->instId);
 
     /* Config and download firmware for MAC port 1. This is applicable for Dual-MAC */
-    if (hPer->enetType == ENET_ICSSG_DUALMAC)
+    if (hIcssg->enetType == ENET_ICSSG_DUALMAC)
     {
         Enet_MacPort macPort;
 
-        macPort = Icssg_getMacFromInstId(hPer->instId);
+        macPort = Icssg_getMacFromInstId(hIcssg->instId);
 
         status = IcssgUtils_checkFwPoolMem(hIcssg, &fwPoolMem[0U]);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: invalid firmware memory\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
         if (status == ENET_SOK)
         {
             status = IcssgUtils_checkPortMode(hIcssg, &cfg->mii);
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: MII mode mismatch: %d\r\n",
-                             ENET_PER_NAME(hIcssg), status);
+                             hIcssg->name, status);
         }
 
         if (status == ENET_SOK)
@@ -882,7 +876,7 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
             }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: firmware download failure: %d\r\n",
-                             ENET_PER_NAME(hIcssg), status);
+                             hIcssg->name, status);
         }
     }
     else
@@ -890,12 +884,12 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
         status = IcssgUtils_checkFwPoolMem(hIcssg, &fwPoolMem[0U]);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port 1: invalid slice 0 firmware memory\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
 
         status = IcssgUtils_checkFwPoolMem(hIcssg, &fwPoolMem[1U]);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port 2: invalid slice 1 firmware memory\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
 
         if (status == ENET_SOK)
         {
@@ -919,7 +913,7 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
             }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: Port 1: firmware download failure: %d\r\n",
-                             ENET_PER_NAME(hIcssg), status);
+                             hIcssg->name, status);
         }
 
         if (status == ENET_SOK)
@@ -934,7 +928,7 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
             }
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: Port 2: firmware download failure: %d\r\n",
-                             ENET_PER_NAME(hIcssg), status);
+                             hIcssg->name, status);
         }
     }
 
@@ -943,11 +937,9 @@ static int32_t Icssg_configAndDownloadFw(Icssg_Handle hIcssg,
 
 static void Icssg_disableClassifiers(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
-
     IcssgUtils_classiDisable(hIcssg, ENET_MAC_PORT_1);
 
-    if (hPer->enetType == ENET_ICSSG_SWITCH)
+    if (hIcssg->enetType == ENET_ICSSG_SWITCH)
     {
         IcssgUtils_classiDisable(hIcssg, ENET_MAC_PORT_2);
     }
@@ -955,11 +947,9 @@ static void Icssg_disableClassifiers(Icssg_Handle hIcssg)
 
 static void Icssg_initR30Cmd(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
-
     IcssgUtils_R30CmdInit(hIcssg, ENET_MAC_PORT_1);
 
-    if (hPer->enetType == ENET_ICSSG_SWITCH)
+    if (hIcssg->enetType == ENET_ICSSG_SWITCH)
     {
         IcssgUtils_R30CmdInit(hIcssg, ENET_MAC_PORT_2);
     }
@@ -967,7 +957,6 @@ static void Icssg_initR30Cmd(Icssg_Handle hIcssg)
 
 static int32_t Icssg_initPriorityRegen(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     /* No PCP remapping */
     EnetPort_PriorityMap priMap = {
         .priorityMap = { 0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U }
@@ -977,15 +966,15 @@ static int32_t Icssg_initPriorityRegen(Icssg_Handle hIcssg)
     status = Icssg_setVlanPriorityRegen(hIcssg, ENET_MAC_PORT_1, &priMap);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                      "%s: Port 1: failed to initialize priority regeneration: %d\r\n",
-                     ENET_PER_NAME(hIcssg), status);
+                     hIcssg->name, status);
 
     if ((status == ENET_SOK) &&
-        (hPer->enetType == ENET_ICSSG_SWITCH))
+        (hIcssg->enetType == ENET_ICSSG_SWITCH))
     {
         status = Icssg_setVlanPriorityRegen(hIcssg, ENET_MAC_PORT_2, &priMap);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port 2: failed to initialize priority regeneration: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
     }
 
     return status;
@@ -993,7 +982,6 @@ static int32_t Icssg_initPriorityRegen(Icssg_Handle hIcssg)
 
 static void Icssg_configFt3PriorityTag(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     /* Program FT3[8] to detect priority tagged frames */
     Icssg_Filter3Cfg ft3CfgPrioTagFrames = {
         .ft3Start           = 0xCU,
@@ -1012,462 +1000,791 @@ static void Icssg_configFt3PriorityTag(Icssg_Handle hIcssg)
 
     IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_1, 8, &ft3CfgPrioTagFrames);
 
-    if (hPer->enetType == ENET_ICSSG_SWITCH)
+    if (hIcssg->enetType == ENET_ICSSG_SWITCH)
     {
         IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_2, 8, &ft3CfgPrioTagFrames);
     }
 }
 
-int32_t Icssg_open(EnetPer_Handle hPer,
+void Icssg_init(const EnetUtils_Cfg *utilsCfg)
+{
+    uint32_t count;
+    uint32_t i;
+#if ENET_CFG_IS_ON(HAS_DEFAULT_UTILS)
+    EnetUtils_Cfg dfltUtilsCfg;
+#endif
+
+    /* If defaut OSAL and/or utils is enabled, use them in case
+    * the application hasn't provided any */
+#if ENET_CFG_IS_ON(HAS_DEFAULT_UTILS)
+    if (utilsCfg == NULL)
+    {
+        EnetUtilsDflt_initCfg(&dfltUtilsCfg);
+        utilsCfg = &dfltUtilsCfg;
+    }
+#endif
+
+    EnetUtils_init(utilsCfg);
+    EnetSoc_init();
+
+    /* Create top-level Enet locks for all peripherals in the SoC */
+    count = EnetSoc_getEnetNum();
+    Icssg_Handle hIcssg = NULL;
+    uint32_t hEnet = 0U;
+    for (i = 0U; i < count; i++)
+    {
+        hEnet = EnetSoc_getEnetHandleByIdx(i);
+        hIcssg = Icssg_getHandle(hEnet);
+        if (hIcssg != NULL)
+        {
+            hIcssg->lock = EnetOsal_createMutex();
+            ENETTRACE_ERR_IF(hIcssg->lock == NULL,
+                             "%s: Failed to create mutex\n", hIcssg->name);
+        }
+    }
+}
+
+void Icssg_deinit(void)
+{
+    uint32_t count;
+    uint32_t i;
+
+    /* Destroy all top-level Enet locks */
+    count = EnetSoc_getEnetNum();
+    Icssg_Handle hIcssg =NULL;
+    for (i = 0U; i < count; i++)
+    {
+        hIcssg = Icssg_getHandle(i);
+        if (hIcssg != NULL)
+        {
+            EnetOsal_deleteMutex(hIcssg->lock);
+            hIcssg->lock = NULL;
+        }
+    }
+
+    EnetSoc_deinit();
+    EnetUtils_deinit();
+}
+
+int32_t Icssg_open(uint32_t hEnet,
                    Enet_Type enetType,
                    uint32_t instId,
-                   const void *cfg,
-                   uint32_t cfgSize)
+                   const Icssg_Cfg *icssgCfg)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    const Icssg_Cfg *icssgCfg = (const Icssg_Cfg *)cfg;
+    Icssg_Handle hIcssg = NULL;
     uint32_t i;
+    bool isAlreadyOpen = false;
     int32_t status = ENET_SOK;
 
-    ENETTRACE_DBG("%s: open peripheral\r\n", ENET_PER_NAME(hIcssg));
-
-    Enet_devAssert(cfgSize == sizeof(Icssg_Cfg),
-                   "%s: Invalid ICSSG peripheral config params size %u (expected %u)\r\n",
-                   ENET_PER_NAME(hIcssg), cfgSize, sizeof(Icssg_Cfg));
-
-    /* Save EnetMod and EnetPhy handles for easy access */
-    hIcssg->hTimeSync = ENET_MOD(&hIcssg->timeSyncObj);
-    hIcssg->hStats = ENET_MOD(&hIcssg->statsObj);
-    hIcssg->hMdio  = ENET_MOD(&hIcssg->mdioObj);
-    hIcssg->hRm    = ENET_MOD(&hIcssg->rmObj);
-    hIcssg->hTas[0] = ENET_MOD(&hIcssg->tasObj[0]);
-    if (enetType == ENET_ICSSG_SWITCH)
+    if (hEnet != -1)
     {
-        hIcssg->hTas[1] = ENET_MOD(&hIcssg->tasObj[1]);
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL,
+                       "Invalid EnetPer handle for %u.%u\n", enetType, instId);
     }
-
-    /* save hIcssg handle in hTas */
-    hIcssg->tasObj[0].hIcssg = (void*)hIcssg;
-    hIcssg->tasObj[1].hIcssg = (void*)hIcssg;
-
-    /* save hIcssg handle in hTimeSync */
-    hIcssg->timeSyncObj.hIcssg = (void*)hIcssg;
-
-    hIcssg->enetPer.enetType  = enetType;
-    hIcssg->enetPer.instId    = instId;
-
-    /* Copy config info from config structure to instance structure */
-    hIcssg->disablePhyDriver = icssgCfg->disablePhyDriver;
-    hIcssg->qosLevels        = icssgCfg->qosLevels;
-    hIcssg->isPremQueEnable  = icssgCfg->isPremQueEnable;
-
-    /* Create handle to the corresponding PRU instance to use with PRUICSS driver */
-    if (status == ENET_SOK)
+    else
     {
-        status = IcssgUtils_createPruss(hIcssg);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to create PRUSS driver: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+        ENETTRACE_ERR("No EnetPer %u:%u has been found\n", enetType, instId);
+        status = ENET_ENOTFOUND;
+        hIcssg = NULL;
     }
+    
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+    "Failed get handles for %u.%u: %d\n", enetType, instId, status);
 
-    /* Config ageing period for FDB entries */
-    if (status == ENET_SOK)
+    isAlreadyOpen = (hIcssg->magic == ENET_MAGIC) ? true : false;
+
+    if (isAlreadyOpen == false)
     {
-        Icssg_ioctlCfgAgeingPeriod(hIcssg, icssgCfg->agingPeriod);
-    }
+        EnetOsal_lockMutex(hIcssg->lock);
 
-    /* Open DMA */
-    if (status == ENET_SOK)
-    {
-        hIcssg->numRxCh = (enetType == ENET_ICSSG_SWITCH) ? 2U : 1U;
+#if ENET_CFG_IS_ON(SANITY_CHECKS)
+        /* Print enabled configurable features and applicable erratas */
+        ENETTRACE_DBG("%s: features: 0x%08x\n", hIcssg->name, hIcssg->features);
+        ENETTRACE_DBG("%s: errata  : 0x%08x\n", hIcssg->name, hIcssg->errata);
+#endif
 
-        status = Icssg_openDma(hIcssg, icssgCfg, enetType, instId);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to open DMA: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
+        ENETTRACE_DBG("%s: open peripheral\r\n", hIcssg->name);
 
-    /* Initialize R30 cmd mechanism, disable classifier */
-    if (status == ENET_SOK)
-    {
-        Icssg_disableClassifiers(hIcssg);
-        Icssg_initR30Cmd(hIcssg);
-        Icssg_configFt3PriorityTag(hIcssg);
-    }
+        hIcssg->virtAddr  = EnetUtils_physToVirt(hIcssg->physAddr, NULL);
+        hIcssg->virtAddr2 = EnetUtils_physToVirt(hIcssg->physAddr2, NULL);
 
-    /* Open Resource Manager if Rx Channel open succeeded */
-    if (status == ENET_SOK)
-    {
-        EnetRm_Cfg rmCfg;
-        Enet_dmaResInfo *dmaResInfo;
+        /* save hIcssg handle in hTas */
+        hIcssg->tasObj[0].hIcssg = hIcssg;
+        hIcssg->tasObj[1].hIcssg = hIcssg;
 
-        rmCfg.enetType              = enetType;
-        rmCfg.instId                = instId;
-        rmCfg.ioctlPermissionInfo   = icssgCfg->resCfg.ioctlPermissionInfo;
-        rmCfg.macList               = icssgCfg->resCfg.macList;
-        rmCfg.resPartInfo           = icssgCfg->resCfg.resPartInfo;
-        rmCfg.numRxCh               = hIcssg->numRxCh;
+        /* save hIcssg handle in hTimeSync */
+        hIcssg->timeSyncObj.hIcssg = hIcssg;
 
-        for (i = 0U; i < hIcssg->numRxCh; i++)
-        {
-            dmaResInfo = &hIcssg->dmaResInfo[i];
+        hIcssg->enetType  = enetType;
+        hIcssg->instId    = instId;
 
-            EnetHostPortDma_getDmaResInfo(hIcssg->hDma, dmaResInfo, i);
-            rmCfg.rxStartFlowIdx[i] = dmaResInfo->rxStartIdx;
-            rmCfg.rxFlowIdxCnt[i]   = dmaResInfo->rxIdxCnt;
-        }
+        /* Copy config info from config structure to instance structure */
+        hIcssg->disablePhyDriver = icssgCfg->disablePhyDriver;
+        hIcssg->qosLevels        = icssgCfg->qosLevels;
+        hIcssg->isPremQueEnable  = icssgCfg->isPremQueEnable;
 
-        if (rmCfg.resPartInfo.numCores > 1U)
-        {
-            ENETTRACE_ERR("%s: number of RM cores not supported\r\n", ENET_PER_NAME(hIcssg));
-            status = ENET_ENOTSUPPORTED;
-        }
-
+        /* Create handle to the corresponding PRU instance to use with PRUICSS driver */
         if (status == ENET_SOK)
         {
-            status = EnetMod_open(hIcssg->hRm, enetType, instId, &rmCfg, sizeof(rmCfg));
+            status = IcssgUtils_createPruss(hIcssg);
             ENETTRACE_ERR_IF((status != ENET_SOK),
-                             "%s: failed to open RM: %d\r\n",
-                             ENET_PER_NAME(hIcssg), status);
+                            "%s: failed to create PRUSS driver: %d\r\n",
+                            hIcssg->name, status);
         }
-    }
 
-    /* Disable PRUSS in preparation for firmware download */
-    if (status == ENET_SOK)
-    {
-        status = Icssg_disablePruss(hIcssg);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to disable PRUSS: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
-
-    /* Download ICSSG firmware */
-    if (status == ENET_SOK)
-    {
-        status = Icssg_configAndDownloadFw(hIcssg, icssgCfg);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to download firmware: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
-
-    /* Enable PRUSS */
-    if (status == ENET_SOK)
-    {
-        status = Icssg_enablePruss(hIcssg);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to enable PRUSS: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
-
-    /* Initialize switch's VLAN and configure default VLAN for host port */
-    if ((status == ENET_SOK) &&
-        (enetType == ENET_ICSSG_SWITCH) &&
-        (icssgCfg->vlanCfg.portVID != 0U))
-    {
-        status = Icssg_configHostPortDfltVlanId(hIcssg, &icssgCfg->vlanCfg);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to set host port default VLAN: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
-
-    /* Set one-to-one priority regeneration mapping */
-    if (status == ENET_SOK)
-    {
-        status = Icssg_initPriorityRegen(hIcssg);
-    }
-
-    /* Open Stats */
-    if (status == ENET_SOK)
-    {
-        status = EnetMod_open(hIcssg->hStats,
-                              enetType,
-                              instId,
-                              NULL,
-                              0U);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to initialize stats: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
-
-    /* Open TimeSync */
-    if (status == ENET_SOK)
-    {
-        if (icssgCfg->timeSyncCfg.enable)
+        /* Config ageing period for FDB entries */
+        if (status == ENET_SOK)
         {
-            if (!hIcssg->pruss->iep0InUse)
-            {
-                status = EnetMod_open(hIcssg->hTimeSync,
-                                      enetType,
-                                      instId,
-                                      &icssgCfg->timeSyncCfg,
-                                      sizeof(icssgCfg->timeSyncCfg));
-                ENETTRACE_ERR_IF((status != ENET_SOK),
-                                 "%s: failed to initialize time sync: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), status);
+            Icssg_ioctlCfgAgeingPeriod(hIcssg, icssgCfg->agingPeriod);
+        }
 
-                /* TimeSync uses IEP0, so it can be enabled only in one peripheral
-                 * per ICSSG instance.  This is not a problem for Switch mode, but
-                 * it's for Dual-MAC where it can be enabled only for one port at
-                 * a time. */
+        /* Open DMA */
+        if (status == ENET_SOK)
+        {
+            hIcssg->numRxCh = (enetType == ENET_ICSSG_SWITCH) ? 2U : 1U;
+
+            status = Icssg_openDma(hIcssg, icssgCfg, enetType, instId);
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to open DMA: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Initialize R30 cmd mechanism, disable classifier */
+        if (status == ENET_SOK)
+        {
+            Icssg_disableClassifiers(hIcssg);
+            Icssg_initR30Cmd(hIcssg);
+            Icssg_configFt3PriorityTag(hIcssg);
+        }
+
+        /* Open Resource Manager if Rx Channel open succeeded */
+        if (status == ENET_SOK)
+        {
+            EnetRm_Cfg rmCfg;
+            Enet_dmaResInfo *dmaResInfo;
+
+            rmCfg.enetType              = enetType;
+            rmCfg.instId                = instId;
+            rmCfg.ioctlPermissionInfo   = icssgCfg->resCfg.ioctlPermissionInfo;
+            rmCfg.macList               = icssgCfg->resCfg.macList;
+            rmCfg.resPartInfo           = icssgCfg->resCfg.resPartInfo;
+            rmCfg.numRxCh               = hIcssg->numRxCh;
+
+            for (i = 0U; i < hIcssg->numRxCh; i++)
+            {
+                dmaResInfo = &hIcssg->dmaResInfo[i];
+
+                EnetHostPortDma_getDmaResInfo(hIcssg->hDma, dmaResInfo, i);
+                rmCfg.rxStartFlowIdx[i] = dmaResInfo->rxStartIdx;
+                rmCfg.rxFlowIdxCnt[i]   = dmaResInfo->rxIdxCnt;
+            }
+
+            if (rmCfg.resPartInfo.numCores > 1U)
+            {
+                ENETTRACE_ERR("%s: number of RM cores not supported\r\n", hIcssg->name);
+                status = ENET_ENOTSUPPORTED;
+            }
+
+            ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->rmObj.name);
+
+            bool isRmOpen = (hIcssg->rmObj.magic == ENET_MAGIC) ? true : false;
+
+            if (isRmOpen == false)
+            {
+                hIcssg->rmObj.virtAddr  = EnetUtils_physToVirt(hIcssg->rmObj.physAddr, NULL);
+                hIcssg->rmObj.virtAddr2 = EnetUtils_physToVirt(hIcssg->rmObj.physAddr2, NULL);
+
+                status = EnetRm_open(&hIcssg->rmObj, enetType, instId, &rmCfg);
                 if (status == ENET_SOK)
                 {
-                    hIcssg->pruss->iep0InUse = true;
+                    hIcssg->rmObj.magic = ENET_MAGIC;
+                    ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->rmObj.name);
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->rmObj.name, status);
+                    hIcssg->rmObj.magic = ENET_NO_MAGIC;
                 }
             }
             else
             {
-                ENETTRACE_WARN("%s: TimeSync cannot be enabled, IEP0 already in use\r\n",
-                               ENET_PER_NAME(hIcssg));
-                hIcssg->hTimeSync = NULL;
+                ENETTRACE_ERR("%s: Module is already open\n", hIcssg->rmObj.name);
+                status = ENET_EALREADYOPEN;
+            }
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to open RM: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Disable PRUSS in preparation for firmware download */
+        if (status == ENET_SOK)
+        {
+            status = Icssg_disablePruss(hIcssg);
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to disable PRUSS: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Download ICSSG firmware */
+        if (status == ENET_SOK)
+        {
+            status = Icssg_configAndDownloadFw(hIcssg, icssgCfg);
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to download firmware: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Enable PRUSS */
+        if (status == ENET_SOK)
+        {
+            status = Icssg_enablePruss(hIcssg);
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to enable PRUSS: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Initialize switch's VLAN and configure default VLAN for host port */
+        if ((status == ENET_SOK) &&
+            (enetType == ENET_ICSSG_SWITCH) &&
+            (icssgCfg->vlanCfg.portVID != 0U))
+        {
+            status = Icssg_configHostPortDfltVlanId(hIcssg, &icssgCfg->vlanCfg);
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to set host port default VLAN: %d\r\n",
+                            hIcssg->name, status);
+        }
+
+        /* Set one-to-one priority regeneration mapping */
+        if (status == ENET_SOK)
+        {
+            status = Icssg_initPriorityRegen(hIcssg);
+        }
+
+        /* Open Stats */
+        if (status == ENET_SOK)
+        {
+            ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->statsObj.name);
+
+            bool isStatsOpen = (hIcssg->statsObj.magic == ENET_MAGIC) ? true : false;
+
+            if (isStatsOpen == false)
+            {
+                hIcssg->statsObj.virtAddr  = EnetUtils_physToVirt(hIcssg->statsObj.physAddr, NULL);
+                hIcssg->statsObj.virtAddr2 = EnetUtils_physToVirt(hIcssg->statsObj.physAddr2, NULL);
+
+                status = IcssgStats_open(&hIcssg->statsObj, enetType, instId);
+                if (status == ENET_SOK)
+                {
+                    hIcssg->statsObj.magic = ENET_MAGIC;
+                    ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->statsObj.name);
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->statsObj.name, status);
+                    hIcssg->statsObj.magic = ENET_NO_MAGIC;
+                }
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is already open\n", hIcssg->statsObj.name);
+                status = ENET_EALREADYOPEN;
+            }
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "%s: failed to initialize stats: %d\r\n",
+                            hIcssg->statsObj.name, status);
+        }
+
+        /* Open TimeSync */
+        if (status == ENET_SOK)
+        {
+            if (icssgCfg->timeSyncCfg.enable)
+            {
+                if (!hIcssg->pruss->iep0InUse)
+                {
+                    ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->timeSyncObj.name);
+
+                    bool isTimeSyncOpen = (hIcssg->timeSyncObj.magic == ENET_MAGIC) ? true : false;
+
+                    if (isTimeSyncOpen == false)
+                    {
+                        hIcssg->timeSyncObj.virtAddr  = EnetUtils_physToVirt(hIcssg->timeSyncObj.physAddr, NULL);
+                        hIcssg->timeSyncObj.virtAddr2 = EnetUtils_physToVirt(hIcssg->timeSyncObj.physAddr2, NULL);
+
+                        status = IcssgTimeSync_open(&hIcssg->timeSyncObj, enetType, instId, &icssgCfg->timeSyncCfg);
+                        if (status == ENET_SOK)
+                        {
+                            hIcssg->timeSyncObj.magic = ENET_MAGIC;
+                            ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->timeSyncObj.name);
+                        }
+                        else
+                        {
+                            ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->timeSyncObj.name, status);
+                            hIcssg->timeSyncObj.magic = ENET_NO_MAGIC;
+                        }
+                    }
+                    else
+                    {
+                            ENETTRACE_ERR("%s: Module is already open\n", hIcssg->timeSyncObj.name);
+                            status = ENET_EALREADYOPEN;
+                    }
+                    ENETTRACE_ERR_IF((status != ENET_SOK),
+                                    "%s: failed to initialize time sync: %d\r\n",
+                                    hIcssg->timeSyncObj.name, status);
+
+                    /* TimeSync uses IEP0, so it can be enabled only in one peripheral
+                    * per ICSSG instance.  This is not a problem for Switch mode, but
+                    * it's for Dual-MAC where it can be enabled only for one port at
+                    * a time. */
+                    if (status == ENET_SOK)
+                    {
+                        hIcssg->pruss->iep0InUse = true;
+                    }
+                }
+                else
+                {
+                    ENETTRACE_WARN("%s: TimeSync cannot be enabled, IEP0 already in use\r\n",
+                            hIcssg->timeSyncObj.name);
+                    hIcssg->timeSyncObj.magic = ENET_NO_MAGIC;
+                }
+            }
+            else
+            {
+                hIcssg->timeSyncObj.magic = ENET_NO_MAGIC;
+            }
+        }
+
+        /* Open MDIO */
+        if (status == ENET_SOK)
+        {
+            ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->mdioObj.name);
+
+            bool isMdioOpen = (hIcssg->mdioObj.magic == ENET_MAGIC) ? true : false;
+
+            if (isMdioOpen == false)
+            {
+                hIcssg->mdioObj.virtAddr  = EnetUtils_physToVirt(hIcssg->mdioObj.physAddr, NULL);
+                hIcssg->mdioObj.virtAddr2 = EnetUtils_physToVirt(hIcssg->mdioObj.physAddr2, NULL);
+
+                status = Mdio_open(&hIcssg->mdioObj, enetType, instId, &icssgCfg->mdioCfg);
+                if (status == ENET_SOK)
+                {
+                    hIcssg->mdioObj.magic = ENET_MAGIC;
+                    ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->mdioObj.name);
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->mdioObj.name, status);
+                    hIcssg->mdioObj.magic = ENET_NO_MAGIC;
+                }
             }
         }
         else
         {
-            hIcssg->hTimeSync = NULL;
+            ENETTRACE_ERR("%s: Module is already open\n", hIcssg->mdioObj.name);
+            status = ENET_EALREADYOPEN;
         }
-    }
-
-    /* Open MDIO */
-    if (status == ENET_SOK)
-    {
-        status = EnetMod_open(hIcssg->hMdio,
-                              enetType,
-                              instId,
-                              &icssgCfg->mdioCfg,
-                              sizeof(icssgCfg->mdioCfg));
         ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to open MDIO: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
-    }
+                            "%s: failed to open MDIO: %d\r\n",
+                            hIcssg->mdioObj.name, status);
 
-    /* Open Tas */
-    if (status == ENET_SOK)
-    {
-        status = EnetMod_open(hIcssg->hTas[0],
-                              enetType,
-                              instId,
-                              NULL,
-                              0);
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: failed to initialize tas[0]: %d\n",
-                         ENET_PER_NAME(hIcssg), status);
-
-        if ((status == ENET_SOK) &&
-            (enetType == ENET_ICSSG_SWITCH))
+        /* Open Tas */
+        if (status == ENET_SOK)
         {
-            status = EnetMod_open(hIcssg->hTas[1],
-                                  enetType,
-                                  instId,
-                                  NULL,
-                                  0);
+            ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->tasObj[0].name);
+
+            bool isTasOpen = (hIcssg->tasObj[0].magic == ENET_MAGIC) ? true : false;
+
+            if (isTasOpen == false)
+            {
+                hIcssg->tasObj[0].virtAddr  = EnetUtils_physToVirt(hIcssg->tasObj[0].physAddr, NULL);
+                hIcssg->tasObj[0].virtAddr2 = EnetUtils_physToVirt(hIcssg->tasObj[0].physAddr2, NULL);
+
+                status = IcssgTas_open(&hIcssg->tasObj[0], enetType, instId);
+                if (status == ENET_SOK)
+                {
+                    hIcssg->tasObj[0].magic = ENET_MAGIC;
+                    ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->tasObj[0].name);
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->tasObj[0].name, status);
+                    hIcssg->tasObj[0].magic = ENET_NO_MAGIC;
+                }
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is already open\n", hIcssg->tasObj[0].name);
+                status = ENET_EALREADYOPEN;
+            }
             ENETTRACE_ERR_IF((status != ENET_SOK),
-                             "%s: failed to initialize tas[1]: %d\n",
-                             ENET_PER_NAME(hIcssg), status);
+                            "%s: failed to initialize tas[0]: %d\n",
+                            hIcssg->name, status);
+
+            if ((status == ENET_SOK) &&
+                (enetType == ENET_ICSSG_SWITCH))
+            {
+                ENETTRACE_VERBOSE("%s: Open module\n", hIcssg->tasObj[1].name);
+
+                bool isTasOpen = (hIcssg->tasObj[1].magic == ENET_MAGIC) ? true : false;
+
+                if (isTasOpen == false)
+                {
+                    hIcssg->tasObj[1].virtAddr  = EnetUtils_physToVirt(hIcssg->tasObj[1].physAddr, NULL);
+                    hIcssg->tasObj[1].virtAddr2 = EnetUtils_physToVirt(hIcssg->tasObj[1].physAddr2, NULL);
+
+                    status = IcssgTas_open(&hIcssg->tasObj[1], enetType, instId);
+                    if (status == ENET_SOK)
+                    {
+                        hIcssg->tasObj[1].magic = ENET_MAGIC;
+                        ENETTRACE_VERBOSE("%s: Module is now open\n", hIcssg->tasObj[1].name);
+                    }
+                    else
+                    {
+                        ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->tasObj[1].name, status);
+                        hIcssg->tasObj[1].magic = ENET_NO_MAGIC;
+                    }
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Module is already open\n", hIcssg->tasObj[1].name);
+                    status = ENET_EALREADYOPEN;
+                }
+                ENETTRACE_ERR_IF((status != ENET_SOK),
+                                "%s: failed to initialize tas[1]: %d\n",
+                                hIcssg->name, status);
+
+            }
 
         }
+        if (status == ENET_SOK)
+        {
+            status = Icssg_cfgMdioLinkInt(hIcssg, enetType, instId, icssgCfg);
+        }
 
-    }
-    if (status == ENET_SOK)
-    {
-        status = Icssg_cfgMdioLinkInt(hIcssg, enetType, instId, icssgCfg);
-    }
+        /* Initialize PHY handles to NULL */
+        for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
+        {
+            hIcssg->hPhy[phyHandleNum] = NULL;
+        }
 
-    /* Initialize PHY handles to NULL */
-    for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
-    {
-        hIcssg->hPhy[phyHandleNum] = NULL;
-    }
+        /* All initialization is complete */
+        if (status == ENET_SOK)
+        {
+            hIcssg->selfCoreId = icssgCfg->resCfg.selfCoreId;
+        }
+        if (status == ENET_SOK)
+        {
+            hIcssg->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Peripheral is now open\n", hIcssg->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hIcssg->name, status);
+            hIcssg->magic = ENET_NO_MAGIC;
+        }
 
-    /* All initialization is complete */
-    if (status == ENET_SOK)
+        /* Set driver open state */
+        hIcssg->magic = (status == ENET_SOK) ? ENET_MAGIC : ENET_NO_MAGIC;
+        EnetOsal_unlockMutex(hIcssg->lock);
+    }
+    else
     {
-        hIcssg->selfCoreId = icssgCfg->resCfg.selfCoreId;
+        ENETTRACE_ERR("%s: Peripheral is already open\n", hIcssg->name);
+        status = ENET_EALREADYOPEN;
     }
 
     return status;
 }
 
-int32_t Icssg_rejoin(EnetPer_Handle hPer,
+int32_t Icssg_rejoin(uint32_t hEnet,
                      Enet_Type enetType,
                      uint32_t instId)
 {
-    ENETTRACE_ERR("%s: rejoin not supported\r\n", hPer->name);
-
-    return ENET_ENOTSUPPORTED;
-}
-
-int32_t Icssg_ioctl(EnetPer_Handle hPer,
-                    uint32_t cmd,
-                    Enet_IoctlPrms *prms)
-{
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    uint32_t major;
+    Icssg_Handle hIcssg = NULL;
     int32_t status = ENET_SOK;
 
-#if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate ICSSG peripheral IOCTL parameters */
-    if ((ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_ICSSG) &&
-        (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC))
+    /* Get Icssg handle */
+    if (hEnet != -1)
     {
-        status = Enet_validateIoctl(cmd, prms,
-                                    gIcssg_ioctlValidate,
-                                    ENET_ARRAYSIZE(gIcssg_ioctlValidate));
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "%s: IOCTL 0x%08x params are not valid\r\n",
-                         ENET_PER_NAME(hIcssg), cmd);
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL,
+                       "Invalid EnetPer handle for %u.%u\n", enetType, instId);
     }
-#endif
+    else
+    {
+        ENETTRACE_ERR("No EnetPer %u:%u has been found\n", enetType, instId);
+        status = ENET_ENOTFOUND;
+        hIcssg = NULL;
+    }
+    
+    ENETTRACE_ERR_IF(status != ENET_SOK,
+    "Failed get handles for %u.%u: %d\n", enetType, instId, status);
 
     if (status == ENET_SOK)
     {
-        major = ENET_IOCTL_GET_MAJ(cmd);
-        switch (major)
+        EnetOsal_lockMutex(hIcssg->lock);
+
+#if ENET_CFG_IS_ON(SANITY_CHECKS)
+        /* Print enabled configurable features and applicable erratas */
+        ENETTRACE_DBG("%s: features: 0x%08x\n", hIcssg->name, hIcssg->features);
+        ENETTRACE_DBG("%s: errata  : 0x%08x\n", hIcssg->name, hIcssg->errata);
+#endif
+
+        /* Rejoin the Enet peripheral */
+        ENETTRACE_ERR("%s: rejoin not supported\r\n", hIcssg->name);
+        status = ENET_ENOTSUPPORTED;
+        
+        ENETTRACE_ERR_IF(status != ENET_SOK,
+                         "%s: Failed to join: %d\n", hIcssg->name, status);
+
+        /* Set driver open state */
+        hIcssg->magic = (status == ENET_SOK) ? ENET_MAGIC : ENET_NO_MAGIC;
+
+        EnetOsal_unlockMutex(hIcssg->lock);
+    }
+
+    return status;
+    
+}
+
+int32_t Icssg_ioctl(uint32_t hEnet,
+                    uint32_t cmd,
+                    Enet_IoctlPrms *prms)
+{
+    Icssg_Handle hIcssg = NULL;
+    uint32_t major;
+    int32_t status = ENET_SOK;
+
+    /* Call IOCTL on the Icssg peripheral */
+    if (hEnet != -1)
+    {
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
+
+        EnetOsal_lockMutex(hIcssg->lock);
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+        status = Enet_validateGenericIoctl(cmd, prms);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL params are not valid\n");
+#endif
+
+        if (status == ENET_SOK)
         {
-            case ENET_IOCTL_PER_BASE:
-            {
-                status = Icssg_ioctlInternal(hPer, cmd, prms);
-                ENETTRACE_ERR_IF((status < ENET_SOK),
-                                 "%s: failed to run ICSSG Per IOCTL 0x%08x: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), cmd, status);
-            }
-            break;
+            status = ENET_EFAIL;
 
-            case ENET_IOCTL_MDIO_BASE:
-            {
-                status = EnetMod_ioctl(hIcssg->hMdio, cmd, prms);
-                ENETTRACE_ERR_IF((status != ENET_SOK),
-                                 "%s: failed to run MDIO IOCTL 0x%08x: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), cmd, status);
-            }
-            break;
+            ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hIcssg->name, cmd, prms);
 
-            case ENET_IOCTL_RM_BASE:
+            if (hIcssg->magic == ENET_MAGIC)
             {
-                status = EnetMod_ioctl(hIcssg->hRm, cmd, prms);
-                ENETTRACE_ERR_IF((status != ENET_SOK),
-                                 "%s: failed to run RM IOCTL 0x%08x: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), cmd, status);
-            }
-            break;
+                status =ENET_SOK;
 
-            case ENET_IOCTL_TIMESYNC_BASE:
-            {
-                if (hIcssg->hTimeSync != NULL)
+#if ENET_CFG_IS_ON(DEV_ERROR)
+                /* Validate ICSSG peripheral IOCTL parameters */
+                if ((ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_ICSSG) &&
+                    (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC))
                 {
-                    status = EnetMod_ioctl(hIcssg->hTimeSync, cmd, prms);
+                    status = Enet_validateIoctl(cmd, prms,
+                                                gIcssg_ioctlValidate,
+                                                ENET_ARRAYSIZE(gIcssg_ioctlValidate));
+                    ENETTRACE_ERR_IF((status != ENET_SOK),
+                                    "%s: IOCTL 0x%08x params are not valid\r\n",
+                                    hIcssg->name, cmd);
                 }
-                else
-                {
-                    ENETTRACE_ERR("%s: TimeSync is not enabled\r\n", ENET_PER_NAME(hIcssg));
-                    status = ENET_ENOTSUPPORTED;
-                }
-            }
-            break;
+#endif
 
-            case ENET_IOCTL_TAS_BASE:
-            {
-                /* Note: Typecast to GenericInArgs is possible because all public
-                 * MAC port IOCTL input args have macPort as their first member */
-                EnetTas_GenericInArgs *inArgs = (EnetTas_GenericInArgs *)prms->inArgs;
-                uint32_t portNum = ENET_MACPORT_NORM(inArgs->macPort);
-                EnetMod_Handle hTas;
-
-                if (portNum < ENET_ARRAYSIZE(hIcssg->hTas))
+                if (status == ENET_SOK)
                 {
-                    hTas = hIcssg->hTas[portNum];
-                    if (hTas != NULL)
+                    major = ENET_IOCTL_GET_MAJ(cmd);
+                    switch (major)
                     {
-                        status = EnetMod_ioctl(hTas, cmd, prms);
-                    }
-                    else
-                    {
-                        ENETTRACE_ERR("%s: Tas is not enabled\n", ENET_PER_NAME(hIcssg));
-                        status = ENET_ENOTSUPPORTED;
+                        case ENET_IOCTL_PER_BASE:
+                        {
+                            status = Icssg_ioctlInternal(hIcssg, cmd, prms);
+                            ENETTRACE_ERR_IF((status < ENET_SOK),
+                                            "%s: failed to run ICSSG Per IOCTL 0x%08x: %d\r\n",
+                                            hIcssg->name, cmd, status);
+                        }
+                        break;
+
+                        case ENET_IOCTL_MDIO_BASE:
+                        {
+                            status = Mdio_ioctl(&hIcssg->mdioObj, cmd, prms);
+                            ENETTRACE_ERR_IF((status != ENET_SOK),
+                                            "%s: failed to run MDIO IOCTL 0x%08x: %d\r\n",
+                                            hIcssg->name, cmd, status);
+                        }
+                        break;
+
+                        case ENET_IOCTL_RM_BASE:
+                        {
+                            status = EnetRm_ioctl(&hIcssg->rmObj, cmd, prms);
+                            ENETTRACE_ERR_IF((status != ENET_SOK),
+                                            "%s: failed to run RM IOCTL 0x%08x: %d\r\n",
+                                            hIcssg->name, cmd, status);
+                        }
+                        break;
+
+                        case ENET_IOCTL_TIMESYNC_BASE:
+                        {
+                            if (hIcssg->timeSyncObj.magic != ENET_NO_MAGIC)
+                            {
+                                status = IcssgTimeSync_ioctl(&hIcssg->timeSyncObj, cmd, prms);
+                            }
+                            else
+                            {
+                                ENETTRACE_ERR("%s: TimeSync is not enabled\r\n", hIcssg->name);
+                                status = ENET_ENOTSUPPORTED;
+                            }
+                        }
+                        break;
+
+                        case ENET_IOCTL_TAS_BASE:
+                        {
+                            /* Note: Typecast to GenericInArgs is possible because all public
+                            * MAC port IOCTL input args have macPort as their first member */
+                            EnetTas_GenericInArgs *inArgs = (EnetTas_GenericInArgs *)prms->inArgs;
+                            uint32_t portNum = ENET_MACPORT_NORM(inArgs->macPort);
+
+                            if (portNum < ENET_ARRAYSIZE(&hIcssg->tasObj))
+                            {
+                                if (hIcssg->tasObj[portNum].magic != ENET_NO_MAGIC)
+                                {
+                                    status = IcssgTas_ioctl(&hIcssg->tasObj[portNum], cmd, prms);
+                                }
+                                else
+                                {
+                                    ENETTRACE_ERR("%s: Tas is not enabled\n", hIcssg->name);
+                                    status = ENET_ENOTSUPPORTED;
+                                }
+                            }
+                            else
+                            {
+                                ENETTRACE_ERR("%s: invalid MAC port %u\n",
+                                            hIcssg->name, ENET_MACPORT_ID(inArgs->macPort));
+                                status = ENET_EINVALIDPARAMS;
+                            }
+                        }
+                        break;
+
+                        case ENET_IOCTL_FDB_BASE:
+                        case ENET_IOCTL_HOSTPORT_BASE:
+                        {
+                            ENETTRACE_ERR("%s: IOCTL 0x%08x not implemented for ICSSG\r\n",
+                                        hIcssg->name, cmd);
+                            status = ENET_ENOTSUPPORTED;
+                        }
+                        break;
+
+                        case ENET_IOCTL_MACPORT_BASE:
+                        {
+                            status = Icssg_ioctlMacPort(hIcssg, cmd, prms);
+                            ENETTRACE_ERR_IF((status != ENET_SOK),
+                                            "%s: failed to run IOCTL 0x%08x: %d\r\n",
+                                            hIcssg->name, cmd, status);
+                        }
+                        break;
+
+                        case ENET_IOCTL_STATS_BASE:
+                        {
+                            status = IcssgStats_ioctl(&hIcssg->statsObj, cmd, prms);
+                        }
+                        break;
+
+                        case ENET_IOCTL_PHY_BASE:
+                        {
+                            /* Note: Typecast to GenericInArgs is possible because all public
+                            * MAC port IOCTL input args have macPort as their first member */
+                            EnetPhy_GenericInArgs *inArgs = (EnetPhy_GenericInArgs *)prms->inArgs;
+                            uint32_t portNum = ENET_MACPORT_NORM(inArgs->macPort);
+                            EnetPhy_Handle hPhy;
+
+                            if (portNum < ENET_ARRAYSIZE(hIcssg->hPhy))
+                            {
+                                hPhy = hIcssg->hPhy[portNum];
+                                if (hPhy != NULL)
+                                {
+                                    status = EnetPhyMdioDflt_ioctl(hPhy, cmd, prms);
+                                }
+                                else
+                                {
+                                    ENETTRACE_ERR("%s: port %u is not open\r\n",
+                                                hIcssg->name, ENET_MACPORT_ID(inArgs->macPort));
+                                    status = ENET_EFAIL;
+                                }
+                            }
+                            else
+                            {
+                                ENETTRACE_ERR("%s: invalid MAC port %u\r\n",
+                                            hIcssg->name, ENET_MACPORT_ID(inArgs->macPort));
+                                status = ENET_EINVALIDPARAMS;
+                            }
+                        }
+                        break;
+
+                        default:
+                            status = ENET_EUNKNOWNIOCTL;
+                            break;
                     }
                 }
-                else
+                if (status < ENET_SOK)
                 {
-                    ENETTRACE_ERR("%s: invalid MAC port %u\n",
-                                  ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(inArgs->macPort));
-                    status = ENET_EINVALIDPARAMS;
+                    ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hIcssg->name, cmd, status);
                 }
             }
-            break;
-
-            case ENET_IOCTL_FDB_BASE:
-            case ENET_IOCTL_HOSTPORT_BASE:
+            else
             {
-                ENETTRACE_ERR("%s: IOCTL 0x%08x not implemented for ICSSG\r\n",
-                              ENET_PER_NAME(hIcssg), cmd);
-                status = ENET_ENOTSUPPORTED;
+                ENETTRACE_ERR("%s: Peripheral is not open\n", hIcssg->name);
             }
-            break;
-
-            case ENET_IOCTL_MACPORT_BASE:
-            {
-                status = Icssg_ioctlMacPort(hIcssg, cmd, prms);
-                ENETTRACE_ERR_IF((status != ENET_SOK),
-                                 "%s: failed to run IOCTL 0x%08x: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), cmd, status);
-            }
-            break;
-
-            case ENET_IOCTL_STATS_BASE:
-            {
-                status = EnetMod_ioctl(hIcssg->hStats, cmd, prms);
-            }
-            break;
-
-            case ENET_IOCTL_PHY_BASE:
-            {
-                /* Note: Typecast to GenericInArgs is possible because all public
-                 * MAC port IOCTL input args have macPort as their first member */
-                EnetPhy_GenericInArgs *inArgs = (EnetPhy_GenericInArgs *)prms->inArgs;
-                uint32_t portNum = ENET_MACPORT_NORM(inArgs->macPort);
-                EnetPhy_Handle hPhy;
-
-                if (portNum < ENET_ARRAYSIZE(hIcssg->hPhy))
-                {
-                    hPhy = hIcssg->hPhy[portNum];
-                    if (hPhy != NULL)
-                    {
-                        status = EnetPhyMdioDflt_ioctl(hPhy, cmd, prms);
-                    }
-                    else
-                    {
-                        ENETTRACE_ERR("%s: port %u is not open\r\n",
-                                      ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(inArgs->macPort));
-                        status = ENET_EFAIL;
-                    }
-                }
-                else
-                {
-                    ENETTRACE_ERR("%s: invalid MAC port %u\r\n",
-                                  ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(inArgs->macPort));
-                    status = ENET_EINVALIDPARAMS;
-                }
-            }
-            break;
-
-            default:
-                status = ENET_EUNKNOWNIOCTL;
-                break;
+            ENETTRACE_ERR_IF(status < ENET_SOK,
+                "%s: IOCTL 0x%08x failed: %d\n", hIcssg->name, cmd, status);
         }
+        EnetOsal_unlockMutex(hIcssg->lock);
+    }
+    else
+    {
+        ENETTRACE_ERR("Invalid Enet handle\n");
+        status = ENET_EBADARGS;
     }
 
     return status;
 }
 
-static int32_t Icssg_ioctlInternal(EnetPer_Handle hPer,
+int32_t Icssg_getHandleInfo(uint32_t hEnet,
+                           Enet_Type *enetType,
+                           uint32_t *instId)
+{
+    bool isOpen = false;
+    int32_t status = ENET_EBADARGS;
+
+    Icssg_Handle hIcssg = Icssg_getHandle(hEnet);
+
+    if (hEnet != -1)
+    {
+        EnetOsal_lockMutex(hIcssg->lock);
+        isOpen = (hIcssg->magic == ENET_MAGIC);
+        if (isOpen)
+        {
+            *enetType = hIcssg->enetType;
+            *instId = hIcssg->instId;
+            status = ENET_SOK;
+        }
+    EnetOsal_unlockMutex(hIcssg->lock);
+    }
+
+    return status;
+}
+
+static int32_t Icssg_ioctlInternal(Icssg_Handle hIcssg,
                                    uint32_t cmd,
                                    Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
     IcssgInternalIoctlHandlerFxn_t * ioctlHandler;
 
-    ioctlHandler = Icssg_getInternalIoctlHandler(hPer, cmd, IcssgInternalIoctlHandlerTable , ENET_ARRAYSIZE(IcssgInternalIoctlHandlerTable));
+    ioctlHandler = Icssg_getInternalIoctlHandler(hIcssg, cmd, IcssgInternalIoctlHandlerTable , ENET_ARRAYSIZE(IcssgInternalIoctlHandlerTable));
     Enet_assert(ioctlHandler != NULL);
-    status = ioctlHandler(hPer, cmd, prms);
+    status = ioctlHandler(hIcssg, cmd, prms);
     return status;
 }
 
@@ -1478,17 +1795,16 @@ static int32_t Icssg_ioctlMacPort(Icssg_Handle hIcssg,
     int32_t status = ENET_SOK;
     IcssgMacPortIoctlHandlerFxn_t * ioctlHandler;
 
-    ioctlHandler = Icssg_getMacPortIoctlHandler(&hIcssg->enetPer, cmd, IcssgMacPortIoctlHandlerTable , ENET_ARRAYSIZE(IcssgInternalIoctlHandlerTable));
+    ioctlHandler = Icssg_getMacPortIoctlHandler(hIcssg, cmd, IcssgMacPortIoctlHandlerTable , ENET_ARRAYSIZE(IcssgInternalIoctlHandlerTable));
     Enet_assert(ioctlHandler != NULL);
-    status = ioctlHandler(&hIcssg->enetPer, cmd, prms);
+    status = ioctlHandler(hIcssg, cmd, prms);
     return status;
 }
 
-static int32_t Icssg_pollTxTs(EnetPer_Handle hPer,
+static int32_t Icssg_pollTxTs(Icssg_Handle hIcssg,
                               const void *arg,
                               uint32_t argSize)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     Icssg_TxTsEvtCbInfo tsEvtCbInfo;
     Enet_MacPort macPort;
     uint64_t ts;
@@ -1500,13 +1816,13 @@ static int32_t Icssg_pollTxTs(EnetPer_Handle hPer,
     if (argSize != sizeof(Enet_MacPort))
     {
         ENETTRACE_ERR("%s: Incorrect arg size for ENET_EVT_TIMESTAMP_TX (exp %u, got %u)\r\n",
-                      ENET_PER_NAME(hIcssg), sizeof(Enet_MacPort), argSize);
+                      hIcssg->name, sizeof(Enet_MacPort), argSize);
         status = ENET_EINVALIDPARAMS;
     }
 
     if (arg == NULL)
     {
-        ENETTRACE_ERR("%s: Invalid arg for ENET_EVT_TIMESTAMP_TX\r\n", ENET_PER_NAME(hIcssg));
+        ENETTRACE_ERR("%s: Invalid arg for ENET_EVT_TIMESTAMP_TX\r\n", hIcssg->name);
         status = ENET_EINVALIDPARAMS;
     }
 
@@ -1524,7 +1840,7 @@ static int32_t Icssg_pollTxTs(EnetPer_Handle hPer,
                 tsEvtCbInfo.txTsId = pMgmtPkt[2];
                 ts = pMgmtPkt[4];
                 ts = ts << 32U | pMgmtPkt[3];
-                tsEvtCbInfo.ts = Icssg_convertTs(hPer, ts);
+                tsEvtCbInfo.ts = Icssg_convertTs(hIcssg, ts);
 
                 if (hIcssg->txTsCbEvtInfo.evtCb != NULL)
                 {
@@ -1547,9 +1863,8 @@ static int32_t Icssg_pollTxTs(EnetPer_Handle hPer,
     return status;
 }
 
-static void Icssg_pollHwQAsyncResp(EnetPer_Handle hPer)
+static void Icssg_pollHwQAsyncResp(Icssg_Handle hIcssg)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     Enet_MacPort macPort;
     Icssg_IoctlCmdResp resp;
     Icssg_IoctlCmd *cmd;
@@ -1559,7 +1874,7 @@ static void Icssg_pollHwQAsyncResp(EnetPer_Handle hPer)
     uint32_t i;
 
     /* Get the max number of ports */
-    maxPorts = EnetSoc_getMacPortMax(hPer->enetType, hPer->instId);
+    maxPorts = EnetSoc_getMacPortMax(hIcssg->enetType, hIcssg->instId);
 
     for (i = 0U; i < maxPorts; i++)
     {
@@ -1602,16 +1917,15 @@ static void Icssg_pollHwQAsyncResp(EnetPer_Handle hPer)
     }
 }
 
-static void Icssg_pollR30CmdAsyncResp(EnetPer_Handle hPer)
+static void Icssg_pollR30CmdAsyncResp(Icssg_Handle hIcssg)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     Enet_MacPort macPort;
     Icssg_IoctlCmdResp resp;
     uint32_t maxPorts;
     uint32_t i;
 
     /* Get the max number of ports */
-    maxPorts = EnetSoc_getMacPortMax(hPer->enetType, hPer->instId);
+    maxPorts = EnetSoc_getMacPortMax(hIcssg->enetType, hIcssg->instId);
 
     for (i = 0U; i < maxPorts; i++)
     {
@@ -1635,134 +1949,227 @@ static void Icssg_pollR30CmdAsyncResp(EnetPer_Handle hPer)
     }
 }
 
-void Icssg_poll(EnetPer_Handle hPer,
+void Icssg_poll(uint32_t hEnet,
                 Enet_Event evt,
                 const void *arg,
                 uint32_t argSize)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    Icssg_Handle hIcssg = NULL;
 
-    ENETTRACE_DBG("%s: event %d\r\n", ENET_PER_NAME(hIcssg), evt);
+    /* Poll the Enet peripheral for requested events */
+    if (hEnet != -1)
+    {
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
 
-    if (evt == ENET_EVT_TIMESTAMP_TX)
-    {
-        Icssg_pollTxTs(hPer, arg, argSize);
-    }
-    else if (evt == ENET_EVT_ASYNC_CMD_RESP)
-    {
-        if (hIcssg->asyncIoctlType == ICSSG_UTILS_IOCTL_TYPE_R30_OVER_DMEM)
+        EnetOsal_lockMutex(hIcssg->lock);
+
+        ENETTRACE_VERBOSE("%s: Poll peripheral for event %u\n", hIcssg->name, evt);
+
+        if (hIcssg->magic == ENET_MAGIC)
         {
-            Icssg_pollR30CmdAsyncResp(hPer);
+            ENETTRACE_DBG("%s: event %d\r\n", hIcssg->name, evt);
+
+            if (evt == ENET_EVT_TIMESTAMP_TX)
+            {
+                Icssg_pollTxTs(hIcssg, arg, argSize);
+            }
+            else if (evt == ENET_EVT_ASYNC_CMD_RESP)
+            {
+                if (hIcssg->asyncIoctlType == ICSSG_UTILS_IOCTL_TYPE_R30_OVER_DMEM)
+                {
+                    Icssg_pollR30CmdAsyncResp(hIcssg);
+                }
+                else
+                {
+                    Icssg_pollHwQAsyncResp(hIcssg);
+                }
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Invalid event %d\r\n", hIcssg->name, evt);
+            }
         }
         else
         {
-            Icssg_pollHwQAsyncResp(hPer);
+            ENETTRACE_ERR("%s: Peripheral is not open\n", hIcssg->name);
         }
+        EnetOsal_unlockMutex(hIcssg->lock);
     }
     else
     {
-        ENETTRACE_ERR("%s: Invalid event %d\r\n", ENET_PER_NAME(hIcssg), evt);
+        ENETTRACE_ERR("Invalid Enet handle\n");
     }
 }
 
-void Icssg_registerEventCb(EnetPer_Handle hPer,
+void Icssg_registerEventCb(uint32_t hEnet,
                            Enet_Event evt,
                            uint32_t evtNum,
                            Enet_EventCallback evtCb,
                            void *evtCbArgs)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    Icssg_Handle hIcssg = NULL;
 
-    if ((ENET_EVT_ASYNC_CMD_RESP == evt) && (0U == evtNum))
+    if (hEnet != -1)
     {
-        ENETTRACE_WARN_IF((hIcssg->asyncCmdRespCbEvtInfo.evtCb != NULL),
-                         "%s: event %u already registered, overwriting config\r\n",
-                         ENET_PER_NAME(hIcssg), evt);
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
 
-        hIcssg->asyncCmdRespCbEvtInfo.evtCb = evtCb;
-        hIcssg->asyncCmdRespCbEvtInfo.evtCbArgs = evtCbArgs;
-    }
-    else if ((ENET_EVT_TIMESTAMP_TX == evt) && (0U == evtNum))
-    {
-        ENETTRACE_WARN_IF((hIcssg->txTsCbEvtInfo.evtCb != NULL),
-                         "%s: event %u already registered, overwriting config\r\n",
-                         ENET_PER_NAME(hIcssg), evt);
-        hIcssg->txTsCbEvtInfo.evtCb = evtCb;
-        hIcssg->txTsCbEvtInfo.evtCbArgs = evtCbArgs;
+        EnetOsal_lockMutex(hIcssg->lock);
+
+        ENETTRACE_VERBOSE("%s: Register callback for event %u.%u\n", hIcssg->name, evt, evtNum);
+
+        if (hIcssg->magic == ENET_MAGIC)
+        {
+            if ((ENET_EVT_ASYNC_CMD_RESP == evt) && (0U == evtNum))
+            {
+                ENETTRACE_WARN_IF((hIcssg->asyncCmdRespCbEvtInfo.evtCb != NULL),
+                                "%s: event %u already registered, overwriting config\r\n",
+                                hIcssg->name, evt);
+
+                hIcssg->asyncCmdRespCbEvtInfo.evtCb = evtCb;
+                hIcssg->asyncCmdRespCbEvtInfo.evtCbArgs = evtCbArgs;
+            }
+            else if ((ENET_EVT_TIMESTAMP_TX == evt) && (0U == evtNum))
+            {
+                ENETTRACE_WARN_IF((hIcssg->txTsCbEvtInfo.evtCb != NULL),
+                                "%s: event %u already registered, overwriting config\r\n",
+                                hIcssg->name, evt);
+                hIcssg->txTsCbEvtInfo.evtCb = evtCb;
+                hIcssg->txTsCbEvtInfo.evtCbArgs = evtCbArgs;
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: invalid event %u\r\n", hIcssg->name, evt);
+            }
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Peripheral is not open\n", hIcssg->name);
+        }
+        EnetOsal_unlockMutex(hIcssg->lock);
     }
     else
     {
-        ENETTRACE_ERR("%s: invalid event %u\r\n", ENET_PER_NAME(hIcssg), evt);
+        ENETTRACE_ERR("Invalid Enet handle\n");
     }
 }
 
-void Icssg_unregisterEventCb(EnetPer_Handle hPer,
+void Icssg_unregisterEventCb(uint32_t hEnet,
                              Enet_Event evt,
                              uint32_t evtNum)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    Icssg_Handle hIcssg = NULL;
 
-    if ((ENET_EVT_ASYNC_CMD_RESP == evt) && (0U == evtNum) &&
-        (hIcssg->asyncCmdRespCbEvtInfo.evtCb != NULL))
+    if (hEnet != -1)
     {
-        hIcssg->asyncCmdRespCbEvtInfo.evtCb = NULL;
-        hIcssg->asyncCmdRespCbEvtInfo.evtCbArgs = NULL;
-    }
-    else if ((ENET_EVT_TIMESTAMP_TX == evt) && (0U == evtNum) &&
-             (hIcssg->txTsCbEvtInfo.evtCb != NULL))
-    {
-        hIcssg->txTsCbEvtInfo.evtCb = NULL;
-        hIcssg->txTsCbEvtInfo.evtCbArgs = NULL;
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
+
+        EnetOsal_lockMutex(hIcssg->lock);
+
+        ENETTRACE_VERBOSE("%s: Unregister callback for event %u.%u\n", hIcssg->name, evt, evtNum);
+
+        if (hIcssg->magic == ENET_MAGIC)
+        {
+            if ((ENET_EVT_ASYNC_CMD_RESP == evt) && (0U == evtNum) &&
+                (hIcssg->asyncCmdRespCbEvtInfo.evtCb != NULL))
+            {
+                hIcssg->asyncCmdRespCbEvtInfo.evtCb = NULL;
+                hIcssg->asyncCmdRespCbEvtInfo.evtCbArgs = NULL;
+            }
+            else if ((ENET_EVT_TIMESTAMP_TX == evt) && (0U == evtNum) &&
+                    (hIcssg->txTsCbEvtInfo.evtCb != NULL))
+            {
+                hIcssg->txTsCbEvtInfo.evtCb = NULL;
+                hIcssg->txTsCbEvtInfo.evtCbArgs = NULL;
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: event not registered %u\r\n", hIcssg->name, evt);
+            }
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Peripheral is not open\n", hIcssg->name);
+        }
+        EnetOsal_unlockMutex(hIcssg->lock);
     }
     else
     {
-        ENETTRACE_ERR("%s: event not registered %u\r\n", ENET_PER_NAME(hIcssg), evt);
+        ENETTRACE_ERR("Invalid Enet handle\n");
     }
 }
 
-void Icssg_periodicTick(EnetPer_Handle hPer)
+void Icssg_periodicTick(uint32_t hEnet)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    EnetPhy_Handle hPhy;
-    Enet_MacPort macPort;
-    EnetPhy_LinkStatus linkStatus;
-    bool linked;
-    uint32_t portId;
-    uint32_t i;
-    int32_t status = ENET_EFAIL;
+    Icssg_Handle hIcssg = NULL;
 
-    /* Run PHY tick */
-    for (i = 0U; i < ICSSG_MAC_PORT_MAX; i++)
+    /* Run the periodic tick */
+    if (hEnet != -1)
     {
-        hPhy = hIcssg->hPhy[i];
-        /* Check if the corresponding PHY is enabled */
-        if (hPhy != NULL)
-        {
-            macPort = ENET_MACPORT_DENORM(i);
-            portId = ENET_MACPORT_ID(macPort);
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
 
-            ENETTRACE_VAR(portId);
-            ENETTRACE_VAR(status);
-            /* TODO: Need to make lock more granular */
-            //EnetOsal_lockMutex(hIcssg->lock);
+        /* TODO: Need to make lock more granular */
+        EnetOsal_lockMutex(hIcssg->lock);
+
+        ENETTRACE_VERBOSE("%s: Do periodic tick\n", hIcssg->name);
+
+        if (hIcssg->magic == ENET_MAGIC)
+        {
+            EnetPhy_Handle hPhy;
+            Enet_MacPort macPort;
+            EnetPhy_LinkStatus linkStatus;
+            bool linked;
+            uint32_t portId;
+            uint32_t i;
+            int32_t status = ENET_EFAIL;
 
             /* Run PHY tick */
-            linkStatus = EnetPhy_tick(hPhy);
-
-            /* Handle link up/down events */
-            if ((linkStatus == ENETPHY_GOT_LINK) ||
-                (linkStatus == ENETPHY_LOST_LINK))
+            for (i = 0U; i < ICSSG_MAC_PORT_MAX; i++)
             {
-                linked = (linkStatus == ENETPHY_GOT_LINK);
-                status = linked ? Icssg_handleLinkUp(hIcssg, macPort) :
-                                  Icssg_handleLinkDown(hIcssg, macPort);
-                ENETTRACE_ERR_IF((status != ENET_SOK),
-                                 "%s: Port %u: Failed to handle link change: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), portId, status);
-            }
+                hPhy = hIcssg->hPhy[i];
+                /* Check if the corresponding PHY is enabled */
+                if (hPhy != NULL)
+                {
+                    macPort = ENET_MACPORT_DENORM(i);
+                    portId = ENET_MACPORT_ID(macPort);
 
-            //EnetOsal_unlockMutex(hIcssg->lock);
+                    ENETTRACE_VAR(portId);
+                    ENETTRACE_VAR(status);
+                    /* TODO: Need to make lock more granular */
+                    //EnetOsal_lockMutex(hIcssg->lock);
+
+                    /* Run PHY tick */
+                    linkStatus = EnetPhy_tick(hPhy);
+
+                    /* Handle link up/down events */
+                    if ((linkStatus == ENETPHY_GOT_LINK) ||
+                        (linkStatus == ENETPHY_LOST_LINK))
+                    {
+                        linked = (linkStatus == ENETPHY_GOT_LINK);
+                        status = linked ? Icssg_handleLinkUp(hIcssg, macPort) :
+                                        Icssg_handleLinkDown(hIcssg, macPort);
+                        ENETTRACE_ERR_IF((status != ENET_SOK),
+                                        "%s: Port %u: Failed to handle link change: %d\r\n",
+                                        hIcssg->name, portId, status);
+                    }
+
+                    //EnetOsal_unlockMutex(hIcssg->lock);
+                }
+            }
         }
+        else
+        {
+            ENETTRACE_ERR("%s: Peripheral is not open\n", hIcssg->name);
+        }
+        /* TODO: Need to make lock more granular */
+        EnetOsal_unlockMutex(hIcssg->lock);
+    }
+    else
+    {
+        ENETTRACE_ERR("Periodic tick called on an invalid Enet\n");
     }
 }
 
@@ -1773,55 +2180,131 @@ void Icssg_closeDma(Icssg_Handle hIcssg)
     hIcssg->hDma = NULL;
 }
 
-void Icssg_close(EnetPer_Handle hPer)
+void Icssg_close(uint32_t hEnet)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    uintptr_t key;
+    Icssg_Handle hIcssg = NULL;
 
-    ENETTRACE_DBG("%s: close peripheral\r\n", ENET_PER_NAME(hIcssg));
-
-    key = EnetOsal_disableAllIntr();
-
-    /* Close MDIO module */
-    EnetMod_close(hIcssg->hMdio);
-
-    Icssg_unregisterMdioLinkIntr(hIcssg);
-
-    /* Set PHY handles to NULL */
-    for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
+    /* Close the Enet peripheral */
+    if (hEnet != -1)
     {
-        hIcssg->hPhy[phyHandleNum] = NULL;
+        hIcssg = Icssg_getHandle(hEnet);
+        Enet_devAssert(hIcssg != NULL, "Invalid EnetPer handle\n");
+
+        EnetOsal_lockMutex(hIcssg->lock);
+
+        ENETTRACE_VERBOSE("%s: Close peripheral\n", hIcssg->name);
+
+        if (hIcssg->magic == ENET_MAGIC)
+        {
+            ENETTRACE_DBG("%s: close peripheral\r\n", hIcssg->name);
+
+
+            /* Close MDIO module */
+            ENETTRACE_VERBOSE("%s: Close module\n", hIcssg->mdioObj.name);
+
+            if (hIcssg->mdioObj.magic == ENET_MAGIC)
+            {
+                Mdio_close(&hIcssg->mdioObj);
+                hIcssg->mdioObj.magic = ENET_NO_MAGIC;
+                ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->mdioObj.name);
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is not open\n", hIcssg->mdioObj.name);
+            }
+
+            Icssg_unregisterMdioLinkIntr(hIcssg);
+
+            /* Set PHY handles to NULL */
+            for (uint32_t phyHandleNum = 0; phyHandleNum < ICSSG_MAC_PORT_MAX; phyHandleNum++)
+            {
+                hIcssg->hPhy[phyHandleNum] = NULL;
+            }
+
+            /* Close TimeSync module, if opened */
+            ENETTRACE_VERBOSE("%s: Close module\n", hIcssg->timeSyncObj.name);
+            if (hIcssg->timeSyncObj.magic == ENET_MAGIC)
+            {
+                IcssgTimeSync_close(&hIcssg->timeSyncObj);
+                hIcssg->timeSyncObj.magic = ENET_NO_MAGIC;
+                ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->timeSyncObj.name);
+                hIcssg->pruss->iep0InUse = false;
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is not open\n", hIcssg->timeSyncObj.name);
+            }
+
+            /* Close Tas module, if opened */
+            ENETTRACE_VERBOSE("%s: Close module\n", hIcssg->tasObj[0].name);
+            if (hIcssg->tasObj[0].magic == ENET_MAGIC)
+            {
+                IcssgTas_close(&hIcssg->tasObj[0]);
+                hIcssg->tasObj[0].magic = ENET_NO_MAGIC;
+                ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->tasObj[0].name);
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is not open\n", hIcssg->tasObj[0].name);
+            }
+
+            if (hIcssg->enetType == ENET_ICSSG_SWITCH)
+            {
+                /* Close Tas module, if opened */
+                ENETTRACE_VERBOSE("%s: Close module\n", hIcssg->tasObj[1].name);
+                if (hIcssg->tasObj[1].magic == ENET_MAGIC)
+                {
+                    IcssgTas_close(&hIcssg->tasObj[1]);
+                    hIcssg->tasObj[1].magic = ENET_NO_MAGIC;
+                    ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->tasObj[1].name);
+                }
+                else
+                {
+                    ENETTRACE_ERR("%s: Module is not open\n", hIcssg->tasObj[1].name);
+                }
+            }
+
+            /* Close DMA */
+            Icssg_closeDma(hIcssg);
+
+            /* Close RM */
+            if (hIcssg->rmObj.magic == ENET_MAGIC)
+            {
+                EnetRm_close(&hIcssg->rmObj);
+                hIcssg->rmObj.magic = ENET_NO_MAGIC;
+                ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->rmObj.name);
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is not open\n", hIcssg->rmObj.name);
+            }
+
+            /* Close statistics module */
+            ENETTRACE_VERBOSE("%s: Close module\n", hIcssg->statsObj.name);
+
+            if (hIcssg->statsObj.magic == ENET_MAGIC)
+            {
+                IcssgStats_close(&hIcssg->statsObj);
+                hIcssg->statsObj.magic = ENET_NO_MAGIC;
+                ENETTRACE_VERBOSE("%s: Module is now closed\n", hIcssg->statsObj.name);
+            }
+            else
+            {
+                ENETTRACE_ERR("%s: Module is not open\n", hIcssg->statsObj.name);
+            }
+            hIcssg->magic = ENET_NO_MAGIC;
+            ENETTRACE_VERBOSE("%s: Peripheral is now closed\n", hIcssg->name);
+        }
+        /* Set driver open state */
+        hIcssg->magic = ENET_NO_MAGIC;
+
+        EnetOsal_unlockMutex(hIcssg->lock);
+    }
+    else
+    {
+        ENETTRACE_ERR("Trying to close an invalid Enet handle, ignoring...\n");
     }
 
-    /* Close TimeSync module, if opened */
-    if (hIcssg->hTimeSync != NULL)
-    {
-        EnetMod_close(hIcssg->hTimeSync);
-        hIcssg->pruss->iep0InUse = false;
-    }
-
-    /* Close Tas module, if opened */
-    if (hIcssg->hTas[0] != NULL)
-    {
-        EnetMod_close(hIcssg->hTas[0]);
-    }
-
-    /* Close Tas module, if opened */
-    if (hIcssg->hTas[1] != NULL)
-    {
-        EnetMod_close(hIcssg->hTas[1]);
-    }
-
-    /* Close DMA */
-    Icssg_closeDma(hIcssg);
-
-    /* Close RM */
-    EnetMod_close(hIcssg->hRm);
-
-    /* Close statistics module */
-    EnetMod_close(hIcssg->hStats);
-
-    EnetOsal_restoreAllIntr(key);
 }
 
 static void Icssg_setPromiscMode(Icssg_Handle hIcssg,
@@ -2482,16 +2965,15 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
                                  EnetPhy_Mii phyMii,
                                  const EnetPhy_LinkCfg *phyLinkCfg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
     EnetPhy_MdioHandle hPhyMdio = EnetPhyMdioDflt_getPhyMdio();
-    uint32_t macPortCaps = EnetSoc_getMacPortCaps(hPer->enetType, hPer->instId, macPort);
+    uint32_t macPortCaps = EnetSoc_getMacPortCaps(hIcssg->enetType, hIcssg->instId, macPort);
     int32_t status = ENET_SOK;
 
-    ENETTRACE_VAR(hPer);
+    ENETTRACE_VAR(hIcssg);
     ENETTRACE_VAR(portId);
-    ENETTRACE_DBG("%s: Port %u: open port link\r\n", ENET_PER_NAME(hIcssg), portId);
+    ENETTRACE_DBG("%s: Port %u: open port link\r\n", hIcssg->name, portId);
 
     if (portNum < ENET_ARRAYSIZE(hIcssg->hPhy))
     {
@@ -2499,16 +2981,16 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
         {
             if (hIcssg->hPhy[portNum] == NULL)
             {
-                hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, hIcssg->hMdio);
+                hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, &hIcssg->mdioObj);
                 if (hIcssg->hPhy[portNum] == NULL)
                 {
-                    ENETTRACE_ERR("%s: Port %u: failed to open PHY\r\n", ENET_PER_NAME(hIcssg), portId);
+                    ENETTRACE_ERR("%s: Port %u: failed to open PHY\r\n", hIcssg->name, portId);
                     status = ENET_EFAIL;
                 }
             }
             else
             {
-                ENETTRACE_ERR("%s: Port %u: PHY handle in Icssg handle should be NULL before EnetPhy_open() call \r\n", ENET_PER_NAME(hIcssg), portId);
+                ENETTRACE_ERR("%s: Port %u: PHY handle in Icssg handle should be NULL before EnetPhy_open() call \r\n", hIcssg->name, portId);
                 status = ENET_EFAIL;
             }
         }
@@ -2519,7 +3001,7 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
     }
     else
     {
-        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", ENET_PER_NAME(hIcssg), portId);
+        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", hIcssg->name, portId);
         status = ENET_EINVALIDPARAMS;
     }
 
@@ -2529,12 +3011,11 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
 static void Icssg_closeEnetPhy(Icssg_Handle hIcssg,
                                Enet_MacPort macPort)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
     EnetPhy_Handle hPhy;
 
-    ENETTRACE_VAR(hPer);
+    ENETTRACE_VAR(hIcssg);
     ENETTRACE_VAR(portId);
 
     if (portNum < ENET_ARRAYSIZE(hIcssg->hPhy))
@@ -2542,7 +3023,7 @@ static void Icssg_closeEnetPhy(Icssg_Handle hIcssg,
         hPhy = hIcssg->hPhy[portNum];
         if (hPhy != NULL)
         {
-            ENETTRACE_DBG("%s: Port %u: close port link\r\n", ENET_PER_NAME(hIcssg), portId);
+            ENETTRACE_DBG("%s: Port %u: close port link\r\n", hIcssg->name, portId);
 
             if (EnetPhy_isLinked(hPhy))
             {
@@ -2555,14 +3036,13 @@ static void Icssg_closeEnetPhy(Icssg_Handle hIcssg,
     }
     else
     {
-        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", ENET_PER_NAME(hIcssg), portId);
+        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", hIcssg->name, portId);
     }
 }
 
 static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
                                       const EnetPer_PortLinkCfg *portLinkCfg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     IcssgMacPort_Cfg *macPortCfg = (IcssgMacPort_Cfg *)portLinkCfg->macCfg;
     Enet_MacPort macPort = portLinkCfg->macPort;
     const EnetPhy_Cfg *phyCfg = &portLinkCfg->phyCfg;
@@ -2571,10 +3051,10 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
     int32_t status = ENET_EFAIL;
 
     ENETTRACE_VAR(status);
-    ENETTRACE_VAR(hPer);
+    ENETTRACE_VAR(hIcssg);
 
     /* Opening a MAC port in switch use case, this does not apply for single MAC use case */
-    if (hIcssg->enetPer.enetType == ENET_ICSSG_SWITCH)
+    if (hIcssg->enetType == ENET_ICSSG_SWITCH)
     {
         Icssg_configCutThroughOrPreempt(hIcssg, macPort,
                                         &macPortCfg->queuePreemptMode[0U],
@@ -2584,7 +3064,7 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
         status = Icssg_setAcceptableFrameCheckSync(hIcssg, macPort, macPortCfg->acceptFrameCheck);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port %u: failed to set acceptable frame check: %d\r\n",
-                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(portLinkCfg->macPort), status);
+                         hIcssg->name, ENET_MACPORT_ID(portLinkCfg->macPort), status);
 
         /* Set MAC port default VLAN id */
         if ((status == ENET_SOK) &&
@@ -2593,7 +3073,7 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
             status = Icssg_configMacPortDfltVlanId(hIcssg, macPort, &macPortCfg->vlanCfg);
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: Port %u: failed to set MAC port default VLAN: %d\r\n",
-                             ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(portLinkCfg->macPort), status);
+                             hIcssg->name, ENET_MACPORT_ID(portLinkCfg->macPort), status);
         }
     }
     else
@@ -2620,7 +3100,7 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
         status = IcssgUtils_checkPortMode(hIcssg, &portLinkCfg->mii);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: failed to check MAC port mode: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
     }
 
     if (status == ENET_SOK)
@@ -2633,7 +3113,7 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
         status = Icssg_openEnetPhy(hIcssg, macPort, phyCfg, phyMii, &phyLinkCfg);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port %u: failed to open port link with PHY: %d\r\n",
-                         ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(portLinkCfg->macPort), status);
+                         hIcssg->name, ENET_MACPORT_ID(portLinkCfg->macPort), status);
     }
     return status;
 }
@@ -2641,14 +3121,13 @@ static int32_t Icssg_ioctlPortLinkCfg(Icssg_Handle hIcssg,
 static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
                                   Enet_MacPort macPort)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
     EnetPhy_Handle hPhy;
     EnetPhy_LinkCfg phyLinkCfg;
     int32_t status;
 
-    ENETTRACE_VAR(hPer);
+    ENETTRACE_VAR(hIcssg);
     ENETTRACE_VAR(portId);
 
     if (portNum < ENET_ARRAYSIZE(hIcssg->hPhy))
@@ -2659,7 +3138,7 @@ static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
         status = EnetPhy_getLinkCfg(hPhy, &phyLinkCfg);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port %u: failed to get PHY link config: %d\r\n",
-                         ENET_PER_NAME(hIcssg), portId, status);
+                         hIcssg->name, portId, status);
 
         if (status == ENET_SOK)
         {
@@ -2679,12 +3158,12 @@ static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
 
                 default:
                     Enet_assert(false, "%s: Port %u: invalid link speed %u\r\n",
-                                ENET_PER_NAME(hIcssg), portId, phyLinkCfg.speed);
+                                hIcssg->name, portId, phyLinkCfg.speed);
                     break;
             }
 
             ENETTRACE_INFO("%s: Port %u: Link up: %s %s\r\n",
-                           ENET_PER_NAME(hIcssg), portId,
+                           hIcssg->name, portId,
                            Icssg_gSpeedNames[phyLinkCfg.speed],
                            Icssg_gDuplexNames[phyLinkCfg.duplexity]);
 
@@ -2697,12 +3176,12 @@ static int32_t Icssg_handleLinkUp(Icssg_Handle hIcssg,
 
             ENETTRACE_ERR_IF((status != ENET_SOK),
                                 "%s: port %u: failed to set port state: %d\r\n",
-                                ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);            
+                                hIcssg->name, ENET_MACPORT_ID(macPort), status);            
         }
     }
     else
     {
-        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", ENET_PER_NAME(hIcssg), portId);
+        ENETTRACE_ERR("%s: invalid MAC port %u\r\n", hIcssg->name, portId);
         status = ENET_EINVALIDPARAMS;
     }
 
@@ -2716,7 +3195,7 @@ static int32_t Icssg_handleLinkDown(Icssg_Handle hIcssg,
     int32_t status = ENET_SOK;
 
     ENETTRACE_VAR(portId);
-    ENETTRACE_INFO("%s: Port %d: Link down\r\n", ENET_PER_NAME(hIcssg), portId);
+    ENETTRACE_INFO("%s: Port %d: Link down\r\n", hIcssg->name, portId);
 
     /*Set port state to ICSSG_PORT_STATE_DISABLED on link down*/
     IcssgUtils_ioctlR30Cmd cmd = ICSSG_UTILS_R30_CMD_DISABLE;
@@ -2727,7 +3206,7 @@ static int32_t Icssg_handleLinkDown(Icssg_Handle hIcssg,
 
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: port %u: failed to set port state: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
                         
     return status;
 }
@@ -2745,7 +3224,7 @@ static int32_t Icssg_configHostPortDfltVlanId(Icssg_Handle hIcssg,
         (vlanCfg->portVID == 0))
     {
         ENETTRACE_ERR("%s: invalid host port default VLAN id %u\r\n",
-                      ENET_PER_NAME(hIcssg), vlanCfg->portVID);
+                      hIcssg->name, vlanCfg->portVID);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2781,7 +3260,7 @@ static int32_t Icssg_configMacPortDfltVlanId(Icssg_Handle hIcssg,
         (vlanCfg->portVID == 0))
     {
         ENETTRACE_ERR("%s: invalid MAC port default vlan id %u\r\n",
-                      ENET_PER_NAME(hIcssg), vlanCfg->portVID);
+                      hIcssg->name, vlanCfg->portVID);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2837,7 +3316,7 @@ static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
         rmInArgs.flowIdx = flowIdx;
 
         ENET_IOCTL_SET_IN_ARGS(&prms, &rmInArgs);
-        ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_VALIDATE_RX_FLOW, &prms, status);
+        ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_VALIDATE_RX_FLOW, &prms, status);
     }
 
     return status;
@@ -2916,7 +3395,6 @@ static bool Icssg_isVlanAware(Icssg_Handle hIcssg)
 
 static int32_t Icssg_setVlanAwareMode(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uintptr_t cfgRegs = Icssg_getCfgAddr(hIcssg);
     uintptr_t vlanTableAddr;
     uint32_t val;
@@ -2952,18 +3430,18 @@ static int32_t Icssg_setVlanAwareMode(Icssg_Handle hIcssg)
                                     ICSSG_UTILS_R30_CMD_VLAN_AWARE_ENABLE);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                      "%s: Port 1: failed to send VLAN_AWARE_ENABLE R30 cmd: %d\r\n",
-                     ENET_PER_NAME(hIcssg), status);
+                     hIcssg->name, status);
 
     /* Send VLAN_AWARE_ENABLE cmd for MAC port 2 only in Switch mode */
     if ((status == ENET_SOK) &&
-        (hPer->enetType == ENET_ICSSG_SWITCH))
+        (hIcssg->enetType == ENET_ICSSG_SWITCH))
     {
         status = Icssg_R30SendSyncIoctl(hIcssg,
                                         ENET_MAC_PORT_2,
                                         ICSSG_UTILS_R30_CMD_VLAN_AWARE_ENABLE);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port 2: failed to send VLAN_AWARE_ENABLE R30 cmd: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
     }
 
     return status;
@@ -2971,7 +3449,6 @@ static int32_t Icssg_setVlanAwareMode(Icssg_Handle hIcssg)
 
 static int32_t Icssg_setVlanUnawareMode(Icssg_Handle hIcssg)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uintptr_t cfgRegs = Icssg_getCfgAddr(hIcssg);
     int32_t status;
 
@@ -2981,18 +3458,18 @@ static int32_t Icssg_setVlanUnawareMode(Icssg_Handle hIcssg)
                                     ICSSG_UTILS_R30_CMD_VLAN_AWARE_DISABLE);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                      "%s: Port 1: failed to send VLAN_AWARE_DISABLE R30 cmd: %d\r\n",
-                     ENET_PER_NAME(hIcssg), status);
+                     hIcssg->name, status);
 
     /* Send VLAN_AWARE_DISABLE cmd for MAC port 2 only in Switch mode */
     if ((status == ENET_SOK) &&
-        (hPer->enetType == ENET_ICSSG_SWITCH))
+        (hIcssg->enetType == ENET_ICSSG_SWITCH))
     {
         status = Icssg_R30SendSyncIoctl(hIcssg,
                                         ENET_MAC_PORT_2,
                                         ICSSG_UTILS_R30_CMD_VLAN_AWARE_DISABLE);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: Port 2: failed to send VLAN_AWARE_DISABLE R30 cmd: %d\r\n",
-                         ENET_PER_NAME(hIcssg), status);
+                         hIcssg->name, status);
     }
 
     /* Disable VLAN FDB in MMR */
@@ -3529,7 +4006,7 @@ static uintptr_t Icssg_getTxIpgCfgAddr(Icssg_Handle hIcssg,
                                        Enet_MacPort macPort,
                                        bool crossSlice)
 {
-    uintptr_t baseAddr = (uintptr_t)hIcssg->enetPer.virtAddr;
+    uintptr_t baseAddr = (uintptr_t)hIcssg->virtAddr;
     uint32_t slice = IcssgUtils_getSliceNum(hIcssg, macPort);
 
     if (crossSlice)
@@ -3781,10 +4258,9 @@ static void Icssg_updateLinkDown(Icssg_Handle hIcssg,
     Icssg_wr32(hIcssg, rgmiiCfgAddr, val);
 }
 
-uint64_t Icssg_convertTs(EnetPer_Handle hPer,
+uint64_t Icssg_convertTs(Icssg_Handle hIcssg,
                          uint64_t ts)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     uintptr_t sharedRam = Icssg_getSharedRamAddr(hIcssg);
     uint32_t cycleTimeNs = hIcssg->cycleTimeNs;
     uint32_t swHi;
@@ -3880,7 +4356,6 @@ static void Icssg_mdioIsr(uintptr_t arg)
 {
     Icssg_Handle hIcssg = (Icssg_Handle )arg;
     PRUICSS_Handle hPruIcss = hIcssg->pruss->hPruss;
-    EnetMod_Handle hMdio = hIcssg->hMdio;
     Enet_IoctlPrms prms;
     Mdio_Callbacks callbacks =
     {
@@ -3893,7 +4368,14 @@ static void Icssg_mdioIsr(uintptr_t arg)
     int32_t status, pruEvtNum = 0;
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &callbacks);
-    status = EnetMod_ioctlFromIsr(hMdio, MDIO_IOCTL_HANDLE_INTR, &prms);
+
+    status = ENET_EFAIL;
+    bool isMdioOpen = (hIcssg->mdioObj.magic == ENET_MAGIC) ? true : false;
+
+    if (isMdioOpen == true)
+    {
+        status = Mdio_ioctl(&hIcssg->mdioObj, MDIO_IOCTL_HANDLE_INTR, &prms);
+    }
 
     /* TODO: Add ISR safe error:
      * ("Failed to handle MDIO intr: %d\r\n", status); */
@@ -3946,7 +4428,7 @@ static int32_t Icssg_registerMdioLinkIntr(Icssg_Handle hIcssg,
             status = Icssg_enablePruIcssInt(hIcssg);
             ENETTRACE_ERR_IF((status != ENET_SOK),
                             "%s: failed to enable pruicss interrupt: %d\r\n",
-                            ENET_PER_NAME(hIcssg), status);
+                            hIcssg->name, status);
         }
     }
     return status;
@@ -4004,12 +4486,12 @@ static int32_t Icssg_handleExternalPhyLinkUp(Icssg_Handle hIcssg,
 
         default:
             Enet_assert(false, "%s: Port %u: invalid link speed %u\r\n",
-                        ENET_PER_NAME(hIcssg), portId, phyLinkCfg->speed);
+                        hIcssg->name, portId, phyLinkCfg->speed);
             break;
     }
 
     ENETTRACE_INFO("%s: Port %u: Link up: %s %s\r\n",
-                   ENET_PER_NAME(hIcssg), portId,
+                   hIcssg->name, portId,
                    Icssg_gSpeedNames[phyLinkCfg->speed],
                    Icssg_gDuplexNames[phyLinkCfg->duplexity]);
 
@@ -4022,17 +4504,16 @@ static int32_t Icssg_handleExternalPhyLinkUp(Icssg_Handle hIcssg,
 
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: port %u: failed to set port state: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_OPEN_PORT_LINK(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_OPEN_PORT_LINK(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     const EnetPer_PortLinkCfg *inArgs = (const EnetPer_PortLinkCfg *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -4043,15 +4524,14 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_OPEN_PORT_LINK(EnetPer_Handle hPer,
     status = Icssg_ioctlPortLinkCfg(hIcssg, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to open port link: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_CLOSE_PORT_LINK(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_CLOSE_PORT_LINK(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4061,11 +4541,10 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_CLOSE_PORT_LINK(EnetPer_Handle hPer,
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_IS_PORT_LINK_UP(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_IS_PORT_LINK_UP(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     bool *linkUp = (bool *)prms->outArgs;
@@ -4089,18 +4568,17 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_IS_PORT_LINK_UP(EnetPer_Handle hPer,
     else
     {
         ENETTRACE_ERR("%s: invalid MAC port %u\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                        hIcssg->name, ENET_MACPORT_ID(macPort));
         *linkUp = false;
         status = ENET_EINVALIDPARAMS;
     }
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_GET_PORT_LINK_CFG(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_GET_PORT_LINK_CFG(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     EnetMacPort_LinkCfg *linkCfg = (EnetMacPort_LinkCfg *)prms->outArgs;
@@ -4125,30 +4603,29 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_GET_PORT_LINK_CFG(EnetPer_Handle hPer
             else
             {
                 ENETTRACE_ERR("%s: Port %u: failed to get PHY link config: %d\r\n",
-                                ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                                hIcssg->name, ENET_MACPORT_ID(macPort), status);
             }
         }
         else
         {
             ENETTRACE_WARN("%s: Port %u: can't get link config of a closed port\r\n",
-                            ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                            hIcssg->name, ENET_MACPORT_ID(macPort));
             status = ENET_EPERM;
         }
     }
     else
     {
         ENETTRACE_ERR("%s: invalid MAC port %u\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                        hIcssg->name, ENET_MACPORT_ID(macPort));
     }
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_PROMISC_MODE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_PROMISC_MODE(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     Enet_MacPort *inArgs = (Enet_MacPort *)prms->inArgs;
     int32_t status = ENET_SOK;
     Enet_assert(cmd == ICSSG_MACPORT_IOCTL_ENABLE_PROMISC_MODE);
@@ -4158,11 +4635,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_PROMISC_MODE(EnetPer_Hand
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_PROMISC_MODE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_PROMISC_MODE(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort *inArgs = (Enet_MacPort *)prms->inArgs;
 
@@ -4173,11 +4649,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_PROMISC_MODE(EnetPer_Han
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_UCAST_FLOOD(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_UCAST_FLOOD(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4188,11 +4663,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_UCAST_FLOOD(EnetPer_Handl
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_UCAST_FLOOD(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_UCAST_FLOOD(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4203,11 +4677,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_UCAST_FLOOD(EnetPer_Hand
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_MCAST_FLOOD(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_MCAST_FLOOD(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4218,11 +4691,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_ENABLE_MCAST_FLOOD(EnetPer_Handl
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_MCAST_FLOOD(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_MCAST_FLOOD(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4233,11 +4705,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_DISABLE_MCAST_FLOOD(EnetPer_Hand
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_RESET_TABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_RESET_TABLE(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     Icssg_VlanFidParams *inArgs = (Icssg_VlanFidParams *)prms->inArgs;
     int32_t status = ENET_SOK;
 
@@ -4249,11 +4720,10 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_RESET_TABLE(EnetPer_Handle hPer
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_ENTRY(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_ENTRY(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_VlanFidEntry *inArgs = (Icssg_VlanFidEntry *)prms->inArgs;
 
@@ -4262,17 +4732,16 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_ENTRY(EnetPer_Handle hPer,
     status = Icssg_ioctlVlanFidSetEntry(hIcssg, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to set vlan table entry: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_GET_ENTRY(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_GET_ENTRY(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_VlanFidEntry *outArgs = (Icssg_VlanFidEntry *)prms->outArgs;
 
@@ -4281,16 +4750,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_GET_ENTRY(EnetPer_Handle hPer,
     status = Icssg_ioctlVlanFidGetEntry(hIcssg, outArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to get vlan table entry: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_HOSTPORT_DFLT_VID(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_HOSTPORT_DFLT_VID(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     EnetPort_VlanCfg *vlanCfg = (EnetPort_VlanCfg *)prms->inArgs;
 
@@ -4299,16 +4767,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_HOSTPORT_DFLT_VID(EnetPer_H
     status = Icssg_configHostPortDfltVlanId(hIcssg, vlanCfg);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to config host port default VLAN Id: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_MACPORT_DFLT_VID(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_MACPORT_DFLT_VID(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_MacPortDfltVlanCfgInArgs *inArgs = (Icssg_MacPortDfltVlanCfgInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -4318,16 +4785,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_VLAN_SET_MACPORT_DFLT_VID(EnetPer_Ha
     status = Icssg_configMacPortDfltVlanId(hIcssg, macPort, &inArgs->vlanCfg);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to config default VLAN Id: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_SET_PORT_STATE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_SET_PORT_STATE(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     IcssgMacPort_SetPortStateInArgs *inArgs = (IcssgMacPort_SetPortStateInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -4339,16 +4805,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_SET_PORT_STATE(EnetPer_Handle hPer,
     status = Icssg_ioctlSetPortState(hIcssg, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: port %u: failed to set port state: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_ADD_ENTRY(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_ADD_ENTRY(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_FdbEntry *inArgs = (Icssg_FdbEntry *)prms->inArgs;
 
@@ -4358,16 +4823,15 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_ADD_ENTRY(EnetPer_Handle hPer,
     status = Icssg_ioctlFdbAddEntry(hIcssg, ENET_MAC_PORT_1, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to add fdb entry: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ENTRY(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ENTRY(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_FdbEntry *inArgs = (Icssg_FdbEntry *)prms->inArgs;
 
@@ -4377,16 +4841,15 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ENTRY(EnetPer_Handle hPer,
     status = Icssg_ioctlFdbRemoveEntry(hIcssg, ENET_MAC_PORT_1, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to remove fdb entry: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ALL_ENTRIES(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ALL_ENTRIES(Icssg_Handle hIcssg,
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ICSSG_FDB_IOCTL_REMOVE_ALL_ENTRIES);
@@ -4395,16 +4858,15 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_ALL_ENTRIES(EnetPer_Handle hP
     status = Icssg_ioctlFdbRemoveAllEntries(hIcssg, ENET_MAC_PORT_1);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to remove all entries: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES);
@@ -4413,15 +4875,14 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_REMOVE_AGEABLE_ENTRIES(EnetPer_Handl
     status = Icssg_ioctlFdbRemoveAllAgeableEntries(hIcssg, ENET_MAC_PORT_1);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to remove all ageable entries: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_READ_SLOT_ENTRIES(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_READ_SLOT_ENTRIES(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_FdbEntry_ReadSlotInArgs *inArgs = (Icssg_FdbEntry_ReadSlotInArgs *)prms->inArgs;
     Enet_assert(cmd == ICSSG_FDB_IOCTL_READ_SLOT_ENTRIES);
@@ -4429,15 +4890,14 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_READ_SLOT_ENTRIES(EnetPer_Handle hPe
     status = Icssg_ioctlFdbReadSlotEntries(hIcssg, ENET_MAC_PORT_1, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to read slot entries: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;    
     Icssg_FdbEntry_GetSlotOutArgs *outArgs = (Icssg_FdbEntry_GetSlotOutArgs *)prms->outArgs;
     Enet_assert(cmd == ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES);
@@ -4445,15 +4905,14 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_GET_SLOT_ENTRIES(EnetPer_Handle hPer
     status = Icssg_ioctlFdbGetSlotEntries(hIcssg, ENET_MAC_PORT_1, outArgs);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: failed to get slot entries: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_MACADDR(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     IcssgMacPort_SetMacAddressInArgs *inArgs = (IcssgMacPort_SetMacAddressInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -4467,11 +4926,10 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer,
 }
 
 
-int32_t Icssg_ioctl_handler_ICSSG_HOSTPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_HOSTPORT_IOCTL_SET_MACADDR(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Icssg_MacAddr *inArgs = (Icssg_MacAddr *)prms->inArgs;
 
@@ -4482,11 +4940,10 @@ int32_t Icssg_ioctl_handler_ICSSG_HOSTPORT_IOCTL_SET_MACADDR(EnetPer_Handle hPer
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4501,17 +4958,16 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPTION(EnetPer_Handle 
         status = Icssg_ioctlPreemptTxEnable(hIcssg, macPort);
         ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: Port %u: failed to configure preempt TX enable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     }
 
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4520,17 +4976,16 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPTION(EnetPer_Handle
     status = Icssg_ioctlPreemptTxDisable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: Port %u: failed to configure preempt TX disable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(Icssg_Handle hIcssg,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     bool *enabled = (bool *)prms->outArgs;
@@ -4540,17 +4995,16 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS(Enet
     status = Icssg_ioctlPreemptGetTxEnableStatus(hIcssg, macPort, enabled);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to get preempt TX enable status: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS(Icssg_Handle hIcssg,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     bool *active = (bool *)prms->outArgs;
@@ -4560,17 +5014,16 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPTION_ACTIVE_STATUS(Enet
     status = Icssg_ioctlPreemptGetTxActiveStatus(hIcssg, macPort, active);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                             "%s: Port %u: failed to get preempt TX enable status: %d\r\n",
-                            ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                            hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4579,17 +5032,16 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION(EnetP
     status = Icssg_ioctlPreemptVerifyEnable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: Port %u: failed to verify preempt enable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4598,16 +5050,15 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION(Enet
     status = Icssg_ioctlPreemptVerifyDisable(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: Port %u: failed to verify preempt disable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     EnetMacPort_PreemptVerifyStatus *outArgs = (EnetMacPort_PreemptVerifyStatus *)prms->outArgs;
@@ -4617,15 +5068,14 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS(EnetPer
     status = Icssg_ioctlPreemptGetVerifyState(hIcssg, macPort, outArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to get preempt verify state: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(Icssg_Handle hIcssg,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
     uint8_t *minFragSize = (uint8_t *)prms->outArgs;
@@ -4635,16 +5085,15 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(EnetPer
     status = Icssg_ioctlPreemptGetMinFragSizeLocal(hIcssg, macPort, minFragSize);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to get preempt min frag size local: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(Icssg_Handle hIcssg,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
     int32_t status = ENET_SOK;
     EnetMacPort_SetPreemptMinFragSizeInArgs *inArgs =
                 (EnetMacPort_SetPreemptMinFragSizeInArgs *)prms->inArgs;
@@ -4654,15 +5103,14 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(EnetPer
     status = Icssg_ioctlPreemptSetMinFragSizeRemote(hIcssg, inArgs);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to verify preempt disable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(inArgs->macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(inArgs->macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE(Icssg_Handle hIcssg,
                                                                  uint32_t cmd,
                                                                  Enet_IoctlPrms *prms)
 {
-
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS);
@@ -4672,7 +5120,7 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE(EnetPer_Handle 
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
@@ -4685,7 +5133,7 @@ int32_t Icssg_ioctl_handler_ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS(EnetPer_
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW(Icssg_Handle hIcssg,
                                                                 uint32_t cmd,
                                                                 Enet_IoctlPrms *prms)
 {
@@ -4693,7 +5141,7 @@ int32_t Icssg_ioctl_handler_ENET_IOCTL_REGISTER_RX_DEFAULT_FLOW(EnetPer_Handle h
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t Icssg_ioctl_handler_ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
@@ -4701,11 +5149,11 @@ int32_t Icssg_ioctl_handler_ENET_IOCTL_UNREGISTER_RX_DEFAULT_FLOW(EnetPer_Handle
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     uint32_t i;
     uint32_t coreId = *(uint32_t *)prms->inArgs;
@@ -4715,7 +5163,7 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,
     Enet_assert(cmd == ENET_PER_IOCTL_ATTACH_CORE);
 
     ENET_IOCTL_SET_INOUT_ARGS(&rmPrms, &coreId, &outArgs->coreKey);
-    ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_ATTACH, &rmPrms, status);
+    ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_ATTACH, &rmPrms, status);
     if (status == ENET_SOK)
     {
         /* Get MTU values */
@@ -4738,16 +5186,16 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,
     else
     {
         ENETTRACE_ERR("%s: failed to attach core %u: %d\r\n",
-                        ENET_PER_NAME(hIcssg), coreId, status);
+                        hIcssg->name, coreId, status);
     }
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_DETACH_CORE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_DETACH_CORE(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     uint32_t coreKey = *((uint32_t *)prms->inArgs);
     Enet_IoctlPrms rmPrms;
@@ -4755,18 +5203,18 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_DETACH_CORE(EnetPer_Handle hPer,
     Enet_assert(cmd == ENET_PER_IOCTL_DETACH_CORE);
 
     ENET_IOCTL_SET_IN_ARGS(&rmPrms, &coreKey);
-    ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_DETACH, &rmPrms, status);
+    ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_DETACH, &rmPrms, status);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to detach core: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_TRIGGER(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_TRIGGER(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4779,15 +5227,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_TRIGGER(EnetPer_Handle hPer,
                                         &hIcssg->asyncIoctlType);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to do TAS trigger: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_ENABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_ENABLE(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4800,15 +5248,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_ENABLE(EnetPer_Handle hPer,
                                         &hIcssg->asyncIoctlType);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to do TAS enable: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_DISABLE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_DISABLE(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4821,15 +5269,15 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_DISABLE(EnetPer_Handle hPer,
                                         &hIcssg->asyncIoctlType);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to do TAS disable %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_RESET(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_RESET(Icssg_Handle hIcssg,
                                                         uint32_t cmd,
                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *(Enet_MacPort *)prms->inArgs;
 
@@ -4842,16 +5290,16 @@ int32_t Icssg_ioctl_handler_ICSSG_PER_IOCTL_TAS_RESET(EnetPer_Handle hPer,
                                         &hIcssg->asyncIoctlType);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to do TAS reset: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
 
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_SET_AGING_PERIOD(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_SET_AGING_PERIOD(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     uint64_t period = *(uint64_t *)prms->inArgs;
 
@@ -4861,11 +5309,11 @@ int32_t Icssg_ioctl_handler_ICSSG_FDB_IOCTL_SET_AGING_PERIOD(EnetPer_Handle hPer
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_ACCEPT_FRAME_CHECK(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_ACCEPT_FRAME_CHECK(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Icssg_SetAcceptFrameCheckInArgs *inArgs = (Icssg_SetAcceptFrameCheckInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -4877,15 +5325,15 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_ACCEPT_FRAME_CHECK(EnetPer_H
                                             inArgs->acceptFrameCheck);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
                         "%s: Port %u: failed to set acceptable frame check: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Icssg_IngressRateLim *rateLimCfg = (Icssg_IngressRateLim *)prms->inArgs;
     Enet_MacPort macPort = rateLimCfg->macPort;
@@ -4899,11 +5347,11 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_INGRESS_RATE_LIM(EnetPer_Han
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_AWARE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_AWARE(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_PER_IOCTL_SET_VLAN_AWARE);
@@ -4911,15 +5359,15 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_AWARE(EnetPer_Handle hPer,
     status = Icssg_setVlanAwareMode(hIcssg);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to set VLAN aware mode: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_UNAWARE(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_UNAWARE(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ENET_PER_IOCTL_SET_VLAN_UNAWARE);
@@ -4927,15 +5375,15 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_SET_VLAN_UNAWARE(EnetPer_Handle hPer,
     status = Icssg_setVlanUnawareMode(hIcssg);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to set VLAN unaware mode: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SELECT(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     IcssgMacPort_SetQueueCtPremptModeInArgs *inArgs =
         (IcssgMacPort_SetQueueCtPremptModeInArgs *)prms->inArgs;
@@ -4950,11 +5398,11 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_SET_QUEUE_CUT_THROUGH_PREEMPT_SE
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     IcssgMacPort_ConfigSpecialFramePrioInArgs *inArgs =
         (IcssgMacPort_ConfigSpecialFramePrioInArgs *)prms->inArgs;
@@ -4968,11 +5416,11 @@ int32_t Icssg_ioctl_handler_ICSSG_MACPORT_IOCTL_CONFIG_SPL_FRAME_PRIO(EnetPer_Ha
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKUP_EVENT(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKUP_EVENT(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_ExtPhyLinkUpEventInfo *linkInfo = (Enet_ExtPhyLinkUpEventInfo *)prms->inArgs;
 
@@ -4981,15 +5429,15 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKUP_EVENT(EnetPer_Ha
     status = Icssg_handleExternalPhyLinkUp(hIcssg, linkInfo->macPort, &linkInfo->phyLinkCfg);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Link Up Failed: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKDOWN_EVENT(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKDOWN_EVENT(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     Enet_MacPort macPort = *((Enet_MacPort *)prms->inArgs);
 
@@ -4998,15 +5446,15 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_HANDLE_EXTPHY_LINKDOWN_EVENT(EnetPer_
     status = Icssg_handleLinkDown(hIcssg, macPort);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Link Down failed: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_ENABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_ENABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ICSSG_ENABLE_PROTOCOL_SPECIFIC_TAG_IOCTL);
@@ -5018,15 +5466,15 @@ int32_t Icssg_ioctl_handler_ICSSG_ENABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(EnetPer_Han
     }
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Enable Host Offload failed: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t Icssg_ioctl_handler_ICSSG_DISABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ICSSG_DISABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(Icssg_Handle hIcssg,
                                                             uint32_t cmd,
                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
 
     Enet_assert(cmd == ICSSG_DISABLE_PROTOCOL_SPECIFIC_TAG_IOCTL);
@@ -5038,15 +5486,15 @@ int32_t Icssg_ioctl_handler_ICSSG_DISABLE_PROTOCOL_SPECIFIC_TAG_IOCTL(EnetPer_Ha
     }
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Disable Host Offload failed: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     return status;
 }
 
-int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP(Icssg_Handle hIcssg,
                                                                             uint32_t cmd,
                                                                             Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     EnetMacPort_SetEgressPriorityMapInArgs *inArgs = (EnetMacPort_SetEgressPriorityMapInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -5056,15 +5504,15 @@ int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP(Ene
     status = Icssg_setPcpBasedClassification(hIcssg, macPort, &inArgs->priorityMap);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to set QoS priority: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_PRI_REGEN_MAP(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_PRI_REGEN_MAP(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
 
     EnetMacPort_SetPriorityRegenMapInArgs *inArgs = (EnetMacPort_SetPriorityRegenMapInArgs *)prms->inArgs;
@@ -5075,15 +5523,15 @@ int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_PRI_REGEN_MAP(EnetPer_
     status = Icssg_setVlanPriorityRegen(hIcssg, macPort, &inArgs->priorityRegenMap);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to set priority regeneration: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     return status;
 }
 
-int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_INGRESS_DSCP_PRI_MAP(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_INGRESS_DSCP_PRI_MAP(Icssg_Handle hIcssg,
                                                                                 uint32_t cmd,
                                                                                 Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     int32_t status = ENET_SOK;
     EnetMacPort_SetIngressDscpPriorityMapInArgs *inArgs = (EnetMacPort_SetIngressDscpPriorityMapInArgs *)prms->inArgs;
     Enet_MacPort macPort = inArgs->macPort;
@@ -5098,23 +5546,23 @@ int32_t IcssgMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_INGRESS_DSCP_PRI_MAP(E
         status = Icssg_setDscpPriority(hIcssg, macPort, &inArgs->dscpPriorityMap);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: Port %u: failed to set dscp priority map: %d\r\n",
-                        ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort), status);
+                        hIcssg->name, ENET_MACPORT_ID(macPort), status);
     }
     else
     {
         status = Icssg_setNoClassification(hIcssg, macPort);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to remove DSCP based classification: %d\r\n",
-                        ENET_PER_NAME(hIcssg), status);
+                        hIcssg->name, status);
     }
 
     return status;
 }
 
-static int32_t Icssg_getInternalIoctlHandlerEntry(EnetPer_Handle hPer, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
+static int32_t Icssg_getInternalIoctlHandlerEntry(Icssg_Handle hIcssg, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
 {
 #if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
 #endif
     uint32_t i;
     int32_t status;
@@ -5133,22 +5581,21 @@ static int32_t Icssg_getInternalIoctlHandlerEntry(EnetPer_Handle hPer, uint32_t 
     }
     else
     {
-        ENETTRACE_ERR("%s: failed to get ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", ENET_PER_NAME(hIcssg), cmd);
+        ENETTRACE_ERR("%s: failed to get ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", hIcssg->name, cmd);
         status = ENET_EINVALIDPARAMS;
     }
     return status;
 }
 
-static IcssgInternalIoctlHandlerFxn_t * Icssg_getInternalIoctlHandler(EnetPer_Handle hPer, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
+static IcssgInternalIoctlHandlerFxn_t * Icssg_getInternalIoctlHandler(Icssg_Handle hIcssg, uint32_t cmd, IcssgInternalIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
 {
 #if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
 #endif
     uint32_t entryIndex;
     int32_t status;
     IcssgInternalIoctlHandlerFxn_t *ioctlHandler = NULL;
 
-    status = Icssg_getInternalIoctlHandlerEntry(hPer, cmd, ioctlTbl, numEntries, &entryIndex);
+    status = Icssg_getInternalIoctlHandlerEntry(hIcssg, cmd, ioctlTbl, numEntries, &entryIndex);
     if (status == ENET_SOK)
     {
         Enet_assert(entryIndex < numEntries);
@@ -5156,33 +5603,33 @@ static IcssgInternalIoctlHandlerFxn_t * Icssg_getInternalIoctlHandler(EnetPer_Ha
     }
     else
     {
-        ENETTRACE_ERR("%s: failed to get ioctl handler for ICSSG IOCTL cmd %x\r\n", ENET_PER_NAME(hIcssg), cmd);
+        ENETTRACE_ERR("%s: failed to get ioctl handler for ICSSG IOCTL cmd %x\r\n", hIcssg->name, cmd);
         ioctlHandler = &Icssg_ioctl_handler_default;
     }
     return ioctlHandler;
 }
 
 
-int32_t Icssg_ioctl_handler_default(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_default(Icssg_Handle hIcssg,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t Icssg_internalIoctlHandler_registerHandler(EnetPer_Handle hPer,
+int32_t Icssg_internalIoctlHandler_registerHandler(Icssg_Handle hIcssg,
                                                     uint32_t cmd,
                                                     Enet_IoctlPrms *prms)
 {
 #if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
 #endif
     int32_t status = ENET_SOK;
     IcssgInternalIoctlHandlerTableEntry_t *ioctlHandlerToRegister  = (IcssgInternalIoctlHandlerTableEntry_t *)prms->inArgs;
     IcssgInternalIoctlHandlerTableEntry_t *currentIoctlTblEntry;
     uint32_t entryIndex;
 
-    status = Icssg_getInternalIoctlHandlerEntry(hPer, ioctlHandlerToRegister->cmd,
+    status = Icssg_getInternalIoctlHandlerEntry(hIcssg, ioctlHandlerToRegister->cmd,
                                         IcssgInternalIoctlHandlerTable ,
                                         ENET_ARRAYSIZE(IcssgInternalIoctlHandlerTable),
                                         &entryIndex);
@@ -5195,17 +5642,17 @@ int32_t Icssg_internalIoctlHandler_registerHandler(EnetPer_Handle hPer,
     }
     else
     {
-        ENETTRACE_ERR("%s: failed to register ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", ENET_PER_NAME(hIcssg), cmd);
+        ENETTRACE_ERR("%s: failed to register ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", hIcssg->name, cmd);
         status = ENET_EINVALIDPARAMS;
     }
     return status;
 }
 
 
-int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
+int32_t Icssg_registerIoctlHandler(Icssg_Handle hIcssg,
                                     Enet_IoctlPrms *prms)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
+    
     uint32_t major;
     int32_t status = ENET_SOK;
     Enet_IoctlRegisterHandlerInArgs *ioctlHandlerRegister = (Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
@@ -5221,7 +5668,7 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
                                     ENET_ARRAYSIZE(gIcssg_ioctlValidate));
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: IOCTL 0x%08x params are not valid\r\n",
-                         ENET_PER_NAME(hIcssg), ioctlHandlerRegister->cmd);
+                         hIcssg->name, ioctlHandlerRegister->cmd);
     }
 #endif
 
@@ -5232,31 +5679,31 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
         {
             case ENET_IOCTL_PER_BASE:
             {
-                status = Icssg_internalIoctlHandler_registerHandler(hPer, ioctlHandlerRegister->cmd, prms);
+                status = Icssg_internalIoctlHandler_registerHandler(hIcssg, ioctlHandlerRegister->cmd, prms);
             }
             break;
 
             case ENET_IOCTL_MDIO_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hMdio, MDIO_IOCTL_REGISTER_HANDLER, prms);
+                status = Mdio_ioctl(&hIcssg->mdioObj, MDIO_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 
             case ENET_IOCTL_RM_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hRm, ENET_RM_IOCTL_REGISTER_HANDLER, prms);
+                status = EnetRm_ioctl(&hIcssg->rmObj, ENET_RM_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 
             case ENET_IOCTL_TIMESYNC_BASE:
             {
-                if (hIcssg->hTimeSync != NULL)
+                if (hIcssg->timeSyncObj.magic != ENET_NO_MAGIC)
                 {
-                    status = EnetMod_ioctl(hIcssg->hTimeSync, ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER, prms);
+                    status = IcssgTimeSync_ioctl(&hIcssg->timeSyncObj, ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER, prms);
                 }
                 else
                 {
-                    ENETTRACE_ERR("%s: TimeSync is not enabled\r\n", ENET_PER_NAME(hIcssg));
+                    ENETTRACE_ERR("%s: TimeSync is not enabled\r\n", hIcssg->name);
                     status = ENET_ENOTSUPPORTED;
                 }
             }
@@ -5274,21 +5721,19 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
                 */
                 Enet_MacPort macPort = ENET_MAC_PORT_FIRST;
                 uint32_t portNum = ENET_MACPORT_NORM(macPort);
-                EnetMod_Handle hTas;
 
-                Enet_assert(portNum < ENET_ARRAYSIZE(hIcssg->hTas));
+                Enet_assert(portNum < ENET_ARRAYSIZE(&hIcssg->tasObj));
 
-                hTas = hIcssg->hTas[portNum];
-                if (hTas != NULL)
+                if (hIcssg->tasObj[portNum].magic != ENET_NO_MAGIC)
                 {
                     tasInArgs.commonInArgs.macPort = macPort;
                     tasInArgs.registerHandler = *ioctlHandlerRegister;
                     ENET_IOCTL_SET_IN_ARGS(&tasPrms, &tasInArgs);
-                    status = EnetMod_ioctl(hTas, ICSSG_TAS_IOCTL_REGISTER_HANDLER, &tasPrms);
+                    status = IcssgTas_ioctl(&hIcssg->tasObj[portNum], ICSSG_TAS_IOCTL_REGISTER_HANDLER, &tasPrms);
                 }
                 else
                 {
-                    ENETTRACE_ERR("%s: Tas is not enabled\n", ENET_PER_NAME(hIcssg));
+                    ENETTRACE_ERR("%s: Tas is not enabled\n", hIcssg->name);
                     status = ENET_ENOTSUPPORTED;
                 }
             }
@@ -5306,13 +5751,13 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
                 status = Icssg_ioctlMacPort(hIcssg, ICSSG_MACPORT_IOCTL_REGISTER_HANDLER, prms);
                 ENETTRACE_ERR_IF((status != ENET_SOK),
                                  "%s: failed to run IOCTL 0x%08x: %d\r\n",
-                                 ENET_PER_NAME(hIcssg), ioctlHandlerRegister->cmd, status);
+                                 hIcssg->name, ioctlHandlerRegister->cmd, status);
             }
             break;
 
             case ENET_IOCTL_STATS_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hStats, ICSSG_STATS_IOCTL_REGISTER_HANDLER, prms);
+                status = IcssgStats_ioctl(&hIcssg->statsObj, ICSSG_STATS_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 
@@ -5336,14 +5781,14 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
                     else
                     {
                         ENETTRACE_ERR("%s: port %u is not open\r\n",
-                                      ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                                      hIcssg->name, ENET_MACPORT_ID(macPort));
                         status = ENET_EFAIL;
                     }
                 }
                 else
                 {
                     ENETTRACE_ERR("%s: invalid MAC port %u\r\n",
-                                  ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                                  hIcssg->name, ENET_MACPORT_ID(macPort));
                     status = ENET_EINVALIDPARAMS;
                 }
             }
@@ -5365,28 +5810,25 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
 
 
 
-int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(EnetPer_Handle hPer,
+int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(Icssg_Handle hIcssg,
                                                                     uint32_t cmd,
                                                                     Enet_IoctlPrms *prms)
 {
     int32_t status;
 
-    status = Icssg_registerIoctlHandler(hPer, prms);
+    status = Icssg_registerIoctlHandler(hIcssg, prms);
     return status;
 }
 
-int32_t IcssgMacPort_ioctl_handler_default(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_default(Icssg_Handle hIcssg,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-static int32_t Icssg_getMacPortIoctlHandlerEntry(EnetPer_Handle hPer, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
+static int32_t Icssg_getMacPortIoctlHandlerEntry(Icssg_Handle hIcssg, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
 {
-#if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-#endif
     uint32_t i;
     int32_t status;
 
@@ -5404,19 +5846,19 @@ static int32_t Icssg_getMacPortIoctlHandlerEntry(EnetPer_Handle hPer, uint32_t c
     }
     else
     {
-        ENETTRACE_ERR("%s: failed to get ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", ENET_PER_NAME(hIcssg), cmd);
+        ENETTRACE_ERR("%s: failed to get ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", hIcssg->name, cmd);
         status = ENET_EINVALIDPARAMS;
     }
     return status;
 }
 
-static IcssgMacPortIoctlHandlerFxn_t * Icssg_getMacPortIoctlHandler(EnetPer_Handle hPer, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
+static IcssgMacPortIoctlHandlerFxn_t * Icssg_getMacPortIoctlHandler(Icssg_Handle hIcssg, uint32_t cmd, IcssgMacPortIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
 {
     uint32_t entryIndex;
     int32_t status;
     IcssgMacPortIoctlHandlerFxn_t *ioctlHandler = NULL;
 
-    status = Icssg_getMacPortIoctlHandlerEntry(hPer, cmd, ioctlTbl, numEntries, &entryIndex);
+    status = Icssg_getMacPortIoctlHandlerEntry(hIcssg, cmd, ioctlTbl, numEntries, &entryIndex);
     if (status == ENET_SOK)
     {
         Enet_assert(entryIndex < numEntries);
@@ -5430,20 +5872,17 @@ static IcssgMacPortIoctlHandlerFxn_t * Icssg_getMacPortIoctlHandler(EnetPer_Hand
     return ioctlHandler;
 }
 
-int32_t IcssgMacPort_ioctl_handler_registerHandler(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_registerHandler(Icssg_Handle hIcssg,
                                                     uint32_t cmd,
                                                     Enet_IoctlPrms *prms)
 {
-#if ((ENET_CFG_TRACE_LEVEL >= ENET_CFG_TRACE_LEVEL_ERROR) && ENET_CFG_IS_OFF(TRACE_DISABLE_INFOSTRING))
-    Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-#endif
     int32_t status = ENET_SOK;
     IcssgMacPortIoctlHandlerTableEntry_t *ioctlHandlerToRegister  = (IcssgMacPortIoctlHandlerTableEntry_t *)prms->inArgs;
     IcssgMacPortIoctlHandlerTableEntry_t *currentIoctlTblEntry;
     uint32_t entryIndex;
 
     Enet_assert(cmd == ICSSG_MACPORT_IOCTL_REGISTER_HANDLER);
-    status = Icssg_getMacPortIoctlHandlerEntry(hPer, ioctlHandlerToRegister->cmd,
+    status = Icssg_getMacPortIoctlHandlerEntry(hIcssg, ioctlHandlerToRegister->cmd,
                                         IcssgMacPortIoctlHandlerTable ,
                                         ENET_ARRAYSIZE(IcssgMacPortIoctlHandlerTable),
                                         &entryIndex);
@@ -5456,18 +5895,18 @@ int32_t IcssgMacPort_ioctl_handler_registerHandler(EnetPer_Handle hPer,
     }
     else
     {
-        ENETTRACE_ERR("%s: failed to register ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", ENET_PER_NAME(hIcssg), cmd);
+        ENETTRACE_ERR("%s: failed to register ioctl cmd entry for ICSSG IOCTL cmd %x\r\n", hIcssg->name, cmd);
         status = ENET_EINVALIDPARAMS;
     }
     return status;
 }
 
-int32_t IcssgMacPort_ioctl_handler_ICSSG_MACPORT_IOCTL_REGISTER_HANDLER(EnetPer_Handle hPer,
+int32_t IcssgMacPort_ioctl_handler_ICSSG_MACPORT_IOCTL_REGISTER_HANDLER(Icssg_Handle hIcssg,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     int32_t status;
 
-    status = IcssgMacPort_ioctl_handler_registerHandler(hPer, cmd, prms);
+    status = IcssgMacPort_ioctl_handler_registerHandler(hIcssg, cmd, prms);
     return status;
 }

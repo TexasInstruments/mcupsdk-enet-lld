@@ -59,7 +59,7 @@ extern "C" {
  * \brief Helper macro used to first register private IOCTL handler and then invoke the
  *        IOCTL
  */
-#define CPSW_EST_PRIV_IOCTL(hPer, ioctlCmd,prms,status)                                          \
+#define CPSW_EST_PRIV_IOCTL(hCpsw, ioctlCmd,prms,status)                                          \
     do {                                                                                         \
         Enet_IoctlPrms regIoctlPrms;                                                             \
         Enet_IoctlRegisterHandlerInArgs regIoctlInArgs;                                          \
@@ -68,10 +68,10 @@ extern "C" {
         regIoctlInArgs.fxn = (uintptr_t)&CpswEst_ioctl_handler_##ioctlCmd;                       \
                                                                                                  \
         ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                                  \
-        status = Cpsw_ioctlEst(hPer, CPSW_EST_IOCTL_REGISTER_HANDLER, &regIoctlPrms);            \
+        status = Cpsw_ioctlEst(hCpsw, CPSW_EST_IOCTL_REGISTER_HANDLER, &regIoctlPrms);            \
         if (ENET_SOK == status)                                                                  \
         {                                                                                        \
-            status = Cpsw_ioctlEst(hPer, ioctlCmd,prms);                                         \
+            status = Cpsw_ioctlEst(hCpsw, ioctlCmd,prms);                                         \
         }                                                                                        \
     } while (0)
 

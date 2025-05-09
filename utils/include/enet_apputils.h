@@ -170,7 +170,7 @@ typedef enum
 
 typedef struct EnetApp_HandleInfo_s
 {
-    Enet_Handle hEnet;
+    uint32_t hEnet;
 #if !(defined(SOC_AM273X) || defined(SOC_AWR294X) || defined (SOC_AM263X) || defined (SOC_AM263PX) || defined(SOC_AM261X))
     Udma_DrvHandle hUdmaDrv;
 #endif
@@ -550,17 +550,17 @@ void     EnetApp_coreDetach(Enet_Type enetType, uint32_t instId,
 
 void     EnetApp_releaseHandleInfo(Enet_Type enetType, uint32_t instId);
 
-bool EnetApp_isPortLinked(Enet_Handle hEnet);
+bool EnetApp_isPortLinked(uint32_t hEnet);
 
 void EnetApp_closeTxDma(uint32_t enetTxDmaChId,
-                        Enet_Handle hEnet,
+                        uint32_t hEnet,
                         uint32_t coreKey,
                         uint32_t coreId,
                         EnetDma_PktQ *fqPktInfoQ,
                         EnetDma_PktQ *cqPktInfoQ);
 
 void EnetApp_closeRxDma(uint32_t enetRxDmaChId,
-                        Enet_Handle hEnet,
+                        uint32_t hEnet,
                         uint32_t coreKey,
                         uint32_t coreId,
                         EnetDma_PktQ *fqPktInfoQ,
@@ -577,10 +577,10 @@ void EnetApp_getTxDmaHandle(uint32_t enetTxDmaChId,
                             const EnetApp_GetDmaHandleInArgs *inArgs,
                             EnetApp_GetTxDmaHandleOutArgs *outArgs);
 
-int32_t EnetAppUtils_addAllPortMcastMembership(Enet_Handle hEnet,
+int32_t EnetAppUtils_addAllPortMcastMembership(uint32_t hEnet,
                                                uint8_t *mcastMacAddr);
 
-int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet,
+int32_t EnetAppUtils_delAllPortMcastMembership(uint32_t hEnet,
                                                uint8_t *mcastMacAddr);
 
 void EnetApp_getNonPtpRxDmaInfo(Enet_Type enetType,
@@ -595,12 +595,12 @@ void EnetApp_getNonPtpTxDmaInfo(Enet_Type enetType,
 
 void EnetAppUtils_delayInUsec(uint32_t delayInUsecs);
 
-int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocHwPushInst(uint32_t hEnet,
                                      uint32_t coreKey,
                                      uint32_t coreId,
                                      uint32_t *hwPushNum);
 
-int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeHwPushInst(uint32_t hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId,
                                     uint32_t hwPushNum);

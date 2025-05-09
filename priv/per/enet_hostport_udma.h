@@ -86,7 +86,9 @@ extern "C" {
 
 void EnetHostPortDma_initCfg(Enet_Type enetType, const void *dmaCfg);
 
-EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
+EnetDma_Handle EnetHostPortDma_open(Enet_Type enetType,
+                                    uint32_t instId,
+                                    void *virtAddr,
                                     const void *dmaCfg,
                                     const EnetRm_ResCfg *resCfg);
 

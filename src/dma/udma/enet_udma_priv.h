@@ -491,14 +491,14 @@ typedef struct EnetUdma_RxChObj_s
  */
 typedef struct EnetUdma_DrvObj_s
 {
-    /*! Enet peripheral which this DMA module is used for */
-    EnetPer_Handle hPer;
-
     /*! Enet peripheral type */
     Enet_Type enetType;
 
     /*! Enet peripheral instance id */
     uint32_t instId;
+
+    /*! Peripheral's virtual address */
+    void *virtAddr;
 
     /*! UDMA driver handle*/
     Udma_DrvHandle hUdmaDrv;
@@ -646,7 +646,9 @@ int32_t EnetUdma_freeRing(Udma_RingHandle hUdmaRing,
                            EnetUdma_FreeRingMemFxn ringMemFreeFxn,
                            void *cbArg);
 
-int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
+int32_t EnetUdma_submitPkts(Enet_Type enetType,
+                            uint32_t instId,
+                            void * virtAddr,
                             Udma_RingHandle hUdmaRing,
                            EnetDma_PktQ *pToHwQueue,
                            EnetUdma_DmaDescQ *pDmaDescQ,
@@ -657,7 +659,8 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
 #endif
                            );
 
-int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
+int32_t EnetUdma_submitSingleRxPkt(Enet_Type enetType,
+                                   uint32_t instId,
                                    Udma_RingHandle hUdmaRing,
                                    EnetDma_Pkt *pPkt,
                                    EnetUdma_DmaDescQ *pDmaDescQ,
@@ -668,7 +671,9 @@ int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
 #endif
                                    );
 
-int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
+int32_t EnetUdma_submitSingleTxPkt(Enet_Type enetType,
+                                   uint32_t instId,
+                                   void * virtAddr,
                                    Udma_RingHandle hUdmaRing,
                                    EnetDma_Pkt *pPkt,
                                    EnetUdma_DmaDescQ *pDmaDescQ,
@@ -679,7 +684,8 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
 #endif
                                   );
 
-int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
+int32_t EnetUdma_retrievePkts(Enet_Type enetType,
+                              uint32_t instId,
                               Udma_RingHandle hUdmaRing,
                              EnetDma_PktQ *pFromHwQueue,
                              EnetUdma_DmaDescQ *pDmaDescQ,

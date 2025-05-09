@@ -46,11 +46,10 @@
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
 #include <include/core/enet_soc.h>
-#include <include/core/enet_per.h>
 #include <include/core/enet_queue.h>
 #include <priv/core/enet_base_priv.h>
 #include <priv/core/enet_trace_priv.h>
-#include <include/common/enet_osal_dflt.h>
+#include <include/core/enet_osal.h>
 #include <include/common/enet_utils_dflt.h>
 #include <include/core/enet_rm.h>
 #include <include/core/enet_dma.h>
@@ -166,7 +165,6 @@ void EnetDma_initRxChParams(void *pRxChCfg)
 EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
                                     const void *pRxChCfg)
 {
-    EnetPer_Handle hPer = hDma->hPer;
     EnetUdma_OpenRxFlowPrms *pRxFlowPrms = (EnetUdma_OpenRxFlowPrms *)pRxChCfg;
     int32_t retVal;
     Udma_RingHandle ringHandle;
@@ -356,7 +354,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         ringAllocInfo.ringNum         = UDMA_RING_ANY;
         ringAllocInfo.enetType        = hDma->enetType;
         ringAllocInfo.instId          = hDma->instId;
-        ringAllocInfo.mappedChNum     = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
+        ringAllocInfo.mappedChNum     = EnetUdma_getMappedRxChNum(hDma->enetType, hDma->instId, pRxFlowPrms->chIdx);
         ringAllocInfo.transferDir     = ENET_UDMA_DIR_RX;
 
         retVal = EnetUdma_allocRing(pRxFlow->hUdmaDrv,
@@ -413,7 +411,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
 
         /* ICSSG peripherals don't support this feature, so explicitly disable in spite of
          * applications request as this parameter could be easy to miss */
-        if (Enet_isIcssFamily(hPer->enetType))
+        if (Enet_isIcssFamily(hDma->enetType))
         {
             flowPrms.sizeThreshEn = 0U;
         }
@@ -445,7 +443,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
                                  1U /* flowCnt */);
 #elif (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
         Udma_FlowAllocMappedPrms flowAllocMappedPrms;
-        flowAllocMappedPrms.mappedChNum = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
+        flowAllocMappedPrms.mappedChNum = EnetUdma_getMappedRxChNum(hDma->enetType, hDma->instId, pRxFlowPrms->chIdx);
         if (Enet_isCpswFamily(hDma->enetType))
         {
             flowAllocMappedPrms.mappedFlowGrp   = UDMA_MAPPED_RX_GROUP_CPSW;
@@ -1587,7 +1585,6 @@ int32_t EnetDma_disableTxEvent(EnetDma_TxChHandle hTxCh)
 int32_t EnetDma_retrieveRxPktQ(EnetDma_RxChHandle hRxFlow,
                                EnetDma_PktQ *pRetrieveQ)
 {
-    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     EnetQ tempQ;
 
@@ -1616,7 +1613,8 @@ int32_t EnetDma_retrieveRxPktQ(EnetDma_RxChHandle hRxFlow,
         /* EnetUdma_retrievePkts initializes the queue so cannot pass
          * pRetrieveQ as it contains packets drained from isrq
          */
-        retVal = EnetUdma_retrievePkts(hPer,
+        retVal = EnetUdma_retrievePkts(hRxFlow->hDma->enetType,
+                                       hRxFlow->hDma->instId,
                                        hRxFlow->cqRing,
                                       &tempQ,
                                       hRxFlow->hDmaDescPool,
@@ -1642,7 +1640,6 @@ int32_t EnetDma_retrieveRxPktQ(EnetDma_RxChHandle hRxFlow,
 int32_t EnetDma_retrieveRxPkt(EnetDma_RxChHandle hRxFlow,
                                EnetDma_Pkt **ppPkt)
 {
-    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     EnetQ tempQ;
 
@@ -1669,7 +1666,8 @@ int32_t EnetDma_retrieveRxPkt(EnetDma_RxChHandle hRxFlow,
             /* EnetUdma_retrievePkts initializes the queue so cannot pass
              * pRetrieveQ as it contains packets drained from isrq
              */
-            retVal = EnetUdma_retrievePkts(hPer,
+            retVal = EnetUdma_retrievePkts(hRxFlow->hDma->enetType,
+                                           hRxFlow->hDma->instId,
                                            hRxFlow->cqRing,
                                            &tempQ,
                                            hRxFlow->hDmaDescPool,
@@ -1697,7 +1695,6 @@ int32_t EnetDma_retrieveRxPkt(EnetDma_RxChHandle hRxFlow,
 int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
                                 EnetDma_PktQ *pSubmitQ)
 {
-    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     Udma_RingHandle ringHandle;
 
@@ -1728,7 +1725,9 @@ int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
         /* Enqueue descs to fqRing regardless of caller's queue state */
         if (EnetQueue_getQCount(pSubmitQ) > 0U)
         {
-            retVal = EnetUdma_submitPkts(hPer,
+            retVal = EnetUdma_submitPkts(hRxFlow->hDma->enetType,
+                                         hRxFlow->hDma->instId,
+                                         hRxFlow->hDma->virtAddr,
                                          ringHandle,
                                         pSubmitQ,
                                         hRxFlow->hDmaDescPool,
@@ -1766,7 +1765,6 @@ int32_t EnetDma_submitRxPktQ(EnetDma_RxChHandle hRxFlow,
 int32_t EnetDma_submitRxPkt(EnetDma_RxChHandle hRxFlow,
                             EnetDma_Pkt *pPkt)
 {
-    EnetPer_Handle hPer = hRxFlow->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     Udma_RingHandle ringHandle;
 
@@ -1795,7 +1793,8 @@ int32_t EnetDma_submitRxPkt(EnetDma_RxChHandle hRxFlow,
 
         /* Enqueue descs to fqRing regardless of caller's queue state */
 
-        retVal = EnetUdma_submitSingleRxPkt(hPer,
+        retVal = EnetUdma_submitSingleRxPkt(hRxFlow->hDma->enetType,
+                                            hRxFlow->hDma->instId,
                                           ringHandle,
                                           pPkt,
                                           hRxFlow->hDmaDescPool,
@@ -1835,7 +1834,6 @@ int32_t EnetDma_submitRxPkt(EnetDma_RxChHandle hRxFlow,
 int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
                                    EnetDma_PktQ *pRetrieveQ)
 {
-    EnetPer_Handle hPer = hTxCh->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     EnetQ tempQ;
 
@@ -1863,7 +1861,8 @@ int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
         /* EnetUdma_retrievePkts initializes the queue so cannot pass
          * pRetrieveQ as it contains packets drained from isrq
          */
-        retVal = EnetUdma_retrievePkts(hPer,
+        retVal = EnetUdma_retrievePkts(hTxCh->hDma->enetType,
+                                       hTxCh->hDma->instId,
                                        hTxCh->cqRing,
                                       &tempQ,
                                       hTxCh->hDmaDescPool,
@@ -1889,7 +1888,6 @@ int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
 int32_t EnetDma_retrieveTxPkt(EnetDma_TxChHandle hTxCh,
                               EnetDma_Pkt **ppPkt)
 {
-    EnetPer_Handle hPer = hTxCh->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     EnetQ tempQ;
 
@@ -1916,7 +1914,8 @@ int32_t EnetDma_retrieveTxPkt(EnetDma_TxChHandle hTxCh,
             /* EnetUdma_retrievePkts initializes the queue so cannot pass
              * pRetrieveQ as it contains packets drained from isrq
              */
-            retVal = EnetUdma_retrievePkts(hPer,
+            retVal = EnetUdma_retrievePkts(hTxCh->hDma->enetType,
+                                           hTxCh->hDma->instId,
                                            hTxCh->cqRing,
                                            &tempQ,
                                            hTxCh->hDmaDescPool,
@@ -1946,7 +1945,6 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
                                   EnetDma_PktQ *pSubmitQ)
 
 {
-    EnetPer_Handle hPer = hTxCh->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     Udma_RingHandle ringHandle;
 
@@ -1976,7 +1974,9 @@ int32_t EnetDma_submitTxPktQ(EnetDma_TxChHandle hTxCh,
         /* Enqueue descs to fqRing regardless of caller's queue state */
         if (EnetQueue_getQCount(pSubmitQ) > 0U)
         {
-            retVal = EnetUdma_submitPkts(hPer,
+            retVal = EnetUdma_submitPkts(hTxCh->hDma->enetType,
+                                         hTxCh->hDma->instId,
+                                         hTxCh->hDma->virtAddr,
                                          ringHandle,
                                          pSubmitQ,
                                          hTxCh->hDmaDescPool,
@@ -2015,7 +2015,6 @@ int32_t EnetDma_submitTxPkt(EnetDma_TxChHandle hTxCh,
                                   EnetDma_Pkt *pPkt)
 
 {
-    EnetPer_Handle hPer = hTxCh->hDma->hPer;
     int32_t retVal = UDMA_SOK;
     Udma_RingHandle ringHandle;
 
@@ -2042,7 +2041,9 @@ int32_t EnetDma_submitTxPkt(EnetDma_TxChHandle hTxCh,
         ringHandle = hTxCh->cqRing;
 #endif
         /* Enqueue descs to fqRing regardless of caller's queue state */
-        retVal = EnetUdma_submitSingleTxPkt(hPer,
+        retVal = EnetUdma_submitSingleTxPkt(hTxCh->hDma->enetType,
+                                            hTxCh->hDma->instId,
+                                            hTxCh->hDma->virtAddr,
                                             ringHandle,
                                             pPkt,
                                             hTxCh->hDmaDescPool,
@@ -2194,7 +2195,6 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
                           uint32_t chIdx)
 {
     int32_t retVal;
-    EnetPer_Handle hPer = NULL;
     Udma_DrvHandle hUdmaDrv;
     EnetUdma_RxChObj *pRxCh;
     Udma_ChHandle hUdmaCh;
@@ -2219,7 +2219,6 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
     {
         if (hEnetUdma->initFlag)
         {
-            hPer = hEnetUdma->hPer;
             retVal = UDMA_SOK;
         }
         else
@@ -2234,7 +2233,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
 
     if (UDMA_SOK == retVal)
     {
-        rxFlowCount = EnetSoc_getRxFlowCount(hPer->enetType, hPer->instId);
+        rxFlowCount = EnetSoc_getRxFlowCount(hEnetUdma->enetType, hEnetUdma->instId);
         if (totalRxFlowCount > rxFlowCount)
         {
             ENETTRACE_ERR("[Enet UDMA] Invalid Rx channel flow count "
@@ -2260,7 +2259,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
 #endif
         /* Initialize channel params (PSI-L thread and RingAcc memories) */
         UdmaChPrms_init(&chPrms, chType);
-        chPrms.peerChNum = EnetSoc_getRxChPeerId(hPer->enetType, hPer->instId, chIdx);
+        chPrms.peerChNum = EnetSoc_getRxChPeerId(hEnetUdma->enetType, hEnetUdma->instId, chIdx);
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
         chPrms.chNum         = UDMA_DMA_CH_ANY;
         pTdCqRingMem = EnetUdma_memMgrAllocTdCqRingMemObj();
@@ -2276,7 +2275,7 @@ int32_t EnetUdma_openRxCh(EnetDma_Handle hEnetUdma,
             retVal = UDMA_EALLOC;
         }
 #else
-        chPrms.chNum = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, chIdx);
+        chPrms.chNum = EnetUdma_getMappedRxChNum(hEnetUdma->enetType, hEnetUdma->instId, chIdx);
 #endif
 
 #if (UDMA_SOC_CFG_LCDMA_PRESENT == 1)
@@ -2900,10 +2899,11 @@ void EnetUdma_initDataPathParams(EnetDma_initCfg *pDmaConfig)
 
 EnetDma_Handle EnetUdma_initDataPath(Enet_Type enetType,
                                      uint32_t instId,
+                                     void * virtAddr,
                                      const EnetDma_initCfg *pDmaInitCfg)
 {
     EnetUdma_Cfg cfg;
-    Enet_Handle hEnet = NULL;
+    uint32_t hEnet = -1;
     EnetDma_Handle hDmaHandle = NULL;
 
     EnetUdma_initCfg(enetType, &cfg);
@@ -2916,13 +2916,15 @@ EnetDma_Handle EnetUdma_initDataPath(Enet_Type enetType,
         if (hDmaHandle != NULL)
         {
             hEnet = EnetSoc_getEnetHandle(enetType, instId);
-            if (hEnet != NULL)
+            if (hEnet != -1)
             {
-                hDmaHandle->hPer = hEnet->enetPer;
+                hDmaHandle->enetType = enetType;
+                hDmaHandle->instId = instId;
+                hDmaHandle->virtAddr = virtAddr;
             }
             else
             {
-                Enet_devAssert(hEnet != NULL);
+                Enet_devAssert(hEnet != -1);
             }
         }
     }

@@ -114,10 +114,9 @@ static CpswEstIoctlHandlerRegistry_t CpswEstIoctlHandlerRegistry[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-void Cpsw_enableEst(EnetPer_Handle hPer)
+void Cpsw_enableEst(Cpsw_Handle hCpsw)
 {
-    Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hCpsw->virtAddr;
     CSL_CPSW_CONTROL controlReg;
     uint32_t i;
 
@@ -133,9 +132,9 @@ void Cpsw_enableEst(EnetPer_Handle hPer)
     CSL_CPSW_setCpswControlReg(regs, &controlReg);
 }
 
-void Cpsw_disableEst(EnetPer_Handle hPer)
+void Cpsw_disableEst(Cpsw_Handle hCpsw)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hCpsw->virtAddr;
     CSL_CPSW_CONTROL controlReg;
 
     /* Disable EST (global config) */
@@ -144,11 +143,10 @@ void Cpsw_disableEst(EnetPer_Handle hPer)
     CSL_CPSW_setCpswControlReg(regs, &controlReg);
 }
 
-int32_t Cpsw_ioctlEst(EnetPer_Handle hPer,
+int32_t Cpsw_ioctlEst(Cpsw_Handle hCpsw,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms)
 {
-    Cpsw_Handle hCpsw = (Cpsw_Handle)hPer;
     int32_t status = ENET_SOK;
     CpswEstIoctlHandler * ioctlHandlerFxn;
 

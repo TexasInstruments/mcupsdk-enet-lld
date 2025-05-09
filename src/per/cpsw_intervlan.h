@@ -76,13 +76,13 @@ extern "C" {
 /*!
  * \brief Run an InterVLAN IOCTL operation on CPSW peripheral.
  *
- * \param hPer         Enet Peripheral handle
+ * \param hCpsw        CPSWPeripheral handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_ioctlInterVlan(EnetPer_Handle hPer,
+int32_t Cpsw_ioctlInterVlan(Cpsw_Handle hCpsw,
                             uint32_t cmd,
                             Enet_IoctlPrms *prms);
 

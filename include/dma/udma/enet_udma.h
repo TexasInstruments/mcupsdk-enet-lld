@@ -862,6 +862,7 @@ typedef struct EnetUdma_DmaCfg_s
 void EnetUdma_initDataPathParams(EnetDma_initCfg *pDmaConfig);
 EnetDma_Handle EnetUdma_initDataPath(Enet_Type enetType,
                                      uint32_t instId,
+                                     void * virtAddr,
                                      const EnetDma_initCfg *pDmaInitCfg);
 int32_t EnetUdma_deInitDataPath(EnetDma_Handle hEnetUdma);
 

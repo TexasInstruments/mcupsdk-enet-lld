@@ -75,7 +75,7 @@
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t EnetAppUtils_allocMac(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocMac(uint32_t hEnet,
                               uint32_t coreKey,
                               uint32_t coreId,
                               uint8_t *macAddress)
@@ -109,7 +109,7 @@ int32_t EnetAppUtils_allocMac(Enet_Handle hEnet,
     return status;
 }
 
-int32_t EnetAppUtils_freeMac(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeMac(uint32_t hEnet,
                              uint32_t coreKey,
                              uint32_t coreId,
                              uint8_t *macAddress)
@@ -139,7 +139,7 @@ int32_t EnetAppUtils_freeMac(Enet_Handle hEnet,
     return status;
 }
 
-bool EnetAppUtils_isPortLinkUp(Enet_Handle hEnet,
+bool EnetAppUtils_isPortLinkUp(uint32_t hEnet,
                                uint32_t coreId,
                                Enet_MacPort portNum)
 {
@@ -162,7 +162,7 @@ bool EnetAppUtils_isPortLinkUp(Enet_Handle hEnet,
     return linked;
 }
 
-void EnetAppUtils_addHostPortEntry(Enet_Handle hEnet,
+void EnetAppUtils_addHostPortEntry(uint32_t hEnet,
                                    uint32_t coreId,
                                    uint8_t *macAddr)
 {
@@ -193,7 +193,7 @@ void EnetAppUtils_addHostPortEntry(Enet_Handle hEnet,
     EnetAppUtils_assert(status == ENET_SOK);
 }
 
-void EnetAppUtils_delAddrEntry(Enet_Handle hEnet,
+void EnetAppUtils_delAddrEntry(uint32_t hEnet,
                               uint32_t coreId,
                               uint8_t *macAddr)
 {

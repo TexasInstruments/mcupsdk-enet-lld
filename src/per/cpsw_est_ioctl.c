@@ -122,7 +122,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(Cpsw_Handle hCpsw, u
     /* CPSW MAC port will take care of writing new admin list to EST RAM */
     if (status == ENET_SOK)
     {
-        CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_SET_ADMIN_LIST, prms, status);
+        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_SET_ADMIN_LIST, prms, status);
     }
 
     /* Save cycle time so CPTS ESTF can be setup accordingly */
@@ -150,7 +150,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(Cpsw_Handle hCpsw, uint32
         if (inArgs->state == ENET_TAS_ENABLE)
         {
             /* Enable port-specific EST functionality */
-            CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_SET_STATE, prms, status);
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_SET_STATE, prms, status);
 
             /* Enable ESTF with saved cycle time */
             if (status == ENET_SOK)
@@ -174,7 +174,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(Cpsw_Handle hCpsw, uint32
             /* Disable (or reset) port-specific EST */
             if (status == ENET_SOK)
             {
-                CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_SET_STATE, prms, status);
+                CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_SET_STATE, prms, status);
             }
         }
 
@@ -197,7 +197,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(Cpsw_Handle hCpsw, u
     int32_t status = ENET_SOK;
 
     Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
-    CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_ADMIN_LIST, prms, status);
+    CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_GET_ADMIN_LIST, prms, status);
 
     controlList->cycleTime = hCpsw->estState[portNum].cycleTime;
     controlList->baseTime  = hCpsw->estState[portNum].adminBaseTime;
@@ -215,7 +215,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(Cpsw_Handle hCpsw, ui
     int32_t status = ENET_SOK;
 
     Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
-    CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_OPER_LIST, prms, status);
+    CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_GET_OPER_LIST, prms, status);
 
     controlList->cycleTime = hCpsw->estState[portNum].cycleTime;
     controlList->baseTime  = hCpsw->estState[portNum].operBaseTime;
@@ -234,7 +234,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(Cpsw_Handle hC
 
     Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     /* Update operBaseTime when oper list has been updated */
-    CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_OPER_LIST_STATUS, prms, status);
+    CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_GET_OPER_LIST_STATUS, prms, status);
     if ((status == ENET_SOK) &&
         (*operStatus == ENET_TAS_OPER_LIST_UPDATED))
     {
@@ -254,7 +254,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(Cpsw_Handle hCpsw, uint32
 
     Enet_devAssert(portNum < CPSW_MAC_PORT_NUM);
     /* Pass through */
-    CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_GET_STATE, prms, status);
+    CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_GET_STATE, prms, status);
     return status;
 }
 
@@ -268,7 +268,7 @@ int32_t CpswEst_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(Cpsw_Ha
     int32_t status = ENET_SOK;
 
     /* Pass through */
-    CPSW_MACPORT_PRIV_IOCTL(hCpsw->hMacPort[portNum], ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS, prms, status);
+    CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS, prms, status);
     return status;
 }
 
@@ -297,7 +297,7 @@ static int32_t Cpsw_setupEstf(Cpsw_Handle hCpsw,
     setGenFInArgs.ppmMode = ENET_TIMESYNC_ADJMODE_DISABLE;
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &setGenFInArgs);
-    CPSW_CPTS_PRIV_IOCTL(hCpsw->hCpts, CPSW_CPTS_IOCTL_SET_ESTF, &prms, status);
+    CPSW_CPTS_PRIV_IOCTL(&hCpsw->cptsObj, CPSW_CPTS_IOCTL_SET_ESTF, &prms, status);
 
     return status;
 }

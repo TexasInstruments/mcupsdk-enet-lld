@@ -48,6 +48,8 @@
 #include <include/core/enet_per.h>
 #include <include/core/enet_mod_tas.h>
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -65,6 +67,11 @@ extern "C" {
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
+
+typedef struct Cpsw_Obj_s Cpsw_Obj;
+
+typedef Cpsw_Obj * Cpsw_Handle;
+
 
 /*!
  * \brief MAC port's EST state (ESTF state, period)
@@ -118,14 +125,14 @@ typedef enum Cpsw_EstPrivIoctl_e
  *
  * \param hPer         Enet Peripheral handle
  */
-void Cpsw_enableEst(EnetPer_Handle hPer);
+void Cpsw_enableEst(Cpsw_Handle hCpsw);
 
 /*!
  * \brief Disable EST at peripheral level.
  *
  * \param hPer         Enet Peripheral handle
  */
-void Cpsw_disableEst(EnetPer_Handle hPer);
+void Cpsw_disableEst(Cpsw_Handle hCpsw);
 
 /*!
  * \brief Run an EST/TAS IOCTL operation on CPSW peripheral.
@@ -136,7 +143,7 @@ void Cpsw_disableEst(EnetPer_Handle hPer);
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Cpsw_ioctlEst(EnetPer_Handle hPer,
+int32_t Cpsw_ioctlEst(Cpsw_Handle hCpsw,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms);
 

@@ -281,7 +281,7 @@ typedef struct Icssg_MdioLinkIntCtx_s
     /*! PRU Interrupt Event Number */
     uint32_t pruEvtNum[ICSSG_MAC_PORT_MAX];
     /*! MDIO interrupt handle */
-    void *hMdioIntr;
+    HwiP_enetOsal * hMdioIntr;
     const PRUICSS_IntcInitData  *prussIntcInitData;
 } Icssg_MdioLinkIntCtx;
 
@@ -294,8 +294,39 @@ typedef struct Icssg_MdioLinkIntCtx_s
  */
 typedef struct Icssg_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetPer_Obj enetPer;
+    /*! Peripheral name */
+    const char *name;
+
+    /*! Peripheral type */
+    Enet_Type enetType;
+
+    /*! Peripheral instance id */
+    uint32_t instId;
+
+    /*! Peripheral initialization magic */
+    Enet_Magic magic;
+
+    /*! Peripheral's physical address. Used for peripherals that have registers
+     *  that are not part of any module (i.e. peripherals that have a wrapper
+     *  subsystem).
+     *  It can be set to 0 for peripherals that  don't have have additional
+     *  registers other than those of their modules. */
+    uint64_t physAddr;
+
+    /*! Peripheral's virtual address */
+    void *virtAddr;
+
+    /*! Peripheral's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Peripheral's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Peripheral features */
+    uint32_t features;
+
+    /*! Peripheral applicable errata */
+    uint32_t errata;
 
     /*! PRUSS instance. SoC layer binds this ICSSG object to the corresponding PRUSS. */
     Icssg_Pruss *pruss;
@@ -322,9 +353,6 @@ typedef struct Icssg_Obj_s
     /*! Resource Manager object */
     EnetRm_Obj rmObj;
 
-    /*! Resource Manager handle */
-    EnetMod_Handle hRm;
-
     /*! Core on which Icssg_Open() is executed */
     uint32_t selfCoreId;
 
@@ -346,29 +374,17 @@ typedef struct Icssg_Obj_s
     /*! MDIO object */
     Mdio_Obj mdioObj;
 
-    /*! MDIO handle */
-    EnetMod_Handle hMdio;
-
     /*! PHY handles */
     EnetPhy_Handle hPhy[ICSSG_MAC_PORT_MAX];
 
     /*! TimesSync object */
     IcssgTimeSync_Obj timeSyncObj;
 
-    /*! TimesSync handle */
-    EnetMod_Handle hTimeSync;
-
     /*! Stats object */
     IcssgStats_Obj statsObj;
 
-    /*! Stats handle */
-    EnetMod_Handle hStats;
-
     /*! Tas object */
     IcssgTas_Obj tasObj[ICSSG_MAC_PORT_MAX];
-
-    /*! Tas handle */
-    EnetMod_Handle hTas[ICSSG_MAC_PORT_MAX];
 
     /*! IOCTL command */
     Icssg_IoctlCmd cmd __attribute__ ((aligned(ICSSG_CACHELINE_ALIGNMENT)));
@@ -397,6 +413,9 @@ typedef struct Icssg_Obj_s
 
     /*! Clock type in firmware */
     IcssgTimeSync_ClkType clockTypeFw;
+
+    /*! Main, API-level Lock */
+    SemaphoreP_enetOsal * lock;
 } Icssg_Obj;
 
 /*!
@@ -415,6 +434,39 @@ typedef Icssg_Obj *Icssg_Handle;
 /* ========================================================================== */
 
 /*!
+ * \brief Initialize Enet LLD.
+ *
+ * One-time initialization of the Enet LLD driver.  This function initializes
+ * the OSAL and utils infrastructure that the driver requires for handling
+ * multiple peripherals as well as logging and tracing.
+ *
+ * The Enet LLD provides a default OSAL implementation which is based on PDK
+ * OSAL library if ENET_CFG_HAS_DEFAULT_OSAL config flag is enabled.  The
+ * default OSAL implementation can be used if the caller passes a NULL
+ * \p osalCfg.
+ *
+ * Similarly, the Enet LLD provides a default utils implementation if
+ * ENET_CFG_HAS_DEFAULT_UTILS config flag is set.  The default utils
+ * implementation can be used if the caller passes a NULL \p utilsCfg.
+ *
+ * \param osalCfg   OSAL configuration parameters
+ * \param utilsCfg  Utils configuration parameters
+ */
+
+ void Icssg_init(const EnetUtils_Cfg *utilsCfg);
+
+/*!
+* \brief De-initialize Enet LLD.
+*
+* One-time de-initialization of the Enet LLD driver.  This function clears
+* the OSAL and utils config parameters passed during Enet_init().
+*
+* It's expected to be called once all Ethernet peripherals have been closed
+* via Enet_close().
+*/
+
+void Icssg_deinit(void);
+/*!
  * \brief Initialize ICSSG peripheral's configuration parameters.
  *
  * Initializes the configuration parameter of the ICSSG peripheral.
@@ -426,10 +478,8 @@ typedef Icssg_Obj *Icssg_Handle;
  * \param cfgSize   Size of the configuration parameters.  It must be the size
  *                  of #Icssg_Cfg config structure.
  */
-void Icssg_initCfg(EnetPer_Handle hPer,
-                   Enet_Type enetType,
-                   void *cfg,
-                   uint32_t cfgSize);
+
+void Icssg_initCfg(Icssg_Cfg *cfg);
 
 /*!
  * \brief Open and initialize the ICSSG Peripheral.
@@ -437,21 +487,18 @@ void Icssg_initCfg(EnetPer_Handle hPer,
  * Opens and initializes the ICSSG peripheral with the configuration parameters
  * provided by the caller.
  *
- * \param hPer      Enet Peripheral handle
+ * \param hEnet     Enet handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters to be initialized.  The config
+ * \param icssgCfg  Configuration parameters to be initialized.  The config
  *                  is of type #Icssg_Cfg.
- * \param cfgSize   Size of the configuration parameters.  It must be the size
- *                  of #Icssg_Cfg config structure.
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Icssg_open(EnetPer_Handle hPer,
+int32_t Icssg_open(uint32_t hEnet,
                    Enet_Type enetType,
                    uint32_t instId,
-                   const void *cfg,
-                   uint32_t cfgSize);
+                   const Icssg_Cfg *icssgCfg);
 
 /*!
  * \brief Rejoin a running ICSSG peripheral.
@@ -459,13 +506,13 @@ int32_t Icssg_open(EnetPer_Handle hPer,
  * This operation is not supported by the ICSSG peripheral.  Calling this
  * function will return #ENET_ENOTSUPPORTED.
  *
- * \param hPer      Enet Peripheral handle
+ * \param hEnet     Enet handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \retval ENET_ENOTSUPPORTED
  */
-int32_t Icssg_rejoin(EnetPer_Handle hPer,
+int32_t Icssg_rejoin(uint32_t hEnet,
                      Enet_Type enetType,
                      uint32_t instId);
 
@@ -474,13 +521,13 @@ int32_t Icssg_rejoin(EnetPer_Handle hPer,
  *
  * Issues a control operation on the ICSSG peripheral.
  *
- * \param hPer         Enet Peripheral handle
+ * \param hEnet        Enet handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Icssg_ioctl(EnetPer_Handle hPer,
+int32_t Icssg_ioctl(uint32_t hEnet,
                     uint32_t cmd,
                     Enet_IoctlPrms *prms);
 
@@ -490,13 +537,13 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
  * Unblocking poll for the events specified in \p evt. ICSSG uses this
  * function to poll for completion of asynchronous IOCTLs.
  *
- * \param hPer         Enet Peripheral handle
+ * \param hEnet        Enet handle
  * \param evt          Event type
  * \param arg          Pointer to the poll argument. This is specific to the
  *                     poll event type
  * \param argSize      Size of \p arg
  */
-void Icssg_poll(EnetPer_Handle hPer,
+void Icssg_poll(uint32_t hEnet,
                 Enet_Event evt,
                 const void *arg,
                 uint32_t argSize);
@@ -508,12 +555,12 @@ void Icssg_poll(EnetPer_Handle hPer,
  * in the 64-bit value returned by ICSSG.  This value needs to be converted
  * to nanoseconds before application can consume it.
  *
- * \param hPer         Enet Peripheral handle
+ * \param hIcssg       ICSSG Peripheral handle
  * \param ts           Timestamp value, definition is peripheral specific
  *
  * \return Nanoseconds value.
  */
-uint64_t Icssg_convertTs(EnetPer_Handle hPer,
+uint64_t Icssg_convertTs(Icssg_Handle hIcssg,
                          uint64_t ts);
 
 /*!
@@ -522,28 +569,34 @@ uint64_t Icssg_convertTs(EnetPer_Handle hPer,
  * Run PHY periodic tick on the ICSSG peripheral.  The peripheral driver in
  * turn runs the periodic tick operation on all opened PHYs.
  *
- * \param hPer        Enet Peripheral handle
+ * \param hEnet         Enet handle
  */
-void Icssg_periodicTick(EnetPer_Handle hPer);
+void Icssg_periodicTick(uint32_t hEnet);
 
-void Icssg_registerEventCb(EnetPer_Handle hPer,
+void Icssg_registerEventCb(uint32_t hEnet,
                            Enet_Event evt,
                            uint32_t evtNum,
                            Enet_EventCallback evtCb,
                            void *evtCbArgs);
 
-void Icssg_unregisterEventCb(EnetPer_Handle hPer,
+void Icssg_unregisterEventCb(uint32_t hEnet,
                              Enet_Event evt,
                              uint32_t evtNum);
+
+int32_t Icssg_getHandleInfo(uint32_t hEnet,
+                           Enet_Type *enetType,
+                           uint32_t *instId);
+
+Icssg_Handle Icssg_getHandle(uint32_t hEnet);
 
 /*!
  * \brief Close the ICSSG peripheral.
  *
  * Closes the ICSSG peripheral.
  *
- * \param hPer        Enet Peripheral handle
+ * \param hEnet         Enet handle
  */
-void Icssg_close(EnetPer_Handle hPer);
+void Icssg_close(uint32_t hEnet);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

@@ -1185,7 +1185,7 @@ void EnetAppUtils_assertLocal(bool condition,
     return;
 }
 
-int32_t EnetAppUtils_addAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacAddr)
+int32_t EnetAppUtils_addAllPortMcastMembership(uint32_t hEnet, uint8_t *mcastMacAddr)
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -1208,7 +1208,7 @@ int32_t EnetAppUtils_addAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcast
     return status;
 }
 
-int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacAddr)
+int32_t EnetAppUtils_delAllPortMcastMembership(uint32_t hEnet, uint8_t *mcastMacAddr)
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -1228,7 +1228,7 @@ int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcast
     return status;
 }
 
-int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocHwPushInst(uint32_t hEnet,
                                      uint32_t coreKey,
                                      uint32_t coreId,
                                      uint32_t *hwPushNum)
@@ -1256,7 +1256,7 @@ int32_t EnetAppUtils_allocHwPushInst(Enet_Handle hEnet,
     return status;
 }
 
-int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeHwPushInst(uint32_t hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId,
                                     uint32_t hwPushNum)

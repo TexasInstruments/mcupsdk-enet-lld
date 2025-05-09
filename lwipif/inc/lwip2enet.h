@@ -297,7 +297,7 @@ typedef struct Lwip2Enet_TxObj_s
 typedef struct
 {
     struct netif *pNetif;
-    Enet_Handle hEnet;
+    uint32_t hEnet;
     uint8_t count_hRx;
     uint8_t count_hTx;
     Lwip2Enet_RxHandle hRx[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL];

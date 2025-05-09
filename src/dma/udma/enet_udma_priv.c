@@ -62,6 +62,7 @@
 /* hack to access gUdmaTxMappedChRingAttributes */
 #include "drivers/udma/udma_priv.h"
 #include "enet_udma_memcfg.h"
+#include "utils/include/enet_appmemutils.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -121,7 +122,8 @@ static EnetUdma_MemMgrObj gEnetUdmaMemMgrObj = {.clientCnt = 0U};
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
+static int32_t EnetUdma_processRetrievedDesc(Enet_Type enetType,
+                                             uint32_t instId,
                                              EnetUdma_DmaDesc *pDmaDesc,
                                             EnetDma_PktQ *pFromHwQueue,
                                             EnetUdma_DmaDescQ *pDmaDescQ,
@@ -172,7 +174,7 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
                     totalPacketFilledLen -= dmaPkt->sgList.list[scatterSegmentIndex].segmentFilledLen;
                     scatterSegmentIndex++;
                 }
-                if (Enet_isIcssFamily(hPer->enetType))
+                if (Enet_isIcssFamily(enetType))
                 {
 #if ENET_CFG_IS_ON(DEV_ERROR)
                    Enet_assert((lastFilledSegmentIndex < ENET_ARRAYSIZE(dmaPkt->sgList.list))
@@ -190,18 +192,18 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
 #endif
                 cppiTxStatus           = (EnetUdma_CppiTxStatus *)pHpdDesc->psInfo;
 
-                dmaPkt->chkSumInfo     = Enet_isIcssFamily(hPer->enetType) ? 0U : cppiTxStatus->chkSumInfo;
+                dmaPkt->chkSumInfo     = Enet_isIcssFamily(enetType) ? 0U : cppiTxStatus->chkSumInfo;
                 dmaPkt->tsInfo.rxPktTs = ((((uint64_t)cppiTxStatus->tsHigh) << 32U) |
                                                 ((uint64_t)cppiTxStatus->tsLow));
 
                 /* Convert timestamp to nanosecs if peripheral provides a conversion function */
-                if (hPer->convertTs != NULL)
+                if (!Enet_isCpswFamily(enetType))
                 {
-                    dmaPkt->tsInfo.rxPktTs = hPer->convertTs(hPer, dmaPkt->tsInfo.rxPktTs);
+                    // dmaPkt->tsInfo.rxPktTs = hPer->convertTs(hPer, dmaPkt->tsInfo.rxPktTs);
                 }
 
                 srcTag = CSL_udmapCppi5GetSrcTag(&pHpdDesc->hostDesc) & ENET_UDMA_HPD_SRC_TAG_LOW_MASK;
-                if ((hPer->enetType == ENET_ICSSG_DUALMAC) || (hPer->enetType == ENET_ICSSG_SWITCH))
+                if ((enetType == ENET_ICSSG_DUALMAC) || (enetType == ENET_ICSSG_SWITCH))
                 {
                     dmaPkt->rxPortNum = CPSW_ALE_ALEPORT_TO_MACPORT(srcTag + 1);
                 }
@@ -240,7 +242,8 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
     return retVal;
 }
 
-int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
+int32_t EnetUdma_retrievePkts(Enet_Type enetType,
+                              uint32_t instId,
                               Udma_RingHandle hUdmaRing,
                               EnetDma_PktQ *pFromHwQueue,
                               EnetUdma_DmaDescQ *pDmaDescQ,
@@ -301,7 +304,8 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
 
                 if ((UDMA_SOK == retVal) && (NULL != pDmaDesc))
                 {
-                    retVal = EnetUdma_processRetrievedDesc(hPer,
+                    retVal = EnetUdma_processRetrievedDesc(enetType,
+                                                           instId,
                                                            pDmaDesc,
                                                           pFromHwQueue,
                                                           pDmaDescQ,
@@ -342,7 +346,8 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
 
         while ((retVal == UDMA_SOK) && (NULL != pDmaDesc))
         {
-            retVal = EnetUdma_processRetrievedDesc(hPer,
+            retVal = EnetUdma_processRetrievedDesc(enetType,
+                                                   instId, 
                                                    pDmaDesc,
                                                   pFromHwQueue,
                                                   pDmaDescQ,
@@ -368,7 +373,9 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
     return retVal;
 }
 
-int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
+int32_t EnetUdma_submitPkts(Enet_Type enetType,
+                            uint32_t instId,
+                            void * virtAddr,
                             Udma_RingHandle hUdmaRing,
                            EnetDma_PktQ *pToHwQueue,
                            EnetUdma_DmaDescQ *pDmaDescQ,
@@ -470,7 +477,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                                 CSL_udmapCppi5GetPsDataLen(pHostDesc));
 #endif
                 cppiRxCntr = (EnetUdma_CppiRxControl *)pHpdDesc->psInfo;
-                if (Enet_isIcssFamily(hPer->enetType))
+                if (Enet_isIcssFamily(enetType))
                 {
                     cppiRxCntr->chkSumInfo = 0U;
                     dmaExtendedPktInfo = (uint32_t *)&pHpdDesc->extendedPktInfo[4U];
@@ -529,13 +536,13 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                 }
 
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
-                if (Enet_isIcssFamily(hPer->enetType))
+                if (Enet_isIcssFamily(enetType))
                 {
-                    uintptr_t baseAddr = (uintptr_t)hPer->virtAddr;
+                    uintptr_t baseAddr = (uintptr_t)virtAddr;
 
-                    if (hPer->enetType == ENET_ICSSG_DUALMAC)
+                    if (enetType == ENET_ICSSG_DUALMAC)
                     {
-                        if ((hPer->instId == 0) || (hPer->instId == 2))
+                        if ((instId == 0) || (instId == 2))
                         {
                             baseAddr += CSL_ICSS_G_DRAM0_SLV_RAM_REGS_BASE;
                         }
@@ -703,7 +710,8 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     return retVal;
 }
 
-int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
+int32_t EnetUdma_submitSingleRxPkt(Enet_Type enetType,
+                                   uint32_t instId,
                                    Udma_RingHandle hUdmaRing,
                                    EnetDma_Pkt *pPkt,
                                    EnetUdma_DmaDescQ *pDmaDescQ,
@@ -841,7 +849,9 @@ int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
     return retVal;
 }
 
-int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
+int32_t EnetUdma_submitSingleTxPkt(Enet_Type enetType,
+                                   uint32_t instId,
+                                   void * virtAddr,
                             Udma_RingHandle hUdmaRing,
                            EnetDma_Pkt *pPkt,
                            EnetUdma_DmaDescQ *pDmaDescQ,
@@ -931,7 +941,7 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
 #endif
             cppiRxCntr = (EnetUdma_CppiRxControl *)pHpdDesc->psInfo;
 
-            if (Enet_isIcssFamily(hPer->enetType))
+            if (Enet_isIcssFamily(enetType))
             {
                 cppiRxCntr->chkSumInfo = 0U;
                 dmaExtendedPktInfo = (uint32_t *)&pHpdDesc->extendedPktInfo[4U];
@@ -990,13 +1000,13 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
             }
 
 #if defined(SOC_AM64X) || defined(SOC_AM243X)
-            if (Enet_isIcssFamily(hPer->enetType))
+            if (Enet_isIcssFamily(enetType))
             {
-                uintptr_t baseAddr = (uintptr_t)hPer->virtAddr;
+                uintptr_t baseAddr = (uintptr_t)virtAddr;
 
-                if (hPer->enetType == ENET_ICSSG_DUALMAC)
+                if (enetType == ENET_ICSSG_DUALMAC)
                 {
-                    if ((hPer->instId == 0) || (hPer->instId == 2))
+                    if ((instId == 0) || (instId == 2))
                     {
                         baseAddr += CSL_ICSS_G_DRAM0_SLV_RAM_REGS_BASE;
                     }
@@ -1182,7 +1192,7 @@ int32_t EnetUdma_flushRxFlowRing(EnetDma_RxChHandle hRxFlow,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hRxFlow->rxFlowPrms.dmaDescFreeFxn(hRxFlow->rxFlowPrms.cbArg,
+        EnetMem_freeDmaDesc(hRxFlow->rxFlowPrms.cbArg,
                                            pDmaDesc);
 
         retVal = Udma_ringDequeueRaw(hUdmaRing, &pDesc);
@@ -1200,7 +1210,7 @@ int32_t EnetUdma_flushRxFlowRing(EnetDma_RxChHandle hRxFlow,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hRxFlow->rxFlowPrms.dmaDescFreeFxn(hRxFlow->rxFlowPrms.cbArg,
+        EnetMem_freeDmaDesc(hRxFlow->rxFlowPrms.cbArg,
                                            pDmaDesc);
 
         retVal = Udma_ringFlushRaw(hUdmaRing, &pDesc);
@@ -1237,7 +1247,7 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pFqPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hTxCh->txChPrms.dmaDescFreeFxn(hTxCh->txChPrms.cbArg,
+        EnetMem_freeDmaDesc(hTxCh->txChPrms.cbArg,
                                        pDmaDesc);
 
         retVal = Udma_ringDequeueRaw(hUdmaRing, &pDesc);
@@ -1255,7 +1265,7 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pFqPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hTxCh->txChPrms.dmaDescFreeFxn(hTxCh->txChPrms.cbArg,
+        EnetMem_freeDmaDesc(hTxCh->txChPrms.cbArg,
                                        pDmaDesc);
 
         retVal = Udma_ringFlushRaw(hUdmaRing, &pDesc);
@@ -1284,7 +1294,7 @@ int32_t EnetUdma_freeRing(Udma_RingHandle hUdmaRing,
 
     if (NULL != ringMemFreeFxn)
     {
-        ringMemFreeFxn(cbArg, ringMemPtr, numPkts);
+        EnetMem_freeRingMem(cbArg, ringMemPtr, numPkts);
     }
 
     return retVal;
@@ -1304,7 +1314,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
         Enet_assert(NULL != pRingAllocInfo->ringMemAllocFxn);
         Enet_assert(NULL != pRingAllocInfo->ringMemFreeFxn);
 
-        pRingPrms->ringMem = pRingAllocInfo->ringMemAllocFxn(pRingAllocInfo->cbArg,
+        pRingPrms->ringMem = EnetMem_allocRingMem(pRingAllocInfo->cbArg,
                                              pRingPrms->elemCnt,
                                              UDMA_CACHELINE_ALIGNMENT);
         if (pRingPrms->ringMem == NULL)
@@ -1416,7 +1426,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
 
     if ((pRingAllocInfo != NULL) && (pRingAllocInfo->allocRingMem) && (freeMem))
     {
-        pRingAllocInfo->ringMemFreeFxn(pRingAllocInfo->cbArg, pRingPrms->ringMem, pRingPrms->elemCnt);
+        EnetMem_freeRingMem(pRingAllocInfo->cbArg, pRingPrms->ringMem, pRingPrms->elemCnt);
         pRingPrms->ringMem = NULL;
     }
 
@@ -2044,7 +2054,7 @@ void EnetUdma_initTxFreeDescQ(EnetUdma_TxChObj *pTxCh)
     for (i = 0; i < pTxCh->txChPrms.numTxPkts; i++)
     {
         EnetUdma_DmaDesc *dmaDesc =
-            pTxCh->txChPrms.dmaDescAllocFxn(pTxCh->txChPrms.cbArg, alignSize);
+            EnetMem_allocDmaDesc(pTxCh->txChPrms.cbArg, alignSize);
         if (dmaDesc == NULL)
         {
             ENETTRACE_ERR("[Enet UDMA Error] Tx DMA descriptor memory allocation failed !!\n");
@@ -2088,7 +2098,7 @@ void EnetUdma_deInitTxFreeDescQ(EnetUdma_TxChObj *pTxCh)
     pDmaDesc = EnetUdma_dmaDescDeque(pTxCh->hDmaDescPool);
     while (NULL != pDmaDesc)
     {
-        pTxCh->txChPrms.dmaDescFreeFxn(pTxCh->txChPrms.cbArg, pDmaDesc);
+        EnetMem_freeDmaDesc(pTxCh->txChPrms.cbArg, pDmaDesc);
         pDmaDesc = EnetUdma_dmaDescDeque(pTxCh->hDmaDescPool);
     }
 }
@@ -2104,7 +2114,7 @@ void EnetUdma_initRxFreeDescQ(EnetUdma_RxFlowObj *pRxFlow)
     for (i = 0; i < pRxFlow->rxFlowPrms.numRxPkts; i++)
     {
         EnetUdma_DmaDesc *dmaDesc =
-            pRxFlow->rxFlowPrms.dmaDescAllocFxn(pRxFlow->rxFlowPrms.cbArg, alignSize);
+            EnetMem_allocDmaDesc(pRxFlow->rxFlowPrms.cbArg, alignSize);
         if (dmaDesc == NULL)
         {
             ENETTRACE_ERR("[Enet UDMA Error] Rx DMA descriptor memory allocation failed !!\n");
@@ -2149,7 +2159,7 @@ void EnetUdma_deInitRxFreeDescQ(EnetUdma_RxFlowObj *pRxFlow)
 
     while (NULL != pDmaDesc)
     {
-        pRxFlow->rxFlowPrms.dmaDescFreeFxn(pRxFlow->rxFlowPrms.cbArg, pDmaDesc);
+        EnetMem_freeDmaDesc(pRxFlow->rxFlowPrms.cbArg, pDmaDesc);
         pDmaDesc = EnetUdma_dmaDescDeque(pRxFlow->hDmaDescPool);
     }
 }
@@ -2628,12 +2638,12 @@ void EnetUdma_txCqIsr(Udma_EventHandle hUdmaEvt,
 {
     int32_t retVal;
     EnetUdma_TxChObj *pTxCh = (EnetUdma_TxChObj *)appData;
-    EnetPer_Handle hPer = pTxCh->hDma->hPer;
     EnetQ curIsrCQ;
 
     EnetQueue_initQ(&curIsrCQ);
 
-    retVal = EnetUdma_retrievePkts(hPer,
+    retVal = EnetUdma_retrievePkts(pTxCh->hDma->enetType,
+                                   pTxCh->hDma->instId,
                                    pTxCh->cqRing,
                                   &curIsrCQ,
                                   pTxCh->hDmaDescPool,
@@ -2657,12 +2667,12 @@ void EnetUdma_rxCqIsr(Udma_EventHandle hUdmaEvt,
 {
     int32_t retVal;
     EnetUdma_RxFlowObj *pRxFlow = (EnetUdma_RxFlowObj *)appData;
-    EnetPer_Handle hPer = pRxFlow->hDma->hPer;
     EnetQ curIsrCQ;
 
     EnetQueue_initQ(&curIsrCQ);
 
-    retVal = EnetUdma_retrievePkts(hPer,
+    retVal = EnetUdma_retrievePkts(pRxFlow->hDma->enetType,
+                                   pRxFlow->hDma->instId,
                                    pRxFlow->cqRing,
                                   &curIsrCQ,
                                   pRxFlow->hDmaDescPool,

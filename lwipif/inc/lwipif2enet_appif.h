@@ -115,7 +115,7 @@ typedef void (*LwipifEnetAppIf_FreePktCbFxn)(void *cbArg,
                                            EnetDma_PktQ *cqPktInfoQ);
 
 
-typedef bool (*LwipifEnetAppIf_IsPhyLinkedCbFxn)(Enet_Handle hEnet);
+typedef bool (*LwipifEnetAppIf_IsPhyLinkedCbFxn)(uint32_t hEnet);
 
 /*!
  * \brief Callback function used to pass packets to application for processing.

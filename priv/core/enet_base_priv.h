@@ -83,11 +83,7 @@ typedef struct Enet_dmaResInfo_s
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-
-int32_t Enet_ioctl(Enet_Handle enetHandle, 
-                   uint32_t ioctlCoreId,                                         
-                   uint32_t cmd,                                                 
-                   Enet_IoctlPrms *ioctlPrms);                                   
+                                 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

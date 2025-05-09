@@ -351,7 +351,7 @@ uint64_t Icssg_rd64(Icssg_Handle hIcssg,
     uint64_t val;
 
     val = CSL_REG64_RD(addr);
-    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%016llx\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%016llx\n", hIcssg->name, addr, val);
 
     return val;
 }
@@ -362,7 +362,7 @@ uint32_t Icssg_rd32(Icssg_Handle hIcssg,
     uint32_t val;
 
     val = CSL_REG32_RD(addr);
-    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%08x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%08x\n", hIcssg->name, addr, val);
 
     return val;
 }
@@ -373,7 +373,7 @@ uint16_t Icssg_rd16(Icssg_Handle hIcssg,
     uint16_t val;
 
     val = CSL_REG16_RD(addr);
-    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%04x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%04x\n", hIcssg->name, addr, val);
 
     return val;
 }
@@ -384,7 +384,7 @@ uint8_t Icssg_rd8(Icssg_Handle hIcssg,
     uint8_t val;
 
     val = CSL_REG8_RD(addr);
-    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%02x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: RD: 0x%08x = 0x%02x\n", hIcssg->name, addr, val);
 
     return val;
 }
@@ -393,7 +393,7 @@ void Icssg_wr64(Icssg_Handle hIcssg,
                 uintptr_t addr,
                 uint64_t val)
 {
-    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%016llx\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%016llx\n", hIcssg->name, addr, val);
     CSL_REG64_WR(addr, val);
 }
 
@@ -401,7 +401,7 @@ void Icssg_wr32(Icssg_Handle hIcssg,
                 uintptr_t addr,
                 uint32_t val)
 {
-    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%08x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%08x\n", hIcssg->name, addr, val);
     CSL_REG32_WR(addr, val);
 }
 
@@ -409,7 +409,7 @@ void Icssg_wr16(Icssg_Handle hIcssg,
                 uintptr_t addr,
                 uint16_t val)
 {
-    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%04x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%04x\n", hIcssg->name, addr, val);
     CSL_REG16_WR(addr, val);
 }
 
@@ -417,19 +417,18 @@ void Icssg_wr8(Icssg_Handle hIcssg,
                uintptr_t addr,
                uint8_t val)
 {
-    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%02x\n", hIcssg->enetPer.name, addr, val);
+    ENETTRACE_VERBOSE("%s: WR: 0x%08x = 0x%02x\n", hIcssg->name, addr, val);
     CSL_REG8_WR(addr, val);
 }
 
 uint32_t IcssgUtils_getSliceNum(Icssg_Handle hIcssg,
                                 Enet_MacPort macPort)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t slice = 0U;
 
-    if (hPer->enetType == ENET_ICSSG_DUALMAC)
+    if (hIcssg->enetType == ENET_ICSSG_DUALMAC)
     {
-        switch (hPer->instId)
+        switch (hIcssg->instId)
         {
             case 0:
             case 2:
@@ -443,7 +442,7 @@ uint32_t IcssgUtils_getSliceNum(Icssg_Handle hIcssg,
 
             default:
                 Enet_assert(false, "%s: invalid instance number %u\n",
-                            ENET_PER_NAME(hIcssg), hPer->instId);
+                            hIcssg->name, hIcssg->instId);
                 break;
         }
     }
@@ -451,7 +450,7 @@ uint32_t IcssgUtils_getSliceNum(Icssg_Handle hIcssg,
     {
         Enet_assert(ENET_MACPORT_NORM(macPort) < 2U,
                     "%s: invalid MAC port %u\n",
-                    ENET_PER_NAME(hIcssg), ENET_MACPORT_ID(macPort));
+                    hIcssg->name, ENET_MACPORT_ID(macPort));
         slice = ENET_MACPORT_NORM(macPort) % 2U;
     }
 
@@ -461,7 +460,7 @@ uint32_t IcssgUtils_getSliceNum(Icssg_Handle hIcssg,
 uintptr_t Icssg_getDramAddr(Icssg_Handle hIcssg,
                             Enet_MacPort macPort)
 {
-    uintptr_t addr = (uintptr_t)hIcssg->enetPer.virtAddr;
+    uintptr_t addr = (uintptr_t)hIcssg->virtAddr;
     uint32_t slice = IcssgUtils_getSliceNum(hIcssg, macPort);
 
     if (ICSSG_IS_SLICE_0(slice))
@@ -478,7 +477,7 @@ uintptr_t Icssg_getDramAddr(Icssg_Handle hIcssg,
 
 uintptr_t Icssg_getCfgAddr(Icssg_Handle hIcssg)
 {
-    return (uintptr_t)hIcssg->enetPer.virtAddr +
+    return (uintptr_t)hIcssg->virtAddr +
            CSL_ICSS_G_PR1_MII_RT_PR1_MII_RT_G_CFG_REGS_G_REGS_BASE;
 }
 
@@ -490,7 +489,7 @@ uintptr_t Icssg_getRgmiiCfgAddr(Icssg_Handle hIcssg)
 
 uintptr_t Icssg_getSharedRamAddr(Icssg_Handle hIcssg)
 {
-    return (uintptr_t)hIcssg->enetPer.virtAddr +
+    return (uintptr_t)hIcssg->virtAddr +
            CSL_ICSS_G_RAM_SLV_RAM_REGS_BASE;
 }
 
@@ -581,7 +580,7 @@ int32_t Icssg_R30SendAsyncIoctl(Icssg_Handle hIcssg,
     *asyncIoctlType = ICSSG_UTILS_IOCTL_TYPE_R30_OVER_DMEM;
 
     ENETTRACE_DBG("%s: MAC port %u: Send R30 '%s' cmd seq %u\n",
-                  hIcssg->enetPer.name, ENET_MACPORT_ID(macPort), gIcssg_r30CmdNames[cmd], *seqNum);
+                  hIcssg->name, ENET_MACPORT_ID(macPort), gIcssg_r30CmdNames[cmd], *seqNum);
 
     for (i = 0U; i < ICSSG_UTILS_R30_CMD_LEN; i++)
     {
@@ -999,7 +998,7 @@ int32_t IcssgUtils_checkPortMode(Icssg_Handle hIcssg,
         }
         else
         {
-            ENETTRACE_ERR("%s: MII mode not supported, must be MII or RGMII\n", ENET_PER_NAME(hIcssg));
+            ENETTRACE_ERR("%s: MII mode not supported, must be MII or RGMII\n", hIcssg->name);
             status = ENET_ENOTSUPPORTED;
         }
 
@@ -1012,7 +1011,7 @@ int32_t IcssgUtils_checkPortMode(Icssg_Handle hIcssg,
             if ((mii0Mode != mode) || (mii1Mode != mode))
             {
                 ENETTRACE_ERR("%s: MII mode mismatch (expected %u, requested %u)\n",
-                              ENET_PER_NAME(hIcssg), mii0Mode, mode);
+                    hIcssg->name, mii0Mode, mode);
                 status = ENET_EINVALIDPARAMS;
             }
         }
@@ -1027,7 +1026,7 @@ void IcssgUtils_fwConfig(Icssg_Handle hIcssg,
                          const Icssg_FwPoolMem *fwPoolMem,
                          uint32_t rxPktFlowStart)
 {
-    uintptr_t baseAddr = (uintptr_t)hIcssg->enetPer.virtAddr;
+    uintptr_t baseAddr = (uintptr_t)hIcssg->virtAddr;
     uintptr_t dram = Icssg_getDramAddr(hIcssg, macPort);
     uintptr_t cfgRegs = Icssg_getCfgAddr(hIcssg);
     uint32_t startAddr;
@@ -1301,7 +1300,7 @@ void IcssgUtils_configSwtFw(Icssg_Handle hIcssg,
                             uint32_t rxPktFlowStart0,
                             uint32_t rxPktFlowStart1)
 {
-    uintptr_t baseAddr = (uintptr_t)hIcssg->enetPer.virtAddr;
+    uintptr_t baseAddr = (uintptr_t)hIcssg->virtAddr;
     uintptr_t dram;
     uintptr_t cfgRegs = Icssg_getCfgAddr(hIcssg);
     uintptr_t miiRg;
@@ -1721,12 +1720,12 @@ int32_t IcssgUtils_createPruss(Icssg_Handle hIcssg)
             hIcssg->pruss->initialized = true;
             Enet_assert((hPruss->hwAttrs->instance == hIcssg->pruss->instance),
                          "%s: Mismatched PRUSS instance %u\n",
-                         ENET_PER_NAME(hIcssg), index);
+                         hIcssg->name, index);
         }
         else
         {
             ENETTRACE_ERR("%s: failed to create PRUICSS instance %u\n",
-                          ENET_PER_NAME(hIcssg), index);
+                          hIcssg->name, index);
             status = ENET_EFAIL;
         }
     }
@@ -1756,7 +1755,7 @@ int32_t IcssgUtils_enablePruss(Icssg_Handle hIcssg,
     if (PRUICSS_enableCore(hPruss, pruNum) != SystemP_SUCCESS)
     {
         ENETTRACE_ERR("%s: failed to enable PRU core for port %u\n",
-                      ENET_PER_NAME(hIcssg), portId);
+                      hIcssg->name, portId);
         status = ENET_EFAIL;
     }
 
@@ -1765,7 +1764,7 @@ int32_t IcssgUtils_enablePruss(Icssg_Handle hIcssg,
         if (PRUICSS_enableCore(hPruss, rtuNum) != SystemP_SUCCESS)
         {
             ENETTRACE_ERR("%s: failed to enable RTU core for port %u\n",
-                          ENET_PER_NAME(hIcssg), portId);
+                          hIcssg->name, portId);
             status = ENET_EFAIL;
         }
     }
@@ -1775,7 +1774,7 @@ int32_t IcssgUtils_enablePruss(Icssg_Handle hIcssg,
         if (PRUICSS_enableCore(hPruss, txpruNum) != SystemP_SUCCESS)
         {
             ENETTRACE_ERR("%s: failed to enable TX PRU core for port %u\n",
-                          ENET_PER_NAME(hIcssg), portId);
+                          hIcssg->name, portId);
             status = ENET_EFAIL;
         }
     }
@@ -1805,7 +1804,7 @@ int32_t IcssgUtils_disablePruss(Icssg_Handle hIcssg,
     if (PRUICSS_disableCore(hPruss, pruNum) != SystemP_SUCCESS)
     {
         ENETTRACE_ERR("%s: failed to disable PRU core for port %u\n",
-                      ENET_PER_NAME(hIcssg), portId);
+                      hIcssg->name, portId);
         status = ENET_EFAIL;
     }
 
@@ -1814,7 +1813,7 @@ int32_t IcssgUtils_disablePruss(Icssg_Handle hIcssg,
         if (PRUICSS_disableCore(hPruss, rtuNum) != SystemP_SUCCESS)
         {
             ENETTRACE_ERR("%s: failed to disable RTU core for port %u\n",
-                          ENET_PER_NAME(hIcssg), portId);
+                          hIcssg->name, portId);
             status = ENET_EFAIL;
         }
     }
@@ -1824,7 +1823,7 @@ int32_t IcssgUtils_disablePruss(Icssg_Handle hIcssg,
         if (PRUICSS_disableCore(hPruss, txpruNum) != SystemP_SUCCESS)
         {
             ENETTRACE_ERR("%s: failed to disable TX PRU core for port %u\n",
-                          ENET_PER_NAME(hIcssg), portId);
+                          hIcssg->name, portId);
             status = ENET_EFAIL;
         }
     }
@@ -1855,7 +1854,7 @@ int32_t IcssgUtils_downloadFirmware(Icssg_Handle hIcssg,
     if (retVal == 0)
     {
         ENETTRACE_ERR("%s: Port %u: firmware download failure for PRU core: %d\n",
-                      ENET_PER_NAME(hIcssg), portId, retVal);
+                      hIcssg->name, portId, retVal);
         status = ENET_EFAIL;
     }
 
@@ -1870,7 +1869,7 @@ int32_t IcssgUtils_downloadFirmware(Icssg_Handle hIcssg,
         if (retVal == 0)
         {
             ENETTRACE_ERR("%s: Port %u: firmware download failure for RTU core: %d\n",
-                          ENET_PER_NAME(hIcssg), portId, retVal);
+                          hIcssg->name, portId, retVal);
             status = ENET_EFAIL;
         }
     }
@@ -1886,7 +1885,7 @@ int32_t IcssgUtils_downloadFirmware(Icssg_Handle hIcssg,
         if (retVal == 0)
         {
             ENETTRACE_ERR("%s: Port %u: firmware download failure for TX PRU core: %d\n",
-                          ENET_PER_NAME(hIcssg), portId, retVal);
+                          hIcssg->name, portId, retVal);
             status = ENET_EFAIL;
         }
     }
@@ -1975,13 +1974,12 @@ void IcssgUtils_configFilter3(Icssg_Handle hIcssg,
 int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                                   const Icssg_FwPoolMem *fwPoolMem)
 {
-    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
     uint32_t portBufferPoolNum;
     uint32_t hostBufferPoolNum;
     uint32_t hostEgressQueueNum;
     int32_t status = ENET_SOK;
 
-    if (hPer->enetType == ENET_ICSSG_DUALMAC)
+    if (hIcssg->enetType == ENET_ICSSG_DUALMAC)
     {
         portBufferPoolNum  = ICSSG_DUALMAC_PORT_BUFFER_POOL_NUM;
         hostBufferPoolNum  = ICSSG_DUALMAC_GET_HOST_BUFFER_POOL_NUM(hIcssg->qosLevels);
@@ -1998,7 +1996,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
     if (portBufferPoolNum != fwPoolMem->portBufferPoolNum)
     {
         ENETTRACE_ERR("%s: Invalid number of port buffer pools (expected %u, got %u)\n",
-                      ENET_PER_NAME(hIcssg), portBufferPoolNum, fwPoolMem->portBufferPoolNum);
+                      hIcssg->name, portBufferPoolNum, fwPoolMem->portBufferPoolNum);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2009,7 +2007,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 (fwPoolMem->portBufferPoolSize == 0U))
             {
                 ENETTRACE_ERR("%s: Invalid port buffer pool memory (addr=0x%08x size=%u bytes)\n",
-                              ENET_PER_NAME(hIcssg), fwPoolMem->portBufferPoolMem, fwPoolMem->portBufferPoolSize);
+                              hIcssg->name, fwPoolMem->portBufferPoolMem, fwPoolMem->portBufferPoolSize);
                 status = ENET_EINVALIDPARAMS;
             }
             else
@@ -2017,7 +2015,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 if (!ENET_UTILS_IS_ALIGNED(fwPoolMem->portBufferPoolMem, ICSSG_CACHELINE_ALIGNMENT))
                 {
                     ENETTRACE_ERR("%s: Port buffer pool memory is not aligned (addr 0x%08x)\n",
-                                  ENET_PER_NAME(hIcssg), fwPoolMem->portBufferPoolMem);
+                                  hIcssg->name, fwPoolMem->portBufferPoolMem);
                     status = ENET_EINVALIDPARAMS;
                 }
             }
@@ -2027,7 +2025,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
             if ((fwPoolMem->portBufferPoolMem != NULL) ||
                 (fwPoolMem->portBufferPoolSize != 0U))
             {
-                ENETTRACE_ERR("%s: Valid port buffer pool memory passed, but none required\n", ENET_PER_NAME(hIcssg));
+                ENETTRACE_ERR("%s: Valid port buffer pool memory passed, but none required\n", hIcssg->name);
                 status = ENET_EINVALIDPARAMS;
             }
         }
@@ -2037,7 +2035,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
     if (hostBufferPoolNum != fwPoolMem->hostBufferPoolNum)
     {
         ENETTRACE_ERR("%s: Invalid number of host buffer pools (expected %u, got %u)\n",
-                      ENET_PER_NAME(hIcssg), hostBufferPoolNum, fwPoolMem->hostBufferPoolNum);
+                      hIcssg->name, hostBufferPoolNum, fwPoolMem->hostBufferPoolNum);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2048,7 +2046,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 (fwPoolMem->hostBufferPoolSize == 0U))
             {
                 ENETTRACE_ERR("%s: Invalid host buffer pool memory (addr=0x%08x size=%u bytes)\n",
-                              ENET_PER_NAME(hIcssg), fwPoolMem->hostBufferPoolMem, fwPoolMem->hostBufferPoolSize);
+                              hIcssg->name, fwPoolMem->hostBufferPoolMem, fwPoolMem->hostBufferPoolSize);
                 status = ENET_EINVALIDPARAMS;
             }
             else
@@ -2056,7 +2054,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 if (!ENET_UTILS_IS_ALIGNED(fwPoolMem->hostBufferPoolMem, ICSSG_CACHELINE_ALIGNMENT))
                 {
                     ENETTRACE_ERR("%s: host buffer pool memory is not aligned (addr 0x%08x)\n",
-                                  ENET_PER_NAME(hIcssg), fwPoolMem->hostBufferPoolMem);
+                                  hIcssg->name, fwPoolMem->hostBufferPoolMem);
                     status = ENET_EINVALIDPARAMS;
                 }
             }
@@ -2066,7 +2064,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
             if ((fwPoolMem->hostBufferPoolMem != NULL) ||
                 (fwPoolMem->hostBufferPoolSize != 0U))
             {
-                ENETTRACE_ERR("%s: Valid host buffer pool memory passed, but none required\n", ENET_PER_NAME(hIcssg));
+                ENETTRACE_ERR("%s: Valid host buffer pool memory passed, but none required\n", hIcssg->name);
                 status = ENET_EINVALIDPARAMS;
             }
         }
@@ -2076,7 +2074,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
     if (hostEgressQueueNum != fwPoolMem->hostEgressQueueNum)
     {
         ENETTRACE_ERR("%s: Invalid number of host egress queues (expected %u, got %u)\n",
-                      ENET_PER_NAME(hIcssg), hostEgressQueueNum, fwPoolMem->hostEgressQueueNum);
+                      hIcssg->name, hostEgressQueueNum, fwPoolMem->hostEgressQueueNum);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2087,7 +2085,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 (fwPoolMem->hostEgressQueueSize == 0U))
             {
                 ENETTRACE_ERR("%s: Invalid host egress queue memory (addr=0x%08x size=%u bytes)\n",
-                              ENET_PER_NAME(hIcssg), fwPoolMem->hostEgressQueueMem, fwPoolMem->hostEgressQueueSize);
+                              hIcssg->name, fwPoolMem->hostEgressQueueMem, fwPoolMem->hostEgressQueueSize);
                 status = ENET_EINVALIDPARAMS;
             }
             else
@@ -2095,7 +2093,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 if (!ENET_UTILS_IS_ALIGNED(fwPoolMem->hostEgressQueueMem, ICSSG_CACHELINE_ALIGNMENT))
                 {
                     ENETTRACE_ERR("%s: Host egress queue memory is not aligned (addr 0x%08x)\n",
-                                  ENET_PER_NAME(hIcssg), fwPoolMem->hostEgressQueueMem);
+                                  hIcssg->name, fwPoolMem->hostEgressQueueMem);
                     status = ENET_EINVALIDPARAMS;
                 }
             }
@@ -2105,7 +2103,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
             if ((fwPoolMem->hostEgressQueueMem != NULL) ||
                 (fwPoolMem->hostEgressQueueSize != 0U))
             {
-                ENETTRACE_ERR("%s: Valid host egress queue memory passed, but none required\n", ENET_PER_NAME(hIcssg));
+                ENETTRACE_ERR("%s: Valid host egress queue memory passed, but none required\n", hIcssg->name);
                 status = ENET_EINVALIDPARAMS;
             }
         }
@@ -2115,7 +2113,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
     if (hostEgressQueueNum != fwPoolMem->hostEgressQueueNum)
     {
         ENETTRACE_ERR("%s: Invalid number of host egress queues (expected %u, got %u)\n",
-                      ENET_PER_NAME(hIcssg), hostEgressQueueNum, fwPoolMem->hostEgressQueueNum);
+                      hIcssg->name, hostEgressQueueNum, fwPoolMem->hostEgressQueueNum);
         status = ENET_EINVALIDPARAMS;
     }
     else
@@ -2129,7 +2127,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                     (fwPoolMem->hostEgressPreQueueSize == 0U))
                 {
                     ENETTRACE_ERR("%s: Invalid host egress queue memory (addr=0x%08x size=%u bytes)\n",
-                                  ENET_PER_NAME(hIcssg), fwPoolMem->hostEgressPreQueueMem, fwPoolMem->hostEgressPreQueueSize);
+                                  hIcssg->name, fwPoolMem->hostEgressPreQueueMem, fwPoolMem->hostEgressPreQueueSize);
                     status = ENET_EINVALIDPARAMS;
                 }
                 else
@@ -2137,7 +2135,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                     if (!ENET_UTILS_IS_ALIGNED(fwPoolMem->hostEgressPreQueueMem, ICSSG_CACHELINE_ALIGNMENT))
                     {
                         ENETTRACE_ERR("%s: Host egress queue memory is not aligned (addr 0x%08x)\n",
-                                      ENET_PER_NAME(hIcssg), fwPoolMem->hostEgressPreQueueMem);
+                                      hIcssg->name, fwPoolMem->hostEgressPreQueueMem);
                         status = ENET_EINVALIDPARAMS;
                     }
                 }
@@ -2147,7 +2145,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
                 if ((fwPoolMem->hostEgressPreQueueMem != NULL) ||
                     (fwPoolMem->hostEgressPreQueueSize != 0U))
                 {
-                    ENETTRACE_ERR("%s: Valid host egress queue memory passed, but none required\n", ENET_PER_NAME(hIcssg));
+                    ENETTRACE_ERR("%s: Valid host egress queue memory passed, but none required\n", hIcssg->name);
                     status = ENET_EINVALIDPARAMS;
                 }
             }
@@ -2159,7 +2157,7 @@ int32_t IcssgUtils_checkFwPoolMem(Icssg_Handle hIcssg,
         (fwPoolMem->scratchBufferSize != ICSSG_SCRATCH_BUFFER_SIZE))
     {
         ENETTRACE_ERR("%s: Invalid scratch buffer (addr=0x%08x size=%u bytes)\n",
-                      ENET_PER_NAME(hIcssg), fwPoolMem->scratchBufferMem, fwPoolMem->scratchBufferSize);
+                      hIcssg->name, fwPoolMem->scratchBufferMem, fwPoolMem->scratchBufferSize);
         status = ENET_EINVALIDPARAMS;
     }
 

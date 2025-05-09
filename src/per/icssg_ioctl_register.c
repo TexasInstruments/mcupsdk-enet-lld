@@ -73,7 +73,7 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 #define ICSSG_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                                       \
-int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)                   \
+int32_t Enet_ioctl_register_##x(uint32_t hEnet, uint32_t coreId)                   \
                                                                                       \
 {                                                                                     \
     int32_t  status;                                                                  \
@@ -84,13 +84,13 @@ int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)             
     inArgs.fxn = (uintptr_t)&Icssg_ioctl_handler_##x;                                 \
                                                                                       \
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
-    status = Enet_ioctl(hEnet, coreId, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
+    status = Icssg_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
     return  status;                                                                   \
                                                                                       \
 }
 
 #define ICSSG_MACPORT_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                               \
-int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)                   \
+int32_t Enet_ioctl_register_##x(uint32_t hEnet, uint32_t coreId)                   \
                                                                                       \
 {                                                                                     \
     int32_t  status;                                                                  \
@@ -101,7 +101,7 @@ int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)             
     inArgs.fxn = (uintptr_t)&IcssgMacPort_ioctl_handler_##x;                          \
                                                                                       \
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
-    status = Enet_ioctl(hEnet, coreId, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
+    status = Icssg_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
     return  status;                                                                   \
                                                                                       \
 }

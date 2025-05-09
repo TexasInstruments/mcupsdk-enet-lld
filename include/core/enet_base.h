@@ -82,28 +82,6 @@ extern "C" {
 /*                         Structures and Enums                               */
 /* ========================================================================== */
 
-/*!
- * \brief Enet object.
- */
-typedef struct Enet_Obj_s
-{
-    /*! Underlying Ethernet Peripheral */
-    EnetPer_Obj *enetPer;
-
-    /*! Magic number used to indicate if driver has been opened */
-    Enet_Magic magic;
-
-    /*! Main, API-level Lock */
-    void *lock;
-} Enet_Obj;
-
-/*!
- * \brief Ethernet driver handle.
- *
- * Ethernet driver opaque handle used to call any Enet related APIs.
- */
-typedef struct Enet_Obj_s *Enet_Handle;
-
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
 /* ========================================================================== */
@@ -114,18 +92,6 @@ typedef struct Enet_Obj_s *Enet_Handle;
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-/*!
- * \brief Get the Enet Peripheral handle associated with Enet driver.
- *
- * Gets the underlying Enet Peripheral handle associated with the given Enet
- * driver.
- *
- * \param hEnet      Enet handle
- *
- * \return EthPer handle
- */
-static inline EnetPer_Handle Enet_getPerHandle(Enet_Handle hEnet);
-
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */
@@ -135,11 +101,6 @@ static inline EnetPer_Handle Enet_getPerHandle(Enet_Handle hEnet);
 /* ========================================================================== */
 /*                       Static Function Definitions                          */
 /* ========================================================================== */
-
-static inline EnetPer_Handle Enet_getPerHandle(Enet_Handle hEnet)
-{
-    return hEnet->enetPer;
-}
 
 #ifdef __cplusplus
 }

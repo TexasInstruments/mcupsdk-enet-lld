@@ -43,7 +43,8 @@
 #include <hw_include/cslr_icss.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <priv/mod/icssg_stats_priv.h>
 #include <enet.h>
 #include <priv/core/enet_base_priv.h>
@@ -55,18 +56,22 @@
 /* ========================================================================== */
 
 #define ICSSG_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                                        \
-int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)                   \
+int32_t Enet_ioctl_register_##x(uint32_t hEnet, uint32_t coreId)                   \
                                                                                       \
 {                                                                                     \
     int32_t  status;                                                                  \
     Enet_IoctlPrms prms;                                                              \
     Enet_IoctlRegisterHandlerInArgs inArgs;                                           \
                                                                                       \
+    extern int32_t Icssg_ioctl(uint32_t enetHandle,                                 \
+        uint32_t cmd,                                                                 \
+        Enet_IoctlPrms *ioctlPrms);                                                   \
+                                                                                      \
     inArgs.cmd = x;                                                                   \
-    inArgs.fxn = (uintptr_t)&IcssgStats_ioctl_handler_##x;                                  \
+    inArgs.fxn = (uintptr_t)&IcssgStats_ioctl_handler_##x;                            \
                                                                                       \
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
-    status = Enet_ioctl(hEnet, coreId, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
+    status = Icssg_ioctl(hEnet, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms);        \
     return  status;                                                                   \
                                                                                       \
 }

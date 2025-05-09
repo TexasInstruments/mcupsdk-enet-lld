@@ -88,94 +88,94 @@ void *EnetAppUtils_phyToVirtFxn(uint64_t phyAddr,
 
 void EnetAppUtils_freePktInfoQ(EnetDma_PktQ *pPktInfoQ);
 
-int32_t EnetAppUtils_regDfltRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_regDfltRxFlow(uint32_t hEnet,
                                    uint32_t coreKey,
                                    uint32_t coreId,
                                    uint32_t rxFlowStartIdx,
                                    uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_unregDfltRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_unregDfltRxFlow(uint32_t hEnet,
                                      uint32_t coreKey,
                                      uint32_t coreId,
                                      uint32_t rxFlowStartIdx,
                                      uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_regDfltRxFlowForChIdx(Enet_Handle hEnet,
+int32_t EnetAppUtils_regDfltRxFlowForChIdx(uint32_t hEnet,
                                            uint32_t coreKey,
                                            uint32_t coreId,
                                            uint32_t chIdx,
                                            uint32_t rxFlowStartIdx,
                                            uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_unregDfltRxFlowForChIdx(Enet_Handle hEnet,
+int32_t EnetAppUtils_unregDfltRxFlowForChIdx(uint32_t hEnet,
                                              uint32_t coreKey,
                                              uint32_t coreId,
                                              uint32_t chIdx,
                                              uint32_t rxFlowStartIdx,
                                              uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_regDstMacRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_regDstMacRxFlow(uint32_t hEnet,
                                      uint32_t coreKey,
                                      uint32_t coreId,
                                      uint32_t rxFlowStartIdx,
                                      uint32_t rxFlowIdx,
                                      uint8_t macAddress[ENET_MAC_ADDR_LEN]);
 
-int32_t EnetAppUtils_unregDstMacRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_unregDstMacRxFlow(uint32_t hEnet,
                                        uint32_t coreKey,
                                        uint32_t coreId,
                                        uint32_t rxFlowStartIdx,
                                        uint32_t rxFlowIdx,
                                        uint8_t macAddress[ENET_MAC_ADDR_LEN]);
 
-int32_t EnetAppUtils_allocRxFlowForChIdx(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocRxFlowForChIdx(uint32_t hEnet,
                                          uint32_t coreKey,
                                          uint32_t coreId,
                                          uint32_t chIdx,
                                          uint32_t *rxFlowStartIdx,
                                          uint32_t *flowIdx);
 
-int32_t EnetAppUtils_allocRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocRxFlow(uint32_t hEnet,
                                  uint32_t coreKey,
                                  uint32_t coreId,
                                  uint32_t *rxFlowStartIdx,
                                  uint32_t *flowIdx);
 
-int32_t EnetAppUtils_freeRxFlowForChIdx(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeRxFlowForChIdx(uint32_t hEnet,
                                         uint32_t coreKey,
                                         uint32_t coreId,
                                         uint32_t chIdx,
                                         uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_freeRxFlow(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeRxFlow(uint32_t hEnet,
                                 uint32_t coreKey,
                                 uint32_t coreId,
                                 uint32_t rxFlowIdx);
 
-int32_t EnetAppUtils_allocTxCh(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocTxCh(uint32_t hEnet,
                                uint32_t coreKey,
                                uint32_t coreId,
                                uint32_t *txPSILThreadId);
 
-int32_t EnetAppUtils_allocAbsTxCh(Enet_Handle hEnet,
+int32_t EnetAppUtils_allocAbsTxCh(uint32_t hEnet,
                                   uint32_t coreKey,
                                   uint32_t coreId,
                                   uint32_t *txPSILThreadId,
                                   uint32_t chNum);
 
-int32_t EnetAppUtils_freeTxCh(Enet_Handle hEnet,
+int32_t EnetAppUtils_freeTxCh(uint32_t hEnet,
                               uint32_t coreKey,
                               uint32_t coreId,
                               uint32_t txChNum);
 
-void EnetAppUtils_openTxCh(Enet_Handle hEnet,
+void EnetAppUtils_openTxCh(uint32_t hEnet,
                            uint32_t coreKey,
                            uint32_t coreId,
                            uint32_t *pTxChNum,
                            EnetDma_TxChHandle *pTxChHandle,
                            EnetUdma_OpenTxChPrms *pCpswTxChCfg);
 
-void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
+void EnetAppUtils_closeTxCh(uint32_t hEnet,
                             uint32_t coreKey,
                             uint32_t coreId,
                             EnetDma_PktQ *pFqPktInfoQ,
@@ -183,7 +183,7 @@ void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
                             EnetDma_TxChHandle hTxChHandle,
                             uint32_t txChNum);
 
-uint32_t EnetAppUtils_getStartFlowIdx(Enet_Handle hEnet,
+uint32_t EnetAppUtils_getStartFlowIdx(uint32_t hEnet,
                                       uint32_t coreId);
 
 void EnetAppUtils_setCommonRxFlowPrms(EnetUdma_OpenRxFlowPrms *pRxChPrms);
