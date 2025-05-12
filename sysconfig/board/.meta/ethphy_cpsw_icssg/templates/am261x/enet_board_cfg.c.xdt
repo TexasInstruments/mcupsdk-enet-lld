@@ -83,8 +83,11 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
 #define ENET_GET_NUM_MAC_ADDR(num)                                        ((num>>3)+1)
 #define ENET_MAC_ADDR_VALIDATE_MASK                                       (0x01U)
 
-#define I2C_ADDRESS_IO_EXPANDER_TCA6408                                   (0x21U)
+#define I2C_ADDRESS_IO_EXPANDER0_TCA6408                                  (0x20U)
+#define I2C_ADDRESS_IO_EXPANDER1_TCA6408                                  (0x21U)
 
+#define EEPROM_OFFSET_READ_PCB_REV                                        (0x0022U)
+#define EEPROM_READ_PCB_REV_DATA_LEN                                      (0x2U)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -261,53 +264,144 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     return ENET_SOK;
 }
 
-void EnetBoard_setMacPort1IOExpanderCfg(void)
+%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
+static void EnetBoard_enableLevelTranslator(void)
 {
-    static TCA6408_Config  gTCA6408_Config;
+    TCA6408_Config  gTCA6408_Config;
     TCA6408_Params      TCA6408Params;
-    int32_t status    = SystemP_SUCCESS;
-
+    int32_t status    = ENET_SOK;
     TCA6408_Params_init(&TCA6408Params);
-	TCA6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER_TCA6408;
+
+    TCA6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER0_TCA6408;
 
     status = TCA6408_open(&gTCA6408_Config, &TCA6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
 
-    if (status == SystemP_SUCCESS)
+    if (status == ENET_SOK)
     {
         /* Configure as output  */
         status = TCA6408_config(&gTCA6408_Config,
-                    4,
-                    TCA6408_MODE_OUTPUT);
+                                4,
+                                TCA6408_MODE_OUTPUT);
+       EnetAppUtils_assert(status == ENET_SOK);
     }
-    if (status == SystemP_SUCCESS)
+
+    if (status == ENET_SOK)
     {
         status =  TCA6408_setOutput(&gTCA6408_Config, 4, TCA6408_OUT_STATE_HIGH);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+}
+
+void EnetBoard_setMacPort1IOExpanderCfg(void)
+{
+    TCA6408_Config  gTCA6408_Config;
+    TCA6408_Params      TCA6408Params;
+    int32_t status    = ENET_SOK;
+    uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
+
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM1], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    /* Syscfg board version is used on when Eeprom is not programmed(0xFF)  */
+    if ((boardVer[1] == 0xFF) && (boardVer[0] == 0xFF))
+    {
+        boardVer[1] = '1';
+        boardVer[0] = 'E';
+        EnetAppUtils_print("Assuming Board Version as E1\r\n");
+    }
+
+    if(status == ENET_SOK)
+    {
+        if((boardVer[1] == '2') && (boardVer[0] == 'E'))
+        {
+            /* board version is E2 */
+            EnetBoard_enableLevelTranslator();
+        }
+    }
+    EnetAppUtils_assert(status == ENET_SOK);
+
+
+    TCA6408_Params_init(&TCA6408Params);
+    TCA6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER1_TCA6408;
+
+    status = TCA6408_open(&gTCA6408_Config, &TCA6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    if (status == ENET_SOK)
+    {
+        /* Configure as output  */
+        status = TCA6408_config(&gTCA6408_Config,
+                                4,
+                                TCA6408_MODE_OUTPUT);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+
+    if (status == ENET_SOK)
+    {
+        if(boardVer[1] == '2' && boardVer[0] == 'E')
+        {
+            /* board Version is E2 */
+            status =  TCA6408_setOutput(&gTCA6408_Config, 4, TCA6408_OUT_STATE_LOW);
+            EnetAppUtils_assert(status == ENET_SOK);
+        }
+        else if(boardVer[1] == '1' && boardVer[0] == 'E')
+        {
+            /* board Version is E1*/
+            status =  TCA6408_setOutput(&gTCA6408_Config, 4, TCA6408_OUT_STATE_HIGH);
+            EnetAppUtils_assert(status == ENET_SOK);
+        }
     }
 }
 
 void EnetBoard_setMacPort2IOExpanderCfg(void)
 {
-    static TCA6408_Config  gTCA6408_Config;
+    TCA6408_Config  gTCA6408_Config;
     TCA6408_Params      TCA6408Params;
-    int32_t status    = SystemP_SUCCESS;
+    int32_t status    = ENET_SOK;
+    uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
 
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM1], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
+
+    /* Syscfg board version is used on when Eeprom is not programmed(0xFF)  */
+    if ((boardVer[1] == 0xFF) && (boardVer[0] == 0xFF))
+    {
+        boardVer[1] = '1';
+        boardVer[0] = 'E';
+        EnetAppUtils_print("Assuming Board Version as E1\r\n");
+    }
+
+    if(status == ENET_SOK)
+    {
+        if((boardVer[1] == '2') && (boardVer[0] == 'E'))
+        {
+            /* board Version is E2 */
+            EnetBoard_enableLevelTranslator();
+        }
+    }
+    DebugP_assert(status == ENET_SOK);
     TCA6408_Params_init(&TCA6408Params);
-    TCA6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER_TCA6408;
+    TCA6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER1_TCA6408;
 
     status = TCA6408_open(&gTCA6408_Config, &TCA6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
 
-    if (status == SystemP_SUCCESS)
+    if (status == ENET_SOK)
     {
         /* Configure as output  */
         status = TCA6408_config(&gTCA6408_Config,
-                    3,
-                    TCA6408_MODE_OUTPUT);
+                                3,
+                                TCA6408_MODE_OUTPUT);
+        EnetAppUtils_assert(status == ENET_SOK);
     }
-    if (status == SystemP_SUCCESS)
+
+    if (status == ENET_SOK)
     {
         status =  TCA6408_setOutput(&gTCA6408_Config, 3, TCA6408_OUT_STATE_LOW);
+        EnetAppUtils_assert(status == ENET_SOK);
     }
 }
+%}
 
 void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
