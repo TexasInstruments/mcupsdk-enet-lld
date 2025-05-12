@@ -304,7 +304,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 % if(instance.McmEnable == true){
     EnetMcm_InitConfig enetMcmCfg;
 % }
-
+    
     EnetAppUtils_assert(Enet_isCpswFamily(enetType) == true);
     EnetApp_getEnetInstMacInfo(enetType, instId, macPortList, &numMacPorts);
 
@@ -494,7 +494,6 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
 {
     EnetMacPort_LinkCfg *pLinkCfg = &pLinkArgs->linkCfg;
     int32_t status = ENET_SOK;
-
     EnetAppUtils_print("Open MAC port %u\r\n", ENET_MACPORT_ID(macPort));
 
     /* Set port link params */

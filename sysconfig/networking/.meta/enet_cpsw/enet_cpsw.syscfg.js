@@ -10,6 +10,10 @@ function getModule() {
     {
         return system.getScript(`/networking/enet_cpsw/${driverVer}/enet_cpsw_top`);
     }
+    else if(driverVer == "am62lx"){
+        
+        return system.getScript(`/networking/enet_cpsw/${driverVer}/enet_cpsw_top`);
+    }
     else
     {
         return system.getScript(`/networking/enet_cpsw/${driverVer}/enet_cpsw_${driverVer}`);

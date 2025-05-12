@@ -67,6 +67,7 @@ function getPhyInfo(peripheral)
     const cpswPhyInfoMap =
         [
             {deviceName: "am62x-sk", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
+			{deviceName: "am62lx-evm", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
             {deviceName: "am62x-sk-sip", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
             {deviceName: "am62ax-sk", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
             {deviceName: "am62dx-evm", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 3},
