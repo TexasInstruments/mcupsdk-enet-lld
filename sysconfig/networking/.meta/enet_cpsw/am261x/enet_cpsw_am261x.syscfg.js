@@ -181,12 +181,17 @@ function getEnetClockConfig(device_name)
 enet_clock_config =
     {
 
-	clockIds        : [ "SOC_RcmPeripheralId_CPTS" ],
+	clockIds        : [ "SOC_RcmPeripheralId_CPTS", "SOC_RcmPeripheralId_CPSW_5_50_250"],
 	clockFrequencies: [
 	    {
 	        moduleId: "SOC_RcmPeripheralId_CPTS",
 	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
 	        clkRate : 250000000,
+	    },
+        {
+	        moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
+	        clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
+	        clkRate : 500000000,
 	    },
 	],
     }
@@ -196,12 +201,17 @@ enet_clock_config =
 enet_clock_config =
     {
 
-	clockIds        : [ "SOC_RcmPeripheralId_CPTS" ],
+	clockIds        : [ "SOC_RcmPeripheralId_CPTS", , "SOC_RcmPeripheralId_CPSW_5_50_250"],
 	clockFrequencies: [
 	    {
 	        moduleId: "SOC_RcmPeripheralId_CPTS",
 	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
 	        clkRate : 200000000,
+	    },
+        {
+	        moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
+	        clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
+	        clkRate : 500000000,
 	    },
 	],
     }
