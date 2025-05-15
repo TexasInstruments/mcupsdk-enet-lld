@@ -19,7 +19,7 @@
         "
         connection="TIXDS110_Connection.xml"
         toolChain="TICLANG"
-        cgtVersion="4.0.1"
+        cgtVersion="4.0.1.LTS"
         device="Cortex R.AM263Px"
         deviceCore="Cortex_R5_0"
         ignoreDefaultDeviceSettings="true"
@@ -134,6 +134,8 @@
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
     </project>
 </projectSpec>
