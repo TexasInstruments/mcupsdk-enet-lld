@@ -360,7 +360,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         ringAllocInfo.instId          = hDma->instId;
         ringAllocInfo.mappedChNum     = EnetUdma_getMappedRxChNum(hPer->enetType, hPer->instId, pRxFlowPrms->chIdx);
         ringAllocInfo.transferDir     = ENET_UDMA_DIR_RX;
-#if defined(SOC_AM62LX)
+#if defined(SOC_AM62LX) || defined(SOC_TDA54)
         ringAllocInfo.ringNum         = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
 #else
         ringAllocInfo.ringNum         = UDMA_RING_ANY;
@@ -398,7 +398,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
 
         /* Set Src tag low selection to get port number of the received packet (or)
          * flow Id (or) config tag from CPPI. */
-#if !defined(SOC_AM62LX)
+#if !defined(SOC_AM62LX) && !defined(SOC_TDA54)
         flowPrms.srcTagLoSel   = pRxFlowPrms->flowPrms.srcTagLoSel;
 #endif
         flowPrms.defaultRxCQ = Udma_ringGetNum(pRxFlow->cqRing);
@@ -494,7 +494,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
         {
             Enet_assert(false);
         }
-#if defined(SOC_AM62LX)
+#if defined(SOC_AM62LX) || defined(SOC_TDA54)
         Udma_ChHandle ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
         flowAllocMappedPrms.ChHandle = ChHandle;
         flowPrms.ChHandle = ChHandle;
@@ -548,7 +548,7 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
 #endif
 
             EnetUdma_getRxFlowUdmaInfo(pRxFlow, &udmaInfo);
-#if defined(SOC_AM62LX)
+#if defined(SOC_AM62LX) || defined(SOC_TDA54)
             udmaInfo.hUdmaCh = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
             Udma_ChHandleInt cHandle = (Udma_ChHandleInt)udmaInfo.hUdmaCh;
             cHandle->cqRing = pRxFlow->cqRing;
@@ -2678,7 +2678,7 @@ uint32_t EnetUdma_getMappedRxChStartIdx(EnetUdma_RxChObj *pRxCh)
 {
     uint32_t chNum, chStartIdx = 0U, index;
     /* Pass RX channel number in case of AM64x */
-#if !defined(SOC_AM62LX)
+#if !defined(SOC_AM62LX) && !defined(SOC_TDA54)
     extern const Udma_MappedChRingAttributes gUdmaRxMappedChRingAttributes[];
 #endif
     chNum = EnetUdma_getMappedRxChNum(pRxCh->enetType,
@@ -2997,7 +2997,7 @@ int32_t EnetDma_registerTxEventCb(EnetDma_TxChHandle hTxCh, EnetDma_PktNotifyCb 
 
 static void EnetDma_initflowSrcTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms)
 {
-#if !defined(SOC_AM62LX)
+#if !defined(SOC_AM62LX) && !defined(SOC_TDA54)
     enetflowPrms->srcTagHi     = flowPrms->srcTagHi;
     enetflowPrms->srcTagLo     = flowPrms->srcTagLo;
     enetflowPrms->srcTagHiSel  = flowPrms->srcTagHiSel;
@@ -3007,7 +3007,7 @@ static void EnetDma_initflowSrcTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_Flo
 
 static void EnetDma_initflowDstTag(EnetUdma_UdmaFlowPrms *enetflowPrms, Udma_FlowPrms *flowPrms)
 {
-#if !defined(SOC_AM62LX)
+#if !defined(SOC_AM62LX) && !defined(SOC_TDA54)
     enetflowPrms->destTagHi    = flowPrms->destTagHi;
     enetflowPrms->destTagLo    = flowPrms->destTagLo;
     enetflowPrms->destTagHiSel = flowPrms->destTagHiSel;

@@ -37,7 +37,6 @@ ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
 endif
 
-#%     obj.common.push("ti_drivers_config.c", "ti_drivers_open_close.c", "ti_board_config.c", "ti_board_open_close.c", "ti_dpl_config.c", "ti_pinmux_config.c", "ti_power_clock_config.c");
 FILES_common := \
 	loopback_cfg.c \
 	loopback_test.c \
@@ -87,7 +86,9 @@ CFLAGS_common := \
 	--target=arm-arm-none-eabi \
 	-mcpu=cortex-m55 \
 	-DBUILD_M55 \
+	-fshort-enums \
 	-gdwarf-3 \
+	-mthumb \
 	-Wall \
 	-Werror \
 	-g \
