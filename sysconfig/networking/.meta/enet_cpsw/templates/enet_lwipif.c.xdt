@@ -33,7 +33,7 @@
                 if ((soc !== "am64x") && (soc !== "am243x"))
                 {
                     // On AM243x and AM64x, rxCsumOffload is not used. txCsumOffload enables Checksum offload on both the Rx and Tx side.
-                    disableFlag = disableFlag + ' | NETIF_CHECKSUM_CHECK_TCP | NETIF_CHECKSUM_CHECK_TCP';
+                    disableFlag = disableFlag + ' | NETIF_CHECKSUM_CHECK_TCP | NETIF_CHECKSUM_CHECK_UDP';
                 }
             }
         }
