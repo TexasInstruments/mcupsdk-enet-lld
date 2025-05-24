@@ -76,6 +76,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/auto_ip \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/azure_iot \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/BSD \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/cloud \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/dhcp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/dns \
@@ -87,6 +89,7 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/pop3 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/ppp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/pppoe \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/ptp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/rtp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/rtsp \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/addons/smtp \

@@ -563,16 +563,16 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
     uint8_t i;
-    SemaphoreP_Object ayncIoctlSemObj;
+    SemaphoreP_Object asyncIoctlSemObj;
 
-    status = SemaphoreP_constructBinary(&ayncIoctlSemObj, 0);
+    status = SemaphoreP_constructBinary(&asyncIoctlSemObj, 0);
     DebugP_assert(SystemP_SUCCESS == status);
 
     Enet_registerEventCb(hEnet,
                         ENET_EVT_ASYNC_CMD_RESP,
                         0U,
                         EnetApp_asyncIoctlCb,
-                        (void *)&ayncIoctlSemObj);
+                        (void *)&asyncIoctlSemObj);
 
     for (i = 0U; i < numMacPorts; i++)
     {
@@ -644,7 +644,7 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
                 do
                 {
                     Enet_poll(hEnet, ENET_EVT_ASYNC_CMD_RESP, NULL, 0U);
-                    status = SemaphoreP_pend(&ayncIoctlSemObj, SystemP_WAIT_FOREVER);
+                    status = SemaphoreP_pend(&asyncIoctlSemObj, SystemP_WAIT_FOREVER);
                     if (SystemP_SUCCESS == status)
                     {
                         break;
@@ -689,7 +689,7 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
         }
     }
 
-    SemaphoreP_destruct(&ayncIoctlSemObj);
+    SemaphoreP_destruct(&asyncIoctlSemObj);
     Enet_unregisterEventCb(hEnet, ENET_EVT_ASYNC_CMD_RESP, 0U);
 
     return status;
@@ -953,6 +953,10 @@ int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dst
     {
        EnetAppUtils_print("Failed to set the SPL frame priority : %d\n", status);
     }
+    
+    SemaphoreP_destruct(&asyncIoctlSemObj);
+    Enet_unregisterEventCb(hEnet, ENET_EVT_ASYNC_CMD_RESP, 0U);
+    
     return status;
 }
 
