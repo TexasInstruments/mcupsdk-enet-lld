@@ -45,6 +45,7 @@
 #include <kernel/dpl/TaskP.h>
 #include <kernel/dpl/ClockP.h>
 #include <kernel/dpl/QueueP.h>
+#include <enet_apputils.h>
 
 #if (ENET_SYSCFG_ENABLE_EXTPHY == 1)
 #include "enetextphy.h"

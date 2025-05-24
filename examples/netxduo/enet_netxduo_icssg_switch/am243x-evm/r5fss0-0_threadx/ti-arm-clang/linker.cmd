@@ -25,11 +25,11 @@
  * - But then the mode is switched to SVC mode and SVC stack is used for all user ISR callbacks
  * - Hence in FreeRTOS, IRQ stack size is less and SVC stack size is more
  */
-__IRQ_STACK_SIZE = 256;
+__IRQ_STACK_SIZE = 4096;
 /* This is the size of stack when R5 is in IRQ mode
  * - In both NORTOS and FreeRTOS nesting is disabled for FIQ
  */
-__FIQ_STACK_SIZE = 256;
+__FIQ_STACK_SIZE = 4096;
 __SVC_STACK_SIZE = 4096; /* This is the size of stack when R5 is in SVC mode */
 __ABORT_STACK_SIZE = 256;  /* This is the size of stack when R5 is in ABORT mode */
 __UNDEFINED_STACK_SIZE = 256;  /* This is the size of stack when R5 is in UNDEF mode */

@@ -214,6 +214,99 @@ function getIfTxCh()
     return ret;
 }
 
+function uniqueChannels(value, index, array) {
+    return (array.indexOf(value) === index);
+}
+
+function getAllRxChannels() {
+
+    let ret;
+    let chArray = new Array();
+
+    for(let i = 0; i < netxduo_module.$instances.length; i++)
+     {
+        let netx_instance = netxduo_module.$instances[i];
+
+        for (let Idx = 0; Idx < netxduo_module.getIfCount(netx_instance); Idx++)
+        {
+            let ifCfg = netxduo_module.getIfConfig(netx_instance,Idx);
+            let rxCh = ifCfg.rxDmaChNum;
+
+            let enet_module = null;
+            if (getIfEnetType(ifCfg.enet_instance_name) === 'CPSW') {
+                enet_module = system.modules["/networking/enet_cpsw/enet_cpsw"];
+            }
+            if (getIfEnetType(ifCfg.enet_instance_name) === 'ICSSG') {
+                enet_module = system.modules["/networking/enet_icss/enet_icss"];
+            }
+
+            let enet_instance = enet_module.$instances.find(obj => { return obj.$name === ifCfg.enet_instance_name});
+
+            for (let k = 0; k < rxCh.length; k++) {
+                chArray.push(enet_module.getChannelConfig(enet_instance, "RX", rxCh[k]).$name.toUpperCase());
+            }
+        }
+     }
+
+    chArray = chArray.filter(uniqueChannels);
+    
+    ret = '{';
+    for(let i = 0; i < chArray.length; i++) {
+        ret += chArray[i];
+        if (i < chArray.length - 1) {
+            ret += ','   
+        }
+    }
+    ret += '}';
+
+    return ret;
+}
+
+
+function getAllTxChannels() {
+
+    let ret;
+    let chArray = new Array();
+
+    for(let i = 0; i < netxduo_module.$instances.length; i++)
+     {
+        let netx_instance = netxduo_module.$instances[i];
+
+        for (let Idx = 0; Idx < netxduo_module.getIfCount(netx_instance); Idx++)
+        {
+            let ifCfg = netxduo_module.getIfConfig(netx_instance,Idx);
+            let txCh = ifCfg.txDmaChNum;
+
+            let enet_module = null;
+            if (getIfEnetType(ifCfg.enet_instance_name) === 'CPSW') {
+                enet_module = system.modules["/networking/enet_cpsw/enet_cpsw"];
+            }
+            if (getIfEnetType(ifCfg.enet_instance_name) === 'ICSSG') {
+                enet_module = system.modules["/networking/enet_icss/enet_icss"];
+            }
+
+            let enet_instance = enet_module.$instances.find(obj => { return obj.$name === ifCfg.enet_instance_name});
+
+            for (let k = 0; k < txCh.length; k++) {
+                chArray.push(enet_module.getChannelConfig(enet_instance, "TX", txCh[k]).$name.toUpperCase());
+            }
+        }
+     }
+
+    chArray = chArray.filter(uniqueChannels);
+    
+    ret = '{';
+    for(let i = 0; i < chArray.length; i++) {
+        ret += chArray[i];
+        if (i < chArray.length - 1) {
+            ret += ','   
+        }
+    }
+    ret += '}';
+
+    return ret;
+}
+
 
 function getIfMacPorts()
 {
@@ -336,6 +429,8 @@ let netxduo_interface_module = {
     getIfMacPorts,
     getIfRxCh,
     getIfTxCh,
+    getAllRxChannels,
+    getAllTxChannels,
     validate: validate,
 };
 

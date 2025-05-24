@@ -107,11 +107,14 @@ enet_icss1.mdioMode                     = "MDIO_MODE_MANUAL";
 enet_icss1.PktInfoOnlyEnable            = true;
 enet_icss1.QoS                          = 3;
 enet_icss1.mode                         = "DUAL MAC";
+enet_icss1.PktPoolEnable                = false;
+enet_icss1.PktInfoOnlyCount             = 32;
 enet_icss1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_icss1.PRU_ICSSG1_RGMII1.$assign    = "PRU_ICSSG1_RGMII1";
 enet_icss1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
 enet_icss1.rxDmaChannel[0].useGlobalEvt = false;
 enet_icss1.rxDmaChannel[0].sizeThreshEn = 0;
+enet_icss1.rxDmaChannel[0].PacketsCount = 16;
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
@@ -124,10 +127,14 @@ enet_icss2.dualMacPortSelected          = "ENET_MAC_PORT_2";
 enet_icss2.mdioMdcEnable                = false;
 enet_icss2.QoS                          = 3;
 enet_icss2.phyToMacInterfaceMode        = "RGMII";
+enet_icss2.PktPoolEnable                = false;
+enet_icss2.PktInfoOnlyEnable            = true;
+enet_icss2.PktInfoOnlyCount             = 32;
 enet_icss2.txDmaChannel[0].$name        = "ENET_DMA_TX_CH1";
 enet_icss2.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH2";
 enet_icss2.rxDmaChannel[0].useGlobalEvt = false;
 enet_icss2.rxDmaChannel[0].sizeThreshEn = 0;
+enet_icss2.rxDmaChannel[0].PacketsCount = 16;
 
 const ethphy_cpsw_icssg2 = ethphy_cpsw_icssg.addInstance({}, false);
 ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
@@ -156,6 +163,7 @@ netxduo1.$name                                   = "CONFIG_NETXDUO0";
 netxduo1.netxduoIfInstance.create(2);
 netxduo1.netxduoIfInstance[0].$name              = "CONFIG_NETX_IF0";
 netxduo1.netxduoIfInstance[0].enet_instance_name = "CONFIG_ENET_ICSS0";
+netxduo1.netxduoIfInstance[0].isDefault          = true;
 netxduo1.netxduoIfInstance[1].$name              = "CONFIG_NETX_IF1";
 netxduo1.netxduoIfInstance[1].enet_instance_name = "CONFIG_ENET_ICSS1";
 

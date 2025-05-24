@@ -37,7 +37,7 @@
 #include <tx_api.h>
 
 
-#define MAIN_TASK_PRI  (1)
+#define MAIN_TASK_PRI  (4)
 
 #define MAIN_TASK_STACK_SIZE (8192U)
 
@@ -45,11 +45,11 @@ uint8_t main_thread_stack[MAIN_TASK_STACK_SIZE] __attribute__((aligned(32)));
 
 TX_THREAD main_thread;
 
-void netxduo_cpsw_main(ULONG arg);
+void netxduo_cpsw_main(void *args);
 
 void threadx_main(ULONG arg)
 {
-    netxduo_cpsw_main(arg);
+    netxduo_cpsw_main(NULL);
 }
 
 
