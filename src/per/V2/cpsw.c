@@ -312,7 +312,7 @@ void Cpsw_initCfg(EnetPer_Handle hPer,
     CpswAle_initCfg(&cpswCfg->aleCfg);
 
     /* Initialize CPDMA params */
-    EnetHostPortDma_initCfg(enetType, cpswCfg->dmaCfg);
+    EnetHostPortDma_initCfg(cpswCfg->dmaCfg);
 
     cpswCfg->intrPriority              = 1U;
     cpswCfg->mdioLinkStateChangeCb     = NULL;

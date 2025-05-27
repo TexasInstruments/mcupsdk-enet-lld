@@ -90,9 +90,9 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static int32_t EnetCpdma_checkTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms);
+static int32_t EnetCpdma_checkTxChParams(const EnetCpdma_OpenTxChPrms *pTxChPrms);
 
-static int32_t EnetCpdma_checkRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms);
+static int32_t EnetCpdma_checkRxChParams(const EnetCpdma_OpenRxChPrms *pRxChPrms);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -1926,7 +1926,7 @@ int32_t EnetCpdma_checkTxChSanity(EnetDma_TxChHandle hTxCh,
     return retVal;
 }
 
-static int32_t EnetCpdma_checkRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms)
+static int32_t EnetCpdma_checkRxChParams(const EnetCpdma_OpenRxChPrms *pRxChPrms)
 {
     int32_t retVal = ENET_SOK;
 
@@ -1955,7 +1955,7 @@ static int32_t EnetCpdma_checkRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms)
     return retVal;
 }
 
-static int32_t EnetCpdma_checkTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms)
+static int32_t EnetCpdma_checkTxChParams(const EnetCpdma_OpenTxChPrms *pTxChPrms)
 {
     int32_t retVal = ENET_SOK;
 
@@ -1987,7 +1987,7 @@ static int32_t EnetCpdma_checkTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms)
 }
 
 
-void EnetCpdma_initParams(Enet_Type enetType, EnetDma_Cfg *pDmaConfig)
+void EnetCpdma_initParams(EnetDma_Cfg *pDmaConfig)
 {
     pDmaConfig->enChOverrideFlag            = false;
     pDmaConfig->enHostRxTsFlag              = false;
@@ -1998,7 +1998,7 @@ void EnetCpdma_initParams(Enet_Type enetType, EnetDma_Cfg *pDmaConfig)
     pDmaConfig->maxRxChannels               = ENET_CPDMA_CPSW_MAX_RX_CH;
 }
 
-static int32_t EnetCpdma_checkCpdmaParams(EnetCpdma_Cfg *pDmaCfg)
+static int32_t EnetCpdma_checkCpdmaParams(const EnetDma_Cfg *pDmaCfg)
 {
     int32_t status = ENET_SOK;
 
@@ -2014,12 +2014,11 @@ static int32_t EnetCpdma_checkCpdmaParams(EnetCpdma_Cfg *pDmaCfg)
 
 
 EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
-                            uint32_t instId,
-                            const void *dmaCfg,
-                            uint32_t appCoreId)
+                              uint32_t instId,
+                              const EnetDma_Cfg *pDmaCfg,
+                              uint32_t appCoreId)
 {
     EnetCpdma_DrvObj *pEnetDmaObj = NULL;
-    EnetCpdma_Cfg *pDmaCfg = (EnetCpdma_Cfg *)dmaCfg;
     uint32_t status;
     int32_t retVal = ENET_SOK;
     uint32_t pacingBitMask = 0;
@@ -2359,10 +2358,8 @@ int32_t EnetCpdma_saveCtxt(EnetDma_Handle hEnetDma)
     return retVal;
 }
 
-void EnetDma_initRxChParams(void *pRxChCfg)
+void EnetCpdma_initRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms)
 {
-    EnetCpdma_OpenRxChPrms *pRxChPrms = (EnetCpdma_OpenRxChPrms *)pRxChCfg;
-
     pRxChPrms->hEnet = NULL;
     pRxChPrms->chNum = 0U;
     pRxChPrms->numRxPkts = 0U;
@@ -2372,14 +2369,13 @@ void EnetDma_initRxChParams(void *pRxChCfg)
     return;
 }
 
-EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
-                                    const void *pRxChCfg)
+EnetDma_RxChHandle EnetCpdma_openRxCh(EnetDma_Handle hDma,
+                                      const EnetCpdma_OpenRxChPrms *pRxChPrms)
 {
     int32_t retVal;
     EnetCpdma_RxChObj *pRxCh;
     bool allocChObj = false;
     uint32_t intrKey;
-    EnetCpdma_OpenRxChPrms *pRxChPrms = (EnetCpdma_OpenRxChPrms *)pRxChCfg;
 
     intrKey = EnetOsal_disableAllIntr();
 
@@ -2456,9 +2452,9 @@ EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
     return pRxCh;
 }
 
-int32_t EnetDma_closeRxCh(EnetDma_RxChHandle hRxCh,
-                          EnetDma_PktQ *fq,
-                          EnetDma_PktQ *cq)
+int32_t EnetCpdma_closeRxCh(EnetDma_RxChHandle hRxCh,
+                            EnetDma_PktQ *fq,
+                            EnetDma_PktQ *cq)
 {
     int32_t retVal = ENET_SOK;
     uint32_t intrKey;
@@ -2523,10 +2519,8 @@ int32_t EnetDma_disableRxEvent(EnetDma_RxChHandle hRxCh)
     return ENET_SOK;
 }
 
-void EnetDma_initTxChParams(void *pTxChCfg)
+void EnetCpdma_initTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms)
 {
-    EnetCpdma_OpenTxChPrms *pTxChPrms = (EnetCpdma_OpenTxChPrms *)pTxChCfg;
-
     pTxChPrms->hEnet = NULL;
     pTxChPrms->chNum = 0U;
     pTxChPrms->numTxPkts = 0U;
@@ -2535,13 +2529,12 @@ void EnetDma_initTxChParams(void *pTxChCfg)
     return;
 }
 
-EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
-                                    const void *pTxChCfg)
+EnetDma_TxChHandle EnetCpdma_openTxCh(EnetDma_Handle hDma,
+                                      const EnetCpdma_OpenTxChPrms *pTxChPrms)
 {
     int32_t retVal         = ENET_SOK;
     EnetCpdma_TxChObj *pTxCh = NULL;
     uint32_t intrKey;
-    EnetCpdma_OpenTxChPrms *pTxChPrms = (EnetCpdma_OpenTxChPrms *)pTxChCfg;
 
     intrKey = EnetOsal_disableAllIntr();
 
@@ -2600,9 +2593,9 @@ EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
 
 }
 
-int32_t EnetDma_closeTxCh(EnetDma_TxChHandle hTxCh,
-                          EnetDma_PktQ *fq,
-                          EnetDma_PktQ *cq)
+int32_t EnetCpdma_closeTxCh(EnetDma_TxChHandle hTxCh,
+                            EnetDma_PktQ *fq,
+                            EnetDma_PktQ *cq)
 {
     int32_t retVal = ENET_SOK;
     uint32_t intrKey;
@@ -2860,7 +2853,7 @@ int32_t EnetDma_submitRxPkt(EnetDma_RxChHandle hRxCh,
 }
 
 int32_t EnetDma_retrieveTxPktQ(EnetDma_TxChHandle hTxCh,
-                                   EnetDma_PktQ *pRetrieveQ)
+                               EnetDma_PktQ *pRetrieveQ)
 {
     int32_t retVal = ENET_SOK;
     EnetCpdma_DescCh *pDescCh;
@@ -3154,7 +3147,7 @@ EnetDma_Handle EnetCpdma_initDataPath(Enet_Type enetType,
                                       uint32_t instId,
                                       const EnetDma_initCfg *pDmaConfig)
 {
-    EnetCpdma_Cfg cfg;
+    EnetDma_Cfg cfg;
     EnetDma_Handle hDmaHandle;
 
     EnetDma_initCfg(enetType, &cfg);

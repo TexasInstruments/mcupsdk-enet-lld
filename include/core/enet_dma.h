@@ -373,62 +373,6 @@ EnetDma_Handle EnetDma_initDmaCfg(Enet_Type enetType,
 int32_t EnetDma_deinitDmaCfg(EnetDma_Handle hEnetUdma);
 
 /*!
- * \brief Initialize RX channel open parameters.
- *
- * Initializes RX channel parameters with default values.
- * Refer to SOC DMA specific RX channel config structure for specific config details.
- *
- * \param pRxChCfg RX channel configuration parameters.
- *
- */
-void EnetDma_initRxChParams(void *pRxChCfg);
-
-/*!
- * \brief Enet DMA open RX channel.
- *
- * Opens the Enet DMA RX channel based on the channel parameters. This function
- * configures the DMA channel. This also configures event if notifyCb is not null.
- * Refer to SOC DMA specific RX channel config structure for specific config details.
- *
- * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
- * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
- * same DMA engine.  This peripheral-awareness is given to the RX channel/flow via
- * #EnetDma_Handle passed at open time.
- *
- *
- * \param hDma      Enet DMA handle
- * \param pRxChCfg  RX channel configuration parameters. This parameter can't be NULL.
- *
- * \return RX channel opaque handle if opened. Otherwise, NULL.
- */
-EnetDma_RxChHandle EnetDma_openRxCh(EnetDma_Handle hDma,
-                                    const void *pRxChCfg);
-
-/*!
- * \brief Enet DMA close RX channel.
- *
- * Closes the Enet DMA RX channel and frees all associated resources. During close
- * operation, we flush FQ taking all DMA descriptors with packet submitted in
- * advance for reception and return to app. Also we retrieve all packets from
- * the CQ (packets received between last #EnetDma_retrieveRxPktQ() function call) and
- * return those to app. App doesn't need to call function #EnetDma_retrieveRxPktQ()
- * explicitly to retrieve these packets.
- *
- * \param hRxCh   [IN] Enet DMA channel handle.
- *                     This parameter can't be NULL.
- * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets
- *                      from FQ (submitted for reception) are retrieved and returned
- *                      to application. This parameter can't be NULL.
- * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets
- *                      from CQ (received packets) are retrieved and returned to application.
- *                      This parameter can't be NULL.
- *  \return \ref Enet_ErrorCodes
- */
-int32_t EnetDma_closeRxCh(EnetDma_RxChHandle hRxCh,
-                          EnetDma_PktQ *fq,
-                          EnetDma_PktQ *cq);
-
-/*!
  * \brief Enable RX channel packet reception event.
  *
  * Enables the packet arrival event for RX channel. This allows application to
@@ -466,63 +410,6 @@ int32_t EnetDma_registerRxEventCb(EnetDma_RxChHandle hRxCh, EnetDma_PktNotifyCb 
  * \return \ref Enet_ErrorCodes
  */
 int32_t EnetDma_disableRxEvent(EnetDma_RxChHandle hRxCh);
-
-/*!
- * \brief Initialize TX channel open parameters.
- *
- * Initializes TX channel open parameters with default values.
- * Refer to SOC DMA specific RX channel config structure for specific config details.
- *
- * \param pTxChCfg  TX channel configuration parameters.
- *
- */
-void EnetDma_initTxChParams(void *pTxChCfg);
-
-/*!
- * \brief Enet DMA open TX channel.
- *
- * Opens the DMA TX DMA channel based on the channel parameters. This function
- * open TX channel using chNum provided in EnetDma_OpenTxChPrms() and configures
- * TX channel. This also configures event if notifyCb is not null.
- * Refer to SOC DMA specific RX channel config structure for specific config details.
- *
- * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
- * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
- * same DMA engine.  This peripheral-awareness is given to the TX channel via
- * #EnetDma_Handle passed at open time.
- *
- * \param hDma      Enet DMA handle
- * \param pTxChCfg  TX channel configuration parameters. This parameter can't be NULL.
- *
- * \return TX channel opaque handle if opened. Otherwise, NULL.
- */
-EnetDma_TxChHandle EnetDma_openTxCh(EnetDma_Handle hDma,
-                                    const void *pTxChCfg);
-
-/*!
- * \brief Enet DMA close TX channel.
- *
- * Closes the Enet DMA TX channel and frees all associated resources. During
- * close operation, we flush FQ taking all DMA descriptors with packet submitted
- * but not yet transmitted and return to app. Also we retrieve all packets from
- * the CQ (transmission completed packets) and return those to app. App doesn't
- * need to call EnetDma_retrieveTxPktQ() explicitly to retrieve these
- * packets.
- *
- * \param hTxCh    [IN] Enet DMA TX Channel handle.
- *                      This parameter can't be NULL.
- * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets from FQ
- *                   (TX ready - submitted for transmission) are retrieved and returned to application.
- *                   This parameter can't be NULL.
- * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets from CQ
- *                   (TX free - transmitted packets) are retrieved and returned to application.
- *                   This parameter can't be NULL.
- *
- * \return \ref Enet_ErrorCodes
- */
-int32_t EnetDma_closeTxCh(EnetDma_TxChHandle hTxCh,
-                          EnetDma_PktQ *fq,
-                          EnetDma_PktQ *cq);
 
 /*!
  * \brief Enable TX channel packet transmit completion event.

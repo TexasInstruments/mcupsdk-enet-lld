@@ -476,7 +476,7 @@ typedef struct Cpsw_Cfg_s
     uint32_t escalatePriorityLoadVal;
 
     /*! Configuration of the CPSW DMA */
-    const void *dmaCfg;
+    const EnetDma_Cfg *dmaCfg;
 
     /*! VLAN configuration (inner/outer VLAN ltype, customer/service switch) */
     Cpsw_VlanCfg vlanCfg;

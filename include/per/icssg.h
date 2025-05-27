@@ -62,6 +62,7 @@
 #include <include/core/enet_mod_phy.h>
 #include <priv/core/enet_rm_priv.h>
 #include <drivers/pruicss/g_v0/pruicss.h>
+#include <include/core/enet_dma.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1161,7 +1162,7 @@ typedef struct Icssg_Cfg_s
      *  Note - In Dual MAC mode, even though separate RX channel is opened for each port,
      *         same dmaCfg is used for both
      */
-    const void *dmaCfg;
+    const EnetDma_Cfg *dmaCfg;
 
     /*! Configuration of the resource partition */
     EnetRm_ResCfg resCfg;

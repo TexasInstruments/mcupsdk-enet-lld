@@ -432,7 +432,7 @@ void EnetAppUtils_openTxCh(Enet_Handle hEnet,
 
     pTxChCfg->chNum = *pTxChNum;
 
-    *pTxChHandle = EnetDma_openTxCh(hDma, pTxChCfg);
+    *pTxChHandle = EnetUdma_openTxCh(hDma, pTxChCfg);
     EnetAppUtils_assert(NULL != *pTxChHandle);
 }
 
@@ -450,7 +450,7 @@ void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
     EnetQueue_initQ(pCqPktInfoQ);
 
     EnetDma_disableTxEvent(hTxChHandle);
-    status = EnetDma_closeTxCh(hTxChHandle, pFqPktInfoQ, pCqPktInfoQ);
+    status = EnetUdma_closeTxCh(hTxChHandle, pFqPktInfoQ, pCqPktInfoQ);
     EnetAppUtils_assert(ENET_SOK == status);
 
     status = EnetAppUtils_freeTxCh(hEnet,

@@ -123,11 +123,6 @@ extern "C" {
  *  @{
  */
 
-/*!
- * \brief Opaque handle that holds config Info for Enet DMA channel.
- */
-typedef struct EnetCpdma_Cfg_s EnetDma_Cfg;
-
 /* TODO: may be deleted */
 /*!
  * \brief Function pointer type for packet notify call back.
@@ -138,6 +133,15 @@ typedef struct EnetCpdma_Cfg_s EnetDma_Cfg;
 typedef void (*EnetDma_PktNotifyCb)(void *cbArg);
 
 /*! @} */
+
+/*!
+ * \brief Packet queue.
+ *
+ * A queue of packets, which are used for managing the packets given to the DMA driver by
+ * an application. It can also be used by the translation or application layer to manage
+ * free packets pools.
+ */
+typedef EnetQ EnetDma_PktQ;
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -354,7 +358,7 @@ typedef struct EnetCpdma_PktInfo_s
 /*!
  * \brief Param struct for the TX channel open function.
  *
- * The configuration structure for the TX channel open function # EnetDma_openTxCh().
+ * The configuration structure for the TX channel open function # EnetCpdma_openTxCh().
  */
 typedef struct EnetCpdma_OpenTxChPrms_s
 {
@@ -381,7 +385,7 @@ typedef struct EnetCpdma_OpenTxChPrms_s
 /*!
  * \brief Param struct for the RX channel open function.
  *
- * The configuration structure for the RX channel open function #EnetDma_openTxCh().
+ * The configuration structure for the RX channel open function #EnetCpdma_openTxCh().
  */
 typedef struct EnetCpdma_OpenRxChPrms_s
 {
@@ -456,7 +460,7 @@ typedef struct EnetCpdma_Cfg_s
     /*! Maximum number of Rx channels. Must be <= ENET_CPDMA_CPSW_MAX_RX_CH */
     uint32_t maxRxChannels;
 
-} EnetCpdma_Cfg;
+} EnetDma_Cfg;
 
 /*!
  * \brief Config structure for Enet CPDMA Data Path initialization
@@ -480,6 +484,119 @@ EnetDma_initCfg;
 /* ========================================================================== */
 
 /*!
+ * \brief Initialize RX channel open parameters.
+ *
+ * Initializes RX channel parameters with default values.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * \param pRxChPrms RX channel configuration parameters.
+ */
+void EnetCpdma_initRxChParams(EnetCpdma_OpenRxChPrms *pRxChPrms);
+
+/*!
+ * \brief Enet DMA open RX channel.
+ *
+ * Opens the Enet DMA RX channel based on the channel parameters. This function
+ * configures the DMA channel. This also configures event if notifyCb is not null.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
+ * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
+ * same DMA engine.  This peripheral-awareness is given to the RX channel/flow via
+ * #EnetDma_Handle passed at open time.
+ *
+ *
+ * \param hDma         Enet DMA handle
+ * \param pRxChPrms  RX channel configuration parameters. This parameter can't be NULL.
+ *
+ * \return RX channel opaque handle if opened. Otherwise, NULL.
+ */
+EnetDma_RxChHandle EnetCpdma_openRxCh(EnetDma_Handle hDma,
+                                      const EnetCpdma_OpenRxChPrms *pRxChPrms);
+
+/*!
+
+ * \brief Enet DMA close RX channel.
+ *
+ * Closes the Enet DMA RX channel and frees all associated resources. During close
+ * operation, we flush FQ taking all DMA descriptors with packet submitted in
+ * advance for reception and return to app. Also we retrieve all packets from
+ * the CQ (packets received between last #EnetDma_retrieveRxPktQ() function call) and
+ * return those to app. App doesn't need to call function #EnetDma_retrieveRxPktQ()
+ * explicitly to retrieve these packets.
+ *
+ * \param hRxCh   [IN] Enet DMA channel handle.
+ *                     This parameter can't be NULL.
+ * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets
+ *                      from FQ (submitted for reception) are retrieved and returned
+ *                      to application. This parameter can't be NULL.
+ * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets
+ *                      from CQ (received packets) are retrieved and returned to application.
+ *                      This parameter can't be NULL.
+ *  \return \ref Enet_ErrorCodes
+ */
+
+int32_t EnetCpdma_closeRxCh(EnetDma_RxChHandle hRxCh,
+                            EnetDma_PktQ *fq,
+                            EnetDma_PktQ *cq);
+
+/*!
+ * \brief Initialize TX channel open parameters.
+ *
+ * Initializes TX channel open parameters with default values.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * \param pTxChPrms  TX channel configuration parameters.
+ */
+void EnetCpdma_initTxChParams(EnetCpdma_OpenTxChPrms *pTxChPrms);
+
+/*!
+ * \brief Enet DMA open TX channel.
+ *
+ * Opens the DMA TX DMA channel based on the channel parameters. This function
+ * open TX channel using chNum provided in EnetDma_OpenTxChPrms() and configures
+ * TX channel. This also configures event if notifyCb is not null.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
+ * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
+ * same DMA engine.  This peripheral-awareness is given to the TX channel via
+ * #EnetDma_Handle passed at open time.
+ *
+ * \param hDma       Enet DMA handle
+ * \param pTxChPrms  TX channel configuration parameters. This parameter can't be NULL.
+ *
+ * \return TX channel opaque handle if opened. Otherwise, NULL.
+ */
+EnetDma_TxChHandle EnetCpdma_openTxCh(EnetDma_Handle hDma,
+                                      const EnetCpdma_OpenTxChPrms *pTxChPrms);
+
+/*!
+ * \brief Enet DMA close TX channel.
+ *
+ * Closes the Enet DMA TX channel and frees all associated resources. During
+ * close operation, we flush FQ taking all DMA descriptors with packet submitted
+ * but not yet transmitted and return to app. Also we retrieve all packets from
+ * the CQ (transmission completed packets) and return those to app. App doesn't
+ * need to call EnetDma_retrieveTxPktQ() explicitly to retrieve these
+ * packets.
+ *
+ * \param hTxCh    [IN] Enet DMA TX Channel handle.
+ *                      This parameter can't be NULL.
+ * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets from FQ
+ *                   (TX ready - submitted for transmission) are retrieved and returned to application.
+ *                   This parameter can't be NULL.
+ * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets from CQ
+ *                   (TX free - transmitted packets) are retrieved and returned to application.
+ *                   This parameter can't be NULL.
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetCpdma_closeTxCh(EnetDma_TxChHandle hTxCh,
+                            EnetDma_PktQ *fq,
+                            EnetDma_PktQ *cq);
+
+/*!
  * \brief Set default data path parameters.
  *
  * \param enetType    [IN] Enet Peripheral type
@@ -492,7 +609,7 @@ EnetDma_initCfg;
  */
 EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
                               uint32_t instId,
-                              const void *dmaCfg,
+                              const EnetDma_Cfg *dmaCfg,
                               uint32_t appCoreId);
 
 /*!
@@ -506,8 +623,8 @@ EnetDma_Handle EnetCpdma_open(Enet_Type enetType,
  *
  */
 EnetDma_Handle EnetCpdma_restoreCtxt(Enet_Type enetType,
-                            uint32_t instId,
-                            uint32_t appCoreId);
+                                     uint32_t instId,
+                                     uint32_t appCoreId);
 
 /*!
  * \brief Close Enet DMA (data path).
@@ -607,11 +724,10 @@ int32_t EnetCpdma_ackMiscIsr(EnetDma_Handle hEnetDma);
  *
  * Requirement:
  *
- * \param enetType     [IN] Enet Type
  * \param pDmaConfig  [IN] pointer to the config structure
  *
  */
-void EnetCpdma_initParams(Enet_Type enetType, EnetDma_Cfg *pDmaConfig);
+void EnetCpdma_initParams(EnetDma_Cfg *pDmaConfig);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

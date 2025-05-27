@@ -362,7 +362,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
     EnetRm_ResCfg *resCfg = &icssgCfg.resCfg;
     EnetPer_AttachCoreOutArgs attachInfo;
     EnetApp_HandleInfo handleInfo;
-    EnetUdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
 % if(instance.McmEnable == true){
     EnetMcm_InitConfig enetMcmCfg;
 % }
@@ -374,7 +374,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
     dmaCfg.rxChInitPrms.dmaPriority = UDMA_DEFAULT_RX_CH_DMA_PRIORITY;
     dmaCfg.hUdmaDrv = EnetApp_getUdmaInstanceHandle();
     selfCoreId   = EnetSoc_getCoreId();
-    icssgCfg.dmaCfg = (void *)&dmaCfg;
+    icssgCfg.dmaCfg = &dmaCfg;
 
     Enet_initCfg(enetType, instId, &icssgCfg, sizeof(icssgCfg));
     icssgCfg.dmaCfg = (void *)&dmaCfg;

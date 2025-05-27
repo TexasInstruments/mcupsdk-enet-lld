@@ -388,7 +388,7 @@ static void EnetApp_initHostPortConfig(CpswHostPort_Cfg *pHostPortCfg)
 }
 
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA"){
-static void EnetApp_initCpdmaConfig(EnetCpdma_Cfg *pCpdmaCfg)
+static void EnetApp_initCpdmaConfig(EnetDma_Cfg *pCpdmaCfg)
 {
     pCpdmaCfg->enHostRxTsFlag = `instance.cptsHostRxTsEn`;
 
@@ -409,7 +409,7 @@ static void EnetApp_getCpswInitCfg(Enet_Type enetType,
     EnetApp_initCptsConfig(&cpswCfg->cptsCfg);
     EnetApp_initHostPortConfig(&cpswCfg->hostPortCfg);
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA"){
-    EnetApp_initCpdmaConfig((EnetCpdma_Cfg *)cpswCfg->dmaCfg);
+    EnetApp_initCpdmaConfig((EnetDma_Cfg *)cpswCfg->dmaCfg);
 %}
 }
 

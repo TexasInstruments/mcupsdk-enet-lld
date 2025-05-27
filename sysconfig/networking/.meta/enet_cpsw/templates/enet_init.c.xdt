@@ -296,10 +296,10 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
     EnetPer_AttachCoreOutArgs attachInfo;
 
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
-    EnetUdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
 % }
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA") {
-    EnetCpdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
 % }
 % if(instance.McmEnable == true){
     EnetMcm_InitConfig enetMcmCfg;
@@ -315,9 +315,9 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
     dmaCfg.hUdmaDrv = EnetApp_getUdmaInstanceHandle();
 % }
     selfCoreId   = EnetSoc_getCoreId();
-    cpswCfg.dmaCfg = (void *)&dmaCfg;
+    cpswCfg.dmaCfg = &dmaCfg;
     Enet_initCfg(enetType, instId, &cpswCfg, sizeof(cpswCfg));
-    cpswCfg.dmaCfg = (void *)&dmaCfg;
+    cpswCfg.dmaCfg = &dmaCfg;
 
     EnetApp_getCpswInitCfg(enetType, instId, &cpswCfg);
 

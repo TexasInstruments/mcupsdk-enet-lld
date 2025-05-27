@@ -127,7 +127,7 @@ typedef struct EnetMcm_Obj_s
 
     Cpsw_Cfg cpswCfg;
 
-    EnetUdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
 
     uint32_t selfCoreId;
 
@@ -484,7 +484,7 @@ int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg)
     Enet_Type enetType  = pMcmInitCfg->enetType;
     EnetMcm_Handle hMcm;
     Cpsw_Cfg *cpswCfg;
-    EnetUdma_Cfg *dmaCfg = NULL;
+    EnetDma_Cfg *dmaCfg = NULL;
 
     key = HwiP_disable();
 
@@ -507,7 +507,7 @@ int32_t  EnetMcm_init(const EnetMcm_InitConfig *pMcmInitCfg)
         if (status == ENET_SOK)
         {
             cpswCfg = (Cpsw_Cfg *)pMcmInitCfg->perCfg;
-            dmaCfg = (typeof(dmaCfg))cpswCfg->dmaCfg;
+            dmaCfg =  (EnetDma_Cfg *)cpswCfg->dmaCfg;
 
             hMcm->selfCoreId         = pMcmInitCfg->selfCoreId;
             hMcm->cpswCfg            = *cpswCfg;
@@ -765,7 +765,7 @@ static int32_t EnetMcm_open(EnetMcm_Handle hMcm)
 {
     int32_t status = ENET_SOK;
     void *perCfg = NULL;
-    EnetUdma_Cfg *udmaCfg = &hMcm->dmaCfg;
+    EnetDma_Cfg *udmaCfg = &hMcm->dmaCfg;
     uint32_t cfgSize = 0U;
     TaskP_Params tskParams;
 

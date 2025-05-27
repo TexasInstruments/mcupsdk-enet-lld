@@ -223,12 +223,6 @@ typedef struct
     /*! Flag to allocate ring memory. If set, ringPrms.ringMem can not be NULL */
     bool allocRingMem;
 
-    /*! Allocate ring memory callback function */
-    EnetUdma_AllocRingMemFxn ringMemAllocFxn;
-
-    /*! Free ring memory callback function */
-    EnetUdma_FreeRingMemFxn ringMemFreeFxn;
-
     /*! Callback argument for the ring callback functions */
     void *cbArg;
 } EnetUdma_ringAllocInfo;
@@ -538,11 +532,11 @@ typedef struct EnetUdma_DrvObjMemInfo_s{
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-void EnetUdma_initCfg(Enet_Type enetType, void *pDmaConfig);
+void EnetUdma_initCfg(EnetDma_Cfg *pDmaConfig);
 
 EnetDma_Handle EnetUdma_open(Enet_Type enetType,
                              uint32_t instId,
-                             const EnetUdma_Cfg *pEnetUdmaCfg);
+                             const EnetDma_Cfg *pEnetUdmaCfg);
 
 int32_t EnetUdma_close(EnetDma_Handle hCpswDma);
 
@@ -643,7 +637,6 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
 
 int32_t EnetUdma_freeRing(Udma_RingHandle hUdmaRing,
                            uint32_t numPkts,
-                           EnetUdma_FreeRingMemFxn ringMemFreeFxn,
                            void *cbArg);
 
 int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,

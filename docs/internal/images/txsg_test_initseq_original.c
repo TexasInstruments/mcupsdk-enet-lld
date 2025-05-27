@@ -707,7 +707,7 @@ static int32_t EnetTxSG_setupCpswAle(void)
 static int32_t EnetTxSG_openEnet(void)
 {
     Cpsw_Cfg cpswCfg;
-    EnetCpdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
     Enet_IoctlPrms prms;
     EnetPer_PortLinkCfg portLinkCfg;
     CpswMacPort_Cfg macCfg;

@@ -153,8 +153,8 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
     hostPortCfg->rxDscpIPv6RemapEn = true;
 
 #if defined SOC_AM263X || defined SOC_AM263PX || defined SOC_AM261X
-    EnetCpdma_Cfg *dmaCfg;
-    dmaCfg=(EnetCpdma_Cfg *)cpswCfg->dmaCfg;
+    EnetDma_Cfg *dmaCfg;
+    dmaCfg=(EnetDma_Cfg *)cpswCfg->dmaCfg;
     /* Set the enChOverrideFlag to enable the channel override feature of CPDMA */
     dmaCfg->enChOverrideFlag = true;
 #endif

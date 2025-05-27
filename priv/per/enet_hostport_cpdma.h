@@ -71,14 +71,14 @@ extern "C" {
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-void EnetHostPortDma_initCfg(Enet_Type enetType, const void *dmaCfg);
+void EnetHostPortDma_initCfg(const EnetDma_Cfg *dmaCfg);
 
 EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
-                                    const void *dmaCfg,
+                                    const EnetDma_Cfg *dmaCfg,
                                     const EnetRm_ResCfg *resCfg);
 
 EnetDma_Handle EnetHostPortDma_restoreCtxt(EnetPer_Handle hPer,
-                                    const EnetRm_ResCfg *resCfg);
+                                           const EnetRm_ResCfg *resCfg);
 
 void EnetHostPortDma_close(EnetDma_Handle hDma);
 

@@ -307,7 +307,7 @@ Application should follow the next steps:
       configuration structure called \ref Icssg_Cfg where the application passes
       ICSSG specific configuration parameters, such as:
 
-       - Configuration of ICSSG DMA: \ref EnetUdma_Cfg.
+       - Configuration of ICSSG DMA: \ref EnetDma_Cfg.
        - ICSSG firmware: \ref Icssg_FirmwareDownloadCfg.
        - Configuration of the MDIO submodule: \ref Mdio_Cfg.
        - Configuration of DMA Resource Partition: \ref EnetRm_ResCfg.

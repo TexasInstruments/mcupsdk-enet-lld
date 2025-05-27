@@ -138,44 +138,12 @@ extern "C" {
 /*! \brief UDMA descriptor address alignment requirement */
 #define ENET_UDMA_DESC_ALIGNMENT               (64U)
 
-/*!
- * \brief Opaque handle that holds config Info for Enet DMA channel.
- */
-typedef struct EnetUdma_Cfg_s EnetDma_Cfg;
-
 /*! @} */
 
 /*!
  * \brief Opaque handle to Enet UDMA descriptor queue.
  */
 typedef struct EnetUdma_DmaDescQ_s *EnetUdma_DmaDescQHandle;
-
-/*!
- *  \name Enet DMA driver callback function types
- *
- *   Callback function typedefs so that the EnetDma layer can call into the app layer
- *   and let it translate between the hardware packet descriptors and packets and the
- *   stack/translation layer's buffers and packets.
- *  @{
- */
-
-/*! \brief Function pointer type for packet allocation function. */
-typedef uint8_t *(*EnetUdma_AllocRingMemFxn)(void *appPriv,
-                                            uint32_t numRingEle,
-                                            uint32_t alignSize);
-
-/*! \brief Function pointer type for packet free function. */
-typedef void (*EnetUdma_FreeRingMemFxn)(void *appPriv,
-                                       void *pRingMem,
-                                       uint32_t numRingEle);
-
-/*! \brief Function pointer type for DMA descriptor allocation function. */
-typedef struct EnetUdma_DmaDesc_s *(*EnetUdma_AllocDmaDescFxn)(void *appPriv,
-                                                             uint32_t alignSize);
-
-/*! \brief Function pointer type for DMA descriptor free function. */
-typedef void (*EnetUdma_FreeDmaDescFxn)(void *appPriv,
-                                       struct EnetUdma_DmaDesc_s *dmaDescPtr);
 
 /*!
  * \brief Function pointer type for packet notify call back.
@@ -186,6 +154,14 @@ typedef void (*EnetUdma_FreeDmaDescFxn)(void *appPriv,
 typedef void (*EnetDma_PktNotifyCb)(void *cbArg);
 
 /*! @} */
+/*!
+ * \brief Packet queue.
+ *
+ * A queue of packets, which are used for managing the packets given to the DMA driver by
+ * an application. It can also be used by the translation or application layer to manage
+ * free packets pools.
+ */
+typedef EnetQ EnetDma_PktQ;
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -718,23 +694,6 @@ typedef struct EnetUdma_OpenRxFlowPrms_s
      *  least this length are submitted in EnetDma_submitRxPktQ() */
     uint32_t rxFlowMtu;
 
-    /*! Callback functions.
-     *  Callback function typedefs so that the EnetUdma layer can call into the
-     *  app layer and let it translate between the hardware buffer descriptors
-     *  and packets and the stack/translation layer's buffers and packets  */
-
-    /*! Ring memory allocation callback, this cannot be NULL */
-    EnetUdma_AllocRingMemFxn ringMemAllocFxn;
-
-    /*! Ring memory free function callback, used in close flow */
-    EnetUdma_FreeRingMemFxn ringMemFreeFxn;
-
-    /*! DMA HPD (host packet descriptor) memory allocation callback */
-    EnetUdma_AllocDmaDescFxn dmaDescAllocFxn;
-
-    /*! Transmit HPD (host packet descriptor) memory free callback */
-    EnetUdma_FreeDmaDescFxn dmaDescFreeFxn;
-
     /*! Argument to be used for the callback routines (it should mean something
      *  to layer into which the callback calls) */
     void *cbArg;
@@ -791,23 +750,6 @@ typedef struct EnetUdma_OpenTxChPrms_s
     /*! Flag to disable cache operations on the ring memory */
     bool disableCacheOpsFlag;
 
-    /*! Callback functions.
-     *  Callback function typedefs so that the EnetUdma layer can call into the
-     *  app layer and let it translate between the hardware buffer descriptors
-     *  and packets and the stack/translation layer's buffers and packets */
-
-    /*! Ring memory allocation callback, this cannot be NULL */
-    EnetUdma_AllocRingMemFxn ringMemAllocFxn;
-
-    /*! Ring memory free function callback, used in close flow */
-    EnetUdma_FreeRingMemFxn ringMemFreeFxn;
-
-    /*! DMA HPD (host packet descriptor) memory allocation callback */
-    EnetUdma_AllocDmaDescFxn dmaDescAllocFxn;
-
-    /*! Transmit HPD (host packet descriptor) memory free callback */
-    EnetUdma_FreeDmaDescFxn dmaDescFreeFxn;
-
     /*! Argument to be used for the callback routines (it should mean something
      *  to layer into which the callback calls) */
     void *cbArg;
@@ -852,7 +794,7 @@ typedef struct EnetUdma_Cfg_s
 
     /*! RX channel configuration parameters */
     EnetUdma_RxChInitPrms rxChInitPrms;
-} EnetUdma_Cfg;
+} EnetDma_Cfg;
 
 /*!
  * \brief Config structure for Enet UDMA Data Path initialization.
@@ -865,8 +807,6 @@ typedef struct EnetUdma_DmaCfg_s
     Udma_DrvHandle hUdmaDrv;
 } EnetDma_initCfg;
 
-/*! @} */
-
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
 /* ========================================================================== */
@@ -876,8 +816,119 @@ typedef struct EnetUdma_DmaCfg_s
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-
 void EnetUdma_initDataPathParams(EnetDma_initCfg *pDmaConfig);
+
+/*!
+ * \brief Initialize RX channel open parameters.
+ *
+ * Initializes RX channel parameters with default values.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * \param pRxFlowPrms RX channel configuration parameters.
+ */
+void EnetUdma_initRxFlowParams(EnetUdma_OpenRxFlowPrms *pRxFlowPrms);
+
+/*!
+ * \brief Enet DMA open RX channel.
+ *
+ * Opens the Enet DMA RX channel based on the channel parameters. This function
+ * configures the DMA channel. This also configures event if notifyCb is not null.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
+ * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
+ * same DMA engine.  This peripheral-awareness is given to the RX channel/flow via
+ * #EnetDma_Handle passed at open time.
+ *
+ *
+ * \param hDma         Enet DMA handle
+ * \param pRxFlowPrms  RX channel configuration parameters. This parameter can't be NULL.
+ *
+ * \return RX channel opaque handle if opened. Otherwise, NULL.
+ */
+EnetDma_RxChHandle EnetUdma_openRxFlow(EnetDma_Handle hDma,
+                                       const EnetUdma_OpenRxFlowPrms *pRxFlowPrms);
+
+/*!
+ * \brief Enet DMA close RX channel.
+ *
+ * Closes the Enet DMA RX channel and frees all associated resources. During close
+ * operation, we flush FQ taking all DMA descriptors with packet submitted in
+ * advance for reception and return to app. Also we retrieve all packets from
+ * the CQ (packets received between last #EnetDma_retrieveRxPktQ() function call) and
+ * return those to app. App doesn't need to call function #EnetDma_retrieveRxPktQ()
+ * explicitly to retrieve these packets.
+ *
+ * \param hRxCh   [IN] Enet DMA channel handle.
+ *                     This parameter can't be NULL.
+ * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets
+ *                      from FQ (submitted for reception) are retrieved and returned
+ *                      to application. This parameter can't be NULL.
+ * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets
+ *                      from CQ (received packets) are retrieved and returned to application.
+ *                      This parameter can't be NULL.
+ *  \return \ref Enet_ErrorCodes
+ */
+int32_t EnetUdma_closeRxFlow(EnetDma_RxChHandle hRxCh,
+                             EnetDma_PktQ *fq,
+                             EnetDma_PktQ *cq);
+
+/*!
+ * \brief Initialize TX channel open parameters.
+ *
+ * Initializes TX channel open parameters with default values.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * \param pTxChPrms  TX channel configuration parameters.
+ */
+void EnetUdma_initTxChParams(EnetUdma_OpenTxChPrms *pTxChPrms);
+
+/*!
+ * \brief Enet DMA open TX channel.
+ *
+ * Opens the DMA TX DMA channel based on the channel parameters. This function
+ * open TX channel using chNum provided in EnetDma_OpenTxChPrms() and configures
+ * TX channel. This also configures event if notifyCb is not null.
+ * Refer to SOC DMA specific RX channel config structure for specific config details.
+ *
+ * Enet DMA is peripheral-aware as peripherals in a given SoC may need different handling,
+ * i.e. DMA descriptor's extra fields having different meaning for two peripherals using
+ * same DMA engine.  This peripheral-awareness is given to the TX channel via
+ * #EnetDma_Handle passed at open time.
+ *
+ * \param hDma       Enet DMA handle
+ * \param pTxChPrms  TX channel configuration parameters. This parameter can't be NULL.
+ *
+ * \return TX channel opaque handle if opened. Otherwise, NULL.
+ */
+EnetDma_TxChHandle EnetUdma_openTxCh(EnetDma_Handle hDma,
+                                     const EnetUdma_OpenTxChPrms *pTxChPrms);
+
+/*!
+ * \brief Enet DMA close TX channel.
+ *
+ * Closes the Enet DMA TX channel and frees all associated resources. During
+ * close operation, we flush FQ taking all DMA descriptors with packet submitted
+ * but not yet transmitted and return to app. Also we retrieve all packets from
+ * the CQ (transmission completed packets) and return those to app. App doesn't
+ * need to call EnetDma_retrieveTxPktQ() explicitly to retrieve these
+ * packets.
+ *
+ * \param hTxCh    [IN] Enet DMA TX Channel handle.
+ *                      This parameter can't be NULL.
+ * \param fq      [OUT] Pointer to #EnetDma_PktQ structure where packets from FQ
+ *                   (TX ready - submitted for transmission) are retrieved and returned to application.
+ *                   This parameter can't be NULL.
+ * \param cq      [OUT] Pointer to #EnetDma_PktQ structure where packets from CQ
+ *                   (TX free - transmitted packets) are retrieved and returned to application.
+ *                   This parameter can't be NULL.
+ *
+ * \return \ref Enet_ErrorCodes
+ */
+int32_t EnetUdma_closeTxCh(EnetDma_TxChHandle hTxCh,
+                           EnetDma_PktQ *fq,
+                           EnetDma_PktQ *cq);
+
 EnetDma_Handle EnetUdma_initDataPath(Enet_Type enetType,
                                      uint32_t instId,
                                      const EnetDma_initCfg *pDmaInitCfg);
@@ -926,7 +977,7 @@ int32_t EnetUdma_checkRxFlowSanity(EnetDma_RxChHandle hRxFlow,
  * \retval UDMA_EFAIL  Number of free descriptors and with DMA don't match
  */
 int32_t EnetUdma_checkTxChSanity(EnetDma_TxChHandle hTxCh,
-                                uint32_t margin);
+                                 uint32_t margin);
 
 /*!
  * \brief Get TX channel FQ handle.

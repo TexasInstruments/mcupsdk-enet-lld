@@ -228,7 +228,7 @@ typedef struct EnetMp_PerCtxt_s
     uint8_t macAddr[ENET_MAC_ADDR_LEN];
 
     /* UDMA driver configuration */
-    EnetUdma_Cfg dmaCfg;
+    EnetDma_Cfg dmaCfg;
 
     /* TX channel number */
     uint32_t txChNum;

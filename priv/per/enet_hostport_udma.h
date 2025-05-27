@@ -84,10 +84,10 @@ extern "C" {
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-void EnetHostPortDma_initCfg(Enet_Type enetType, const void *dmaCfg);
+void EnetHostPortDma_initCfg(const EnetDma_Cfg *dmaCfg);
 
 EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
-                                    const void *dmaCfg,
+                                    const EnetDma_Cfg *dmaCfg,
                                     const EnetRm_ResCfg *resCfg);
 
 void EnetHostPortDma_close(EnetDma_Handle hDma);
@@ -97,7 +97,7 @@ void EnetHostPortDma_getDmaResInfo(EnetDma_Handle hDma,
                                    uint32_t chIdx);
 
 EnetDma_RxChHandle EnetHostPortDma_openRsvdFlow(EnetDma_Handle hDma,
-                                                const void *cfg,
+                                                const EnetDma_Cfg *cfg,
                                                 uint32_t startIdx,
                                                 uint32_t flowIdx,
                                                 uint32_t chIdx);

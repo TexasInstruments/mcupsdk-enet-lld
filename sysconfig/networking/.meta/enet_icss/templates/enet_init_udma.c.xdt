@@ -291,7 +291,7 @@ static void EnetAppUtils_openRxFlowForChIdx(Enet_Type enetType,
     pRxFlowPrms->flowIdx  = *pRxFlowIdx;
     pRxFlowPrms->chIdx    = chIdx;
 
-    *pRxFlowHandle = EnetDma_openRxCh(hDma, pRxFlowPrms);
+    *pRxFlowHandle = EnetUdma_openRxFlow(hDma, pRxFlowPrms);
     EnetAppUtils_assert(*pRxFlowHandle != NULL);
 
      for (uint32_t i = 0; i < allocMacAddrCnt; i++)
@@ -335,7 +335,7 @@ static void EnetAppUtils_closeRxFlowForChIdx(Enet_Type enetType,
         EnetAppUtils_assert(status == ENET_SOK);
     }
 
-    status = EnetDma_closeRxCh(hRxFlow, pFqPktInfoQ, pCqPktInfoQ);
+    status = EnetUdma_closeRxFlow(hRxFlow, pFqPktInfoQ, pCqPktInfoQ);
     EnetAppUtils_assert(status == ENET_SOK);
 
 
@@ -369,7 +369,7 @@ static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
 {
     EnetUdma_OpenTxChPrms enetTxChCfg;
 
-    EnetDma_initTxChParams(&enetTxChCfg);
+    EnetUdma_initTxChParams(&enetTxChCfg);
     EnetAppUtils_setCommonTxChPrms(&enetTxChCfg);
     enetTxChCfg.hUdmaDrv  = txCfg->hUdmaDrv;
     /* This param is dont care for UDMA LCDMA variant */
@@ -407,7 +407,7 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
     EnetAppUtils_assert(status == ENET_SOK);
     (void)instId; /* Instd id not used */
 
-    EnetDma_initRxChParams(&enetRxFlowCfg);
+    EnetUdma_initRxFlowParams(&enetRxFlowCfg);
     EnetAppUtils_setCommonRxFlowPrms(&enetRxFlowCfg);
     /* Plugin dummy callback. This will be overridden by 
      * application provided callback when getHandle is done */
@@ -787,24 +787,12 @@ void EnetAppUtils_setCommonRxFlowPrms(EnetUdma_OpenRxFlowPrms *pRxFlowPrms)
     pRxFlowPrms->numRxPkts           = ENET_SYSCFG_DEFAULT_NUM_RX_PKT;
     pRxFlowPrms->disableCacheOpsFlag = false;
     pRxFlowPrms->rxFlowMtu           = ENET_MEM_LARGE_POOL_PKT_SIZE;
-
-    pRxFlowPrms->ringMemAllocFxn = &EnetMem_allocRingMem;
-    pRxFlowPrms->ringMemFreeFxn  = &EnetMem_freeRingMem;
-
-    pRxFlowPrms->dmaDescAllocFxn = &EnetMem_allocDmaDesc;
-    pRxFlowPrms->dmaDescFreeFxn  = &EnetMem_freeDmaDesc;
 }
 
 void EnetAppUtils_setCommonTxChPrms(EnetUdma_OpenTxChPrms *pTxChPrms)
 {
     pTxChPrms->numTxPkts           = ENET_SYSCFG_DEFAULT_NUM_TX_PKT;
     pTxChPrms->disableCacheOpsFlag = false;
-
-    pTxChPrms->ringMemAllocFxn = &EnetMem_allocRingMem;
-    pTxChPrms->ringMemFreeFxn  = &EnetMem_freeRingMem;
-
-    pTxChPrms->dmaDescAllocFxn = &EnetMem_allocDmaDesc;
-    pTxChPrms->dmaDescFreeFxn  = &EnetMem_freeDmaDesc;
 }
 
 

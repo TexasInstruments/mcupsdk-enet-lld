@@ -83,7 +83,7 @@
 static uint32_t EnetHostPortDma_getTotalRxFlowCount(const EnetRm_ResPrms *resPrms);
 
 static int32_t EnetHostPortDma_openRxCh(EnetDma_Handle hDma,
-                                        const void *dmaCfg,
+                                        const EnetDma_Cfg *dmaCfg,
                                         const EnetRm_ResCfg *resCfg);
 
 /* ========================================================================== */
@@ -95,18 +95,17 @@ static int32_t EnetHostPortDma_openRxCh(EnetDma_Handle hDma,
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-void EnetHostPortDma_initCfg(Enet_Type enetType, const void *dmaCfg)
+void EnetHostPortDma_initCfg(const EnetDma_Cfg *dmaCfg)
 {
-    EnetUdma_initCfg(enetType, (void *)dmaCfg);
+    EnetUdma_initCfg((EnetDma_Cfg *)dmaCfg);
 }
 
 EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
-                                    const void *dmaCfg,
+                                    const EnetDma_Cfg *udmaCfg,
                                     const EnetRm_ResCfg *resCfg)
 {
     int32_t status = ENET_EFAIL;
     EnetDma_Handle hDma = NULL;
-    EnetUdma_Cfg *udmaCfg = (EnetUdma_Cfg *) dmaCfg;
 
     hDma = EnetUdma_open(hPer->enetType, hPer->instId, udmaCfg);
     ENETTRACE_ERR_IF(NULL == hDma, "Failed to open Enet DMA\n");
@@ -115,7 +114,7 @@ EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
     {
         hDma->hPer = hPer;
 
-        status = EnetHostPortDma_openRxCh(hDma, dmaCfg, resCfg);
+        status = EnetHostPortDma_openRxCh(hDma, udmaCfg, resCfg);
         if (ENET_SOK != status)
         {
             ENETTRACE_ERR("Failed to open Enet DMA RX channel: %d\n", status);
@@ -130,12 +129,11 @@ EnetDma_Handle EnetHostPortDma_open(EnetPer_Handle hPer,
 }
 
 static int32_t EnetHostPortDma_openRxCh(EnetDma_Handle hDma,
-                                        const void *dmaCfg,
+                                        const EnetDma_Cfg *udmaCfg,
                                         const EnetRm_ResCfg *resCfg)
 {
     int32_t status = ENET_EFAIL;
     uint32_t i;
-    EnetUdma_Cfg *udmaCfg = (EnetUdma_Cfg *)dmaCfg;
 
     if (NULL != hDma)
     {
@@ -206,14 +204,13 @@ uint32_t EnetHostPortDma_getTotalRxFlowCount(const EnetRm_ResPrms *resPrms)
 }
 
 EnetDma_RxChHandle EnetHostPortDma_openRsvdFlow(EnetDma_Handle hDma,
-                                                const void *cfg,
+                                                const EnetDma_Cfg *dmaCfg,
                                                 uint32_t startIdx,
                                                 uint32_t flowIdx,
                                                 uint32_t chIdx)
 {
     EnetDma_RxChHandle hRxRsvdFlow;
     EnetUdma_RsvdRxFlowPrms rxFlowCfg;
-    const EnetUdma_Cfg *dmaCfg = (const EnetUdma_Cfg *)cfg;
 
     rxFlowCfg.startIdx = startIdx;
     rxFlowCfg.flowIdx  = flowIdx;

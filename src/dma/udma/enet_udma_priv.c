@@ -66,6 +66,8 @@
 #include "enet_udma_memcfg.h"
 #include "enet_udma_defines.h"
 
+#include <utils/enet_appmemutils.c>
+
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -1132,7 +1134,7 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
         {
             /* Return dequeued packet buffer as couldn't get free dma desc to attach
              *  packet to */
-            //TODO: surbhi handle this case
+            //TODO: handle this case
             retVal = UDMA_EALLOC;
         }
     }
@@ -1188,7 +1190,7 @@ int32_t EnetUdma_flushRxFlowRing(EnetDma_RxChHandle hRxFlow,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hRxFlow->rxFlowPrms.dmaDescFreeFxn(hRxFlow->rxFlowPrms.cbArg,
+        EnetMem_freeDmaDesc(hRxFlow->rxFlowPrms.cbArg,
                                            pDmaDesc);
 
         retVal = Udma_ringDequeueRaw(hUdmaRing, &pDesc);
@@ -1206,7 +1208,7 @@ int32_t EnetUdma_flushRxFlowRing(EnetDma_RxChHandle hRxFlow,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hRxFlow->rxFlowPrms.dmaDescFreeFxn(hRxFlow->rxFlowPrms.cbArg,
+        EnetMem_freeDmaDesc(hRxFlow->rxFlowPrms.cbArg,
                                            pDmaDesc);
 
         retVal = Udma_ringFlushRaw(hUdmaRing, &pDesc);
@@ -1243,7 +1245,7 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pFqPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hTxCh->txChPrms.dmaDescFreeFxn(hTxCh->txChPrms.cbArg,
+        EnetMem_freeDmaDesc(hTxCh->txChPrms.cbArg,
                                        pDmaDesc);
 
         retVal = Udma_ringDequeueRaw(hUdmaRing, &pDesc);
@@ -1261,7 +1263,7 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
                                 (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
         EnetQueue_enq(pFqPktInfoQ, &pDmaDesc->dmaPkt->node);
 
-        hTxCh->txChPrms.dmaDescFreeFxn(hTxCh->txChPrms.cbArg,
+        EnetMem_freeDmaDesc(hTxCh->txChPrms.cbArg,
                                        pDmaDesc);
 
         retVal = Udma_ringFlushRaw(hUdmaRing, &pDesc);
@@ -1279,7 +1281,6 @@ int32_t EnetUdma_flushTxChRing(EnetDma_TxChHandle hTxCh,
 
 int32_t EnetUdma_freeRing(Udma_RingHandle hUdmaRing,
                         uint32_t numPkts,
-                        EnetUdma_FreeRingMemFxn ringMemFreeFxn,
                         void *cbArg)
 {
     uint8_t *ringMemPtr;
@@ -1288,9 +1289,9 @@ int32_t EnetUdma_freeRing(Udma_RingHandle hUdmaRing,
     ringMemPtr = (uint8_t *)Udma_ringGetMemPtr(hUdmaRing);
     retVal     = Udma_ringFree(hUdmaRing);
 
-    if (NULL != ringMemFreeFxn)
+    if (NULL != cbArg)
     {
-        ringMemFreeFxn(cbArg, ringMemPtr, numPkts);
+        EnetMem_freeRingMem(cbArg, ringMemPtr, numPkts);
     }
 
     return retVal;
@@ -1307,10 +1308,8 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
     if ((pRingAllocInfo != NULL ) && (pRingAllocInfo->allocRingMem))
     {
         Enet_assert(NULL != pRingAllocInfo);
-        Enet_assert(NULL != pRingAllocInfo->ringMemAllocFxn);
-        Enet_assert(NULL != pRingAllocInfo->ringMemFreeFxn);
 
-        pRingPrms->ringMem = pRingAllocInfo->ringMemAllocFxn(pRingAllocInfo->cbArg,
+        pRingPrms->ringMem = EnetMem_allocRingMem(pRingAllocInfo->cbArg,
                                              pRingPrms->elemCnt,
                                              UDMA_CACHELINE_ALIGNMENT);
         if (pRingPrms->ringMem == NULL)
@@ -1426,7 +1425,7 @@ int32_t EnetUdma_allocRing(Udma_DrvHandle hUdmaDrv,
 
     if ((pRingAllocInfo != NULL) && (pRingAllocInfo->allocRingMem) && (freeMem))
     {
-        pRingAllocInfo->ringMemFreeFxn(pRingAllocInfo->cbArg, pRingPrms->ringMem, pRingPrms->elemCnt);
+        EnetMem_freeRingMem(pRingAllocInfo->cbArg, pRingPrms->ringMem, pRingPrms->elemCnt);
         pRingPrms->ringMem = NULL;
     }
 
@@ -1742,14 +1741,14 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
         if (allocFqRing)
         {
-            retVal = EnetUdma_freeRing(pRxFlow->fqRing, 0U, NULL, NULL);
+            retVal = EnetUdma_freeRing(pRxFlow->fqRing, 0U, NULL);
             Enet_assert(UDMA_SOK == retVal);
         }
 #endif
 
         if (allocCqRing)
         {
-            retVal = EnetUdma_freeRing(pRxFlow->cqRing, 0U, NULL, NULL);
+            retVal = EnetUdma_freeRing(pRxFlow->cqRing, 0U, NULL);
             Enet_assert(UDMA_SOK == retVal);
         }
 
@@ -1802,11 +1801,11 @@ int32_t EnetUdma_closeRxRsvdFlow(EnetDma_RxChHandle hRxFlow)
             Enet_assert(hRxFlow->evtInitFlag == false);
 
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
-            retVal = EnetUdma_freeRing(hRxFlow->fqRing, 0U, NULL, NULL);
+            retVal = EnetUdma_freeRing(hRxFlow->fqRing, 0U, NULL);
             Enet_assert(UDMA_SOK == retVal);
 #endif
 
-            retVal = EnetUdma_freeRing(hRxFlow->cqRing, 0U, NULL, NULL);
+            retVal = EnetUdma_freeRing(hRxFlow->cqRing, 0U, NULL);
             Enet_assert(UDMA_SOK == retVal);
 
             retVal = Udma_flowDetach(hRxFlow->hUdmaFlow);
@@ -2067,7 +2066,7 @@ void EnetUdma_initTxFreeDescQ(EnetUdma_TxChObj *pTxCh)
     for (i = 0; i < pTxCh->txChPrms.numTxPkts; i++)
     {
         EnetUdma_DmaDesc *dmaDesc =
-            pTxCh->txChPrms.dmaDescAllocFxn(pTxCh->txChPrms.cbArg, alignSize);
+            EnetMem_allocDmaDesc(pTxCh->txChPrms.cbArg, alignSize);
         if (dmaDesc == NULL)
         {
             ENETTRACE_ERR("[Enet UDMA Error] Tx DMA descriptor memory allocation failed !!\n");
@@ -2111,7 +2110,7 @@ void EnetUdma_deInitTxFreeDescQ(EnetUdma_TxChObj *pTxCh)
     pDmaDesc = EnetUdma_dmaDescDeque(pTxCh->hDmaDescPool);
     while (NULL != pDmaDesc)
     {
-        pTxCh->txChPrms.dmaDescFreeFxn(pTxCh->txChPrms.cbArg, pDmaDesc);
+        EnetMem_freeDmaDesc(pTxCh->txChPrms.cbArg, pDmaDesc);
         pDmaDesc = EnetUdma_dmaDescDeque(pTxCh->hDmaDescPool);
     }
 }
@@ -2127,7 +2126,7 @@ void EnetUdma_initRxFreeDescQ(EnetUdma_RxFlowObj *pRxFlow)
     for (i = 0; i < pRxFlow->rxFlowPrms.numRxPkts; i++)
     {
         EnetUdma_DmaDesc *dmaDesc =
-            pRxFlow->rxFlowPrms.dmaDescAllocFxn(pRxFlow->rxFlowPrms.cbArg, alignSize);
+            EnetMem_allocDmaDesc(pRxFlow->rxFlowPrms.cbArg, alignSize);
         if (dmaDesc == NULL)
         {
             ENETTRACE_ERR("[Enet UDMA Error] Rx DMA descriptor memory allocation failed !!\n");
@@ -2172,7 +2171,7 @@ void EnetUdma_deInitRxFreeDescQ(EnetUdma_RxFlowObj *pRxFlow)
 
     while (NULL != pDmaDesc)
     {
-        pRxFlow->rxFlowPrms.dmaDescFreeFxn(pRxFlow->rxFlowPrms.cbArg, pDmaDesc);
+        EnetMem_freeDmaDesc(pRxFlow->rxFlowPrms.cbArg, pDmaDesc);
         pDmaDesc = EnetUdma_dmaDescDeque(pRxFlow->hDmaDescPool);
     }
 }

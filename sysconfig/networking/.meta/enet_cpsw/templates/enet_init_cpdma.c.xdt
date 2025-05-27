@@ -73,7 +73,7 @@ static void EnetAppUtils_openTxCh(Enet_Handle hEnet,
 
     pCpswTxChCfg->chNum = *pTxChNum;
 
-    *pTxChHandle = EnetDma_openTxCh(hDma, (void *)pCpswTxChCfg);
+    *pTxChHandle = EnetCpdma_openTxCh(hDma, pCpswTxChCfg);
     EnetAppUtils_assert(NULL != *pTxChHandle);
 }
 
@@ -91,7 +91,7 @@ static void EnetAppUtils_closeTxCh(Enet_Handle hEnet,
     EnetQueue_initQ(pCqPktInfoQ);
 
     EnetDma_disableTxEvent(hTxChHandle);
-    status = EnetDma_closeTxCh(hTxChHandle, pFqPktInfoQ, pCqPktInfoQ);
+    status = EnetCpdma_closeTxCh(hTxChHandle, pFqPktInfoQ, pCqPktInfoQ);
     EnetAppUtils_assert(ENET_SOK == status);
 
     status = EnetAppUtils_freeTxCh(hEnet,
@@ -127,7 +127,7 @@ static void EnetAppUtils_openRxCh(Enet_Handle hEnet,
     pCpswRxChCfg->chNum = rxFlowIdx;
 	*pRxChNum = rxFlowIdx;
 
-    *pRxChHandle = EnetDma_openRxCh(hDma, (void *)pCpswRxChCfg);
+    *pRxChHandle = EnetCpdma_openRxCh(hDma, pCpswRxChCfg);
     EnetAppUtils_assert(NULL != *pRxChHandle);
 
     for (uint32_t i = 0; i < allocMacAddrCnt; i++)
@@ -156,7 +156,7 @@ static void EnetAppUtils_closeRxCh(Enet_Handle hEnet,
     EnetQueue_initQ(pFqPktInfoQ);
     EnetQueue_initQ(pCqPktInfoQ);
 
-    status = EnetDma_closeRxCh(hRxChHandle, pFqPktInfoQ, pCqPktInfoQ);
+    status = EnetCpdma_closeRxCh(hRxChHandle, pFqPktInfoQ, pCqPktInfoQ);
     EnetAppUtils_assert(ENET_SOK == status);
     for (uint32_t macAdrIdx = 0;  macAdrIdx < freeHostMacAddrCount; macAdrIdx++)
     {
@@ -179,7 +179,7 @@ static void EnetApp_openTxDma(EnetAppTxDmaSysCfg_Obj *tx,
 
     memset(tx, 0, sizeof(*tx));
     /* Open the TX channel for Regular traffic */
-    EnetDma_initTxChParams(&txChCfg);
+    EnetCpdma_initTxChParams(&txChCfg);
 
     txChCfg.cbArg    = NULL;
     txChCfg.notifyCb = NULL;
@@ -207,7 +207,7 @@ static void EnetApp_openRxDma(EnetAppRxDmaSysCfg_Obj *rx,
 
     memset(rx, 0, sizeof(*rx));
     /* Open the TX channel for Regular traffic */
-    EnetDma_initRxChParams(&rxChCfg);
+    EnetCpdma_initRxChParams(&rxChCfg);
 
     rxChCfg.cbArg    = NULL;
     rxChCfg.notifyCb = NULL;
