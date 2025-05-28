@@ -1869,6 +1869,9 @@ int32_t Enet_validateGenericIoctl(uint32_t cmd,
                 case ENET_STATS_IOCTL_GET_HOSTPORT_STATS:
                 case ENET_STATS_IOCTL_GET_MACPORT_STATS:
                 case ENET_STATS_IOCTL_RESET_HOSTPORT_STATS:
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
+                case ENET_STATS_IOCTL_GET_NPACPORT_STATS:
+#endif
                 case ENET_STATS_IOCTL_RESET_MACPORT_STATS:
                     status = ENET_SOK;
                     break;

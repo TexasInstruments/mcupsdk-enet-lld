@@ -31,48 +31,20 @@
  */
 
 /*!
- * \file  cpsw_stats.c
+ * \file npac_main.c
  *
- * \brief This file contains the implementation of the CPSW statistics module.
+ * \brief This file contains the main task of the Enet NPAC Datapath example.
  */
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include <stdint.h>
-#include <stdarg.h>
-#include <csl_cpswitch.h>
-#include <enet_cfg.h>
-#include <include/core/enet_utils.h>
-#include <include/core/enet_soc.h>
-#include <include/mod/cpsw_stats.h>
-#include <priv/core/enet_trace_priv.h>
-#include <priv/mod/cpsw_stats_priv.h>
-#include <priv/core/enet_base_priv.h>
-#include <priv/mod/cpsw_stats_ioctl_priv.h>
-
+#include "npac_common.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-#define CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(x)                                  \
-int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)                   \
-                                                                                      \
-{                                                                                     \
-    int32_t  status;                                                                  \
-    Enet_IoctlPrms prms;                                                              \
-    Enet_IoctlRegisterHandlerInArgs inArgs;                                           \
-                                                                                      \
-    inArgs.cmd = x;                                                                   \
-    inArgs.fxn = (uintptr_t)&CpswStats_ioctl_handler_##x;                             \
-                                                                                      \
-    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);                                           \
-    status = Enet_ioctl(hEnet, coreId, ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER, &prms); \
-    return  status;                                                                   \
-                                                                                      \
-}
-
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -84,16 +56,66 @@ int32_t Enet_ioctl_register_##x(Enet_Handle hEnet, uint32_t coreId)             
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
+/* None */
 
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
 
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_GET_VERSION)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_PRINT_REGS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_GET_HOSTPORT_STATS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_GET_NPACPORT_STATS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_GET_MACPORT_STATS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_RESET_HOSTPORT_STATS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(ENET_STATS_IOCTL_RESET_MACPORT_STATS)
-CPSW_STATS_GEN_REGISTER_IOCTL_HANDLER_FXN(CPSW_STATS_IOCTL_SYNC)
+NpacDatapath_Obj gNpacDatapathObj;
+
+/* ========================================================================== */
+/*                          Function Definitions                              */
+/* ========================================================================== */
+
+void Npac_mainTask(void *args)
+{
+    uint32_t i;
+    int32_t status;
+    Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
+    uint8_t numMacPorts;
+
+    /* Initialize test config */
+    memset(&gNpacDatapathObj, 0, sizeof(gNpacDatapathObj));
+    gNpacDatapathObj.exitFlag = false;
+
+    EnetApp_getEnetInstInfo(CONFIG_ENET_CPSW0, &gNpacDatapathObj.enetType,
+                                &gNpacDatapathObj.instId);
+
+    EnetApp_getEnetInstMacInfo(gNpacDatapathObj.enetType,
+                                gNpacDatapathObj.instId,
+                                macPortList,
+                                &numMacPorts);
+
+    gNpacDatapathObj.macPort          = macPortList[0];
+
+    for (i = 0U; i < NPAC_DATAPATH_NUM_ITERATION; i++)
+    {
+        /* Note: Clock create/delete must be done per iteration to account for
+         * memory allocation (from heap) done in snprintf for code reentrancy.
+         * Moving this out will result in heap memory leak error in external
+         * loopback mode on A72. */
+
+        EnetAppUtils_print("=============================\r\n");
+        EnetAppUtils_print(" Basic NPAC Datapath: Iteration %u \r\n", i + 1);
+        EnetAppUtils_print("=============================\r\n");
+
+        /* Run the NPAC datapath test */
+        status = EnetApp_NpacDatapathTest();
+
+        /* Sleep at end of each iteration to allow idle task to delete all terminated tasks */
+        ClockP_usleep(1000);
+    }
+
+    if (status == ENET_SOK)
+    {
+        EnetAppUtils_print("NPAC datapath application completed\r\n");
+        EnetAppUtils_print("All tests have passed!!\r\n");
+    }
+    else
+    {
+        EnetAppUtils_print("NPAC datapath application failed to complete\r\n");
+    }
+
+    return;
+}

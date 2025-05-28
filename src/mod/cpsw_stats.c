@@ -262,6 +262,9 @@ static CpswStatsIoctlHandlerRegistry_t CpswStatsIoctlHandlerRegistry[] =
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_PRINT_REGS),
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_GET_HOSTPORT_STATS),
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_GET_MACPORT_STATS),
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
+    CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_GET_NPACPORT_STATS),
+#endif
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_RESET_HOSTPORT_STATS),
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT_DEFAULT(ENET_STATS_IOCTL_RESET_MACPORT_STATS),
     CPSW_STATS_IOCTL_HANDLER_ENTRY_INIT(CPSW_STATS_IOCTL_SYNC), /* Register ISR callback IOCTLS by default */
@@ -302,6 +305,11 @@ int32_t CpswStats_open(EnetMod_Handle hMod,
 
     /* For now, use statistics block memories from stats module object */
     hStats->hostPortStats = &hStats->hostPortStatsMem;
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
+    hStats->npacPortStats = &hStats->npacPortStatsMem;
+#else
+    hStats->npacPortStats = NULL;
+#endif
     hStats->macPortStats = &hStats->macPortStatsMem[0U];
     hStats->macPortNum = ENET_ARRAYSIZE(hStats->macPortStatsMem);
 
@@ -309,7 +317,7 @@ int32_t CpswStats_open(EnetMod_Handle hMod,
 
     /* Enable statistics on all applicable ports */
     portStat.p0StatEnable = true;
-#if ENET_CFG_IS_ON(NPAC_PORT)
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
     portStat.npacStatEnable = true;
 #endif
     if (enetType == ENET_CPSW_9G)

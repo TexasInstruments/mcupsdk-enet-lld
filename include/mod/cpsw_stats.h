@@ -660,6 +660,186 @@ typedef struct CpswStats_HostPort_Ng_s
     uint64_t txPriDropBcnt[8U];
 } CpswStats_HostPort_Ng;
 
+
+/*!
+ * \brief CPSW 5G or 9G host port statistics.
+ *
+ * Statistics values reported by the CPSW hardware for the host port.
+ */
+typedef struct CpswStats_NpacPort_Ng_s
+{
+    /*! Total number of good frames received */
+    uint64_t rxGoodFrames;
+
+    /*! Total number of good multicast frames received */
+    uint64_t rxBcastFrames;
+
+    /*! Total number of good multicast frames received */
+    uint64_t rxMcastFrames;
+
+    /*! Reserved */
+    uint64_t reserved4;
+
+    /*! Total number of CRC error frames received */
+    uint64_t rxCrcErrors;
+
+    /*! Reserved */
+    uint64_t reserved6;
+
+    /*! Total number of oversized frames received */
+    uint64_t rxOversizedFrames;
+
+    /*! Reserved */
+    uint64_t reserved8;
+
+    /*! Total number of undersized frames received */
+    uint64_t rxUndersizedFrames;
+
+    /*! Total number of fragmented frames received */
+    uint64_t reserved10;
+
+    /*! Total number of frames dropped by the ALE */
+    uint64_t aleDrop;
+
+    /*! Total number of overrun frames dropped by the ALE */
+    uint64_t aleOverrunDrop;
+
+    /*! Total number of received bytes in good frames */
+    uint64_t rxOctets;
+
+    /*! Total number of good frames transmitted */
+    uint64_t txGoodFrames;
+
+    /*! Total number of good broadcast frames transmitted */
+    uint64_t txBcastFrames;
+
+    /*! Total number of good multicast frames transmitted */
+    uint64_t txMcastFrames;
+
+    /*! Reserved */
+    uint64_t reserved17to19[3];
+
+    /*! Tx Start of Frame Overrun */
+    uint64_t txSofOverrun;
+
+    /*! Tx Middle of Frame Overrun */
+    uint64_t txMofOverrun;
+
+    /*! Reserved */
+    uint64_t reserved22to25[4U];
+
+    /*! Total number of bytes in all good frames transmitted */
+    uint64_t txOctets;
+
+    /*! Total number of 64-byte frames received and transmitted */
+    uint64_t octetsFrames64;
+
+    /*! Total number of frames of size 65 to 127 bytes received and transmitted */
+    uint64_t octetsFrames65to127;
+
+    /*! Total number of frames of size 128 to 255 bytes received and transmitted */
+    uint64_t octetsFrames128to255;
+
+    /*! Total number of frames of size 256 to 511 bytes received and transmitted */
+    uint64_t octetsFrames256to511;
+
+    /*! Total number of frames of size 512 to 1023 bytes received and transmitted */
+    uint64_t octetsFrames512to1023;
+
+    /*! Total number of frames of size 1024 or greater transmitted */
+    uint64_t octetsFrames1024;
+
+    /*! Total number of bytes received and transmitted */
+    uint64_t netOctets;
+
+    /*! Receive bottom of FIFO drop */
+    uint64_t rxBottomOfFifoDrop;
+
+    /*! Total number of dropped frames received due to portmask */
+    uint64_t portMaskDrop;
+
+    /*! Receive top of FIFO drop */
+    uint64_t rxTopOfFifoDrop;
+
+    /*! Total number of frames dropped due to ALE rate limiting */
+    uint64_t aleRateLimitDrop;
+
+    /*! Total number of dropped frames due to ALE VID ingress */
+    uint64_t aleVidIngressDrop;
+
+    /*! Total number of dropped frames due to DA = SA */
+    uint64_t aleDAEqSADrop;
+
+    /*! Total number of dropped frames due to ALE block mode */
+    uint64_t aleBlockDrop;
+
+    /*! Total number of dropped frames due to ALE secure mode */
+    uint64_t aleSecureDrop;
+
+    /*! Total number of dropped frames due to ALE authentication */
+    uint64_t aleAuthDrop;
+
+    /*! ALE receive unknown unicast */
+    uint64_t aleUnknownUcast;
+
+    /*! ALE receive unknown unicast bytecount */
+    uint64_t aleUnknownUcastBcnt;
+
+    /*! ALE receive unknown multicast */
+    uint64_t aleUnknownMcast;
+
+    /*! ALE receive unknown multicast bytecount */
+    uint64_t aleUnknownMcastBcnt;
+
+    /*! ALE receive unknown broadcast */
+    uint64_t aleUnknownBcast;
+
+    /*! ALE receive unknown broadcast bytecount */
+    uint64_t aleUnknownBcastBcnt;
+
+    /*! ALE policer matched */
+    uint64_t alePolicyMatch;
+
+    /*! ALE policer matched and condition red */
+    uint64_t alePolicyMatchRed;
+
+    /*! ALE policer matched and condition yellow */
+    uint64_t alePolicyMatchYellow;
+
+    /*! ALE multicast source address drop */
+    uint64_t aleMultSADrop;
+
+    /*! ALE dual VLAN drop */
+    uint64_t aleDualVlanDrop;
+
+    /*! ALE IEEE 802.3 length error drop */
+    uint64_t aleLenErrorDrop;
+
+    /*! ALE IP next header limit drop */
+    uint64_t aleIpNextHdrDrop;
+
+    /*! ALE IPv4 fragment drop */
+    uint64_t aleIPv4FragDrop;
+
+    /*! Reserved */
+    uint64_t reserved57to95[39U];
+
+    /*! Transmit memory protect CRC error */
+    uint64_t txMemProtectError;
+
+    /*! Host port priority packet count */
+    uint64_t txPri[8U];
+
+    /*! Host port priority packet byet count */
+    uint64_t txPriBcnt[8U];
+
+    /*! Host port priority packet drop count */
+    uint64_t txPriDrop[8U];
+
+    /*! Host port priority packet drop byte count */
+    uint64_t txPriDropBcnt[8U];
+} CpswStats_NpacPort_Ng;
+
 /*!
  * \brief CPSW 5G or 9G MAC port statistics.
  *

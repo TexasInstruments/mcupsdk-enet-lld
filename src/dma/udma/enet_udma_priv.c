@@ -1607,7 +1607,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         ringAllocInfo.enetType     = hDma->enetType;
         ringAllocInfo.instId       = hDma->instId;
         ringAllocInfo.mappedChNum  = Udma_chGetNum(&hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj);;
-#if defined(SOC_AM62LX)      
+#if defined(SOC_AM62LX) || defined (SOC_TDA54)      
         ringAllocInfo.ringNum      = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
 #else
         ringAllocInfo.ringNum      = UDMA_RING_ANY;
@@ -1655,7 +1655,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         flowPrms.fdq3Qnum    = Udma_ringGetNum(ringHandle);
 #endif
         flowStart = pRxFlowPrms->startIdx + pRxFlowPrms->flowIdx;
-#if defined(SOC_AM62LX)
+#if defined(SOC_AM62LX) || defined (SOC_TDA54)
         flowidx  = pRxFlowPrms->flowIdx + 1;
 #endif
 #if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
@@ -1709,7 +1709,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         {
             Enet_assert(false);
         }
-#if defined(SOC_AM62LX)
+#if defined(SOC_AM62LX) || defined (SOC_TDA54)
         flowAllocMappedPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
         flowPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj; 
 #endif

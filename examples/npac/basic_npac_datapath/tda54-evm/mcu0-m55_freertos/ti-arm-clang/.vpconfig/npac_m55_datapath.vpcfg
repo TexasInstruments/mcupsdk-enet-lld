@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ASCII"?>
+<com.synopsys.vp.base.vpcfg.core:Configuration xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:com.synopsys.vp.base.vpcfg.core="com.synopsys.vp.base.vpcfg.core.model" description="empty configuration" comment="gen_tool_VDK-C" simulationScriptReferences="BEGIN_OF_SIMULATION_6fcca2ee-7d5d-4bda-936f-828634ef3966&#xA;">
+  <debugInfo/>
+  <paramOverrides key="TDA5_System.TDA5_SoC.MCU_Domain.Security.ROT.M55_SS.#EXTRA_PROPERTIES#/ImageInfo/initial_image" value="{../../software/bootcode_M55/vs/stdout/bootcode.axf,,,image+symbols,} "/>
+  <paramOverrides key="TDA5_System.TDA5_SoC.Main_Domain.Multimedia_drivers.M55_SS_0.#EXTRA_PROPERTIES#/ImageInfo/initial_image" value="{../../../../../../mcusdk/mcu_plus_sdk/source/networking/enet/core/examples/npac/npac_datapath/tda54-evm/mcu0-m55_freertos/ti-arm-clang/basic_npac_datapath.debug.out,,,image+symbols,} "/>
+  <paramOverrides key="TDA5_System.TDA5_SoC.Periphs.UART_PHY_MM_M55_0.#SCML_PROPERTIES#TerminalAutoOpen" value="true"/>
+  <monitorSets name="Default" path="${vpconfigDir}/Default.monitors" chartDisplayScript="">
+    <startTrigger type="TIME" value="0"/>
+  </monitorSets>
+  <simProbesThreads name="t1" script="${vpconfigDir}/npac_packet_injection.py" args="M55_SS"/>
+  <simulationScripts script="${vpconfigDir}/boot_configure.py" id="BEGIN_OF_SIMULATION_6fcca2ee-7d5d-4bda-936f-828634ef3966"/>
+</com.synopsys.vp.base.vpcfg.core:Configuration>

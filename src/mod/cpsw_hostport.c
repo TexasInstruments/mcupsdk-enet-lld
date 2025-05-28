@@ -294,7 +294,7 @@ void CpswHostPort_initCfg(CpswHostPort_Cfg *hostPortCfg)
     hostPortCfg->rxCsumOffloadEn   = true;
     hostPortCfg->txCsumOffloadEn   = true;
 }
-#if ENET_CFG_IS_ON(NPAC_PORT)
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
 int32_t CpswNpacPort_open(EnetMod_Handle hMod,
                           Enet_Type enetType,
                           uint32_t instId,
@@ -414,7 +414,7 @@ int32_t CpswHostPort_open(EnetMod_Handle hMod,
     cppiP0ControlCfg.p0RxRemapDscpIpv6 = hostPortCfg->rxDscpIPv6RemapEn ? TRUE : FALSE;
 
     CSL_CPSW_setCppiP0Control(regs, &cppiP0ControlCfg);
-#if ENET_CFG_IS_ON(NPAC_PORT)
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
     CpswNpacPort_open(hMod, enetType, instId, cfg, cfgSize);
 #endif
     return status;

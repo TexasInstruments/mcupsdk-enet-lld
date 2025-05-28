@@ -151,6 +151,21 @@ typedef enum EnetStats_Ioctl_e
      * - outArgs: None
      */
     ENET_STATS_IOCTL_RESET_MACPORT_STATS = ENET_STATS_PUBLIC_IOCTL(5U),
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
+    /*!
+     * \brief Get host NPAC port statistics.
+     *
+     * Gets the network statistics of the host port.  It's caller's
+     * responsibility to typecast the returned statistics structure according
+     * to the underlying peripheral's definition.
+     *
+     *
+     * IOCTL parameters:
+     * -  inArgs: None
+     * - outArgs: Peripheral/module specific definition.
+     */
+    ENET_STATS_IOCTL_GET_NPACPORT_STATS =  ENET_STATS_PUBLIC_IOCTL(6U),
+#endif
 } EnetStats_Ioctl;
 
 

@@ -109,12 +109,14 @@
 #else
 #define CPSW_ALE_2G_POLICERS_MAX                (8U)
 #endif
-#define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
 #if defined(SOC_TDA54)
+#define CPSW_ALE_3G_ALE_ENTRIES_MAX             (1024U)
 #define CPSW_ALE_3G_POLICERS_MAX                (128U)
 #elif defined(SOC_J722S)
+#define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_3G_POLICERS_MAX                (96)
 #else
+#define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_3G_POLICERS_MAX                (32U)
 #endif
 #define CPSW_ALE_5G_ALE_ENTRIES_MAX             (512U)
@@ -1143,7 +1145,7 @@ static void CpswAle_setAleModeFlags(CSL_AleRegs *regs,
 
     /* Update ALE control register */
     CSL_CPSW_setAleControlReg(regs, aleCtlVal);
-#if ENET_CFG_IS_ON(NPAC_PORT)
+#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
     if ((modeFlags & CPSW_ALE_CFG_MULTIHOST) != 0U)
     {
         CSL_CPSW_setMultihost(regs, 1);
