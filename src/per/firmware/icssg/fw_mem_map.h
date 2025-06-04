@@ -4,7 +4,7 @@
  * Contains memory map for Ethernet firmware.
  * This file is used by Ethernet Switch driver.
  *
- * Copyright (C) 2020 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (C) 2020-25 Texas Instruments Incorporated - http://www.ti.com/
  *
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -538,4 +538,4 @@
 /*PRU diagnostic error counter which increments when an entry couldn't be learned*/
 #define NRT_FDB_NO_SPACE_TO_LEARN                          0x0268
 
-#endif /* ____switch_mem_map_h*/
+#endif /* ____fw_mem_map_h*/
