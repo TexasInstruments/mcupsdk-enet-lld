@@ -111,6 +111,7 @@ DEFINES_common := \
 	-DGPTP_ENABLED \
 	-DEST_APP_ENABLED \
 	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:66,lldp:45,avtp:45,nconf:45\" \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -160,9 +161,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 	-ltsn_combase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -192,9 +193,9 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 	tsn_combase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \

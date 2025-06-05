@@ -93,6 +93,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM261X \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -138,11 +139,11 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llwipif-cpsw-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llwip-contrib-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
@@ -157,11 +158,11 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	lwipif-cpsw-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am261x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	lwip-contrib-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \

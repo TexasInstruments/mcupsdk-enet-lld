@@ -67,6 +67,7 @@
             -Wno-unused-function
             -DSOC_AM263X
             -DMBEDTLS_CONFIG_FILE=\&quot;alt_config.h\&quot;
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -102,13 +103,13 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.debug.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.debug.lib
-                -lenet-cpsw.am263x.r5f.ti-arm-clang.debug.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.debug.lib
                 -llwipif-cpsw-freertos.am263x.r5f.ti-arm-clang.debug.lib
                 -llwip-freertos.am263x.r5f.ti-arm-clang.debug.lib
                 -llwip-contrib-freertos.am263x.r5f.ti-arm-clang.debug.lib
-                -lboard.am263x.r5f.ti-arm-clang.debug.lib
-                -lmbedtls.am263x.r5f.ti-arm-clang.debug.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lmbedtls.am263x.r5f.ti-arm-clang.freertos.debug.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -120,13 +121,13 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.release.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.release.lib
-                -lenet-cpsw.am263x.r5f.ti-arm-clang.release.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.release.lib
                 -llwipif-cpsw-freertos.am263x.r5f.ti-arm-clang.release.lib
                 -llwip-freertos.am263x.r5f.ti-arm-clang.release.lib
                 -llwip-contrib-freertos.am263x.r5f.ti-arm-clang.release.lib
-                -lboard.am263x.r5f.ti-arm-clang.release.lib
-                -lmbedtls.am263x.r5f.ti-arm-clang.release.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lmbedtls.am263x.r5f.ti-arm-clang.freertos.release.lib
                 -llibc.a
                 -llibsysbm.a
             "

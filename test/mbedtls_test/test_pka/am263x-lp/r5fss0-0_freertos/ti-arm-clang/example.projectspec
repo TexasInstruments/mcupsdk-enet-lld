@@ -54,6 +54,7 @@
             -Wno-unused-function
             -DSOC_AM263X
             -DMBEDTLS_CONFIG_FILE=\&quot;alt_config.h\&quot;
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -86,11 +87,11 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.debug.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.debug.lib
-                -lboard.am263x.r5f.ti-arm-clang.debug.lib
-                -lmbedtls.am263x.r5f.ti-arm-clang.debug.lib
-                -lunity.am263x.r5f.ti-arm-clang.debug.lib
-                -lsecurity.am263x.r5f.ti-arm-clang.debug.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lmbedtls.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lunity.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lsecurity.am263x.r5f.ti-arm-clang.freertos.debug.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -102,11 +103,11 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.release.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.release.lib
-                -lboard.am263x.r5f.ti-arm-clang.release.lib
-                -lmbedtls.am263x.r5f.ti-arm-clang.release.lib
-                -lunity.am263x.r5f.ti-arm-clang.release.lib
-                -lsecurity.am263x.r5f.ti-arm-clang.release.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lmbedtls.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lunity.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lsecurity.am263x.r5f.ti-arm-clang.freertos.release.lib
                 -llibc.a
                 -llibsysbm.a
             "

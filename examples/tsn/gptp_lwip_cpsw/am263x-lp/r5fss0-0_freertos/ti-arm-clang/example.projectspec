@@ -76,6 +76,7 @@
             -DPRINT_FORMAT_NO_WARNING
             -DSITARA
             -DGPTP_ENABLED=1
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -112,9 +113,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.debug.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.debug.lib
-                -lenet-cpsw.am263x.r5f.ti-arm-clang.debug.lib
-                -lboard.am263x.r5f.ti-arm-clang.debug.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.debug.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.debug.lib
                 -llibc.a
                 -llibsysbm.a
                 -ltsn_combase-freertos.am263x.r5f.ti-arm-clang.debug.lib
@@ -137,9 +138,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263x.r5f.ti-arm-clang.release.lib
-                -ldrivers.am263x.r5f.ti-arm-clang.release.lib
-                -lenet-cpsw.am263x.r5f.ti-arm-clang.release.lib
-                -lboard.am263x.r5f.ti-arm-clang.release.lib
+                -ldrivers.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.release.lib
+                -lboard.am263x.r5f.ti-arm-clang.freertos.release.lib
                 -llibc.a
                 -llibsysbm.a
                 -ltsn_combase-freertos.am263x.r5f.ti-arm-clang.release.lib

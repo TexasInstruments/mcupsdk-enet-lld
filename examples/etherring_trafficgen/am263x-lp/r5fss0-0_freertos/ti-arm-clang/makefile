@@ -104,6 +104,7 @@ DEFINES_common := \
 	-DSITARA \
 	-DNO_GETOPT_LONG=1 \
 	-DUB_LOGCAT=5 \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -151,11 +152,11 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llwipif-cpsw-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llwip-contrib-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
@@ -180,11 +181,11 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	lwipif-cpsw-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	lwip-contrib-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \

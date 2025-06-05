@@ -85,6 +85,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM263X \
 	-DMBEDTLS_CONFIG_FILE=\"alt_config.h\" \
+	-DOS_FREERTOS \
 
 CFLAGS_release := \
 	-Os \
@@ -133,11 +134,11 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lmbedtls.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lunity.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lsecurity.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lmbedtls.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lunity.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lsecurity.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -150,11 +151,11 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	mbedtls.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	unity.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
-	security.am263x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	mbedtls.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	unity.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	security.am263x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 

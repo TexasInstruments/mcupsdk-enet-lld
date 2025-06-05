@@ -69,6 +69,7 @@
             -DSITARA
             -DNO_GETOPT_LONG=1
             -DUB_LOGCAT=5
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -104,11 +105,11 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263px.r5f.ti-arm-clang.debug.lib
-                -ldrivers.am263px.r5f.ti-arm-clang.debug.lib
-                -lenet-cpsw.am263px.r5f.ti-arm-clang.debug.lib
+                -ldrivers.am263px.r5f.ti-arm-clang.freertos.debug.lib
+                -lenet-cpsw.am263px.r5f.ti-arm-clang.freertos.debug.lib
                 -llwipif-cpsw-freertos.am263px.r5f.ti-arm-clang.debug.lib
                 -llwip-freertos.am263px.r5f.ti-arm-clang.debug.lib
-                -lboard.am263px.r5f.ti-arm-clang.debug.lib
+                -lboard.am263px.r5f.ti-arm-clang.freertos.debug.lib
                 -llwip-contrib-freertos.am263px.r5f.ti-arm-clang.debug.lib
                 -llibc.a
                 -llibsysbm.a
@@ -122,11 +123,11 @@
             "
             linkerBuildOptions="
                 -lfreertos.am263px.r5f.ti-arm-clang.release.lib
-                -ldrivers.am263px.r5f.ti-arm-clang.release.lib
-                -lenet-cpsw.am263px.r5f.ti-arm-clang.release.lib
+                -ldrivers.am263px.r5f.ti-arm-clang.freertos.release.lib
+                -lenet-cpsw.am263px.r5f.ti-arm-clang.freertos.release.lib
                 -llwipif-cpsw-freertos.am263px.r5f.ti-arm-clang.release.lib
                 -llwip-freertos.am263px.r5f.ti-arm-clang.release.lib
-                -lboard.am263px.r5f.ti-arm-clang.release.lib
+                -lboard.am263px.r5f.ti-arm-clang.freertos.release.lib
                 -llwip-contrib-freertos.am263px.r5f.ti-arm-clang.release.lib
                 -llibc.a
                 -llibsysbm.a

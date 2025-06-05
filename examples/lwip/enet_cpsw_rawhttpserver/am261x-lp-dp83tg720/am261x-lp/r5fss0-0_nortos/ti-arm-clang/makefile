@@ -90,6 +90,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM261X \
+	-DOS_NORTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -135,11 +136,11 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lnortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	-lenet-cpsw.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	-llwipif-cpsw-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	-llwip-contrib-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
@@ -154,11 +155,11 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	enet-cpsw.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	lwipif-cpsw-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am261x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	lwip-contrib-nortos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
