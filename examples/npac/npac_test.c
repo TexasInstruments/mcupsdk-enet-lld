@@ -47,7 +47,7 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define NPAC_DATAPATH_TEST_PKT_NUM                      (1U)
+#define NPAC_DATAPATH_TEST_PKT_NUM                      (8U)
 
 #define NPAC_DATAPATH_TEST_PKT_LEN                      (500U)
 
@@ -314,8 +314,9 @@ int32_t EnetApp_NpacDatapathTest(void)
         EnetApp_createRxTxTasks();
         uint32_t printCntr = 0;
 
-        while (1)
+        while (SystemP_SUCCESS != SemaphoreP_pend(&gNpacDatapathObj.rxDoneSemObj, SystemP_NO_WAIT))
         {
+        	SemaphoreP_pend(&gNpacDatapathObj.rxDoneSemObj, SystemP_NO_WAIT);
             printCntr++;
             EnetApp_rxIsrFxn(NULL);
             EnetApp_txIsrFxn(NULL);
@@ -327,7 +328,6 @@ int32_t EnetApp_NpacDatapathTest(void)
             }
         }
         SemaphoreP_pend(&gNpacDatapathObj.txDoneSemObj, SystemP_WAIT_FOREVER);
-        SemaphoreP_pend(&gNpacDatapathObj.rxDoneSemObj, SystemP_WAIT_FOREVER);
     }
 
     /* Print network statistics */
@@ -347,16 +347,16 @@ int32_t EnetApp_NpacDatapathTest(void)
     }
 
     /* Close Enet DMA driver */
-    EnetApp_closeDma();
+    // EnetApp_closeDma();
 
     /*Detach Core*/
     EnetApp_coreDetach(gNpacDatapathObj.enetType, gNpacDatapathObj.instId, gNpacDatapathObj.coreId, gNpacDatapathObj.coreKey);
 
     /*Release Handle Info*/
-    EnetApp_releaseHandleInfo(gNpacDatapathObj.enetType, gNpacDatapathObj.instId);
+    // EnetApp_releaseHandleInfo(gNpacDatapathObj.enetType, gNpacDatapathObj.instId);
     gNpacDatapathObj.hEnet = NULL;
 
-    EnetApp_driverDeInit();
+    //EnetApp_driverDeInit();
 
     /* Disable peripheral clocks */
     EnetAppUtils_disableClocks(gNpacDatapathObj.enetType, gNpacDatapathObj.instId);

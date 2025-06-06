@@ -31,7 +31,7 @@ const libdirs_freertos = {
     ],
 };
 
-const includes_freertos_m55 = {
+const includes_freertos_mcu0 = {
     common: [
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
@@ -53,12 +53,12 @@ const includes_freertos_m55 = {
 };
 
 
-const libs_freertos_m55 = {
+const libs_freertos_mcu0 = {
     common: [
-        "freertos.tda54.m55.ti-arm-clang.${ConfigName}.lib",
-        "drivers.tda54.m55.ti-arm-clang.${ConfigName}.lib",
+        "freertos.tda54.mcu.ti-arm-clang.${ConfigName}.lib",
+        "drivers.tda54.mcu.ti-arm-clang.${ConfigName}.lib",
         // "board.tda54.m55.ti-arm-clang.${ConfigName}.lib",
-        "enet-cpsw.tda54.m55.ti-arm-clang.${ConfigName}.lib",
+        "enet-cpsw.tda54.mcu.ti-arm-clang.${ConfigName}.lib",
     ],
 };
 
@@ -70,12 +70,12 @@ const linker_includePath_freertos = {
     ],
 };
 
-const defines_m55 = {
+const defines_mcu0 = {
     common: [
     ],
 };
 
-const cflags_m55 = {
+const cflags_mcu0 = {
     common: [
     ],
     release: [
@@ -92,7 +92,7 @@ const cflags_a53 = {
     ],
 };
 
-const lflags_m55 = {
+const lflags_mcu0 = {
     common: [
         "--zero_init=on",
         "--use_memset=fast",
@@ -105,7 +105,7 @@ const lflags_a53 = {
     ],
 };
 
-const loptflags_m55 = {
+const loptflags_mcu0 = {
     release: [
         "-mcpu=cortex-m55",
     ],
@@ -127,7 +127,7 @@ const syscfgfile = "../example.syscfg";
 
 const readmeDoxygenPageTag = "EXAMPLES_ENET_NPAC_DATAPATH";
 
-// const templates_freertos_m55 =
+// const templates_freertos_mcu0 =
 // [
 //     {
 //         input: "source/networking/enet/core/sysconfig/.project/templates/freertos/main_freertos.c.xdt",
@@ -140,7 +140,7 @@ const readmeDoxygenPageTag = "EXAMPLES_ENET_NPAC_DATAPATH";
 //     }
 // ];
 
-const templates_freertos_m55 =
+const templates_freertos_mcu0 =
 [
     {
         input: ".project/templates/tda54/freertos/main_freertos.c.xdt",
@@ -152,7 +152,7 @@ const templates_freertos_m55 =
 ];
 
 const buildOptionCombos = [
-   { device: device, cpu: "mcu0-m55", cgt: "ti-arm-clang", board: "tda54-evm", os: "freertos", isPartOfSystemProject: true},
+   { device: device, cpu: "mcu0", cgt: "ti-arm-clang", board: "tda54-evm", os: "freertos", isPartOfSystemProject: true},
 ];
 
 function getComponentProperty() {
@@ -177,7 +177,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.projecspecFileAction = "link";
     build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 
-    if(buildOption.cpu.match(/m55*/)) {
+    if(buildOption.cpu.match(/mcu0*/)) {
         if(buildOption.os.match(/freertos*/) )
         {
             const _ = require('lodash');
@@ -190,15 +190,15 @@ function getComponentBuildProperty(buildOption) {
                     libdirs_freertos_cpy.common.splice(delIndex, 1);
                 }
             }
-            build_property.includes = includes_freertos_m55;
+            build_property.includes = includes_freertos_mcu0;
             build_property.libdirs = libdirs_freertos_cpy;
-            build_property.libs = libs_freertos_m55;
-            build_property.templates = templates_freertos_m55;
-            build_property.defines = defines_m55;
-            build_property.cflags = cflags_m55;
-            build_property.lflags = lflags_m55;
+            build_property.libs = libs_freertos_mcu0;
+            build_property.templates = templates_freertos_mcu0;
+            build_property.defines = defines_mcu0;
+            build_property.cflags = cflags_mcu0;
+            build_property.lflags = lflags_mcu0;
             build_property.projectspecLnkPath = linker_includePath_freertos;
-            build_property.loptflags = loptflags_m55;
+            build_property.loptflags = loptflags_mcu0;
         }
     }
 

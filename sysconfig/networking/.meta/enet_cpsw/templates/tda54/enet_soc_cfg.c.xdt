@@ -831,8 +831,8 @@ const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
 /* Cores IOCTL Privileges */
 static const EnetRm_IoctlPermissionTable gEnetAppIoctlPermission_3G =
 {
-    .defaultPermittedCoreMask = (ENET_BIT(CSL_CORE_ID_DMCU0_M55) |
-                                 ENET_BIT(CSL_CORE_ID_MCU0_M55)),
+    .defaultPermittedCoreMask = (ENET_BIT(CSL_CORE_ID_DMCU0) |
+                                 ENET_BIT(CSL_CORE_ID_MCU0)),
     .numEntries = 0,
 };
 

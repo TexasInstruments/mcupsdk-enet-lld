@@ -47,7 +47,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include <include/core/enet_osal.h>
 #include <kernel/dpl/TaskP.h>
 #include <kernel/dpl/ClockP.h>
 #include <kernel/dpl/SemaphoreP.h>

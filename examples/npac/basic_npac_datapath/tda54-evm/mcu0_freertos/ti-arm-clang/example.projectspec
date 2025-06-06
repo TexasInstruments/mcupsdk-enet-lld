@@ -11,7 +11,7 @@
 
     <project
         title="Basic Npac Datapath"
-        name = "basic_npac_datapath_tda54-evm_mcu0-m55_freertos_ti-arm-clang"
+        name = "basic_npac_datapath_tda54-evm_mcu0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -80,7 +80,7 @@
 
         enableSysConfigTool="true"
         sysConfigBuildOptions="
-            --context mcu0-m55 --part Default --package AMW
+            --context mcu0 --part Default --package AMW
         "
 
         description="A Basic Npac Datapath FREERTOS project">
@@ -90,9 +90,9 @@
                 -D_DEBUG_=1
             "
             linkerBuildOptions="
-                -lfreertos.tda54.m55.ti-arm-clang.debug.lib
-                -ldrivers.tda54.m55.ti-arm-clang.debug.lib
-                -lenet-cpsw.tda54.m55.ti-arm-clang.debug.lib
+                -lfreertos.tda54.mcu.ti-arm-clang.debug.lib
+                -ldrivers.tda54.mcu.ti-arm-clang.debug.lib
+                -lenet-cpsw.tda54.mcu.ti-arm-clang.debug.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -102,9 +102,9 @@
                 -Os
             "
             linkerBuildOptions="
-                -lfreertos.tda54.m55.ti-arm-clang.release.lib
-                -ldrivers.tda54.m55.ti-arm-clang.release.lib
-                -lenet-cpsw.tda54.m55.ti-arm-clang.release.lib
+                -lfreertos.tda54.mcu.ti-arm-clang.release.lib
+                -ldrivers.tda54.mcu.ti-arm-clang.release.lib
+                -lenet-cpsw.tda54.mcu.ti-arm-clang.release.lib
                 -llibc.a
                 -llibsysbm.a
             "

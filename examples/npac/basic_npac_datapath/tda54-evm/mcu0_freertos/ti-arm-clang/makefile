@@ -124,9 +124,9 @@ LIBS_PATH_common = \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
-	-lfreertos.tda54.m55.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.tda54.m55.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.tda54.m55.ti-arm-clang.${ConfigName}.lib \
+	-lfreertos.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
+	-lenet-cpsw.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -142,9 +142,9 @@ LNKOPTFLAGS_release = \
 	       -mcpu=cortex-m55 \
 
 LIBS_NAME = \
-	freertos.tda54.m55.ti-arm-clang.${ConfigName}.lib \
-	drivers.tda54.m55.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.tda54.m55.ti-arm-clang.${ConfigName}.lib \
+	freertos.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
+	drivers.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
+	enet-cpsw.tda54.mcu.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -180,11 +180,11 @@ vpath %.lib $(LIBS_PATH_NAME)
 vpath %.a $(LIBS_PATH_NAME)
 
 $(OBJDIR)/%.obj %.obj: %.c
-	@echo  Compiling: tda54:mcu0-m55:freertos:ti-arm-clang $(OUTNAME): $<
+	@echo  Compiling: tda54:mcu0:freertos:ti-arm-clang $(OUTNAME): $<
 	$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) -MMD -o $(OBJDIR)/$@ $<
 
 $(OBJDIR)/%.obj %.obj: %.S
-	@echo  Compiling: tda54:mcu0-m55:freertos:ti-arm-clang $(LIBNAME): $<
+	@echo  Compiling: tda54:mcu0:freertos:ti-arm-clang $(LIBNAME): $<
 	$(CC) -c $(CFLAGS) -o $(OBJDIR)/$@ $<
 
 all: $(TARGETS)
@@ -202,13 +202,13 @@ SYSCFG_GEN_FILES+=generated/ti_enet_lwipif.c generated/ti_enet_lwipif.h
 
 $(OUTNAME): syscfg $(SYSCFG_GEN_FILES) $(OBJS) $(LNK_FILES) $(LIBS_NAME)
 	@echo  .
-	@echo  Linking: tda54:mcu0-m55:freertos:ti-arm-clang $@ ...
+	@echo  Linking: tda54:mcu0:freertos:ti-arm-clang $@ ...
 	$(LNK) $(LNKOPTFLAGS) $(LFLAGS) $(LIBS_PATH) -Wl,-m=$(basename $@).map -o $@ $(addprefix $(OBJDIR), $(OBJS)) $(LIBS) $(LNK_FILES)
-	@echo  Linking: tda54:mcu0-m55:freertos:ti-arm-clang $@ Done !!!
+	@echo  Linking: tda54:mcu0:freertos:ti-arm-clang $@ Done !!!
 	@echo  .
 
 clean:
-	@echo  Cleaning: tda54:mcu0-m55:freertos:ti-arm-clang $(OUTNAME) ...
+	@echo  Cleaning: tda54:mcu0:freertos:ti-arm-clang $(OUTNAME) ...
 	$(RMDIR) $(OBJDIR)
 	$(RM) $(OUTNAME)
 	$(RM) $(BOOTIMAGE_NAME)
@@ -221,7 +221,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: tda54:mcu0-m55:freertos:ti-arm-clang basic_npac_datapath ...
+	@echo  Scrubing: tda54:mcu0:freertos:ti-arm-clang basic_npac_datapath ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
@@ -252,10 +252,10 @@ $(SYSCFG_GEN_FILES): syscfg
 
 syscfg: ../example.syscfg
 	@echo Generating SysConfig files ...
-	$(SYSCFG_NODE) $(SYSCFG_CLI_PATH)/dist/cli.js --product $(SYSCFG_SDKPRODUCT) --device TDA54 --context mcu0-m55 --part Default --package AMW --output generated/ ../example.syscfg
+	$(SYSCFG_NODE) $(SYSCFG_CLI_PATH)/dist/cli.js --product $(SYSCFG_SDKPRODUCT) --device TDA54 --context mcu0 --part Default --package AMW --output generated/ ../example.syscfg
 
 syscfg-gui:
-	$(SYSCFG_NWJS) $(SYSCFG_PATH) --product $(SYSCFG_SDKPRODUCT) --device TDA54 --context mcu0-m55 --part Default --package AMW --output generated/  ../example.syscfg
+	$(SYSCFG_NWJS) $(SYSCFG_PATH) --product $(SYSCFG_SDKPRODUCT) --device TDA54 --context mcu0 --part Default --package AMW --output generated/  ../example.syscfg
 
 #
 # Generation of boot image which can be loaded by Secondary Boot Loader (SBL)
@@ -272,22 +272,22 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 
 BOOTIMAGE_CERT_KEY=$(APP_SIGNING_KEY)
 
-BOOTIMAGE_CORE_ID_dmcu0-m55    = 0
-BOOTIMAGE_CORE_ID_mcu0-m55     = 1
-BOOTIMAGE_CORE_ID_mcu1-m55     = 2
-BOOTIMAGE_CORE_ID_mcu2-m55     = 3
-BOOTIMAGE_CORE_ID_mcu3-m55     = 4
-BOOTIMAGE_CORE_ID_mcu4-m55     = 5
-BOOTIMAGE_CORE_ID_rmcu0-0-r52p = 6
-BOOTIMAGE_CORE_ID_rmcu0-1-r52p = 7
-BOOTIMAGE_CORE_ID_rmcu1-0-r52p = 8
-BOOTIMAGE_CORE_ID_rmcu1-1-r52p = 9
-BOOTIMAGE_CORE_ID_rmcu2-0-r52p = 10
-BOOTIMAGE_CORE_ID_rmcu2-1-r52p = 11
-BOOTIMAGE_CORE_ID_c76ss0-0     = 12
-BOOTIMAGE_CORE_ID_c76ss0-1     = 13
-BOOTIMAGE_CORE_ID_c76ss0-2     = 14
-BOOTIMAGE_CORE_ID_c76ss0-3     = 15
+BOOTIMAGE_CORE_ID_dmcu0        = 0
+BOOTIMAGE_CORE_ID_mcu0         = 1
+BOOTIMAGE_CORE_ID_mcu1         = 2
+BOOTIMAGE_CORE_ID_mcu2         = 3
+BOOTIMAGE_CORE_ID_mcu3         = 4
+BOOTIMAGE_CORE_ID_mcu4         = 5
+BOOTIMAGE_CORE_ID_rmcu0_0      = 6
+BOOTIMAGE_CORE_ID_rmcu0_1      = 7
+BOOTIMAGE_CORE_ID_rmcu1_0      = 8
+BOOTIMAGE_CORE_ID_rmcu1_1      = 9
+BOOTIMAGE_CORE_ID_rmcu2_0      = 10
+BOOTIMAGE_CORE_ID_rmcu2_1      = 11
+BOOTIMAGE_CORE_ID_dsp0         = 12
+BOOTIMAGE_CORE_ID_dsp1         = 13
+BOOTIMAGE_CORE_ID_dsp2         = 14
+BOOTIMAGE_CORE_ID_dsp3         = 15
 SBL_RUN_ADDRESS=0x43C00000
 SBL_DEV_ID=55
 
@@ -302,13 +302,13 @@ else
 endif
 
 MULTI_CORE_IMAGE_PARAMS = \
-	$(BOOTIMAGE_RPRC_NAME)@$(BOOTIMAGE_CORE_ID_mcu0-m55) \
+	$(BOOTIMAGE_RPRC_NAME)@$(BOOTIMAGE_CORE_ID_mcu0) \
 
 MULTI_CORE_IMAGE_PARAMS_XIP = \
-	$(BOOTIMAGE_RPRC_NAME_XIP)@$(BOOTIMAGE_CORE_ID_mcu0-m55) \
+	$(BOOTIMAGE_RPRC_NAME_XIP)@$(BOOTIMAGE_CORE_ID_mcu0) \
 
 $(BOOTIMAGE_NAME): $(OUTNAME)
-	@echo  Boot image: tda54:mcu0-m55:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ ...
+	@echo  Boot image: tda54:mcu0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ ...
 ifneq ($(OS),Windows_NT)
 	$(CHMOD) a+x $(XIPGEN_CMD)
 endif
@@ -325,9 +325,9 @@ endif
 	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 0  --loadaddr 84000000 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME_HS_FS) --keyversion $(VERSION)
 	$(RM) $(BOOTIMAGE_RPRC_NAME_TMP)
 	$(RM) $(BOOTIMAGE_TEMP_OUT_FILE)
-	@echo  Boot image: tda54:mcu0-m55:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ Done !!!
+	@echo  Boot image: tda54:mcu0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ Done !!!
 	@echo  .
-	@echo  Boot image: tda54:mcu0-m55:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS_FS) Done !!!
+	@echo  Boot image: tda54:mcu0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS_FS) Done !!!
 	@echo  .
 
 $(BOOTIMAGE_NAME_HS): $(BOOTIMAGE_NAME)
@@ -347,7 +347,7 @@ else
 	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 0  --loadaddr 84000000 --key $(APP_SIGNING_KEY) --enc y --enckey $(APP_ENCRYPTION_KEY) --output $(BOOTIMAGE_NAME_HS) --keyversion $(VERSION)
 	$(RM) $(BOOTIMAGE_NAME)-enc
 endif
-	@echo  Boot image: tda54:mcu0-m55:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS) Done !!!
+	@echo  Boot image: tda54:mcu0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS) Done !!!
 	@echo  .
 endif
 -include $(addprefix $(OBJDIR)/, $(DEPS))
