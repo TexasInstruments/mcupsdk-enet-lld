@@ -38,7 +38,8 @@ ENTRY(_c_int00)
 
 MEMORY {
 
-	DDR : ORIGIN =  0x80000000, LENGTH = 0x2000000
+	DDR : ORIGIN =  0x80000000, LENGTH = 0x1FE0000
+	DDR_DMA : ORIGIN =  0x81FE0000, LENGTH = 0x20000
 
 	/* shared memory segments */
 	/* On A53,
@@ -87,4 +88,8 @@ SECTIONS {
         KEEP(*(.stack))
         . = . + __TI_STACK_SIZE;
     } > DDR
+
+    .enet_dma_mem (NOLOAD) : {
+        *(*ENET_DMA_PKT_MEMPOOL)
+     } > DDR_DMA
 }

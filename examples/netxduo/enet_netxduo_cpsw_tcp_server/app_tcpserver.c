@@ -66,13 +66,16 @@
 #error "This example does not support more than one Netx instance."
 #endif
 
+#if (NETXDUO_IF_COUNT > 1u)
+#error "This example does not support more than one interface."
+#endif
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define PACKET_SIZE  1536
-#define POOL_SIZE    ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_RX_PKT + ENET_SYSCFG_TOTAL_NUM_TX_PKT))
+#define PACKET_SIZE                    (1536u)
+#define POOL_SIZE                      ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_RX_PKT + ENET_SYSCFG_TOTAL_NUM_TX_PKT))
 
 #define IP_THREAD_STACK_SIZE           (8192u)
 #define IP_ARP_THREAD_STACK_SIZE       (8192u)
@@ -90,7 +93,8 @@ static const uint8_t BROADCAST_MAC_ADDRESS[ENET_MAC_ADDR_LEN] = { 0xFF, 0xFF, 0x
 
 static uint8_t gIpThreadStack[IP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
 static uint8_t gIpArpThreadStack[IP_ARP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
-static uint8_t gPoolMem[POOL_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
+static uint8_t gPoolMem[POOL_SIZE]__attribute__ ((aligned(ENETDMA_CACHELINE_ALIGNMENT), section(".bss:ENET_DMA_PKT_MEMPOOL")));
+
 
 static NX_PACKET_POOL gPacketPool;
 static NX_IP gIp;
@@ -111,35 +115,28 @@ int netxduo_cpsw_main(ULONG arg)
     ULONG ipAddr;
     ULONG netMask;
     Enet_MacPort macPort;
+    ULONG actual_status;
     uint32_t rxChCnt;
     uint32_t txChCnt;
-    const char *pIfName;
-    size_t ifIx;
-    size_t dfltIfIx;
-    ULONG actual_status;
-    nx_enet_drv_rx_ch_hndl_t ifRxChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
-    nx_enet_drv_tx_ch_hndl_t ifTxChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
-    uint32_t chIds[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
-    nx_enet_drv_rx_ch_hndl_t rxChs[ENET_SYSCFG_RX_FLOWS_NUM];
-    nx_enet_drv_tx_ch_hndl_t txChs[ENET_SYSCFG_TX_CHANNELS_NUM];
+    nx_enet_drv_rx_ch_hndl_t rxChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    nx_enet_drv_tx_ch_hndl_t txChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    const uint32_t *rxChIds;
+    const uint32_t *txChIds;
     EnetApp_GetMacAddrOutArgs outArgs;
     bool isLinked;
     int32_t status = ENET_SOK;
 
-    Drivers_open();
-    Board_driversOpen();
 
     DebugP_log("=============================\r\n");
     DebugP_log("   CPSW NETXDUO TCP SERVER   \r\n");
     DebugP_log("=============================\r\n");
 
-    EnetApp_driverInit();
 
     EnetApp_getEnetInstInfo(CONFIG_ENET_CPSW0, &enetType, &instId);
 
     EnetAppUtils_enableClocks(enetType, instId);
-    EnetApp_driverInit();
 
+    EnetApp_driverInit();
     status = EnetApp_driverOpen(enetType, instId);
     DebugP_assert(status == ENET_SOK);
 
@@ -147,59 +144,47 @@ int netxduo_cpsw_main(ULONG arg)
     EnetApp_addMCastEntry(enetType, instId, EnetSoc_getCoreId(), BROADCAST_MAC_ADDRESS, CPSW_ALE_ALL_PORTS_MASK);
 
 
+    /* Initialize the NetX system.  */
+    nx_system_initialize();
+
+    /* Create a packet pool.  */
+    status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
+    EnetAppUtils_assert(status == NX_SUCCESS);
+
+
     /* Allocate NetX Rx channel and corresponding buffers. */
-    for(size_t k = 0u; k < ENET_SYSCFG_RX_FLOWS_NUM; k++) {
+    NetxEnetApp_getAllRxChIDs(&rxChIds, &rxChCnt);
+    for(size_t k = 0u; k < rxChCnt; k++) {
 
         EnetApp_GetDmaHandleInArgs inArgs = {0};
         EnetApp_GetRxDmaHandleOutArgs outArgs;
 
-        EnetApp_getRxDmaHandle(k, &inArgs, &outArgs);
+        EnetApp_getRxDmaHandle(rxChIds[k], &inArgs, &outArgs);
 
         EnetAppUtils_assert(outArgs.hRxCh != NULL);
-        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &rxChs[k]);
+        NetxEnetDriver_allocRxCh(outArgs.hRxCh, outArgs.maxNumRxPkts, &gPacketPool, &rxChs[k]);
     }
 
     /* Allocate NetX Tx channel and corresponding buffers. */
-    for (size_t k = 0u; k < ENET_SYSCFG_TX_CHANNELS_NUM; k++) {
+    NetxEnetApp_getAllTxChIDs(&txChIds, &txChCnt);
+    for (size_t k = 0u; k < txChCnt; k++) {
 
         EnetApp_GetDmaHandleInArgs inArgs = {0};
         EnetApp_GetTxDmaHandleOutArgs outArgs;
 
-        EnetApp_getTxDmaHandle(k, &inArgs, &outArgs);
+        EnetApp_getTxDmaHandle(txChIds[k], &inArgs, &outArgs);
 
         EnetAppUtils_assert(outArgs.hTxCh != NULL);
         NetxEnetDriver_allocTxCh(outArgs.hTxCh, outArgs.maxNumTxPkts, &txChs[k]);
     }
 
-    /* Allocate network interfaces and bind to corresponding DMA channels. */
-    dfltIfIx = NetxEnetApp_getDefaultIfIdx();
-    for (size_t ifCtr = 0u; ifCtr < NETXDUO_IF_COUNT; ifCtr++) {
-
-        ifIx = ifCtr == 0u ? dfltIfIx : (dfltIfIx == 0) ? 1 : 0;
-        pIfName = ifCtr == 0u ? "PRI" : "SEC";
-
-        NetxEnetApp_getRxChIDs(0, 0, &rxChCnt, &chIds[0]);
-        for (size_t k = 0u; k < rxChCnt; k++) {
-            ifRxChs[k] = rxChs[chIds[k]];
-        }
-
-        EnetApp_getMacAddress(chIds[0], &outArgs);
-
-        NetxEnetApp_getTxChIDs(0, 0, &txChCnt, &chIds[0]);
-        for (size_t k = 0u; k < txChCnt; k++) {
-            ifTxChs[k] = txChs[chIds[k]];
-        }
-
-        macPort = NetxEnetApp_getMacPort(0, ifIx);
-
-        EnetAppUtils_assert(ifIx < outArgs.macAddressCnt);
-        NetxEnetDriver_allocIf(pIfName, macPort, &outArgs.macAddr[ifIx][0], &ifRxChs[0], rxChCnt, ifTxChs, txChCnt);
-    }
+    /* Allocate NetX interface and bind to DMA channels. */
+    macPort = NetxEnetApp_getMacPort(0, 0);
+    EnetApp_getMacAddress(rxChIds[0], &outArgs);
+    NetxEnetDriver_allocIf("PRI", macPort, &outArgs.macAddr[0][0], &rxChs[0], rxChCnt, txChs, txChCnt);
 
 
     /* Wait for the link on default interface to come up. */
-    macPort = NetxEnetApp_getMacPort(0, dfltIfIx);
-    NetxEnetApp_getEnetTypeAndIdFromIfIdx(0, dfltIfIx, &enetType, &instId);
     hEnet = Enet_getHandle(enetType, instId);
 
     isLinked = false;
@@ -211,13 +196,6 @@ int netxduo_cpsw_main(ULONG arg)
         tx_thread_sleep(2u * TX_TIMER_TICKS_PER_SECOND);
     }
 
-
-    /* Initialize the NetX system.  */
-    nx_system_initialize();
-
-    /* Create a packet pool.  */
-    status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
-    EnetAppUtils_assert(status == NX_SUCCESS);
 
 
     /* Create an IP instance.  */
@@ -272,7 +250,7 @@ int netxduo_cpsw_main(ULONG arg)
 
 
     /* Create a socket.  */
-    status =  nx_tcp_socket_create(&gIp, &gServerSocket, "Server Socket", NX_IP_NORMAL, NX_FRAGMENT_OKAY, NX_IP_TIME_TO_LIVE, 200, NX_NULL, NX_NULL);
+    status =  nx_tcp_socket_create(&gIp, &gServerSocket, "Server Socket", NX_IP_NORMAL, NX_FRAGMENT_OKAY, NX_IP_TIME_TO_LIVE, 8000, NX_NULL, NX_NULL);
     EnetAppUtils_assert(status == NX_SUCCESS);
 
     DebugP_log("Socket created\r\n");
