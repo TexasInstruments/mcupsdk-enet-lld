@@ -37,6 +37,8 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
+void NetxEnetApp_getAllRxChIDs(const uint32_t **ppRxChs, uint32_t *pRxChCount);
+void NetxEnetApp_getAllTxChIDs(const uint32_t **ppTxChs, uint32_t *pTxChCount);
 void NetxEnetApp_getRxChIDs(uint32_t netxIx, uint32_t ifIx, uint32_t* pRxChIdCount, uint32_t rxChIdList[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL]);
 void NetxEnetApp_getTxChIDs(uint32_t netxIx, uint32_t ifIx, uint32_t* pTxChIdCount, uint32_t txChIdList[ENET_NETX_MAX_TX_CHANNELS_PER_PHERIPHERAL]);
 void NetxEnetApp_getEnetTypeAndIdFromIfIdx(uint32_t netxIx, uint32_t ifIx, Enet_Type *pEnetType, uint32_t *pInstId);

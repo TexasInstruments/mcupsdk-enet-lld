@@ -58,6 +58,21 @@
 /*                            Function Declaration                            */
 /* ========================================================================== */
 
+void NetxEnetApp_getAllRxChIDs(const uint32_t **ppRxChs, uint32_t *pRxChCount)
+{
+    static const uint32_t rxChs[] = `netxduo_interface_module.getAllRxChannels()`;
+
+    *pRxChCount = sizeof(rxChs) / sizeof(rxChs[0]);
+    *ppRxChs = &rxChs[0];
+}
+
+void NetxEnetApp_getAllTxChIDs(const uint32_t **ppTxChs, uint32_t *pTxChCount)
+{
+    static const uint32_t txChs[] = `netxduo_interface_module.getAllTxChannels()`;
+
+    *pTxChCount = sizeof(txChs) / sizeof(txChs[0]);
+    *ppTxChs = &txChs[0];
+}
 
 void NetxEnetApp_getRxChIDs(uint32_t netxIx, uint32_t ifIx, uint32_t* pRxChIdCount, uint32_t rxChIdList[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL])
 {
