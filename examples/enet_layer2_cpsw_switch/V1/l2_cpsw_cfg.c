@@ -54,6 +54,12 @@
 #define ENET_TEST_POLICER_INGRESS_PORT      ENET_MAC_PORT_1
 #define ENET_TEST_POLICER_MBPS(x)           ((x) * 1000000U)
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+#define MIN_FRAG_SIZE                            (1)
+#define PREMPTIVE_TRAFFIC                        (1)
+#define EXPRESS_TRAFFIC                          (0)
+#endif
+
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -62,15 +68,56 @@
 static uint8_t testSrcAddr[ENET_MAC_ADDR_LEN] =
 { 0x02, 0x00, 0x00, 0x00, 0x00, 0x08 };
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+static EnetApp_IET_Config gEnetApp_IETCfg = {
+
+/* If enabled does IET verfication before enabling iet*/
+    .mac_verify_enable = false, 
+/* 0 -> Express Traffic and 1 -> Premptable Traffic*/
+    .queueMode = 
+    {
+    EXPRESS_TRAFFIC,
+    PREMPTIVE_TRAFFIC,
+    EXPRESS_TRAFFIC,
+    PREMPTIVE_TRAFFIC,
+    EXPRESS_TRAFFIC,
+    PREMPTIVE_TRAFFIC,
+    EXPRESS_TRAFFIC,
+    PREMPTIVE_TRAFFIC
+    },
+/* Set minimum fragment size */
+ .minFragSize =  MIN_FRAG_SIZE,
+};
+#endif
+
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
 static EnetApp_PerCtxt * EnetApp_getPerCtxt(Enet_Type enetType,
                                             uint32_t instId);
+
+
+static EnetMacPort_PreemptVerifyStatus EnetApp_IET_doIetVerification(Enet_Handle hEnet,
+                                                                     uint32_t coreId,
+                                                                     Enet_MacPort macPort);
+
+static int32_t EnetApp_IET_handleLinkUp(Enet_Handle hEnet,
+                                        uint32_t coreId,
+                                        Enet_MacPort macPort,
+                                        uint32_t minFragSize,
+                                        bool mac_verify_enable,
+                                        uint32_t *queueMode);
+
+static int32_t EnetApp_IET_handleLinkDown(Enet_Handle hEnet,
+                                          uint32_t coreId,
+                                          Enet_MacPort macPort);
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
+EnetApp_IET_Params gEnetAppIETObj;
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -110,6 +157,10 @@ void EnetApp_portLinkStatusChangeCb(Enet_MacPort macPort,
 {
     EnetAppUtils_print("MAC Port %u: link %s\r\n",
                        ENET_MACPORT_ID(macPort), isLinkUp ? "up" : "down");
+
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+    EnetApp_IET_notifyLinkChange(macPort,isLinkUp);
+#endif
 }
 
 void EnetApp_mdioLinkStatusChange(Cpsw_MdioLinkStateChangeInfo *info,
@@ -172,6 +223,15 @@ static int32_t EnetApp_setCutThruParams(EnetApp_PerCtxt *perCtxt)
     return status;
 }
 #endif
+
+void EnetApp_IET_init(const EnetApp_IET_Config *ietCfg, Enet_Handle hEnet, uint32_t coreId)
+{
+    gEnetAppIETObj.coreId = coreId;
+    gEnetAppIETObj.hEnet = hEnet;
+    memcpy(gEnetAppIETObj.queueMode, ietCfg->queueMode, CPSW_MACPORT_FIFO);
+    gEnetAppIETObj.minFragSize = ietCfg->minFragSize;
+    gEnetAppIETObj.mac_verify_enable = ietCfg->mac_verify_enable;
+}
 
 int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
                            uint32_t numPerCtxts)
@@ -258,6 +318,18 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
         }
     }
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+    if (status == ENET_SOK)
+    {
+        for (i = 0U; i < numPerCtxts; i++)
+        {
+            EnetApp_PerCtxt *perCtxt = &perCtxts[i];
+            perCtxt->ietCfg = gEnetApp_IETCfg;
+            EnetApp_IET_init(&perCtxt->ietCfg, perCtxt->hEnet, gEnetApp.coreId);
+        }
+    }
+#endif
+
 #if ENET_CFG_IS_ON(CPSW_CUTTHRU)
     if(status == ENET_SOK)
     {
@@ -272,6 +344,7 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
         }
     }
 #endif
+
 
     if (status == ENET_SOK)
     {
@@ -328,7 +401,7 @@ static EnetApp_PerCtxt * EnetApp_getPerCtxt(Enet_Type enetType,
 }
 
 void EnetApp_close(EnetApp_PerCtxt *perCtxts,
-                         uint32_t numPerCtxts)
+                   uint32_t numPerCtxts)
 {
     uint32_t i;
 
@@ -399,7 +472,7 @@ void EnetApp_close(EnetApp_PerCtxt *perCtxts,
 }
 
 void EnetApp_printStats(EnetApp_PerCtxt *perCtxts,
-                              uint32_t numPerCtxts)
+                        uint32_t numPerCtxts)
 {
     Enet_IoctlPrms prms;
     Enet_MacPort macPort;
@@ -446,7 +519,7 @@ void EnetApp_printStats(EnetApp_PerCtxt *perCtxts,
 }
 
 void EnetApp_resetStats(EnetApp_PerCtxt *perCtxts,
-                              uint32_t numPerCtxts)
+                        uint32_t numPerCtxts)
 {
     Enet_IoctlPrms prms;
     Enet_MacPort macPort;
@@ -486,7 +559,7 @@ void EnetApp_resetStats(EnetApp_PerCtxt *perCtxts,
 }
 
 void EnetApp_showMacAddrs(EnetApp_PerCtxt *perCtxts,
-                                uint32_t numPerCtxts)
+                          uint32_t numPerCtxts)
 {
     uint32_t i;
 
@@ -615,4 +688,164 @@ void EnetApp_triggerReset(EnetApp_PerCtxt *perCtxt)
     /* Saving Enet handle context and closing it*/
     status = Enet_hardResetCpsw(perCtxt->hEnet, enetType, instId, &hardResetCpsw);
     EnetAppUtils_assert(status == ENET_SOK);
+}
+
+void  EnetApp_IET_notifyLinkChange(const Enet_MacPort macPort, const bool isLinkUp)
+{
+   int32_t status = ENET_SOK;
+   if(isLinkUp == true)
+   {
+        status = EnetApp_IET_handleLinkUp(gEnetAppIETObj.hEnet, gEnetAppIETObj.coreId, macPort, gEnetAppIETObj.minFragSize, gEnetAppIETObj.mac_verify_enable , gEnetAppIETObj.queueMode);
+        ENETTRACE_ERR_IF((status != ENET_SOK), "Failed to handle IET Link Up");
+
+   }
+   else
+   {
+        status = EnetApp_IET_handleLinkDown(gEnetAppIETObj.hEnet, gEnetAppIETObj.coreId, macPort);
+        ENETTRACE_ERR_IF((status != ENET_SOK), "Failed to handle IET Link Down");
+        
+   }
+}
+
+static int32_t EnetApp_IET_handleLinkUp(Enet_Handle hEnet,
+                                        uint32_t coreId,
+                                        Enet_MacPort macPort,
+                                        uint32_t minFragSize,
+                                        bool mac_verify_enable,
+                                        uint32_t *queueMode)
+{
+    int32_t status = ENET_SOK;
+    EnetMacPort_PreemptVerifyStatus verifyStatus;
+    EnetMacPort_SetPreemptMinFragSizeInArgs fragSizeInArgs;
+    EnetMacPort_SetPreemptQueueInArgs queuePreemptInArgs;
+    Enet_IoctlPrms prms;
+    EnetMacPort_GenericInArgs fpe;
+    uint32_t i;
+
+    /*
+    If mac_verify_enable is false then without verification, we enable the iet assuming other side supports iet
+    */
+    if(mac_verify_enable == TRUE)
+    {
+       verifyStatus =  EnetApp_IET_doIetVerification(hEnet,coreId, macPort);
+    }
+    else
+    {
+        /* Disable preemption verification */
+        ENET_IOCTL_SET_IN_ARGS(&prms, &fpe);
+        ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_DISABLE_PREEMPT_VERIFICATION, &prms, status);
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_ERR("Failed to disable macport IET verification");
+        }
+        verifyStatus = ENET_MAC_VERIFYSTATUS_DISABLED;
+    }
+    
+    if((verifyStatus == ENET_MAC_VERIFYSTATUS_DISABLED) || ((verifyStatus == ENET_MAC_VERIFYSTATUS_SUCCEEDED)))
+    {
+        /* Enable preemption */
+        fpe.macPort = macPort;
+        ENET_IOCTL_SET_IN_ARGS(&prms, &fpe);
+        ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_ENABLE_PREEMPTION, &prms, status);
+
+        fragSizeInArgs.macPort = macPort;
+        fragSizeInArgs.preemptMinFragSize = minFragSize;
+        ENET_IOCTL_SET_IN_ARGS(&prms, &fragSizeInArgs);
+        ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE, &prms, status);
+        queuePreemptInArgs.macPort = macPort;
+        for(i = 0U; i < CPSW_MACPORT_FIFO; i++)
+        {
+            if (queueMode[i] == 0)
+            {
+                queuePreemptInArgs.queuePreemptCfg.preemptMode[i] = ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS;
+            }
+            else
+            {
+                queuePreemptInArgs.queuePreemptCfg.preemptMode[i] = ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT;
+            }
+        }
+        ENET_IOCTL_SET_IN_ARGS(&prms, &queuePreemptInArgs);
+        ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE, &prms, status);    
+    }
+
+    return status;
+}
+
+static int32_t EnetApp_IET_handleLinkDown(Enet_Handle hEnet,
+                                          uint32_t coreId,
+                                          Enet_MacPort macPort)
+{
+    EnetMacPort_GenericInArgs fpe;
+    Enet_IoctlPrms prms; 
+    int32_t status = ENET_SOK;
+    fpe.macPort = macPort;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &fpe);
+    ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_DISABLE_PREEMPTION, &prms, status);
+    return status;
+}
+
+/*
+ * Function to Poll the Verify status and restart verification.
+ * Application needs to call this after every link-up/link-down.
+ * Verify timeout is set based on the link-speed from ENET handle.
+ */
+static EnetMacPort_PreemptVerifyStatus EnetApp_IET_doIetVerification(Enet_Handle hEnet,
+                                                                     uint32_t coreId,
+                                                                     Enet_MacPort macPort)
+{
+    uint32_t try = ENET_NUM_IET_VERIFY_ATTEMPTS;
+    int32_t status = ENET_SOK;
+    EnetMacPort_GenericInArgs fpe;
+    Enet_IoctlPrms prms;
+    EnetMacPort_PreemptVerifyStatus verifyStatus;
+
+    fpe.macPort = macPort;
+    do{
+        ENET_IOCTL_SET_IN_ARGS(&prms, &fpe);
+        ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_ENABLE_PREEMPT_VERIFICATION , &prms, status);
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_ERR("Failed to start IET verification\n");
+            break;
+        }
+        /*
+         * Since both side might
+         * take variable setup/config time, need to Wait for
+         * additional time. Chose 50 msec through trials
+         */
+        ClockP_usleep(50000U);
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &fpe, &verifyStatus);
+        ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS , &prms, status);
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_INFO("Failed to read IET verify status");
+            break;
+        }
+        if(verifyStatus == ENET_MAC_VERIFYSTATUS_SUCCEEDED)
+        {
+            ENETTRACE_INFO("IET verify Success");
+            break;
+        }
+        else if(verifyStatus == ENET_MAC_VERIFYSTATUS_FAILED )
+        {
+            ENETTRACE_INFO("IET verify failed, trying again");
+        }
+        else if(verifyStatus == ENET_MAC_VERIFYSTATUS_RXRESPOND_ERROR )
+        {
+            ENETTRACE_INFO("IET MAC respond error");
+            break;
+        }
+        else if(verifyStatus == ENET_MAC_VERIFYSTATUS_RXVERIFY_ERROR )
+        {
+            ENETTRACE_INFO("IET MAC verify error");
+            break;
+        }
+        try--;
+    } while(try > 0);
+
+    if(try == 0)
+    {
+        ENETTRACE_WARN("IET verify timeout");
+    }
+    return verifyStatus;
 }

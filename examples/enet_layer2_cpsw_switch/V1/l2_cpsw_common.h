@@ -69,19 +69,22 @@ extern "C" {
 /* ========================================================================== */
 
 /* Max number of ports that can be tested with this app */
-#define ENETAPP_PER_MAX                           (1U)
+#define ENETAPP_PER_MAX                            (1U)
 
 /* Max number of ports supported per context */
 #define ENETAPP_PORT_MAX                           (2U)
 
 /* Task stack size */
-#define ENETAPP_TASK_STACK_SZ                     (10U * 1024U)
+#define ENETAPP_TASK_STACK_SZ                      (10U * 1024U)
 
 /* 100-ms periodic tick */
-#define ENETAPP_PERIODIC_TICK_MS                  (100U)
+#define ENETAPP_PERIODIC_TICK_MS                   (100U)
 
 /*Counting Semaphore count*/
-#define COUNTING_SEM_COUNT                       (10U)
+#define COUNTING_SEM_COUNT                         (10U)
+
+/*! Number of FIFO queues per macPort */
+#define CPSW_MACPORT_FIFO                          (8)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -105,6 +108,44 @@ typedef struct EnetApp_TestParams_s
     /* Name of this port to be used for logging */
     char *name;
 } EnetApp_TestParams;
+
+typedef struct EnetApp_IET_Config_s
+{
+
+    /*! Minimum Fragment size */
+    uint32_t minFragSize;
+
+    /*! iet verification enabled/disabled */
+    bool mac_verify_enable;
+
+    /*! Traffic mode for each of the FIFO queues */
+    uint32_t queueMode[CPSW_MACPORT_FIFO];
+
+} EnetApp_IET_Config;
+
+/*!
+ * \brief IET params passed from application.
+ */
+
+typedef struct EnetApp_IET_Params_s
+{
+
+    /*! Minimum Fragment size */
+    uint32_t minFragSize;
+
+    /*! iet verification enabled/disabled */
+    bool mac_verify_enable;
+
+    /*! Traffic mode for each of the FIFO queues */
+    uint32_t queueMode[CPSW_MACPORT_FIFO];
+
+    /*! Ethernet handle*/
+    Enet_Handle hEnet;
+
+    /*! Caller core id */
+    uint32_t coreId;
+
+} EnetApp_IET_Params;
 
 /* Context of a peripheral/port */
 typedef struct EnetApp_PerCtxt_s
@@ -158,6 +199,9 @@ typedef struct EnetApp_PerCtxt_s
 
     /* Core key returned by Enet RM after attaching this core */
     uint32_t coreKey;
+
+    /* IET configuration passed from application */
+    EnetApp_IET_Config ietCfg;
 } EnetApp_PerCtxt;
 
 typedef struct EnetApp_Obj_s

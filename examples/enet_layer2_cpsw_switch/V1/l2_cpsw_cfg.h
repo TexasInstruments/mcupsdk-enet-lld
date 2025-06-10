@@ -47,6 +47,9 @@ extern "C" {
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
+/*! No of Iteration to run to verify IET capability before timeout */
+#define ENET_NUM_IET_VERIFY_ATTEMPTS               (20U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
@@ -83,6 +86,30 @@ void EnetApp_showMacAddrs(EnetApp_PerCtxt *perCtxts,
 int32_t EnetApp_waitForLinkUp(EnetApp_PerCtxt *perCtxt);
 
 void EnetApp_setCpswPolicer(EnetApp_PerCtxt *perCtxt);
+
+
+/*!
+ * \brief Notify Link Up down Event.
+ *
+ * Callback function to notify about mac port link up/down.
+ *
+ * \param macPort    macPort on which link changes is detected
+ * \param isLinkUp   link is up or down
+ */
+void  EnetApp_IET_notifyLinkChange(const Enet_MacPort macPort, 
+                                   const bool isLinkUp);
+
+
+/*!
+ * \brief API to updated the global object with params
+ 
+ * \param ietCfg    Params passed from application layer
+ * \param hEnet     Ethernet handle
+ * \param coreId    caller core id
+ */
+void EnetApp_IET_init(const EnetApp_IET_Config *ietCfg, 
+                      Enet_Handle hEnet, 
+                      uint32_t coreId);                                
 
 /* ========================================================================== */
 /*                            Global Variables                                */

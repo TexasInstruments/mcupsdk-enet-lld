@@ -358,6 +358,7 @@ static Enet_IoctlValidate gEnetMacPort_ioctlValidate[] =
                           sizeof(EnetMacPort_GetCreditBasedShaperInArgs),
                           sizeof(uint64_t)),
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_IET_RELEASE_PREEMPT_TRAFFIC,
                           sizeof(EnetMacPort_GenericInArgs),
                           0U),
@@ -409,6 +410,8 @@ static Enet_IoctlValidate gEnetMacPort_ioctlValidate[] =
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_ENABLE_PREEMPTION,
                           sizeof(EnetMacPort_GenericInArgs),
                           0U),
+#endif
+
 #if ENET_CFG_IS_ON(CPSW_CUTTHRU)
     ENET_IOCTL_VALID_PRMS(ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS,
                           sizeof(EnetMacPort_CutThruParams),

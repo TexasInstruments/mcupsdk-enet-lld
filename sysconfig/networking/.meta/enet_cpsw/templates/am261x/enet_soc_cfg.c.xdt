@@ -159,12 +159,13 @@ CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     .enetMod =                                                        \
     {                                                                 \
         .name       = "cpsw3G.macport" #n,                            \
-        .physAddr   = (CSL_CPSW0_U_BASE + CPSW_NU_OFFSET),         \
-        .physAddr2  = (CSL_CPSW0_U_BASE + CPSW_SGMII0_OFFSET(0U)), \
+        .physAddr   = (CSL_CPSW0_U_BASE + CPSW_NU_OFFSET),            \
+        .physAddr2  = (CSL_CPSW0_U_BASE + CPSW_SGMII0_OFFSET(0U)),    \
         .features   = (ENET_FEAT_BASE |                               \
                        CPSW_MACPORT_FEATURE_EST |                     \
                        CPSW_MACPORT_FEATURE_SGMII |                   \
-                       CPSW_MACPORT_FEATURE_INTERVLAN),               \
+                       CPSW_MACPORT_FEATURE_INTERVLAN |               \
+                       CPSW_MACPORT_FEATURE_IET ),                    \
         .errata     = ENET_ERRATA_NONE,                               \
         .open       = &CpswMacPort_open,                              \
         .rejoin     = &CpswMacPort_rejoin,                            \
@@ -196,7 +197,8 @@ Cpsw_Obj gEnetSoc_cpsw3g =
         .features     = (ENET_FEAT_BASE |
                          CPSW_FEATURE_EST | 
                          CPSW_FEATURE_INTERVLAN |
-                         CPSW_FEATURE_CUTTHRU),
+                         CPSW_FEATURE_CUTTHRU |
+                         CPSW_FEATURE_IET ),
         .errata       = ENET_ERRATA_NONE,
         .initCfg      = &Cpsw_initCfg,
         .open         = &Cpsw_open,
