@@ -167,7 +167,7 @@
         </file>
         <file path="../../../..//autoamp_avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../..//default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>

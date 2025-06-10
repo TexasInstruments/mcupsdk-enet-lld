@@ -267,20 +267,6 @@ static int receive_cb(uint8_t *payload, int payload_size,
     return 0;
 }
 
-static double gen_new_sample_period_randomly(float basefreq,
-                    float freq_min, float freq_max)
-{
-    double period = 0;
-    float range = (freq_max - freq_min);
-    float div = RAND_MAX / range;
-    float newfreq = freq_min + (rand() / div);
-
-    period = (double)1000000000/(double)newfreq;
-    // UB_LOG(UBL_INFO,"%s: freq range (%lf %lf) - new freq: %lf\n",
-    //__func__, freq_min, freq_max, newfreq);
-    return period;
-}
-
 /* This example supports only AVBTP_CRF_TYPE_AUDIO_SAMPLE */
 static int start_crf(crfdata_t *crfdata)
 {
@@ -353,7 +339,7 @@ static int start_crf(crfdata_t *crfdata)
                 CB_SEM_WAIT(&gCRF_Tick);
                 if (MCC_getTimestamp(hMCC, &crfTimestamps[i]) == 0)
                 {
-                    /* Interpolate the timestamps. */
+                    /* Extrapolate the timestamps. */
                     for (int j = 0; j < TS_PER_AVTPDU/2; j++)
                     {
                         crfdata->array_ts[3*i+j] = crfTimestamps[i] + (j * crfts_period) + 100*UB_MSEC_NS;
@@ -398,39 +384,8 @@ end:
     return 0;
 }
 
-#ifndef CRF_HAVE_NO_SIGNAL
-#include <signal.h>
-static void signal_handler(int sig)
-{
-    UB_LOG(UBL_INFO,"crf_testclient:%s:sig=%d\n",__func__,sig);
-    s_running = false;
-    return;
-}
 
-static void register_signal(void)
-{
-    struct sigaction sigact;
-    memset(&sigact, 0, sizeof(sigact));
-    sigact.sa_handler=signal_handler;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
-}
-#define CRF_REGISTER_SIGNAL register_signal()
-#else //!CRF_HAVE_NO_SIGNAL
-#define CRF_REGISTER_SIGNAL
-#endif //!CRF_HAVE_NO_SIGNAL
-
-#ifdef CRF_TESTCLIENT_MAIN
-int stop_crfclient()
-{
-    s_running = false;
-    return 0;
-}
-#else //!CRF_TESTCLIENT_MAIN
-#define CRF_TESTCLIENT_MAIN main
-#endif //!CRF_TESTCLIENT_MAIN
-
-int CRF_TESTCLIENT_MAIN(int argc, char *argv[])
+int crf_task(int argc, char *argv[])
 {
     int res = -1;
     bool noubinit = false;
@@ -464,8 +419,6 @@ int CRF_TESTCLIENT_MAIN(int argc, char *argv[])
 
     if(set_options(&crfdata_td, argc, argv))
         goto end;
-
-    CRF_REGISTER_SIGNAL;
 
     if(!crfdata_td.direct){
         UB_LOG(UBL_INFO,"Waiting for avtpd to be ready...\n");

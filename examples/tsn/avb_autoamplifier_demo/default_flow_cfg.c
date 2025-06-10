@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2025
+ *  Copyright (c) Texas Instruments Incorporated 2023
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -36,42 +36,27 @@
 #include <tsn_combase/combase.h>
 #include <nrt_flow/dataflow.h>
 
+
 int EnetApp_lldCfgUpdateCb(cb_socket_lldcfg_update_t *update_cfg)
 {
     if (update_cfg->proto == ETH_P_1588)
     {
         update_cfg->numRxChannels = 1;
         update_cfg->dmaTxChId = ENET_DMA_TX_CH_PTP;
-        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH0;
+        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH_PTP;
         update_cfg->nTxPkts = ENET_DMA_TX_CH_PTP_NUM_PKTS;
-        update_cfg->nRxPkts[0] = ENET_DMA_RX_CH0_NUM_PKTS;
+        update_cfg->nRxPkts[0] = ENET_DMA_RX_CH_PTP_NUM_PKTS;
         update_cfg->pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
-        /* We make the PTP RX DMA channel is shared betweens multiples app,
-         * gptp2d apps is owner of this channel.
-         * The rxDefaultDataCb is called inside gptp task when the packet
-         * does not match any filters on this RX DMA channel.
-         */
-        update_cfg->dmaRxShared = BTRUE;
-        update_cfg->dmaRxOwner = BTRUE;
-        update_cfg->rxDefaultDataCb = rxDefaultDataCb;
-        update_cfg->rxDefaultCbArg = NULL;
     }
     else if (update_cfg->proto == ETH_P_TSN)
     {
         update_cfg->numRxChannels = 1;
         update_cfg->dmaTxChId = ENET_DMA_TX_CH_AVTP;
+        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH_AVTP;
         update_cfg->nTxPkts = ENET_DMA_TX_CH_AVTP_NUM_PKTS;
+        update_cfg->nRxPkts[0] = ENET_DMA_RX_CH_AVTP_NUM_PKTS;
         update_cfg->pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
-
-        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH1;
-        update_cfg->dmaRxOwner = BTRUE; /* avtp now has it own dmaRx */
-    }
-    else if (update_cfg->proto == ETH_P_IPV4)
-    {
-        update_cfg->numRxChannels = 1;
-        /* share the RX Dma channel with PTP */
-        update_cfg->dmaRxChId[0] = ENET_DMA_RX_CH0;
-        update_cfg->dmaRxOwner = BFALSE; /* gptp is RX dma owner */
+        update_cfg->dmaTxShared = BTRUE;
     }
     return 0;
 }

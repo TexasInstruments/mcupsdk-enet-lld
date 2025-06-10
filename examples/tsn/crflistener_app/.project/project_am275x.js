@@ -105,14 +105,12 @@ const defines_r5f = {
         "ENET_ENABLE_PER_CPSW=1",
         'PRINT_FORMAT_NO_WARNING',
         'SITARA',
-        'CRF_TESTCLIENT_MAIN=crf_testclient',
         'NO_GETOPT_LONG=1',
         'UB_LOGCAT=5',
         'AVTP_ENABLED=1',
         'AVTP_HAVE_NO_SIGNAL=1',
         'GPTP_ENABLED=1',
         'AVTP_CRF_LISTENER_ENABLED=1',
-        'CRF_HAVE_NO_SIGNAL=1'
     ],
 };
 

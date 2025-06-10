@@ -101,7 +101,7 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 /* AVTPD is always enabled once AVTP is supported */
 extern int AVTPD_MAIN(int argc, char *argv[]);
 extern int avtp_testclient(int argc, char *argv[]);
-extern int crf_testclient(int argc, char *argv[]);
+extern int crf_task(int argc, char *argv[]);
 extern int acf_testclient(int argc, char *argv[]);
 static void *EnetApp_avtpdTask(void *arg)
 {
@@ -317,7 +317,7 @@ static void *EnetApp_runCrfTalker(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
         "-m", "t", "-v", "110", "-s", stream_id, "-u", NULL}; /* '-u' must be the last */
 
     DPRINT("crf_testclient:talker sid=%s", stream_id);
-    crf_testclient(GetArgc(argv), argv);
+    crf_task(GetArgc(argv), argv);
     return NULL;
 }
 
@@ -354,7 +354,7 @@ static void *EnetApp_runCrfListener(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
         "-m", "l", "-v", "110", "-s", stream_id, "-i", "-u", NULL}; /* '-u' must be the last */
 
     DPRINT("crf_testclient:listener sid=%s", stream_id);
-    crf_testclient(GetArgc(argv), argv);
+    crf_task(GetArgc(argv), argv);
     return NULL;
 }
 
