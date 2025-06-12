@@ -130,6 +130,82 @@ CpswMacPort_Obj gEnetSoc_cpsw3gMacObj[] =
     ENET_SOC_CPSW3G_MACPORT(2),
 };
 
+/* -------------------------------- CPSW 9G --------------------------------- */
+
+const CpswSoc_Cfg gEnetSoc_cpsw9gSocCfg =
+{
+    /* As per the clocking specification the mcu_sysclk0 is 1000MHz with
+     * fixed /3 divider. */
+    .cppiClkFreqHz = 320000000LLU,
+    .dmscDevId = TISCI_DEV_CPSW0,
+    .intrs =
+    {
+        {   /* EVNT_PEND - Event pending interrupt (CPTS) */
+            .intrId     = CPSW_INTR_EVNT_PEND,
+            /* TO DO, no interrupts */
+            .coreIntNum = 15 + 14,
+            // .coreIntNum = `module.getEnetCoreIntNumPrefix()`CPSW0_EVNT_PEND_0,
+            .srcIdx     = ENET_SOC_DIRECT_INTR_SRCIDX_INVALID,
+        },
+        {   /* STATS_PEND - Statistics pending interrupt */
+            .intrId     = CPSW_INTR_STATS_PEND0,
+            // .coreIntNum = `module.getEnetCoreIntNumPrefix()`CPSW0_STAT_PEND_0,
+            .coreIntNum = 15 + 15,
+            .srcIdx     = ENET_SOC_DIRECT_INTR_SRCIDX_INVALID,
+        },
+        {   /* MDIO_PEND - MDIO interrupt */
+            .intrId     = CPSW_INTR_MDIO_PEND,
+            // .coreIntNum = `module.getEnetCoreIntNumPrefix()`CPSW0_MDIO_PEND_0,
+            .coreIntNum = 15 + 16,
+            .srcIdx     = ENET_SOC_DIRECT_INTR_SRCIDX_INVALID,
+        },
+    },
+    /* TO DO, clocks are not given */
+    // .clocks =
+    // {
+    //     .cppiClkId        = TISCI_DEV_CPSW0_CPPI_CLK_CLK,
+    //     .rgmii250MHzClkId = TISCI_DEV_CPSW0_RGMII_MHZ_250_CLK,
+    //     .rgmii50MHzClkId  = TISCI_DEV_CPSW0_RGMII_MHZ_50_CLK,
+    //     .rgmii5MHzClkId   = TISCI_DEV_CPSW0_RGMII_MHZ_5_CLK,
+    // },
+    .txChPeerThreadId = CSL_PSILCFG_DMSS_CPSW2_PSILD_THREAD_OFFSET,
+    .rxChPeerThreadId = CSL_PSILCFG_DMSS_CPSW2_PSILS_THREAD_OFFSET,
+    .txChCount        = CSL_PSILCFG_DMSS_CPSW2_PSILD_THREAD_CNT,
+
+    /* Note- Though CPSW supports 64 distinct flow Ids, there are only
+     * 8 policer/classifier so can effectively assign only 8 flow ids in CPSW3G */
+    .rxFlowCount     = 8U,
+};
+
+/* CPSW_9G MAC port template */
+#define ENET_SOC_CPSW9G_MACPORT(n)                                    \
+{                                                                     \
+    .enetMod =                                                        \
+    {                                                                 \
+        .name       = "cpsw9G.macport" #n,                            \
+        .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),         \
+        .physAddr2  = (CSL_CPSW0_NUSS_BASE + CPSW_SGMII0_OFFSET(0U)), \
+        .errata     = ENET_ERRATA_NONE,                               \
+        .open       = &CpswMacPort_open,                              \
+        .rejoin     = &CpswMacPort_rejoin,                            \
+        .ioctl      = &CpswMacPort_ioctl,                             \
+        .close      = &CpswMacPort_close,                             \
+    },                                                                \
+    .macPort = ENET_MAC_PORT_ ## n,                                   \
+}
+
+/* CPSW_9G MAC ports */
+CpswMacPort_Obj gEnetSoc_cpsw9gMacObj[] =
+{
+    ENET_SOC_CPSW9G_MACPORT(1),
+    ENET_SOC_CPSW9G_MACPORT(2),
+    ENET_SOC_CPSW9G_MACPORT(3),
+    ENET_SOC_CPSW9G_MACPORT(4),
+    ENET_SOC_CPSW9G_MACPORT(5),
+    ENET_SOC_CPSW9G_MACPORT(6),
+    ENET_SOC_CPSW9G_MACPORT(7),
+    ENET_SOC_CPSW9G_MACPORT(8),
+};
 
 /* CPSW 3G Peripheral */
 Cpsw_Obj gEnetSoc_cpsw3g =
@@ -268,14 +344,154 @@ Cpsw_Obj gEnetSoc_cpsw3g =
     },
 };
 
+/* CPSW 9G Peripheral */
+Cpsw_Obj gEnetSoc_cpsw9g =
+{
+    .enetPer =
+    {
+        .name         = "cpsw9g",
+        .enetType     = ENET_CPSW_9G,
+        .instId       = 0U,
+        .magic        = ENET_NO_MAGIC,
+        .physAddr     = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+        .physAddr2    = (CSL_CPSW0_NUSS_BASE + CPSW_NUSS_OFFSET),
+        .errata       = ENET_ERRATA_NONE,
+        .initCfg      = &Cpsw_initCfg,
+        .open         = &Cpsw_open,
+        .rejoin       = &Cpsw_rejoin,
+        .ioctl        = &Cpsw_ioctl,
+        .poll         = &Cpsw_poll,
+        .convertTs    = NULL,
+%if(instance.ExternalPhyMgmtEnable == false){
+        .periodicTick = &Cpsw_periodicTick,
+%} else {
+        .periodicTick = NULL,
+%}
+        .registerEventCb = NULL,
+        .unregisterEventCb = NULL,
+        .close        = &Cpsw_close,
+    },
+
+    /* Host port module object */
+    .hostPortObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.hostport",
+            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+            .features   = ENET_FEAT_BASE,
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &CpswHostPort_open,
+            .rejoin     = &CpswHostPort_rejoin,
+            .ioctl      = &CpswHostPort_ioctl,
+            .close      = &CpswHostPort_close,
+        }
+    },
+
+    /* MAC port module objects */
+    .macPortObj = gEnetSoc_cpsw9gMacObj,
+    .macPortNum = ENET_ARRAYSIZE(gEnetSoc_cpsw9gMacObj),
+
+    /* ALE module object */
+    .aleObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.ale",
+            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_ALE_OFFSET),
+            .features   = (ENET_FEAT_BASE |
+                           CPSW_ALE_FEATURE_FLOW_PRIORITY |
+                           CPSW_ALE_FEATURE_IP_HDR_WHITELIST),
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &CpswAle_open,
+            .rejoin     = &CpswAle_rejoin,
+            .ioctl      = &CpswAle_ioctl,
+            .close      = &CpswAle_close,
+        },
+    },
+
+    /* CPTS module object */
+    .cptsObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.cpts",
+            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_CPTS_OFFSET),
+            .features   = ENET_FEAT_BASE,
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &CpswCpts_open,
+            .rejoin     = &CpswCpts_rejoin,
+            .ioctl      = &CpswCpts_ioctl,
+            .close      = &CpswCpts_close,
+        },
+        .hwPushCnt      = 8U,
+    },
+
+    /* MDIO module object */
+    .mdioObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.mdio",
+            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_MDIO_OFFSET),
+            .features   = (ENET_FEAT_BASE |
+                           MDIO_FEATURE_CLAUSE45),
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &Mdio_open,
+            .rejoin     = &Mdio_rejoin,
+            .ioctl      = &Mdio_ioctl,
+            .close      = &Mdio_close,
+        },
+    },
+
+    /* Statistics module object */
+    .statsObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.stats",
+            .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+            .features   = ENET_FEAT_BASE,
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &CpswStats_open,
+            .rejoin     = &CpswStats_rejoin,
+            .ioctl      = &CpswStats_ioctl,
+            .close      = &CpswStats_close,
+        },
+    },
+
+    /* RM module object */
+    .rmObj =
+    {
+        .enetMod =
+        {
+            .name       = "cpsw9g.rm",
+            .physAddr   = 0U,
+            .features   = ENET_FEAT_BASE,
+            .errata     = ENET_ERRATA_NONE,
+            .open       = &EnetRm_open,
+            .rejoin     = &EnetRm_rejoin,
+            .ioctl      = &EnetRm_ioctl,
+            .close      = &EnetRm_close,
+        },
+    },
+};
+
 /* ---------------------------- Enet Peripherals ---------------------------- */
 
 Enet_Obj gEnetSoc_perObj[] =
 {
+    #if !defined (SOC_TDA54)
     /* CPSW_3G Enet driver/peripheral */
     {
         .enetPer = &gEnetSoc_cpsw3g.enetPer,
     },
+    #else
+    /* CPSW_9G Enet driver/peripheral */
+    {
+        .enetPer = &gEnetSoc_cpsw9g.enetPer,
+    },
+    #endif
 };
 
 EnetUdma_DrvObj gEnetSoc_dmaObj[ENET_ARRAYSIZE(gEnetSoc_perObj)];
@@ -313,6 +529,12 @@ EnetDma_Handle EnetSoc_getDmaHandle(Enet_Type enetType,
                 hDma = &gEnetSoc_dmaObjMemInfo.drvObjMem[0U];
             }
             break;
+        case ENET_CPSW_9G:
+            if (instId == 0U)
+            {
+                hDma = &gEnetSoc_dmaObjMemInfo.drvObjMem[0U];
+            }
+            break;
         default:
             break;
     }
@@ -342,6 +564,13 @@ Enet_Handle EnetSoc_getEnetHandle(Enet_Type enetType,
 
     switch (enetType)
     {
+        case ENET_CPSW_9G:
+            if (instId == 0U)
+            {
+                hEnet = &gEnetSoc_perObj[0U];
+            }
+            break;
+
         case ENET_CPSW_3G:
             if (instId == 0U)
             {
@@ -367,6 +596,10 @@ static bool  EnetSoc_isValidEnetType(Enet_Type enetType)
     {
         validInstanceType = true;
     }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        validInstanceType = true;
+    }
     return validInstanceType;
 }
 
@@ -384,6 +617,10 @@ uint32_t EnetSoc_getMacPortMax(Enet_Type enetType,
     {
         numPorts = 2;
     }
+    else if ((enetType == ENET_CPSW_9G) && (instId == 0U))
+    {
+        numPorts = 8;
+    }
     else
     {
         EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
@@ -398,6 +635,10 @@ uint32_t EnetSoc_isIpSupported(Enet_Type enetType,
     bool supported = false;
 
     if ((enetType == ENET_CPSW_3G) && (0U == instId))
+    {
+        supported = true;
+    }
+    else if ((enetType == ENET_CPSW_9G) && (0U == instId))
     {
         supported = true;
     }
@@ -434,6 +675,10 @@ uint32_t EnetSoc_getClkFreq(Enet_Type enetType,
         {
             freq = gEnetSoc_cpsw3gSocCfg.cppiClkFreqHz;
         }
+        else if ((enetType == ENET_CPSW_9G) && (instId == 0U))
+        {
+            freq = gEnetSoc_cpsw9gSocCfg.cppiClkFreqHz;
+        }
         EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
     }
     else
@@ -460,6 +705,12 @@ int32_t EnetSoc_setupIntrCfg(Enet_Type enetType,
         perDevId    = gEnetSoc_cpsw3gSocCfg.dmscDevId;
         socIntrs    = gEnetSoc_cpsw3gSocCfg.intrs;
         numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw3gSocCfg.intrs);
+    }
+    else if ((enetType == ENET_CPSW_9G) && (instId == 0U))
+    {
+        perDevId    = gEnetSoc_cpsw9gSocCfg.dmscDevId;
+        socIntrs    = gEnetSoc_cpsw9gSocCfg.intrs;
+        numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw9gSocCfg.intrs);
     }
     else
     {
@@ -491,6 +742,12 @@ int32_t EnetSoc_releaseIntrCfg(Enet_Type enetType,
         socIntrs    = gEnetSoc_cpsw3gSocCfg.intrs;
         numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw3gSocCfg.intrs);
     }
+    else if ((enetType == ENET_CPSW_9G) && (instId == 0U))
+    {
+        perDevId    = gEnetSoc_cpsw9gSocCfg.dmscDevId;
+        socIntrs    = gEnetSoc_cpsw9gSocCfg.intrs;
+        numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw9gSocCfg.intrs);
+    }
     else
     {
         EnetSoc_assert(false, "Invalid peripheral (eneType=%u instId=%u)\n", enetType, instId);
@@ -518,6 +775,11 @@ uint32_t EnetSoc_getIntrNum(Enet_Type enetType,
     {
         socIntrs    = gEnetSoc_cpsw3gSocCfg.intrs;
         numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw3gSocCfg.intrs);
+    }
+    else if ((enetType == ENET_CPSW_9G) && (instId == 0U))
+    {
+        socIntrs    = gEnetSoc_cpsw9gSocCfg.intrs;
+        numSocIntrs = ENET_ARRAYSIZE(gEnetSoc_cpsw9gSocCfg.intrs);
     }
     else
     {
@@ -594,6 +856,15 @@ uint32_t EnetSoc_getMacPortCaps(Enet_Type enetType,
             }
             break;
 
+        case ENET_CPSW_9G:
+            if (macPort <= ENET_MAC_PORT_8)
+            {
+                linkCaps = (ENETPHY_LINK_CAP_HD10 | ENETPHY_LINK_CAP_FD10 |
+                            ENETPHY_LINK_CAP_HD100 | ENETPHY_LINK_CAP_FD100 |
+                            ENETPHY_LINK_CAP_FD1000);
+            }
+            break;
+
         default:
             EnetSoc_assert(false, "Invalid peripheral type: %u\n", enetType);
             break;
@@ -615,6 +886,10 @@ int32_t EnetSoc_getMacPortMii(Enet_Type enetType,
     switch (enetType)
     {
         case ENET_CPSW_3G:
+            status = EnetSoc_getMcuEnetControl(macPort, &modeSel);
+            break;
+
+        case ENET_CPSW_9G:
             status = EnetSoc_getMcuEnetControl(macPort, &modeSel);
             break;
 
@@ -714,6 +989,10 @@ uint32_t EnetSoc_getRxFlowCount(Enet_Type enetType,
     {
         rxFlowCount = gEnetSoc_cpsw3gSocCfg.rxFlowCount;
     }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        rxFlowCount = gEnetSoc_cpsw9gSocCfg.rxFlowCount;
+    }
     EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
 
     return rxFlowCount;
@@ -727,6 +1006,10 @@ uint32_t EnetSoc_getHwPushCount(Enet_Type enetType,
     if (enetType == ENET_CPSW_3G)
     {
         hwPushCount = gEnetSoc_cpsw3gSocCfg.hwPushCnt;
+    }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        hwPushCount = gEnetSoc_cpsw9gSocCfg.hwPushCnt;
     }
     EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
 
@@ -743,6 +1026,10 @@ uint32_t EnetSoc_getTxChPeerId(Enet_Type enetType,
     if (enetType == ENET_CPSW_3G)
     {
         peerChNum = gEnetSoc_cpsw3gSocCfg.txChPeerThreadId;
+    }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        peerChNum = gEnetSoc_cpsw9gSocCfg.txChPeerThreadId;
     }
     EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
 
@@ -761,8 +1048,11 @@ uint32_t EnetSoc_getRxChPeerId(Enet_Type enetType,
     /* Get SoC array index */
     if (enetType == ENET_CPSW_3G)
     {
-
         peerChNum = gEnetSoc_cpsw3gSocCfg.rxChPeerThreadId;
+    }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        peerChNum = gEnetSoc_cpsw9gSocCfg.rxChPeerThreadId;
     }
     EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
 
@@ -777,6 +1067,10 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
     if (enetType == ENET_CPSW_3G)
     {
         txChCount = gEnetSoc_cpsw3gSocCfg.txChCount;
+    }
+    else if (enetType == ENET_CPSW_9G)
+    {
+        txChCount = gEnetSoc_cpsw9gSocCfg.txChCount;
     }
     EnetSoc_assert((EnetSoc_isValidEnetType(enetType) == true), "Invalid Enet type %d\n", enetType);
 
@@ -809,6 +1103,32 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
     .numCores = 1U,
 };
 
+/*!
+ *  \brief CPSW9G default configuration
+ *
+ *   Note: If user wishes to change the Resource Partition the following
+ *   things must be considered:
+ *   1. Sum of numTxCh allocated to each core should not exceed 8.
+ *   2. Sum of numRxFlows allocated to each core should not exceed 7 (not 8),
+ *      as one Rx flow is reserved to the master core.
+ *
+ */
+static EnetRm_ResPrms gEnetAppRmDefCfg_9G =
+{
+    .coreResInfo =
+    {
+        [0] =
+        {
+            .coreId        = `module.getCpuID()`,
+            .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
+            .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),    /* numRxFlows. Need one additional flow for reserved flow  */
+            .numMacAddress = 4U,    /* numMacAddress */
+            .numHwPush     = 0U,
+        },
+    },
+    .numCores = 1U,
+};
+
 const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
 {
     const EnetRm_ResPrms *rmInitPrms = NULL;
@@ -818,6 +1138,11 @@ const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
         case ENET_CPSW_3G:
         {
             rmInitPrms = &gEnetAppRmDefCfg_3G;
+            break;
+        }
+        case ENET_CPSW_9G:
+        {
+            rmInitPrms = &gEnetAppRmDefCfg_9G;
             break;
         }
         default:
@@ -836,6 +1161,14 @@ static const EnetRm_IoctlPermissionTable gEnetAppIoctlPermission_3G =
     .numEntries = 0,
 };
 
+/* Cores IOCTL Privileges */
+static const EnetRm_IoctlPermissionTable gEnetAppIoctlPermission_9G =
+{
+    .defaultPermittedCoreMask = (ENET_BIT(CSL_CORE_ID_DMCU0) |
+                                 ENET_BIT(CSL_CORE_ID_MCU0)),
+    .numEntries = 0,
+};
+
 const EnetRm_IoctlPermissionTable *EnetAppRm_getIoctlPermissionInfo(Enet_Type enetType)
 {
     const EnetRm_IoctlPermissionTable *ioctlPerm = NULL;
@@ -845,6 +1178,12 @@ const EnetRm_IoctlPermissionTable *EnetAppRm_getIoctlPermissionInfo(Enet_Type en
         case ENET_CPSW_3G:
         {
             ioctlPerm = &gEnetAppIoctlPermission_3G;
+            break;
+        }
+
+        case ENET_CPSW_9G:
+        {
+            ioctlPerm = &gEnetAppIoctlPermission_9G;
             break;
         }
 

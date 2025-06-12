@@ -1,8 +1,8 @@
 /**
  * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
- * @cliArgs --device "TDA54" --part "Default" --package "AMW" --context "mcu0-m55" --product "MCU_PLUS_SDK@07.03.01"
- * @v2CliArgs --device "TDA54" --package "FCBGA (AMW)" --context "mcu0-m55" --product "MCU_PLUS_SDK@07.03.01"
+ * @cliArgs --device "TDA54" --part "Default" --package "AMW" --context "mcu0" --product "MCU_PLUS_SDK@07.03.01"
+ * @v2CliArgs --device "TDA54" --package "FCBGA (AMW)" --context "mcu0" --product "MCU_PLUS_SDK@07.03.01"
  * @versions {"tool":"1.21.0+3721"}
  */
 
@@ -42,6 +42,18 @@ enet_cpsw1.macport1LinkSpeed            = "ENET_SPEED_1GBIT";
 enet_cpsw1.macport1LinkDuplexity        = "ENET_DUPLEX_FULL";
 enet_cpsw1.macport2LinkSpeed            = "ENET_SPEED_1GBIT";
 enet_cpsw1.macport2LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport3LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport3LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport4LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport4LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport5LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport5LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport6LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport6LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport7LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport7LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.macport8LinkSpeed            = "ENET_SPEED_1GBIT";
+enet_cpsw1.macport8LinkDuplexity        = "ENET_DUPLEX_FULL";
 enet_cpsw1.RGMII1.$assign               = "RGMII1";
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_cpsw1.txDmaChannel[0].PacketsCount = 4;

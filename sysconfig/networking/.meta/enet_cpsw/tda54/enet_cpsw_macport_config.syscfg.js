@@ -266,6 +266,12 @@ const enet_cpsw_macport_topConfig = {
     config: [
         utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "1"),
         utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "2"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "3"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "4"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "5"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "6"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "7"),
+        utilsScript.getPortSpecificConfig(enet_cpsw_macport_config, "#", "8"),
     ],
     collapsed: true,
 };

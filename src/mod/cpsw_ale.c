@@ -122,7 +122,7 @@
 #define CPSW_ALE_5G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_5G_POLICERS_MAX                (64U)
 #define CPSW_ALE_9G_ALE_ENTRIES_MAX             (1024U)
-#define CPSW_ALE_9G_POLICERS_MAX                (96U)
+#define CPSW_ALE_9G_POLICERS_MAX                (128U)
 
 /*! \brief CIR/PIR policing rate divider. */
 #define CPSW_ALE_IDLINCVAL_DIV_FACTOR           (32768U)
@@ -970,6 +970,9 @@ static CSL_CPSW_ALETABLE_TYPE CpswAle_getTableType(Enet_Type enetType)
             tableType = CSL_CPSW_ALETABLE_TYPE_4PORT;
             break;
         case ENET_CPSW_3G:
+            tableType = CSL_CPSW_ALETABLE_TYPE_9PORT;
+            break;
+        case ENET_CPSW_9G:
             tableType = CSL_CPSW_ALETABLE_TYPE_9PORT;
             break;
         default:

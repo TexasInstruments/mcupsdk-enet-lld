@@ -247,7 +247,7 @@ function getCpswInstInfo(instance) {
                                  ['am62dx',{enetType: 'ENET_CPSW_3G', numMacPorts: '2', instId: '0', dmaIf:'ENET_SOC_HOSTPORT_DMA_TYPE_UDMA', macPortList:['ENET_MAC_PORT_1', 'ENET_MAC_PORT_2']}],
                                  ['am62x',{enetType: 'ENET_CPSW_3G', numMacPorts: '2', instId: '0', dmaIf:'ENET_SOC_HOSTPORT_DMA_TYPE_UDMA', macPortList:['ENET_MAC_PORT_1', 'ENET_MAC_PORT_2']}],
                                  ['am62px',{enetType: 'ENET_CPSW_3G', numMacPorts: '2', instId: '0', dmaIf:'ENET_SOC_HOSTPORT_DMA_TYPE_UDMA', macPortList:['ENET_MAC_PORT_1', 'ENET_MAC_PORT_2']}],
-                                 ['tda54',{enetType: 'ENET_CPSW_3G', numMacPorts: '2', instId: '0', dmaIf:'ENET_SOC_HOSTPORT_DMA_TYPE_UDMA', macPortList:['ENET_MAC_PORT_1', 'ENET_MAC_PORT_2']}],
+                                 ['tda54',{enetType: 'ENET_CPSW_9G', numMacPorts: '8', instId: '0', dmaIf:'ENET_SOC_HOSTPORT_DMA_TYPE_UDMA', macPortList:['ENET_MAC_PORT_1', 'ENET_MAC_PORT_2', 'ENET_MAC_PORT_3', 'ENET_MAC_PORT_4', 'ENET_MAC_PORT_5', 'ENET_MAC_PORT_6', 'ENET_MAC_PORT_7', 'ENET_MAC_PORT_8']}],
                                ],
                              );
     let instInfo =  cpswInstInfoMap.get(common.getSocName());
@@ -258,6 +258,30 @@ function getCpswInstInfo(instance) {
             includeEntry = false;
         }
         if ((macPort === 'ENET_MAC_PORT_2') && (instance.DisableMacPort2 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_3') && (instance.DisableMacPort3 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_4') && (instance.DisableMacPort4 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_5') && (instance.DisableMacPort5 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_6') && (instance.DisableMacPort6 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_7') && (instance.DisableMacPort7 === true))
+        {
+            includeEntry = false;
+        }
+        if ((macPort === 'ENET_MAC_PORT_8') && (instance.DisableMacPort8 === true))
         {
             includeEntry = false;
         }

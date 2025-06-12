@@ -127,6 +127,10 @@ int32_t EnetApp_NpacDatapathTest(void)
     {
         EnetAppUtils_print("CPSW_3G Test\r\n");
     }
+    if (gNpacDatapathObj.enetType == ENET_CPSW_9G)
+    {
+        EnetAppUtils_print("CPSW_9G Test\r\n");
+    }
 
     EnetAppUtils_enableClocks(gNpacDatapathObj.enetType, gNpacDatapathObj.instId);
 
@@ -804,6 +808,7 @@ static void EnetApp_showCpswStats(void)
     Enet_IoctlPrms prms;
     CpswStats_PortStats portStats;
     int32_t status;
+    uint8_t ind=0;
 
     /* Show host port statistics */
     ENET_IOCTL_SET_OUT_ARGS(&prms, &portStats);
@@ -812,7 +817,7 @@ static void EnetApp_showCpswStats(void)
     {
         EnetAppUtils_print("\r\n Port 0 Statistics\r\n");
         EnetAppUtils_print("-----------------------------------------\r\n");
-        EnetAppUtils_printHostPortStats2G((CpswStats_HostPort_2g *)&portStats);
+        EnetAppUtils_printHostPortStats9G((CpswStats_HostPort_Ng *)&portStats);
         EnetAppUtils_print("\r\n");
     }
     else
@@ -835,41 +840,25 @@ static void EnetApp_showCpswStats(void)
         EnetAppUtils_print("Failed to get host stats: %d\r\n", status);
     }
 
-
-    /* Show MAC port statistics */
-    if (status == ENET_SOK)
+    for (ind=1; ind<=CPSW_STATS_MACPORT_MAX; ind++)
     {
-        gNpacDatapathObj.macPort = ENET_MAC_PORT_2;
-        ENET_IOCTL_SET_INOUT_ARGS(&prms, &gNpacDatapathObj.macPort, &portStats);
-        ENET_IOCTL(gNpacDatapathObj.hEnet, gNpacDatapathObj.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
+        /* Show MAC port statistics */
         if (status == ENET_SOK)
         {
-            EnetAppUtils_print("\r\n Port 2 Statistics\r\n");
-            EnetAppUtils_print("-----------------------------------------\r\n");
-            EnetAppUtils_printMacPortStats2G((CpswStats_MacPort_2g *)&portStats);
-            EnetAppUtils_print("\r\n");
-        }
-        else
-        {
-            EnetAppUtils_print("Failed to get MAC stats: %d\r\n", status);
-        }
-    }
-
-    if (status == ENET_SOK)
-    {
-        gNpacDatapathObj.macPort = ENET_MAC_PORT_1;
-        ENET_IOCTL_SET_INOUT_ARGS(&prms, &gNpacDatapathObj.macPort, &portStats);
-        ENET_IOCTL(gNpacDatapathObj.hEnet, gNpacDatapathObj.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
-        if (status == ENET_SOK)
-        {
-            EnetAppUtils_print("\r\n Port 1 Statistics\r\n");
-            EnetAppUtils_print("-----------------------------------------\r\n");
-            EnetAppUtils_printMacPortStats2G((CpswStats_MacPort_2g *)&portStats);
-            EnetAppUtils_print("\r\n");
-        }
-        else
-        {
-            EnetAppUtils_print("Failed to get MAC stats: %d\r\n", status);
+            gNpacDatapathObj.macPort = CPSW_ALE_ALEPORT_TO_MACPORT(ind);
+            ENET_IOCTL_SET_INOUT_ARGS(&prms, &gNpacDatapathObj.macPort, &portStats);
+            ENET_IOCTL(gNpacDatapathObj.hEnet, gNpacDatapathObj.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
+            if (status == ENET_SOK)
+            {
+                EnetAppUtils_print("\r\n Port %d Statistics\r\n", ind);
+                EnetAppUtils_print("-----------------------------------------\r\n");
+                EnetAppUtils_printMacPortStats9G((CpswStats_MacPort_Ng *)&portStats);
+                EnetAppUtils_print("\r\n");
+            }
+            else
+            {
+                EnetAppUtils_print("Failed to get MAC stats: %d\r\n", status);
+            }
         }
     }
 }

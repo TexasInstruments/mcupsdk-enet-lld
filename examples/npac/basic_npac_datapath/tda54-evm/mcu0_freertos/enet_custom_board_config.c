@@ -134,17 +134,15 @@ static const Dp83869_Cfg gEnetCpbBoard_dp83869PhyCfg =
     },
 };
 
-
-
 /*
- * AM64x board configuration.
+ * TDA54 configuration.
  *
- * 1 x RGMII PHY connected to am64x-evm CPSW_3G MAC port.
+ * RGMII PHYs connected to tda54-evm CPSW_9G MAC port.
  */
-static const EnetBoard_PortCfg gEnetCpbBoard_am64x_evm_EthPort[] =
+static const EnetBoard_PortCfg gEnetCpbBoard_tda54_evm_EthPort[] =
 {
-    {    /* "CPSW3G" */
-        .enetType = ENET_CPSW_3G,
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
         .instId   = 0U,
         .macPort  = ENET_MAC_PORT_1,
         .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
@@ -158,10 +156,100 @@ static const EnetBoard_PortCfg gEnetCpbBoard_am64x_evm_EthPort[] =
         },
         .flags    = 0U,
     },
-    {    /* "CPSW3G" */
-        .enetType = ENET_CPSW_3G,
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
         .instId   = 0U,
         .macPort  = ENET_MAC_PORT_2,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_3,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_4,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_5,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_6,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_7,
+        .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr         = ENETPHY_INVALID_PHYADDR,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_dp83869PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_dp83869PhyCfg),
+        },
+        .flags    = 0U,
+    },
+    {    /* "CPSW9G" */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_8,
         .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
         .phyCfg   =
         {
@@ -176,12 +264,12 @@ static const EnetBoard_PortCfg gEnetCpbBoard_am64x_evm_EthPort[] =
 };
 
 /*
- * am64x-evm virtual board used for MAC loopback setup.
+ * TDA54-evm virtual board used for MAC loopback setup.
  */
-static const EnetBoard_PortCfg gEnetVirtBoard_am64x_evm_EthPort[] =
+static const EnetBoard_PortCfg gEnetVirtBoard_tda54_evm_EthPort[] =
 {
     {    /* RGMII MAC loopback */
-        .enetType = ENET_CPSW_3G,
+        .enetType = ENET_CPSW_9G,
         .instId   = 0U,
         .macPort  = ENET_MAC_PORT_1,
         .mii      = { ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED },
@@ -192,9 +280,75 @@ static const EnetBoard_PortCfg gEnetVirtBoard_am64x_evm_EthPort[] =
         .flags    = 0U,
     },
     {    /* RMII MAC loopback */
-        .enetType = ENET_CPSW_3G,
+        .enetType = ENET_CPSW_9G,
         .instId   = 0U,
-        .macPort  = ENET_MAC_PORT_1,
+        .macPort  = ENET_MAC_PORT_2,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_3,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_4,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_5,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_6,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_7,
+        .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
+        .phyCfg   =
+        {
+            .phyAddr = ENETPHY_INVALID_PHYADDR,
+        },
+        .flags    = 0U,
+    },
+    {    /* RMII MAC loopback */
+        .enetType = ENET_CPSW_9G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_8,
         .mii      = { ENET_MAC_LAYER_MII, ENET_MAC_SUBLAYER_REDUCED },
         .phyCfg   =
         {
@@ -221,15 +375,15 @@ static const EnetBoard_PortCfg *EnetBoard_getPortCfg(const EnetBoard_EthPort *et
     if (ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_CPB_ID))
     {
         portCfg = EnetBoard_findPortCfg(ethPort,
-                                        gEnetCpbBoard_am64x_evm_EthPort,
-                                        ENETPHY_ARRAYSIZE(gEnetCpbBoard_am64x_evm_EthPort));
+                                        gEnetCpbBoard_tda54_evm_EthPort,
+                                        ENETPHY_ARRAYSIZE(gEnetCpbBoard_tda54_evm_EthPort));
     }
     if ((portCfg == NULL) &&
         ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_LOOPBACK_ID))
     {
         portCfg = EnetBoard_findPortCfg(ethPort,
-                                        gEnetVirtBoard_am64x_evm_EthPort,
-                                        ENETPHY_ARRAYSIZE(gEnetVirtBoard_am64x_evm_EthPort));
+                                        gEnetVirtBoard_tda54_evm_EthPort,
+                                        ENETPHY_ARRAYSIZE(gEnetVirtBoard_tda54_evm_EthPort));
     }
     return portCfg;
 }
