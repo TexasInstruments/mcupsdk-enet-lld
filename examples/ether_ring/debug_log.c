@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2024
+ *  Copyright (c) Texas Instruments Incorporated 2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -34,38 +34,37 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 
-#include "debug_log.h"
 
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
 #include "tsninit.h"
+#include "debug_log.h"
+#include <kernel/dpl/TaskP.h>
+#include <kernel/dpl/SemaphoreP.h>
 
 Logger_onConsoleOut sDrvConsoleOut;
-/* Reason: Printing to the console directly will create a lot of timing issue in gptp.
- * Solution: Writing to a buffer, a log task will print it out a bit later. */
 #if TSN_USE_LOG_BUFFER == 1
 
-static CB_THREAD_MUTEX_T gLogMutex;
-static CB_THREAD_T hLogTask;
+static TaskP_Object gLoggerTask;
+static SemaphoreP_Object gLogMutex;
+static bool gLogTask_StopFlag = false;
+static uint8_t gLogStackBuf[LOG_TASK_STACK_SIZE] \
+        __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
+static uint8_t gLogBuf[DEBUG_LOG_BUFFER_SIZE];
+static uint8_t gPrintBuf[DEBUG_LOG_BUFFER_SIZE];
 
-#define INIT_LOG_TASK(priority) \
-    if(Logger_startTask(priority) < 0){return -1;}
-
-static uint8_t gLogStackBuf[TSN_TSK_STACK_SIZE]
-__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
-static uint8_t gLogBuf[4096];
-static uint8_t gPrintBuf[4096];
-
-
-
-static void *Logger_task(void *arg)
+static void Logger_task(void *arg)
 {
     int len;
-    DPRINT("%s: started", __func__);
 
     while(1)
     {
-        CB_THREAD_MUTEX_LOCK(&gLogMutex);
+        if (gLogTask_StopFlag == true)
+        {
+            break;
+        }
+
+        SemaphoreP_pend(&gLogMutex, SystemP_WAIT_FOREVER);
         len = strlen((const char*)gLogBuf);
         if (len > 0)
         {
@@ -73,16 +72,17 @@ static void *Logger_task(void *arg)
             gLogBuf[0] = 0;
             gPrintBuf[len] = 0;
         }
-        CB_THREAD_MUTEX_UNLOCK(&gLogMutex);
+        SemaphoreP_post(&gLogMutex);
 
         if (len > 0)
         {
             sDrvConsoleOut("%s", (char*)gPrintBuf);
         }
 
-        CB_USLEEP(10000);
+        CB_USLEEP(LOG_FLUSH_PERIOD_MSEC*UB_MSEC_US);
     }
-    return NULL;
+
+    TaskP_exit();
 }
 
 int Logger_logToBuffer(bool flush, const char *str)
@@ -96,7 +96,7 @@ int Logger_logToBuffer(bool flush, const char *str)
         return 0;
     }
 
-    CB_THREAD_MUTEX_LOCK(&gLogMutex);
+    SemaphoreP_pend(&gLogMutex, SystemP_WAIT_FOREVER);
     usedLen = strlen((const char *)gLogBuf);
     remainBufsize = sizeof(gLogBuf)-usedLen;
 
@@ -126,31 +126,76 @@ int Logger_logToBuffer(bool flush, const char *str)
     {
         snprintf((char *)&gLogBuf[0], sizeof(gLogBuf), "log ovflow!"ENDLINE);
     }
-    CB_THREAD_MUTEX_UNLOCK(&gLogMutex);
+    SemaphoreP_post(&gLogMutex);
 
     return 0;
 }
 
-static int Logger_startTask(int log_pri)
+int Logger_init(Logger_onConsoleOut consoleOutCb)
 {
-    cb_tsn_thread_attr_t attr;
-    int err = 0;
-
-    cb_tsn_thread_attr_init(&attr, log_pri,
-                            sizeof(gLogStackBuf), "log_task");
-    cb_tsn_thread_attr_set_stackaddr(&attr, &gLogStackBuf[0]);
-    if (CB_THREAD_CREATE(&hLogTask, &attr, Logger_task, NULL) < 0)
+    int status = SystemP_FAILURE;
+    if (consoleOutCb != NULL)
     {
-        DPRINT("Failed to create log task!");
-        err = -1;
+        sDrvConsoleOut = consoleOutCb;
+        status = SystemP_SUCCESS;
     }
 
-    return err;
+    if (status == SystemP_SUCCESS)
+    {
+        status = SemaphoreP_constructMutex(&gLogMutex);
+
+        if (status == SystemP_SUCCESS)
+        {
+            TaskP_Params loggerTaskParams;
+            TaskP_Params_init(&loggerTaskParams);
+
+            loggerTaskParams.name      = "log_task";
+            loggerTaskParams.stackSize = sizeof(gLogStackBuf);
+            loggerTaskParams.stack     = gLogStackBuf;
+            loggerTaskParams.priority  = LOG_TASK_PRIORITY;
+            loggerTaskParams.taskMain  = Logger_task;
+            loggerTaskParams.args      = NULL;
+
+            status = TaskP_construct(&gLoggerTask, &loggerTaskParams);
+        }
+    }
+
+    return status;
 }
 
-#else //TSN_USE_LOG_BUFFER != 1
+void Logger_deInit(void)
+{
+    gLogTask_StopFlag = true;
+    CB_USLEEP(LOG_FLUSH_PERIOD_MSEC*UB_MSEC_US);
+    TaskP_destruct(&gLoggerTask);
+    sDrvConsoleOut = NULL;
+}
 
-#define INIT_LOG_TASK(priority)
+#else /* TSN_USE_LOG_BUFFER */
+
+int Logger_logToBuffer(bool flush, const char *str)
+{
+    /* Log to buffer is same as direct log here. */
+    return Logger_directLog(flush, str);
+}
+
+int Logger_init(Logger_onConsoleOut consoleOutCb)
+{
+    int retval = -1;
+    if (consoleOutCb != NULL)
+    {
+        sDrvConsoleOut = consoleOutCb;
+        retval = 0;
+    }
+    return retval;
+}
+
+void Logger_deInit(void)
+{
+    sDrvConsoleOut = NULL;
+    return;
+}
+#endif
 
 int Logger_directLog(bool flush, const char *str)
 {
@@ -174,36 +219,4 @@ int Logger_directLog(bool flush, const char *str)
         sDrvConsoleOut(ENDLINE);
     }
     return 0;
-}
-
-#endif //TSN_USE_LOG_BUFFER != 1
-
-int Logger_init(Logger_onConsoleOut consoleOutCb)
-{
-    if (consoleOutCb)
-    {
-        sDrvConsoleOut = consoleOutCb;
-    }
-#if TSN_USE_LOG_BUFFER == 1
-    if (CB_THREAD_MUTEX_INIT(&gLogMutex, NULL) < 0)
-    {
-        DPRINT("Failed to int mutex!");
-        return -1;
-    }
-#endif
-
-    INIT_LOG_TASK(1);
-    return 0;
-}
-
-void Logger_deInit(void)
-{
-#if TSN_USE_LOG_BUFFER == 1
-    if (hLogTask != NULL)
-    {
-        CB_THREAD_JOIN(hLogTask, NULL);
-        hLogTask = NULL;
-    }
-    CB_THREAD_MUTEX_DESTROY(&gLogMutex);
-#endif
 }

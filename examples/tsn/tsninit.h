@@ -34,6 +34,7 @@
 #define __TSNINIT_H__
 
 #include <tsn_combase/tilld/lldtype.h>
+#include "debug_log.h"
 
 #if defined(SAFERTOS)
 #define TSN_TSK_STACK_SIZE                         (16U * 1024U)
