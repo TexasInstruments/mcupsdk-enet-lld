@@ -86,7 +86,7 @@ extern "C" {
 
 #if ((__ARM_ARCH == 7) && (__ARM_ARCH_PROFILE == 'R'))
 /*! * \brief Set the cacheline alignment size */
-#define ENETDMA_CACHELINE_ALIGNMENT            (64U)
+#define ENETDMA_CACHELINE_ALIGNMENT            (32U)
 #else
 #error "Enet library compilation not supported on non cortex R cores. Update correct cache line size"
 #endif
