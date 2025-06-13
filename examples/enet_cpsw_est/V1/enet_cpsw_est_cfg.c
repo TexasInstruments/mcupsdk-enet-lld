@@ -162,9 +162,6 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
     hostPortCfg->rxVlanRemapEn     = true;
     hostPortCfg->rxDscpIPv4RemapEn = true;
     hostPortCfg->rxDscpIPv6RemapEn = true;
-
-    /* CPTS config (CPTS_RFT_CLK = 200MHz) */
-    cptsCfg->cptsRftClkFreq = CPSW_CPTS_RFTCLK_FREQ_200MHZ;
 }
 
 int32_t EnetApp_open(void)
