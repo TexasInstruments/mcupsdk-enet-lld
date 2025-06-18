@@ -629,7 +629,7 @@ static void EnetApp_rxTask(void *args)
             /* capturing the rx timestamps and currentTimeStamp for received original packets for a stream */
             if (pktInfo->tsInfo.rxPktTs)
             {
-                streamId = pktInfo->sgList.list[0].bufPtr[ETHERRINGAPP_STREAM_ID_INDEX - ETHERRING_CB_HEADER_SIZE];
+                streamId = pktInfo->sgList.list[0].bufPtr[ETHERRINGAPP_STREAM_ID_INDEX - ETHERRING_HEADER_SIZE];
 
                 if ((gEtherRingRxTs.rxTsIndex
                         < ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED) && (streamId == ETHERRING_PROFILE_STREAMID))
@@ -752,7 +752,7 @@ static void EnetApp_scheduleClassAStream(void *stream_id)
                      pktInfo->sgList.list[0].segmentFilledLen = payLoadLength + gEthVlanHdrSize;
 #ifdef ETHERRING_PROFILING
                     /* Software Time stamp Push event */
-                    ENET_IOCTL_SET_OUT_ARGS(&prms, (void *)&tsValCurrent);
+                    ENET_IOCTL_SET_OUT_ARGS(&prms, &tsValCurrent);
                     ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId,
                            ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP, &prms, retVal);
 #endif

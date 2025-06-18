@@ -47,34 +47,40 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 /*! \brief Maximum Instances of EtherRing supported */
-#define ETHERRING_MAX_ETHERRING_INSTANCES                           1U
+#define ETHERRING_MAX_ETHERRING_INSTANCES                           (1U)
 
 /* \brief Ethernet Vlan Frame Header size */
-#define ETHERRING_VLAN_HEADER_SIZE                                  sizeof(EthVlanFrameHeader)
+#define ETHERRING_UNTAGGED_VLAN_ETH_HEADER_SIZE                     (sizeof(EthFrameHeader))
 
-/* \brief Total size of CB Header and Vlan Header */
-#define ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH                 (ETHERRING_VLAN_HEADER_SIZE + ETHERRING_CB_HEADER_SIZE)
+/* \brief Ethernet Vlan Frame Header size */
+#define ETHERRING_VLAN_HEADER_SIZE                                  (sizeof(EthVlanFrameHeader))
+
+/* \brief Total size of Ether-Ring Header and Vlan Header */
+#define ETHERRING_PACKET_HDR_PLUS_ETHERRING_HDR_LENGTH              (ETHERRING_VLAN_HEADER_SIZE + ETHERRING_HEADER_SIZE)
 
 /* \brief Value of Memory blocks count in the memory pool*/
-#define ETHERRING_MEMBLOCKS_COUNT                                   128U
+#define ETHERRING_MEMBLOCKS_COUNT                                   (128U)
 
 /* \brief Memory pool array size */
-#define ETHERRING_MEMPOOL_SIZE                                      (ETHERRING_MEMBLOCKS_COUNT * ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH)
+#define ETHERRING_MEMPOOL_SIZE                                      (ETHERRING_MEMBLOCKS_COUNT * ETHERRING_PACKET_HDR_PLUS_ETHERRING_HDR_LENGTH)
 
-/* \brief Count of Maximum sequence number in the CB packetInfo*/
-#define ETHERRING_MAX_SEQUENCE_NUMBER                               255U
+/* \brief Count of Maximum sequence number in the Etherring packetInfo*/
+#define ETHERRING_MAX_SEQUENCE_NUMBER                               (255U)
 
 /* \brief Last byte of Host Mac Address Index sent from application */
-#define ETHERRING_HOSTMAC_LASTBYTE_INDEX                            20U
+#define ETHERRING_HOSTMAC_LASTBYTE_INDEX                            (20U)
 
-/* \brief Sequence Id index in CB Packet */
-#define ETHERRING_SEQUENCE_NUMBER_INDEX                             21U
+/* \brief Sequence Id index in Etherring Packet */
+#define ETHERRING_SEQUENCE_NUMBER_INDEX                             (21U)
 
 /* \brief Maximum CPDMA channel count */
-#define ETHERRING_MAX_CPDMA_CHANNELS                                8U
+#define ETHERRING_MAX_CPDMA_CHANNELS                                (8U)
 
-/* \brief Ethertype Index in CB Packet */
-#define ETHERRING_VLAN_TPID_INDEX                                   12U
+/* \brief Ethertype Index in Etherring  Packet */
+#define ETHERRING_VLAN_TPID_INDEX                                   (12U)
+
+/* \brief Ethertype in Etherring Header*/
+#define ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER                     (0x88B5)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -88,9 +94,10 @@ typedef struct
 /*                          Function Declarations                             */
 /* ========================================================================== */
 static void EtherRing_initMemPool(EtherRingPool *memPool);
-static void EtherRing_addCBLikeHeader(EnetDma_Pkt *pktInfo,
-                                      uint16_t seqNumber);
-static void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo);
+static void EtherRing_addEtherringHeader(EnetDma_Pkt *pktInfo,
+                                         uint16_t seqNumber);
+static void EtherRing_removeEtherringHeader(EnetDma_Pkt *pktInfo);
+static void EtherRing_calculateEthHeaderSize(EnetDma_Pkt *pktInfo, uint32_t *ethHeaderSize);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -206,12 +213,8 @@ int32_t EtherRing_submitTxPktQ(void *hEtherRing,
         /*  Ether-Ring only handles tx pktInfo with 1 scatterSegment */
         Enet_assert(pktInfo->sgList.numScatterSegments == 1);
 
-        /*  Ether-Ring Driver only handles Vlan Ethernet Packets(Vlan TPID is 0x8100U) */
-        Enet_assert(pktInfo->sgList.list[0].bufPtr[ETHERRING_VLAN_TPID_INDEX] == 0x81 &&
-                    pktInfo->sgList.list[0].bufPtr[ETHERRING_VLAN_TPID_INDEX + 1U] == 0x00);
-
         pRingHandle->prevSequenceNumber++;
-        EtherRing_addCBLikeHeader(pktInfo, pRingHandle->prevSequenceNumber);
+        EtherRing_addEtherringHeader(pktInfo, pRingHandle->prevSequenceNumber);
         if (pRingHandle->prevSequenceNumber >= ETHERRING_MAX_SEQUENCE_NUMBER)
         {
             pRingHandle->prevSequenceNumber = 0;
@@ -243,7 +246,7 @@ int32_t EtherRing_retrieveTxPktQ(void *hEtherRing,
     {
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&retrieveQ);
 
-        EtherRing_removeCBLikeHeader(pktInfo);
+        EtherRing_removeEtherringHeader(pktInfo);
         EnetQueue_enq(pRetrieveQ, &pktInfo->node);
     }
     return retVal;
@@ -265,10 +268,10 @@ int32_t EtherRing_submitRxPktQ(void *hEtherRing,
 
     while (pktInfo != NULL)
     {
-        /* After retrieving RX packet the bufPtr point is moved by size of CB Header(4bytes)
-         * to remove the CB Header before giving the queue to application. The bufPtr is
+        /* After retrieving RX packet the bufPtr point is moved by size of EtherRing Header(4bytes)
+         * to remove the EtherRing Header before giving the queue to application. The bufPtr is
          * updated back while submitting the pktInfo to Hardware(CPDMA) */
-        pktInfo->sgList.list[0].bufPtr -= ETHERRING_CB_HEADER_SIZE;
+        pktInfo->sgList.list[0].bufPtr -= ETHERRING_HEADER_SIZE;
         EnetQueue_enq(&rxSubmitQ, &pktInfo->node);
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(pSubmitQ);
     }
@@ -287,22 +290,23 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
     EnetDma_Pkt *pktInfo = NULL;
     uint8_t lastByteMac;
     uint8_t seqNumber;
-
     uint16_t lookupIndex;
+    uint32_t ethHeaderSize = 0U;
 
     EtherRing_pktQ rxRetrieveQ;
     EtherRing_pktQ rxDupPktQ;
     EnetQueue_initQ(&rxRetrieveQ);
     EnetQueue_initQ(&rxDupPktQ);
 
+    EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
     retVal = EnetDma_retrieveRxPktQ(pRingHandle->hRxCh, &rxRetrieveQ);
 
     pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxRetrieveQ);
     while (pktInfo != NULL)
     {
-        /* look-up process for only CB packets */
-        if (pktInfo->sgList.list[0].bufPtr[ETHERRING_VLAN_HEADER_SIZE + 1] == 0xC1
-                & pktInfo->sgList.list[0].bufPtr[ETHERRING_VLAN_HEADER_SIZE] == 0xF1)
+        /* look-up process for only EtherRing packets */
+        if ((uint16_t)pktInfo->sgList.list[0].bufPtr[ethHeaderSize] ==
+            Enet_htons(ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER))
         {
             lastByteMac = pktInfo->sgList.list[0].bufPtr[ETHERRING_HOSTMAC_LASTBYTE_INDEX];
             seqNumber = pktInfo->sgList.list[0].bufPtr[ETHERRING_SEQUENCE_NUMBER_INDEX];
@@ -310,10 +314,10 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
             lookupIndex = (uint16_t) (((uint16_t) lastByteMac << 8) | seqNumber);
             if (pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] == 0)
             {
-                /* remove the CB header and updating the bufPtr before giving to application */
-                memmove(pktInfo->sgList.list[0].bufPtr + ETHERRING_CB_HEADER_SIZE,
-                        pktInfo->sgList.list[0].bufPtr, ETHERRING_VLAN_HEADER_SIZE);
-                pktInfo->sgList.list[0].bufPtr += ETHERRING_CB_HEADER_SIZE;
+                /* remove the EtherRing header and updating the bufPtr before giving to application */
+                memmove(pktInfo->sgList.list[0].bufPtr + ETHERRING_HEADER_SIZE,
+                        pktInfo->sgList.list[0].bufPtr, ethHeaderSize);
+                pktInfo->sgList.list[0].bufPtr += ETHERRING_HEADER_SIZE;
 
                 pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex]++;
                 pRingHandle->etherRingStats.etherRingNonDuplicatedPktCount++;
@@ -322,7 +326,7 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
             }
             else if (pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] == 1)
             {
-                /* Submitting the duplicate CB packets back to the Hardware(CPDMA) */
+                /* Submitting the duplicate EtherRing packets back to the Hardware(CPDMA) */
                 pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] = 0;
                 pRingHandle->etherRingStats.etherRingDuplicatedRxPacketCount++;
                 EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
@@ -335,7 +339,7 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
         }
         else
         {
-            /* Submitting the non-CB packets back to the Hardware(CPDMA) */
+            /* Submitting the non-Etherring packets back to the Hardware(CPDMA) */
             EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
             EtherRing_submitRxPktQ(pRingHandle, &rxDupPktQ);
         }
@@ -356,7 +360,7 @@ static void EtherRing_initMemPool(EtherRingPool *memPool)
 
         for (memPoolIndex = 0; memPoolIndex < ETHERRING_MEMBLOCKS_COUNT; memPoolIndex++)
         {
-            uint8_t* pMemBlock =  &gEtherRing_MemPool[memPoolIndex*ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH];
+            uint8_t* pMemBlock =  &gEtherRing_MemPool[memPoolIndex * ETHERRING_PACKET_HDR_PLUS_ETHERRING_HDR_LENGTH];
             EnetQueue_enq(&gEtherRingPool.etherRingFreeQueue, (EnetQ_Node*)pMemBlock);
         }
 
@@ -365,47 +369,68 @@ static void EtherRing_initMemPool(EtherRingPool *memPool)
     }
 }
 
-static void EtherRing_addCBLikeHeader(EnetDma_Pkt *pktInfo,
-                             uint16_t seqNumber)
+static void EtherRing_addEtherringHeader(EnetDma_Pkt *pktInfo,
+                                         uint16_t seqNumber)
 {
-    uint8_t *headerWithCB = NULL;
+    uint8_t *etherRingHeader = NULL;
+    uint32_t ethHeaderSize = 0U;
+
+    /*  Vlan and Non-Vlan Packets needs different handling due to
+    * variation in start index of Payload */
+    EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
 
     if (EnetQueue_getQCount(&gEtherRingPool.etherRingFreeQueue) > 0)
     {
-        headerWithCB = (uint8_t*)EnetQueue_deq(&gEtherRingPool.etherRingFreeQueue);
+        etherRingHeader = (uint8_t*)EnetQueue_deq(&gEtherRingPool.etherRingFreeQueue);
     }
 
-    Enet_assert(headerWithCB != NULL);
+    Enet_assert(etherRingHeader != NULL);
     Enet_assert(pktInfo != NULL);
 
     pktInfo->sgList.list[1] = pktInfo->sgList.list[0];
-    pktInfo->sgList.list[1].bufPtr += ETHERRING_VLAN_HEADER_SIZE;
-    pktInfo->sgList.list[1].segmentFilledLen -= ETHERRING_VLAN_HEADER_SIZE;
-    pktInfo->sgList.list[0].segmentFilledLen = ETHERRING_PACKET_HDR_PLUS_CBLIKE_HDR_LENGTH;
+    pktInfo->sgList.list[1].bufPtr += ethHeaderSize;
+    pktInfo->sgList.list[1].segmentFilledLen -= ethHeaderSize;
+    pktInfo->sgList.list[0].segmentFilledLen = (ethHeaderSize + ETHERRING_HEADER_SIZE);
 
-    memcpy(headerWithCB, pktInfo->sgList.list[0].bufPtr, ETHERRING_VLAN_HEADER_SIZE);
+    memcpy(etherRingHeader, pktInfo->sgList.list[0].bufPtr, ethHeaderSize);
 
-    /* F1-C1 EtherType for CB */
-    headerWithCB[ETHERRING_VLAN_HEADER_SIZE + 1] = 0xC1;
-    headerWithCB[ETHERRING_VLAN_HEADER_SIZE] = 0xF1;
+    /* 88-B5 EtherType in Ether-Ring Header */
+    *(uint16_t*)((uint8_t*)&etherRingHeader[ethHeaderSize]) = Enet_htons(ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER);
 
     /* Adding seq_number to the Header */
-    headerWithCB[ETHERRING_VLAN_HEADER_SIZE + 3] = seqNumber & 0xFF;
+    etherRingHeader[ethHeaderSize + 3] = seqNumber & 0xFF;
 
     /* Last byte of host macAddr */
-    headerWithCB[ETHERRING_VLAN_HEADER_SIZE + 2] = gEtherRingCfg->hostMacAddLastByte;
+    etherRingHeader[ethHeaderSize + 2] = gEtherRingCfg->hostMacAddLastByte;
 
-    pktInfo->sgList.list[0].bufPtr = headerWithCB;
+    pktInfo->sgList.list[0].bufPtr = etherRingHeader;
 
     pktInfo->sgList.numScatterSegments = 2;
 }
 
-static void EtherRing_removeCBLikeHeader(EnetDma_Pkt *pktInfo)
+static void EtherRing_calculateEthHeaderSize(EnetDma_Pkt *pktInfo, uint32_t *ethHeaderSize)
+{
+
+    /* Based on whether packet contains vlanTag, ethernet header size is calculated */
+    if ((uint16_t)(pktInfo->sgList.list[0].bufPtr[ETHERRING_VLAN_TPID_INDEX]) == Enet_htons(0x8100))
+    {
+        *ethHeaderSize = ETHERRING_VLAN_HEADER_SIZE;
+    }
+    else
+    {
+        *ethHeaderSize = ETHERRING_UNTAGGED_VLAN_ETH_HEADER_SIZE;
+    }
+}
+
+static void EtherRing_removeEtherringHeader(EnetDma_Pkt *pktInfo)
 {
     Enet_assert(pktInfo != NULL);
+    uint32_t ethHeaderSize = 0U;
+
+    EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
 
     EnetQueue_enq(&gEtherRingPool.etherRingFreeQueue, (EnetQ_Node*)pktInfo->sgList.list[0].bufPtr);
-    pktInfo->sgList.list[0].bufPtr = pktInfo->sgList.list[1].bufPtr - ETHERRING_VLAN_HEADER_SIZE;
+    pktInfo->sgList.list[0].bufPtr = pktInfo->sgList.list[1].bufPtr - ethHeaderSize;
     pktInfo->sgList.numScatterSegments = 1;
 }
 

@@ -64,11 +64,11 @@ extern "C" {
 /* ========================================================================== */
 /*                                 Macros                                     */
 /* ========================================================================== */
-/*! \brief Size of CB Header */
-#define ETHERRING_CB_HEADER_SIZE                                    4U
+/*! \brief Size of Ether-Ring Header */
+#define ETHERRING_HEADER_SIZE                                           (4U)
 
 /*! \brief Size of Lookup table for Duplicate packet rejection */
-#define ETHERRING_LOOKUP_TABLE_SIZE                                 (256U*256U)
+#define ETHERRING_LOOKUP_TABLE_SIZE                                     (256U*256U)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
