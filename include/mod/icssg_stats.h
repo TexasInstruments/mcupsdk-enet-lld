@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2021
+ *  Copyright (c) Texas Instruments Incorporated 2021-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -569,6 +569,12 @@ typedef struct IcssgStats_Pa_s
 
     /*! Host Egress Q (Express) Overflow Counter */
     uint32_t hostEgrsQExpOvrFloMacSlice1;
+
+    /*! Cut-through packet Counter for slice 0 */
+    uint32_t cutThroughPacketSlice0;
+
+    /*! Cut-through packet Counter for slice 1 */
+    uint32_t cutThroughPacketSlice1;
 } IcssgStats_Pa;
 
 /* ========================================================================== */

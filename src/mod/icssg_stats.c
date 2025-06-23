@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2021
+ *  Copyright (c) Texas Instruments Incorporated 2021-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -209,6 +209,8 @@ static uint32_t IcssgStats_paStatsOffset[] =
     NRT_HOST_EGRESS_Q_PRE_OVERFLOW_MAC_SLICE1_PASTATID,
     NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE0_PASTATID,
     NRT_HOST_EGRESS_Q_EXP_OVERFLOW_MAC_SLICE1_PASTATID,
+    NRT_CUT_THR_PKT_SLICE0_PASTATID,
+    NRT_CUT_THR_PKT_SLICE1_PASTATID
 };
 
 #define ICSSG_STATS_IOCTL_HANDLER_ENTRY_INIT(x)    \

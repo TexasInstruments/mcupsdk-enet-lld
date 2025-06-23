@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) Texas Instruments Incorporated 2020-2024
+ *  Copyright (C) Texas Instruments Incorporated 2020-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -590,6 +590,20 @@ void EnetAppUtils_printIcssgPaStats(IcssgStats_Pa *st)
     EnetAppUtils_printStatsNonZero("  preemptFragCntRxSlice1     = %llu\r\n", (uint64_t)st->preemptFragCntRxSlice1);
     EnetAppUtils_printStatsNonZero("  rxEofShortFrameErrSlice0   = %llu\r\n", (uint64_t)st->rxEofShortFrameErrSlice0);
     EnetAppUtils_printStatsNonZero("  rxEofShortFrameErrSlice1   = %llu\r\n", (uint64_t)st->rxEofShortFrameErrSlice1);
+    EnetAppUtils_printStatsNonZero("  rxB0DropEarlyEoFSlice0     = %llu\r\n", (uint64_t)st->rxB0DropEarlyEoFSlice0);
+    EnetAppUtils_printStatsNonZero("  rxB0DropEarlyEoFSlice1     = %llu\r\n", (uint64_t)st->rxB0DropEarlyEoFSlice1);
+    EnetAppUtils_printStatsNonZero("  txJumboFrameCutoffSlice0   = %llu\r\n", (uint64_t)st->txJumboFrameCutoffSlice0);
+    EnetAppUtils_printStatsNonZero("  txJumboFrameCutoffSlice1   = %llu\r\n", (uint64_t)st->txJumboFrameCutoffSlice1);
+    EnetAppUtils_printStatsNonZero("  rxExpFragQDropSlice0       = %llu\r\n", (uint64_t)st->rxExpFragQDropSlice0);
+    EnetAppUtils_printStatsNonZero("  rxExpFragQDropSlice1       = %llu\r\n", (uint64_t)st->rxExpFragQDropSlice1);
+    EnetAppUtils_printStatsNonZero("  rxFifoOverRunSlice0        = %llu\r\n", (uint64_t)st->rxFifoOverRunSlice0);
+    EnetAppUtils_printStatsNonZero("  rxFifoOverRunSlice1        = %llu\r\n", (uint64_t)st->rxFifoOverRunSlice1);
+    EnetAppUtils_printStatsNonZero("  hostEgrsQPreOvrFloMacSlice0 = %llu\r\n", (uint64_t)st->hostEgrsQPreOvrFloMacSlice0);
+    EnetAppUtils_printStatsNonZero("  hostEgrsQPreOvrFloMacSlice1 = %llu\r\n", (uint64_t)st->hostEgrsQPreOvrFloMacSlice1);
+    EnetAppUtils_printStatsNonZero("  hostEgrsQExpOvrFloMacSlice0 = %llu\r\n", (uint64_t)st->hostEgrsQExpOvrFloMacSlice0);
+    EnetAppUtils_printStatsNonZero("  hostEgrsQExpOvrFloMacSlice1 = %llu\r\n", (uint64_t)st->hostEgrsQExpOvrFloMacSlice1);
+    EnetAppUtils_printStatsNonZero("  cutThroughPacketSlice0      = %llu\r\n", (uint64_t)st->cutThroughPacketSlice0);
+    EnetAppUtils_printStatsNonZero("  cutThroughPacketSlice1      = %llu\r\n", (uint64_t)st->cutThroughPacketSlice1);
 }
 #endif
 
