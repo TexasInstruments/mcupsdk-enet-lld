@@ -152,7 +152,7 @@ const templates_freertos_mcu0 =
 ];
 
 const buildOptionCombos = [
-   { device: device, cpu: "mcu0", cgt: "ti-arm-clang", board: "tda54-evm", os: "freertos", isPartOfSystemProject: true},
+   { device: device, cpu: "mcu0", cgt: "ti-arm-clang", board: "tda54-evm", os: "freertos", isPartOfSystemProject: false},
 ];
 
 function getComponentProperty() {
