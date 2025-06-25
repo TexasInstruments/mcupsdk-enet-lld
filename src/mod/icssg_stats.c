@@ -52,8 +52,7 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* This is used since address handling by firmware for 64bit REG is different */
-#define FW64ADDRCONV(x) (x<<2U)
+/* None */
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -320,7 +319,7 @@ static void IcssgStats_getPaStats(IcssgStats_Handle hStats,
     /* First two PA statistics counters are 64-bit values */
     for(i = 0U; i < ENET_ARRAYSIZE(IcssgStats_64bitpaStatsOffset); i++)
     {
-        *stats64 = CSL_REG64_RD(baseAddr + FW64ADDRCONV(IcssgStats_64bitpaStatsOffset[i]));
+        *stats64 = CSL_REG64_RD(baseAddr + IcssgStats_64bitpaStatsOffset[i]);
         stats64 += 2U;
     }
 
