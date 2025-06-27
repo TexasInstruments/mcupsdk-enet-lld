@@ -74,6 +74,9 @@ extern "C" {
 /*! \brief EST feature mask. */
 #define CPSW_MACPORT_FEATURE_EST              (ENET_BIT(2U))
 
+/*! \brief IET feature mask. */
+#define CPSW_MACPORT_FEATURE_IET              (ENET_BIT(3U))
+
 /*! \brief Base InterVLAN Route Id. */
 #define CPSW_MACPORT_INTERVLAN_ROUTEID_BASE   (1U)
 

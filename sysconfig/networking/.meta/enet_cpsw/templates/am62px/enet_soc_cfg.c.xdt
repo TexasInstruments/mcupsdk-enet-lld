@@ -106,7 +106,8 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
         .physAddr2  = (CSL_CPSW0_NUSS_BASE + CPSW_SGMII0_OFFSET(0U)), \
         .features   = (ENET_FEAT_BASE |                               \
                        CPSW_MACPORT_FEATURE_EST |                     \
-                       CPSW_MACPORT_FEATURE_INTERVLAN),               \
+                       CPSW_MACPORT_FEATURE_INTERVLAN |               \
+                       CPSW_MACPORT_FEATURE_IET),                     \
         .errata     = ENET_ERRATA_NONE,                               \
         .open       = &CpswMacPort_open,                              \
         .rejoin     = &CpswMacPort_rejoin,                            \
