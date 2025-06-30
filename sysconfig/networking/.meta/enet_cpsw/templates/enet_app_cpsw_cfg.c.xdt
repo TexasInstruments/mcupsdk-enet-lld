@@ -559,36 +559,48 @@ static const EnetMacPort_LinkCfg enetAppMacPortLinkCfg[] =
         `instance.macport2LinkDuplexity`,
     },
 % }
+% if (instance.hasOwnProperty(`macport3LoopbackMode`))  {
     [ENET_MAC_PORT_3] =
     {
         `instance.macport3LinkSpeed`,
         `instance.macport3LinkDuplexity`,
     },
+% }
+% if (instance.hasOwnProperty(`macport4LoopbackMode`))  {
     [ENET_MAC_PORT_4] =
     {
         `instance.macport4LinkSpeed`,
         `instance.macport4LinkDuplexity`,
     },
+% }
+% if (instance.hasOwnProperty(`macport5LoopbackMode`))  {
     [ENET_MAC_PORT_5] =
     {
         `instance.macport5LinkSpeed`,
         `instance.macport5LinkDuplexity`,
     },
+% }
+% if (instance.hasOwnProperty(`macport6LoopbackMode`))  {
     [ENET_MAC_PORT_6] =
     {
         `instance.macport6LinkSpeed`,
         `instance.macport6LinkDuplexity`,
     },
+% }
+% if (instance.hasOwnProperty(`macport7LoopbackMode`))  {
     [ENET_MAC_PORT_7] =
     {
         `instance.macport7LinkSpeed`,
         `instance.macport7LinkDuplexity`,
     },
+% }
+% if (instance.hasOwnProperty(`macport8LoopbackMode`))  {
     [ENET_MAC_PORT_8] =
     {
         `instance.macport8LinkSpeed`,
         `instance.macport8LinkDuplexity`,
     },
+% }
 };
 
 static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
@@ -627,6 +639,7 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
 
     },
 % }
+% if (instance.hasOwnProperty(`macport3LoopbackMode`))  {
     [ENET_MAC_PORT_3] =
     {
         .loopbackEn = `instance.macport3LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -643,6 +656,8 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
+% if (instance.hasOwnProperty(`macport4LoopbackMode`))  {
     [ENET_MAC_PORT_4] =
     {
         .loopbackEn = `instance.macport4LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -659,6 +674,8 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
+% if (instance.hasOwnProperty(`macport5LoopbackMode`))  {
     [ENET_MAC_PORT_5] =
     {
         .loopbackEn = `instance.macport5LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -675,6 +692,8 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
+% if (instance.hasOwnProperty(`macport6LoopbackMode`))  {
     [ENET_MAC_PORT_6] =
     {
         .loopbackEn = `instance.macport6LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -691,6 +710,8 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
+% if (instance.hasOwnProperty(`macport7LoopbackMode`))  {
     [ENET_MAC_PORT_7] =
     {
         .loopbackEn = `instance.macport7LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -707,6 +728,8 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
+% if (instance.hasOwnProperty(`macport8LoopbackMode`))  {
     [ENET_MAC_PORT_8] =
     {
         .loopbackEn = `instance.macport8LoopbackMode === "LOOPBACK_MODE_MAC"`,
@@ -723,6 +746,7 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
 
     },
+% }
 };
 
 static void EnetApp_initAleConfig(CpswAle_Cfg *pAleCfg)
