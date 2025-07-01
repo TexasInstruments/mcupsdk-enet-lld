@@ -88,6 +88,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM64X \
 	-DMBEDTLS_CONFIG_FILE=\"alt_config.h\" \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-a53+fp+simd \
@@ -128,13 +129,13 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-l:freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:drivers.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:board.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:enet-cpsw.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:drivers.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	-l:board.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	-l:enet-cpsw.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 	-l:lwipif-cpsw-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:lwip-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:lwip-contrib-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:mbedtls.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:mbedtls.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 
 LFLAGS_common = \
 	-Wl,-static \
@@ -149,13 +150,13 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	drivers.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	board.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	enet-cpsw.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	drivers.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	board.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	enet-cpsw.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 	lwipif-cpsw-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	lwip-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	lwip-contrib-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	mbedtls.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	mbedtls.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 
 LIBS_PATH_NAME = \
 	generated \

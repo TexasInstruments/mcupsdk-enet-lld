@@ -62,6 +62,7 @@
             -ffunction-sections
             -Wno-unused-function
             -DSOC_AM64X
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -L${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -95,9 +96,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.debug.lib
-                -ldrivers.am64x.a53.gcc-aarch64.debug.lib
-                -lboard.am64x.a53.gcc-aarch64.debug.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.debug.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.debug.lib
             "
         ></configuration>
         <configuration name="Release"
@@ -107,9 +108,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.release.lib
-                -ldrivers.am64x.a53.gcc-aarch64.release.lib
-                -lboard.am64x.a53.gcc-aarch64.release.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.release.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.release.lib
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
@@ -131,6 +132,8 @@
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
     </project>
 </projectSpec>

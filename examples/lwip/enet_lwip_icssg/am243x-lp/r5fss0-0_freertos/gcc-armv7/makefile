@@ -93,6 +93,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM243X \
 	-DENET_ENABLE_PER_ICSSG=1 \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -138,9 +139,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-l:freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:drivers.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:board.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:enet-icssg.am243x.r5f.gcc-armv7.${ConfigName}.lib \
+	-l:drivers.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
+	-l:board.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
+	-l:enet-icssg.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
 	-l:lwipif-icssg-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
 	-l:lwip-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
 	-l:lwip-contrib-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
@@ -161,9 +162,9 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	drivers.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	board.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	enet-icssg.am243x.r5f.gcc-armv7.${ConfigName}.lib \
+	drivers.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
+	board.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
+	enet-icssg.am243x.r5f.gcc-armv7.freertos.${ConfigName}.lib \
 	lwipif-icssg-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
 	lwip-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
 	lwip-contrib-freertos.am243x.r5f.gcc-armv7.${ConfigName}.lib \

@@ -96,6 +96,7 @@ DEFINES_common := \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
 	-DGPTP_ENABLED=1 \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-a53+fp+simd \
@@ -137,9 +138,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-l:freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:drivers.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:enet-cpsw.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	-l:board.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	-l:drivers.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	-l:enet-cpsw.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	-l:board.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 	-l:tsn_combase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_unibase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	-l:tsn_gptp-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
@@ -159,9 +160,9 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	drivers.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	enet-cpsw.am64x.a53.gcc-aarch64.${ConfigName}.lib \
-	board.am64x.a53.gcc-aarch64.${ConfigName}.lib \
+	drivers.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	enet-cpsw.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
+	board.am64x.a53.gcc-aarch64.freertos.${ConfigName}.lib \
 	tsn_combase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_unibase-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \
 	tsn_gptp-freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib \

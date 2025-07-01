@@ -68,6 +68,7 @@
             -Wno-unused-function
             -Wno-format
             -DSOC_AM64X
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -L${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -102,9 +103,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.debug.lib
-                -ldrivers.am64x.a53.gcc-aarch64.debug.lib
-                -lboard.am64x.a53.gcc-aarch64.debug.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.debug.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.debug.lib
                 -llwipif-cpsw-freertos.am64x.a53.gcc-aarch64.debug.lib
                 -llwip-freertos.am64x.a53.gcc-aarch64.debug.lib
                 -llwip-contrib-freertos.am64x.a53.gcc-aarch64.debug.lib
@@ -117,9 +118,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.release.lib
-                -ldrivers.am64x.a53.gcc-aarch64.release.lib
-                -lboard.am64x.a53.gcc-aarch64.release.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.release.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.release.lib
                 -llwipif-cpsw-freertos.am64x.a53.gcc-aarch64.release.lib
                 -llwip-freertos.am64x.a53.gcc-aarch64.release.lib
                 -llwip-contrib-freertos.am64x.a53.gcc-aarch64.release.lib
@@ -144,6 +145,8 @@
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
     </project>
 </projectSpec>

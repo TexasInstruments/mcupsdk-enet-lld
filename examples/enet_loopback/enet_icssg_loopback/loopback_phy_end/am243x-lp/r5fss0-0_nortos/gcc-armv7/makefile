@@ -79,6 +79,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM243X \
 	-DENET_ENABLE_PER_ICSSG=1 \
+	-DOS_NORTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -123,9 +124,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-l:nortos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:drivers.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:enet-icssg.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	-l:board.am243x.r5f.gcc-armv7.${ConfigName}.lib \
+	-l:drivers.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
+	-l:enet-icssg.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
+	-l:board.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
 
 LFLAGS_common = \
 	-mcpu=cortex-r5 \
@@ -143,9 +144,9 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	nortos.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	drivers.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	enet-icssg.am243x.r5f.gcc-armv7.${ConfigName}.lib \
-	board.am243x.r5f.gcc-armv7.${ConfigName}.lib \
+	drivers.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
+	enet-icssg.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
+	board.am243x.r5f.gcc-armv7.nortos.${ConfigName}.lib \
 
 LIBS_PATH_NAME = \
 	generated \

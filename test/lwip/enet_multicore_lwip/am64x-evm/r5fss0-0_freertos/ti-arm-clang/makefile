@@ -88,6 +88,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM64X \
 	-DENET_ENABLE_PER_ICSSG=1 \
+	-DOS_FREERTOS \
 
 CFLAGS_release := \
 	-Os \
@@ -135,12 +136,12 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-icssg.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-icssg.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llwipif-icssg-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-contrib-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -163,12 +164,12 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-icssg.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-icssg.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	lwipif-icssg-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-contrib-freertos.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am64x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am64x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 

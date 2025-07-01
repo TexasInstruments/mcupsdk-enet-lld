@@ -76,6 +76,7 @@
             -DPRINT_FORMAT_NO_WARNING
             -DSITARA
             -DGPTP_ENABLED=1
+            -DOS_FREERTOS
         "
         linkerBuildOptions="
             -L${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -111,9 +112,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.debug.lib
-                -ldrivers.am64x.a53.gcc-aarch64.debug.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.debug.lib
-                -lboard.am64x.a53.gcc-aarch64.debug.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.debug.lib
                 -ltsn_combase-freertos.am64x.a53.gcc-aarch64.debug.lib
                 -ltsn_unibase-freertos.am64x.a53.gcc-aarch64.debug.lib
                 -ltsn_gptp-freertos.am64x.a53.gcc-aarch64.debug.lib
@@ -128,9 +129,9 @@
             "
             linkerBuildOptions="
                 -lfreertos.am64x.a53.gcc-aarch64.release.lib
-                -ldrivers.am64x.a53.gcc-aarch64.release.lib
-                -lenet-cpsw.am64x.a53.gcc-aarch64.release.lib
-                -lboard.am64x.a53.gcc-aarch64.release.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.release.lib
                 -ltsn_combase-freertos.am64x.a53.gcc-aarch64.release.lib
                 -ltsn_unibase-freertos.am64x.a53.gcc-aarch64.release.lib
                 -ltsn_gptp-freertos.am64x.a53.gcc-aarch64.release.lib
@@ -165,6 +166,8 @@
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
     </project>
 </projectSpec>

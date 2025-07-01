@@ -100,6 +100,7 @@ DEFINES_common := \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
 	-DGPTP_ENABLED=1 \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -149,9 +150,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 	-ltsn_combase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -181,9 +182,9 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 	tsn_combase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \

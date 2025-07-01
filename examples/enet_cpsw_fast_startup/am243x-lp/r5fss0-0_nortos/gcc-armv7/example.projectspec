@@ -64,6 +64,7 @@
             -ffunction-sections
             -DSOC_AM243X
             -DENET_ENABLE_PER_CPSW=1
+            -DOS_NORTOS
         "
         linkerBuildOptions="
             -L${MCU_PLUS_SDK_PATH}/source/kernel/nortos/lib
@@ -101,9 +102,9 @@
             "
             linkerBuildOptions="
                 -lnortos.am243x.r5f.gcc-armv7.debug.lib
-                -ldrivers.am243x.r5f.gcc-armv7.debug.lib
-                -lenet-cpsw.am243x.r5f.gcc-armv7.debug.lib
-                -lboard.am243x.r5f.gcc-armv7.debug.lib
+                -ldrivers.am243x.r5f.gcc-armv7.nortos.debug.lib
+                -lenet-cpsw.am243x.r5f.gcc-armv7.nortos.debug.lib
+                -lboard.am243x.r5f.gcc-armv7.nortos.debug.lib
             "
         ></configuration>
         <configuration name="Release"
@@ -113,9 +114,9 @@
             "
             linkerBuildOptions="
                 -lnortos.am243x.r5f.gcc-armv7.release.lib
-                -ldrivers.am243x.r5f.gcc-armv7.release.lib
-                -lenet-cpsw.am243x.r5f.gcc-armv7.release.lib
-                -lboard.am243x.r5f.gcc-armv7.release.lib
+                -ldrivers.am243x.r5f.gcc-armv7.nortos.release.lib
+                -lenet-cpsw.am243x.r5f.gcc-armv7.nortos.release.lib
+                -lboard.am243x.r5f.gcc-armv7.nortos.release.lib
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
@@ -139,6 +140,8 @@
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
     </project>
 </projectSpec>
