@@ -37,8 +37,13 @@
 #ifndef AAF_PCM_APP_H__
 #define AAF_PCM_APP_H__
 
-void init_hw_timer(int appno);
+typedef void* aafcrf_data;
+
+void init_hw_timer();
 void start_hw_timer();
-int start_aaf_pcm_talker(char* netdev, int appno, int txintervalus, int channels);
 int start_aaf_pcm_listener(char* netdev);
+
+void set_crf_cbdata(aafcrf_data cbdata);
+int init_aaf_pcm_talker(char* netdev, int appno, int txintervalus, int channels);
+int start_all_talkers();
 #endif

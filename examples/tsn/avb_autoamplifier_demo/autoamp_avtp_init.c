@@ -37,6 +37,7 @@
 #include <tsn_unibase/unibase_binding.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_l2/tilld/frtos_avtp_include.h>
+#include "tsn_gptp/gptpmasterclock.h"
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
 #include "debug_log.h"
@@ -56,7 +57,7 @@
 #define AAF_DOLBY_EC3_TASK_PRIORITY (2)
 #define AAF_PCM_TASK_PRIORITY (2)
 #define AUTOAMP_APP_CLASSD1_TASK_PRIORITY (10)
-#define AUTOAMP_APP_CLASSA_TASK_PRIORITY (31)
+#define AUTOAMP_APP_TASK_PRIORITY (31)
 #define AUTOAMP_APP_RX_TASK_PRIORITY (10)
 
 #define AVTPD_TASK_NAME         "avtpd_task"
@@ -314,7 +315,7 @@ static void *EnetApp_runCrfTalker(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 {
     EnetApp_Ctx_t *ctx = mdctx->appCtx;
     char *argv[]={"crf_testclient", "-d", &ctx->netdev[0][0],
-        "-m", "t", "-v", "110", "-s", stream_id, "-u", NULL}; /* '-u' must be the last */
+        "-m", "t", "-v", "110", "-s", stream_id, "-i", "-u", NULL}; /* '-u' must be the last */
 
     DPRINT("crf_testclient:talker sid=%s", stream_id);
     crf_task(GetArgc(argv), argv);
@@ -491,7 +492,6 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 #endif // AAF_PCM_ENABLED
 
 /*-----------For Auto Amp App test applications------------*/
-#ifdef AUTOAMP_APP_ENABLED
 #ifdef WITH_EST_CONFIG
 #include "est_configure.h"
 extern void est_schedule(EnetApp_ModuleCtx_t *modCtx);
@@ -535,130 +535,55 @@ static void EnetApp_waitSystemStable()
         waitGptpReady();
     #endif // HAVE_GPTP_READY_NOTICE
 
-    #endif // AVTP_DIRECT_MODE
+    while(gptpmasterclock_init(NULL)){
+		UB_LOG(UBL_INFO,"Waiting for tsn_gptpd to be ready...\n");
+		CB_USLEEP(100000);
+	}
 }
 
 static int EnetApp_autoAmpAppInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs)
 {
-#ifdef AAF_TX_CLASS_A_APPNO
-    init_hw_timer(AAF_TX_CLASS_A_APPNO);
-#endif
-#ifdef AAF_TX_CLASS_D1_1_APPNO
-    init_hw_timer(AAF_TX_CLASS_D1_1_APPNO);
-#endif
-#ifdef AAF_TX_CLASS_D1_2_APPNO
-    init_hw_timer(AAF_TX_CLASS_D1_2_APPNO);
-#endif
-#ifdef AAF_TX_CLASS_D1_3_APPNO
-    init_hw_timer(AAF_TX_CLASS_D1_3_APPNO);
-#endif
+    init_hw_timer();
     DPRINT("%s: done", __func__);
     return 0;
 }
 
-#ifdef AAF_TX_CLASS_A_APPNO
-static void *EnetApp_classATalkerTask(void *arg)
+static void *EnetApp_talkerTask(void *arg)
 {
     EnetApp_waitSystemStable();
-
-    start_aaf_pcm_talker("tilld0", AAF_TX_CLASS_A_APPNO, 125, 16);
+#ifdef AAF_TX_CLASS_A_APPNO
+    init_aaf_pcm_talker("tilld0", AAF_TX_CLASS_A_APPNO, 125, 16);
+#endif
+#ifdef AAF_TX_CLASS_D1_1_APPNO
+    init_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_1_APPNO, 1000, 8);
+#endif
+#ifdef AAF_TX_CLASS_D1_2_APPNO
+    init_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_2_APPNO, 1000, 8);
+#endif
+#ifdef AAF_TX_CLASS_D1_3_APPNO
+    init_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_3_APPNO, 1000, 8);
+#endif
+    start_all_talkers();
     return NULL;
 }
 
-static uint8_t gTxClassAStackBuf[16U * 1024U] \
+static uint8_t gTxStackBuf[16U * 1024U] \
 __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 
-#define AVTP_AUTOAMP_APP_TX_CLASSA_ENTRY \
+#define AVTP_AUTOAMP_APP_TX_ENTRY \
     [ENETAPP_AAF_AUTOAMP_APP_TX_CLASSA_TASK_IDX]={ \
         .enable = BTRUE, \
         .stopFlag = BTRUE, \
-        .taskPriority = AUTOAMP_APP_CLASSA_TASK_PRIORITY, \
-        .taskName = "autoAmpApp_TxclassA", \
-        .stackBuffer = gTxClassAStackBuf, \
-        .stackSize = sizeof(gTxClassAStackBuf), \
+        .taskPriority = AUTOAMP_APP_TASK_PRIORITY, \
+        .taskName = "autoAmpApp_TxTask", \
+        .stackBuffer = gTxStackBuf, \
+        .stackSize = sizeof(gTxStackBuf), \
         .onModuleDBInit = EnetApp_autoAmpAppInit, \
-        .onModuleRunner = EnetApp_classATalkerTask, \
+        .onModuleRunner = EnetApp_talkerTask, \
         .appCtx = &gAppCtx \
     }
 #endif // AAF_TX_CLASS_A_APPNO
 
-#ifdef AAF_TX_CLASS_D1_1_APPNO
-static void *EnetApp_classD11TalkerTask(void *arg)
-{
-    EnetApp_waitSystemStable();
-
-    start_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_1_APPNO, 1000, 8);
-    return NULL;
-}
-
-static uint8_t gTxClassD11StackBuf[TSN_TSK_STACK_SIZE] \
-__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
-
-#define AVTP_AUTOAMP_APP_TX_CLASSD1_1_ENTRY \
-    [ENETAPP_AUTOAMP_APP_TX_CLASSD1_1_TASK_IDX]={ \
-        .enable = BTRUE, \
-        .stopFlag = BTRUE, \
-        .taskPriority = AUTOAMP_APP_CLASSD1_TASK_PRIORITY, \
-        .taskName = "autoAmpApp_TxclassD1_1", \
-        .stackBuffer = gTxClassD11StackBuf, \
-        .stackSize = sizeof(gTxClassD11StackBuf), \
-        .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_classD11TalkerTask, \
-        .appCtx = &gAppCtx \
-    }
-#endif // AAF_TX_CLASS_D1_1_APPNO
-
-#ifdef AAF_TX_CLASS_D1_2_APPNO
-static void *EnetApp_classD12TalkerTask(void *arg)
-{
-    EnetApp_waitSystemStable();
-
-    start_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_2_APPNO, 1000, 8);
-    return NULL;
-}
-
-static uint8_t gTxClassD12StackBuf[TSN_TSK_STACK_SIZE] \
-__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
-
-#define AVTP_AUTOAMP_APP_TX_CLASSD1_2_ENTRY \
-    [ENETAPP_AUTOAMP_APP_TX_CLASSD1_2_TASK_IDX]={ \
-        .enable = BTRUE, \
-        .stopFlag = BTRUE, \
-        .taskPriority = AUTOAMP_APP_CLASSD1_TASK_PRIORITY, \
-        .taskName = "autoAmpApp_TxclassD1_2", \
-        .stackBuffer = gTxClassD12StackBuf, \
-        .stackSize = sizeof(gTxClassD12StackBuf), \
-        .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_classD12TalkerTask, \
-        .appCtx = &gAppCtx \
-    }
-#endif // AAF_TX_CLASS_D1_2_APPNO
-
-#ifdef AAF_TX_CLASS_D1_3_APPNO
-static void *EnetApp_classD13TalkerTask(void *arg)
-{
-    EnetApp_waitSystemStable();
-
-    start_aaf_pcm_talker("tilld0", AAF_TX_CLASS_D1_3_APPNO, 1000, 8);
-    return NULL;
-}
-
-static uint8_t gTxClassD13StackBuf[TSN_TSK_STACK_SIZE] \
-__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
-
-#define AVTP_AUTOAMP_APP_TX_CLASSD1_3_ENTRY \
-    [ENETAPP_AUTOAMP_APP_TX_CLASSD1_3_TASK_IDX]={ \
-        .enable = BTRUE, \
-        .stopFlag = BTRUE, \
-        .taskPriority = AUTOAMP_APP_CLASSD1_TASK_PRIORITY, \
-        .taskName = "autoAmpApp_TxclassD1_3", \
-        .stackBuffer = gTxClassD13StackBuf, \
-        .stackSize = sizeof(gTxClassD13StackBuf), \
-        .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_classD13TalkerTask, \
-        .appCtx = &gAppCtx \
-    }
-#endif // AAF_TX_CLASS_D1_3_APPNO
 
 #if defined(AAF_RX_1_APPNO) || defined(AAF_RX_2_APPNO) || defined(AAF_RX_3_APPNO) || defined(AAF_RX_4_APPNO)
 static void *EnetApp_ListenerTask(void *arg)
@@ -685,7 +610,6 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
         .appCtx = &gAppCtx \
     }
 #endif // AAF_RX_1_APPNO
-#endif
 
 
 static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
@@ -722,18 +646,7 @@ static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 #ifdef WITH_EST_CONFIG
         AVTP_EST_CFG_ENTRY,
 #endif
-#ifdef AAF_TX_CLASS_A_APPNO
-        AVTP_AUTOAMP_APP_TX_CLASSA_ENTRY,
-#endif
-#ifdef AAF_TX_CLASS_D1_1_APPNO
-        AVTP_AUTOAMP_APP_TX_CLASSD1_1_ENTRY,
-#endif
-#ifdef AAF_TX_CLASS_D1_2_APPNO
-        AVTP_AUTOAMP_APP_TX_CLASSD1_2_ENTRY,
-#endif
-#ifdef AAF_TX_CLASS_D1_3_APPNO
-        AVTP_AUTOAMP_APP_TX_CLASSD1_3_ENTRY,
-#endif
+        AVTP_AUTOAMP_APP_TX_ENTRY,
 /// rx apps
 #if defined(AAF_RX_1_APPNO) || defined(AAF_RX_2_APPNO) || defined(AAF_RX_3_APPNO)
         AVTP_AUTOAMP_APP_RX_ENTRY,

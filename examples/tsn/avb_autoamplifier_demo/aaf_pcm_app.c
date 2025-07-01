@@ -47,6 +47,14 @@
 
 #define CONF_TSOFFSET_USEC 200000
 
+aafcrf_data* gCrfData;
+extern int crfrx_callback(uint8_t *payload, int payload_size,
+                      avbtp_rcv_cb_info_t *cbinfo, void *cbdata);
+void set_crf_cbdata(aafcrf_data cbdata)
+{
+    gCrfData = cbdata;
+}
+
 // t1 - at Timer ISR
 // t2 - at EnetDma_SubmitTx
 // t3 - after SubmitTx call is done
@@ -63,6 +71,7 @@ typedef struct {
 			  uint8_t *audio_data, uint32_t data_size);
 	void *avtpc_talker;
 	int read_size;
+    uint32_t buffer_size; // pcm buffer per each send
 	uint32_t sent_bytes;
 	uint32_t sent_packets;
     talker_tx_analysis_t txanalysis[1]; // using sent_packets as counter. Stop talker once sent_packets = 10000
@@ -112,12 +121,18 @@ uint8_t txbuf[1500];
 // appno can run from 0 --> 5
 audio_talker_t gaudioTalker[6] = {0};
 audio_listener_t gaudioListener;
-SemaphoreP_Object gTimerSem[6];
 
+#define TX_ONLY_CLASS_A_STREAM 1
+#define TX_ALL_STREAMS 2
+uint8_t gTxEvent=0; // default 0
+SemaphoreP_Object gTxSignalSems;
+uint8_t classA_appno = 0;
+uint8_t classD1_appno[5];
+uint8_t totalD1_appno=0;
 
 uint32_t EnetApp_getClockCount(void)
 {
-    return TimerP_getCount(gTimerBaseAddr[CONFIG_TIMER0]);
+    return TimerP_getCount(gTimerBaseAddr[CONFIG_TIMER1]);
 }
 
 uint32_t EnetApp_getDurationDiff(uint32_t startClock)
@@ -133,11 +148,11 @@ uint32_t EnetApp_getDurationDiff(uint32_t startClock)
     else /* overflow. timerP count from start to MAX_TIMER_COUNT_VALUE then from reload to end */
     {
         elapsedClock = MAX_TIMER_COUNT_VALUE - startClock;
-        elapsedClock += endClock - TimerP_getReloadCount(gTimerBaseAddr[CONFIG_TIMER0]);
+        elapsedClock += endClock - TimerP_getReloadCount(gTimerBaseAddr[CONFIG_TIMER1]);
     }
 
     diff_count = elapsedClock *1000000U;
-    diff_count /= CONFIG_TIMER0_INPUT_CLK_HZ;
+    diff_count /= CONFIG_TIMER1_INPUT_CLK_HZ;
 
     return diff_count;
 }
@@ -231,12 +246,22 @@ static void init_default_params(conl2_basic_conparas_t* basic_param, aaf_avtpc_p
 
     // we won't care about data
     memset(txbuf, 0x01, sizeof(txbuf));
+
+    if (appno != 0xFF)
+    {
+        if (txintervalus == 125)
+        {
+            classA_appno=appno;
+        }
+        else {
+            classD1_appno[totalD1_appno]=appno;
+            totalD1_appno++;
+        }
+    }
 }
 
-int start_aaf_pcm_talker(char* netdev, int appno, int txintervalus, int channels)
+int init_aaf_pcm_talker(char* netdev, int appno, int txintervalus, int channels)
 {
-    uint64_t pts;
-    uint64_t sts, ets, tsdiff; // start and end ts, use to print report
     conl2_basic_conparas_t basic_param;
     aaf_avtpc_pcminfo_t pcm_info;
 
@@ -245,101 +270,73 @@ int start_aaf_pcm_talker(char* netdev, int appno, int txintervalus, int channels
     memcpy(basic_param.netdev, netdev, strlen(netdev));
     init_default_params(&basic_param, &pcm_info, appno, txintervalus);
 
-    while(gptpmasterclock_init(NULL)){
-		UB_LOG(UBL_INFO,"Waiting for tsn_gptpd to be ready...\n");
-		CB_USLEEP(100000);
-	}
-
     if (audio_aaf_talker_init(appno, &basic_param, &pcm_info) == -1)
     {
         UB_LOG(UBL_INFO,"Initial appno=%d failed\n", appno);
         return -1;
     }
-    else
-    {
-        UB_LOG(UBL_INFO,"appno=%d waiting for est config before streaming\n", appno);
-    }
-
-#ifdef WITH_EST_CONFIG
-    wait_est_configured();
-#endif
 
     // 125us, 16 channels => buffer size = 48 (frames per 1ms) * 125(us) / 1000 (us) * 2 (16 bit-depth) * 16 (channels) = 192 bytes
     // 125us, 8 channels => buffer size = 48 (frames per 1ms) * 125(us) / 1000 (us) * 2 (16 bit-depth) * 8 (channels) = 96 bytes
     // 1000us, 8 channels => buffer size = 48 (frames per 1ms) * 1000(us) / 1000 (us) * 2 (16 bit-depth) * 8 (channels) = 768 bytes
     // 1000us, 12 channels => buffer size = 48 (frames per 1ms) * 1000(us) / 1000 (us) * 2 (16 bit-depth) * 12 (channels) = 1152 bytes
-    int pcmbuf_size = 48 * txintervalus / UB_MSEC_US * channels * 2;
-    sts = ub_mt_gettime64();
-    // repeat: start from 0 and read until last sync frame
-    while(true)
+    gaudioTalker[appno].buffer_size = 48 * txintervalus / UB_MSEC_US * channels * 2;
+
+    return 0;
+}
+
+/// @brief There will be two kinds of sem signals
+///         1. trigger class A ONLY (every hw interrupt)
+///         2. trigger class A+D at the same time (hw interrupt * 8)
+/// @return
+int start_all_talkers()
+{
+    uint64_t pts;
+    wait_est_configured();
+    UB_LOG(UBL_INFO, "Starting All Talker in one single threads\n");
+
+    while (true)
     {
-        SemaphoreP_pend(&gTimerSem[appno], SystemP_WAIT_FOREVER);
-
-        // pts = gptpmasterclock_getts64();
-        pts = 0;
-
-        current_active_app = appno;
-        if (gaudioTalker[appno].avtpc_send( gaudioTalker[appno].avtpc_talker,
-                                pts + CONF_TSOFFSET_USEC,
-                                &txbuf[0],
-                                pcmbuf_size) < 0)
+        SemaphoreP_pend(&gTxSignalSems, SystemP_WAIT_FOREVER);
+        if (gTxEvent != 0)
         {
-            return -1;
+            pts = 0;
+            // // Transfer class A no matter what
+            gaudioTalker[classA_appno].avtpc_send(gaudioTalker[classA_appno].avtpc_talker,
+                    pts, &txbuf[0], gaudioTalker[classA_appno].buffer_size) ;
+            gaudioTalker[classA_appno].sent_packets++;
+
+            // Now loop all D1 and tx D1 if event is 2
+            if (gTxEvent == TX_ALL_STREAMS)
+            {
+                for (int i=0; i<totalD1_appno; i++)
+                {
+                    uint8_t d1app = classD1_appno[i];
+                    gaudioTalker[d1app].avtpc_send(gaudioTalker[d1app].avtpc_talker,
+                        pts, &txbuf[0], gaudioTalker[d1app].buffer_size);
+                    gaudioTalker[d1app].sent_packets++;
+                }
+            }
         }
-        // gaudioTalker[appno].sent_packets++;
-        // gaudioTalker[appno].sent_bytes += pcmbuf_size;
-
-        // if (gaudioTalker[appno].sent_packets == 10000) break;
-
-#if 0
-        ets = ub_mt_gettime64();
-        tsdiff = ets - sts;
-        if (tsdiff >= 5*UB_SEC_NS) {
-            // uint64_t tmp_send_pkt = (uint64_t) gaudioTalker[appno].sent_packets * (uint64_t)UB_SEC_NS;
-            // uint64_t tmp_send_bytes = (uint64_t) gaudioTalker[appno].sent_bytes * 8000;
-            UB_LOG(UBL_INFO,"["UB_PRIhexB8"] ok=%d delay=%d|t1+t2[0]=%d|t1[0]=%d|t2[0]=%d|max sendingtime=%d\n",
-                UB_ARRAY_B8(basic_param.streamid),
-                 gaudioTalker[appno].ok_packets,
-                gaudioTalker[appno].delay_packets,
-                (gaudioTalker[appno].delay_packets > 0) ? gaudioTalker[appno].delay_info[0].sending_time:0, // currently print only the first one
-                (gaudioTalker[appno].delay_packets > 0) ? gaudioTalker[appno].delay_info[0].sending_time_t1:0, // currently print only the first one
-                (gaudioTalker[appno].delay_packets > 0) ? gaudioTalker[appno].delay_info[0].sending_time_t2:0, // currently print only the first one
-                gaudioTalker[appno].max_sending_time);
-            gaudioTalker[appno].sent_packets = 0;
-            gaudioTalker[appno].sent_bytes = 0;
-            gaudioTalker[appno].delay_packets = 0;
-            gaudioTalker[appno].ok_packets = 0;
-            gaudioTalker[appno].max_sending_time = 0;
-
-            // (void)tmp_send_pkt;
-            // (void)tmp_send_bytes;
-
-            sts = ets;
-        }
-#else
-        (void) sts;
-        (void) ets;
-        (void) tsdiff;
-#endif
-    }
-
-    for (int i=0; i<gaudioTalker[appno].sent_packets; i++)
-    {
-        UB_LOG(UBL_INFO,"["UB_PRIhexB8"] t1|t2|t3=%u|%u|%u\n",
-                UB_ARRAY_B8(basic_param.streamid),
-                gaudioTalker[current_active_app].txanalysis[i].t1,
-                gaudioTalker[current_active_app].txanalysis[i].t2,
-                gaudioTalker[current_active_app].txanalysis[i].t3);
 
     }
 
     return 0;
 }
 
+uint64_t gStreamCounter[6];
+
 static int audio_aaf_avtp_push_packet(uint8_t *payload, int plsize,
 				avbtp_rcv_cb_info_t *cbinfo, void *cbdata)
 {
-#ifdef RX_REPORT
+    if(cbinfo->u.rcrfinfo.subtype==AVBTP_SUBTYPE_CRF){
+        return crfrx_callback(payload, plsize, cbinfo, gCrfData);
+    }
+    avbtp_sd_info_t *rsdinfo=&cbinfo->u.rsdinfo;
+    audio_listener_t *audio_listener = &gaudioListener;
+    audio_stream_info_t *streaminfo = &audio_listener->rxstreams[rsdinfo->stream_id[7]];
+    streaminfo->rx_count += 1;
+#if 0
     int64_t interval;
 
     avbtp_sd_info_t *rsdinfo=&cbinfo->u.rsdinfo;
@@ -464,13 +461,23 @@ int start_aaf_pcm_listener(char* netdev)
         return -1;
     }
 
+    #ifdef WITH_EST_CONFIG
+    wait_est_configured();
+    #endif
+
     while(!is_rxalldone())
     {
-        CB_USLEEP(200000);
-        ub_log_flush();
-    }
+        CB_SLEEP(1);
 
-    // gaudioListener.avtpc_close(gaudioListener.avtpc_listener);
+        for (int i = 0; i < 4; i++)
+        {
+            if (mon_streams[i] != 0xFF)
+            {
+                audio_stream_info_t *streaminfo = &gaudioListener.rxstreams[mon_streams[i]];
+                UB_LOG(UBL_INFO, "[RX=%d] Packet Count: %u\r\n", (int)mon_streams[i], streaminfo->rx_count);
+            }
+        }
+    }
 
 #ifdef RX_REPORT
     for (int i=0; i<4; i++)
@@ -498,36 +505,33 @@ int start_aaf_pcm_listener(char* netdev)
     return 0;
 }
 
-void init_hw_timer(int appno)
+void init_hw_timer()
 {
-    SemaphoreP_constructBinary(&gTimerSem[appno], 0);
+    static int init_tx_signal=0;
+    if (init_tx_signal == 0)
+    {
+        SemaphoreP_constructBinary(&gTxSignalSems, 0);
+        init_tx_signal = 1; // never jump here again
+    }
 }
 
 void start_hw_timer()
 {
-    TimerP_start(gTimerBaseAddr[CONFIG_TIMER0]);
+    TimerP_start(gTimerBaseAddr[CONFIG_TIMER1]);
 }
 
 void avbTimerIsrClassA(void)
 {
     static int counter = 0;
-#ifdef AAF_TX_CLASS_A_APPNO
-    // gaudioTalker[AAF_TX_CLASS_A_APPNO].txanalysis[gaudioTalker[AAF_TX_CLASS_A_APPNO].sent_packets].t1 = CycleCounterP_getCount32();
-    SemaphoreP_post(&gTimerSem[AAF_TX_CLASS_A_APPNO]);
-#endif
-
-    counter++;
-    if (counter % 8 == 0)
+    if (counter%8==0)
     {
-#ifdef AAF_TX_CLASS_D1_1_APPNO
-        SemaphoreP_post(&gTimerSem[AAF_TX_CLASS_D1_1_APPNO]);
-#endif
-#ifdef AAF_TX_CLASS_D1_2_APPNO
-        SemaphoreP_post(&gTimerSem[AAF_TX_CLASS_D1_2_APPNO]);
-#endif
-#ifdef AAF_TX_CLASS_D1_3_APPNO
-        SemaphoreP_post(&gTimerSem[AAF_TX_CLASS_D1_3_APPNO]);
-#endif
-        counter=0;
+        gTxEvent = TX_ALL_STREAMS; // send all A and D1
+        counter = 0;
     }
+    else
+    {
+        gTxEvent = TX_ONLY_CLASS_A_STREAM; // send only A
+    }
+    SemaphoreP_post(&gTxSignalSems);
+    counter++;
 }

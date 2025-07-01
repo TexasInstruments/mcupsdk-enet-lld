@@ -36,6 +36,8 @@
 #include "kernel/dpl/TimerP.h"
 #include "ti_dpl_config.h"
 
+#include "avb_autoamplifier_demo/aaf_pcm_app.h"
+
 #ifdef AVTP_PLATFORM_INCLUDE
 #include AVTP_PLATFORM_INCLUDE
 #endif
@@ -198,7 +200,7 @@ static int set_options(crfdata_t *crfdata, int argc, char *argv[])
     return res;
 }
 
-static int receive_cb(uint8_t *payload, int payload_size,
+int crfrx_callback(uint8_t *payload, int payload_size,
                       avbtp_rcv_cb_info_t *cbinfo, void *cbdata)
 {
     crfdata_t *crfdata = cbdata;
@@ -295,9 +297,13 @@ static int start_crf(crfdata_t *crfdata)
     crfdata->avtpc_crf=avtpc_crf_init(crfdata->shsuf);
     if (!crfdata->avtpc_crf){return -1;}
 
+#ifndef AUTOAMP_APP_ENABLED
     if (crfcfg.listener) {
-        avtpc_crf_set_rcv_cb(crfdata->avtpc_crf, receive_cb, crfdata);
+        avtpc_crf_set_rcv_cb(crfdata->avtpc_crf, crfrx_callback, crfdata);
     }
+#else
+    set_crf_cbdata(crfdata);
+#endif
     if(crfdata->direct){
         if (crfcfg.listener) {
             avtpc_crf_set_rxdirect(crfdata->avtpc_crf);
@@ -309,6 +315,9 @@ static int start_crf(crfdata_t *crfdata)
         avtpc_crf_set_testport(crfdata->avtpc_crf, crfdata->tsport, crfdata->tdport);
     }
 
+#if (AUTOAMP_APP_ENABLED && AVTP_CRF_LISTENER_ENABLED)
+    (void)ccr;
+#else
     if (avtpc_crf_set_ccr(crfdata->avtpc_crf, &crfcfg, &ccr) < 0) {
         goto end;
     }
@@ -317,7 +326,7 @@ static int start_crf(crfdata_t *crfdata)
     if(avtpc_crf_connection_request(crfdata->avtpc_crf, &ccr)){
         goto end;
     }
-
+#endif
     freq = avbtp_crf_nominal_frequency(crfcfg.pull, crfcfg.base_frequency);
     period = (double)1000000000/(double)freq;
     crfts_period = (uint32_t)(period * (double)crfcfg.timestamp_interval);
@@ -377,10 +386,11 @@ static int start_crf(crfdata_t *crfdata)
             CB_SLEEP(1);
         }
     }
-
-end:
+#if (AUTOAMP_APP_ENABLED && AVTP_CRF_LISTENER_ENABLED)
+#else
+    end:
     avtpc_crf_close(crfdata->avtpc_crf);
-
+#endif
     return 0;
 }
 
@@ -441,7 +451,6 @@ end:
 
     return res;
 }
-
 void crf_tick(void *args)
 {
     CB_SEM_POST(&gCRF_Tick);
