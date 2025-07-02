@@ -23,6 +23,7 @@ const enet_cpsw1         = enet_cpsw.addInstance();
 ethphy_cpsw_icssg1.$name      = "CONFIG_ENET_ETHPHY0";
 ethphy_cpsw_icssg1.peripheral = "CPSW_MAC_PORT_1";
 ethphy_cpsw_icssg1.phySelect  = "NO-PHY";
+scripting.suppress("Warning : Ethphy device is not linked to a network peripheral", ethphy_cpsw_icssg1);
 
 debug_log.enableLogZoneWarning   = false;
 debug_log.enableLogZoneError     = false;
