@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM275x" --part "AM2754" --package "ANJ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2754" --package "FCCSP (ANJ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.23.0+4000"}
+ * @versions {"tool":"1.24.0+4150"}
  */
 
 /**
@@ -69,7 +69,6 @@ mpu_armv75.baseAddr = 0x72400000;
 mpu_armv75.size     = 21;
 
 timer1.$name         = "CONFIG_TIMER0";
-timer1.usecPerTick   = 125;
 timer1.timerCallback = "avbTimerIsr";
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
@@ -80,12 +79,13 @@ enet_cpsw1.mdioPollEnMask                 = [];
 enet_cpsw1.hostportRxMtu                  = 1522;
 enet_cpsw1.macport1RxMtu                  = 1522;
 enet_cpsw1.macport2RxMtu                  = 1522;
-enet_cpsw1.mdioMode                       = "MDIO_MODE_MANUAL";
 enet_cpsw1.LargePoolPktCount              = 56;
 enet_cpsw1.TimestampSource                = "LLDTSYNC_TS_SOURCE_PHY";
 enet_cpsw1.DisableMacPort2                = true;
 enet_cpsw1.cptsHostRxTsEn                 = false;
 enet_cpsw1.macAddrList                    = "70:ff:76:1d:ec:f3,70:ff:76:1d:ec:e4";
+enet_cpsw1.mdioMode                       = "MDIO_MODE_NORMAL";
+enet_cpsw1.mdioBusFreqHz                  = 8000000;
 enet_cpsw1.txDmaChannel.create(3);
 enet_cpsw1.txDmaChannel[0].$name          = "ENET_DMA_TX_CH0";
 enet_cpsw1.txDmaChannel[0].PacketsCount   = 4;
