@@ -1674,6 +1674,7 @@ static void EnetMp_rxTask(void *args)
                         txPktInfo->sgList.numScatterSegments = 1;
                         txPktInfo->chkSumInfo = 0U;
                         txPktInfo->appPriv = &gEnetMp;
+                        txPktInfo->txPktTc = 0;
 
                         /* Set timestamp info in DMA packet.
                          * Packet timestamp currently enabled only for ICSSG. */
