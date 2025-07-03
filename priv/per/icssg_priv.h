@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -90,9 +90,9 @@ extern "C" {
  *
  * In Switch mode to support max QoS level of 8
  * number of pools should be set to 8 * number of ports
- * which is 3 (two external ports and 1 host port)
+ * which is 2 (own and cross Host Port Pool per slice)
  */
-#define ICSSG_SWITCH_HOST_BUFFER_POOL_NUM_QOS_MULTIPLE    (3U)
+#define ICSSG_SWITCH_HOST_BUFFER_POOL_NUM_QOS_MULTIPLE    (2U)
 
 /*! \brief ICSS switch QOS level to HOST_BUFFER_POOL_NUM Factor
  *
@@ -112,7 +112,7 @@ extern "C" {
  *
  * In Switch mode to support max QoS level of 8
  * number of pools should be set to 8 * number of ports
- * which is 3 (two external ports and 1 host port)
+ * which is 2 (own and cross Host Port Pool per slice)
  */
 #define ICSSG_SWITCH_GET_HOST_BUFFER_POOL_NUM(qos)     ((qos) * (ICSSG_SWITCH_HOST_BUFFER_POOL_NUM_QOS_MULTIPLE))
 

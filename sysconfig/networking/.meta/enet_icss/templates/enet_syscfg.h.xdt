@@ -148,7 +148,7 @@ function isLinuxEnabled(){
 #define ICSSG_DUALMAC_PORT_2_HOST_BUFFER_POOL_NUM_CFG        (ENET_SYSCFG_MAC_PORT_2_QOS_LEVEL)
 %}
 %}
-#define ICSSG_SWITCH_HOST_BUFFER_POOL_NUM_CFG         ((ENET_SYSCFG_NUM_EXT_MAC_PORTS + 1) * ENET_SYSCFG_SWITCH_QOS_LEVEL)
+#define ICSSG_SWITCH_HOST_BUFFER_POOL_NUM_CFG         (ENET_SYSCFG_NUM_EXT_MAC_PORTS * ENET_SYSCFG_SWITCH_QOS_LEVEL)
 
 /* TX DMA Channel indexes. Name of TX DMA channel can be changed in example syscfg */
 /* Application should use the define below when opening a Tx DMA channel */

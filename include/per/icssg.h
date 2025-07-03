@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2020
+ *  Copyright (c) Texas Instruments Incorporated 2020-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -125,6 +125,10 @@ extern "C" {
 /*! \brief Maximum number of port buffer pools.
  *         This offset used for Host pool init config */
 #define ICSSG_SWITCH_PORT_BUFFER_POOL_NUM_MAX   (8U)
+
+/*! \brief Maximum number of Host OWN buffer pools.
+ *         This offset used for Host pool init config */
+#define ICSSG_SWITCH_HOST_OWN_BUFFER_POOL_MAX_OFFSET   (16U)
 
 /*! \brief Number of host egress queues required for Dual-MAC. */
 #define ICSSG_SWITCH_HOST_EGRESS_QUEUE_NUM  (2U)
