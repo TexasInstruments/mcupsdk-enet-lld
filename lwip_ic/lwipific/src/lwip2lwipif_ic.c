@@ -508,6 +508,7 @@ static void LwipIc_SetSGList(struct pbuf *pbuf, uint32_t* pArrLen, void* pDataAr
         (*pArrLen)++;
         pbufNext = pbufNext->next;
     }
+    LwipIc_assert(NULL != pbuf);
     LwipIc_assert(totalPacketFilledLen == pbuf->tot_len);
 }
 
