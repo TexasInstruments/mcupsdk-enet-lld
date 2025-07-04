@@ -127,7 +127,6 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
 {
     CpswAle_Cfg *aleCfg = &cpswCfg->aleCfg;
     CpswHostPort_Cfg *hostPortCfg = &cpswCfg->hostPortCfg;
-    CpswCpts_Cfg *cptsCfg = &cpswCfg->cptsCfg;
 
     /* Peripheral-level config */
 #if (ENET_SYSCFG_ENABLE_MDIO_MANUALMODE == 1U)
