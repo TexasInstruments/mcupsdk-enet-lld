@@ -284,6 +284,19 @@ typedef struct EnetApp_GetMacAddrOutArgs_s
     uint8_t macAddr[ENET_MAX_NUM_MAC_PER_PHER][ENET_MAC_ADDR_LEN];
 } EnetApp_GetMacAddrOutArgs;
 
+typedef struct EnetApp_IET_Config_s
+{
+
+    /*! Minimum Fragment size */
+    uint32_t minFragSize;
+
+    /*! iet verification enabled/disabled */
+    bool mac_verify_enable;
+
+    /*! Traffic mode for each of the FIFO queues */
+    EnetMacPort_QueuePreemptCfg queueMode;
+
+} EnetApp_IET_Config;
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
@@ -606,6 +619,11 @@ int32_t EnetAppUtils_freeHwPushInst(Enet_Handle hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId,
                                     uint32_t hwPushNum);
+
+int32_t EnetAppUtils_enableIET(Enet_Handle hEnet,
+                               const uint32_t coreId,
+                               const Enet_MacPort macPort,
+                               const EnetApp_IET_Config* pIetCfg);
 
 /* ========================================================================== */
 /*                       Static Function Definitions                          */

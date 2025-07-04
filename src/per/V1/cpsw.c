@@ -151,6 +151,12 @@ static Cpsw_PortLinkState *Cpsw_getPortLinkState(Cpsw_Handle hCpsw,
 static int32_t Cpsw_handleLinkUp(Cpsw_Handle hCpsw,
                                  Enet_MacPort macPort);
 
+#if ENET_CFG_IS_ON(CPSW_IET_INCL)
+static void Cpsw_enableIet(EnetPer_Handle hPer);
+
+static void Cpsw_disableIet(EnetPer_Handle hPer);
+#endif
+
 static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
                                          Enet_IoctlPrms *prms);
 
@@ -159,14 +165,14 @@ static int32_t Cpsw_registerInternalIoctlHandler(EnetPer_Handle hPer, Enet_Ioctl
 static CpswIoctlHandler * Cpsw_getIoctlHandlerFxn(uint32_t ioctlCmd,
                                                   CpswIoctlHandlerRegistry_t *ioctlRegistryTbl,
                                                   uint32_t tableSize);
-static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
-static int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(Cpsw_Handle hCpsw, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 
-#if ENET_CFG_IS_ON(CPSW_IET_INCL)
-static void Cpsw_enableIet(EnetPer_Handle hPer);
+static int32_t Cpsw_internalIoctl_handler_default(Cpsw_Handle hCpsw,
+                                                  CSL_Xge_cpswRegs *regs,
+                                                  Enet_IoctlPrms *prms);
 
-static void Cpsw_disableIet(EnetPer_Handle hPer);
-#endif
+static int32_t Cpsw_internalIoctl_handler_ENET_PER_IOCTL_REGISTER_IOCTL_HANDLER(Cpsw_Handle hCpsw,
+                                                                                CSL_Xge_cpswRegs *regs,
+                                                                                Enet_IoctlPrms *prms);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -420,7 +426,7 @@ int32_t Cpsw_open(EnetPer_Handle hPer,
 
 #if ENET_CFG_IS_ON(CPSW_IET_INCL)
     /* Enable IET global control */
-     Cpsw_enableIet(hPer);
+    Cpsw_enableIet(hPer);
 #endif
 
 #if ENET_CFG_IS_ON(CPSW_EST)

@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM261x_ZCZ" --part "AM2611" --package "ZCZ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2611" --package "NFBGA (ZCZ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.23.0+4000"}
  */
 
 /**
@@ -230,6 +230,16 @@ enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
 enet_cpsw1.cptsHostRxTsEn        = false;
 enet_cpsw1.BoardType             = "am261x-som";
 enet_cpsw1.macAddrConfig         = "Manual Entry";
+enet_cpsw1.macport1EnableIET     = true;
+enet_cpsw1.macport2EnableIET     = true;
+enet_cpsw1.macport1IETQueue1     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport1IETQueue3     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport1IETQueue5     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport1IETQueue7     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport2IETQueue4     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport2IETQueue5     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport2IETQueue6     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
+enet_cpsw1.macport2IETQueue7     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";
 enet_cpsw1.RGMII1.$assign        = "RGMII1";
 enet_cpsw1.RGMII1.RD0.$assign    = "GPIO31";
 enet_cpsw1.RGMII1.RD1.$assign    = "GPIO32";

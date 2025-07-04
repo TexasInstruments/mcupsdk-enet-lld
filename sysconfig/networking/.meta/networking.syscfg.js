@@ -35,7 +35,6 @@ exports = common.getSelfSysCfgCoreName().includes('pru') ? {} : {
             outputPath: "ti_enet_lwipif.c",
             alwaysRun: true,
         },
-
         {
             name: "/networking/common/enet_lwipif.h.xdt",
             outputPath: "ti_enet_lwipif.h",

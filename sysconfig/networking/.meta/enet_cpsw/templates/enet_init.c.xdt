@@ -56,6 +56,7 @@ void EnetApp_fixPinmux();
 #define ENETAPP_PHY_STATEHANDLER_TASK_PRIORITY        (7U)
 #define ENETAPP_PHY_STATEHANDLER_TASK_STACK     (3 * 1024)
 #define AppEventId_CPSW_PERIODIC_POLL    (1 << 3)
+
 #define ENETAPP_NUM_IET_VERIFY_ATTEMPTS               (20U)
 
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA") {
@@ -94,6 +95,51 @@ typedef struct EnetAppSysCfg_Obj_s
     uint8_t appPhyStateHandlerTaskStack[ENETAPP_PHY_STATEHANDLER_TASK_STACK] __attribute__ ((aligned(32)));
 %}
 }EnetAppSysCfg_Obj;
+
+const EnetApp_IET_Config gEnetApp_IETCfg[] =
+{
+%if(instance.macport1EnableIET == true) {
+    [ENET_MAC_PORT_1] =
+    {
+        .mac_verify_enable = `instance.macport1IETMacVerifyEnable`, 
+
+        .queueMode = 
+        {
+        `instance.macport1IETQueue0`,
+        `instance.macport1IETQueue1`,
+        `instance.macport1IETQueue2`,
+        `instance.macport1IETQueue3`,
+        `instance.macport1IETQueue4`,
+        `instance.macport1IETQueue5`,
+        `instance.macport1IETQueue6`,
+        `instance.macport1IETQueue7`,
+        },
+
+        .minFragSize =  `instance.macport1IETMinFrag`,
+    },
+%}
+
+%if(instance.macport2EnableIET == true) {
+    [ENET_MAC_PORT_2] =
+    {
+        .mac_verify_enable = `instance.macport2IETMacVerifyEnable`, 
+
+        .queueMode = 
+        {
+        `instance.macport2IETQueue0`,
+        `instance.macport2IETQueue1`,
+        `instance.macport2IETQueue2`,
+        `instance.macport2IETQueue3`,
+        `instance.macport2IETQueue4`,
+        `instance.macport2IETQueue5`,
+        `instance.macport2IETQueue6`,
+        `instance.macport2IETQueue7`,
+        },
+
+        .minFragSize =  `instance.macport2IETMinFrag`,
+    }
+%}
+};
 
 static EnetAppSysCfg_Obj gEnetAppSysCfgObj;
 
@@ -302,7 +348,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 % if(instance.McmEnable == true){
     EnetMcm_InitConfig enetMcmCfg;
 % }
-    
+
     EnetAppUtils_assert(Enet_isCpswFamily(enetType) == true);
     EnetApp_getEnetInstMacInfo(enetType, instId, macPortList, &numMacPorts);
 
@@ -342,6 +388,30 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 %if(device != 'am273x-evm' && device != 'awr294x-evm'){
     EnetApp_ConfigureDscpMapping(enetType, instId, selfCoreId, macPortList, numMacPorts);
 %}
+
+%let cpswInstInfo = module.getCpswInstInfo(instance);
+%for (let portNum = 0; portNum <= cpswInstInfo.numMacPorts; portNum++) {
+    %const portProperty1 = `DisableMacPort${portNum}`;
+    %const portProperty2 = `macport${portNum}EnableIET`;
+    %if (instance[portProperty1] === false) {
+        %if (instance[portProperty1] === true) {
+            EnetAppUtils_enableIET(gEnetAppSysCfgObj.hEnet, selfCoreId, `portNum-1`, &gEnetApp_IETCfg[`portNum-1`]);
+
+            /*
+                If mac_verify_enable is false then without verification, we enable IET Frame Pre-emption assuming other side supports IET
+            */
+            if(gEnetApp_IETCfg[`portNum-1`].mac_verify_enable == TRUE)
+            {
+               verifyStatus =  EnetApp_doIetVerification(hEnet, coreId, macPort);
+               if(verifyStatus != ENET_MAC_VERIFYSTATUS_SUCCEEDED)
+               {
+                    EnetAppUtils_print("IET Verification failed: %d", verifyStatus)
+               }
+            }   
+        %}
+    %}
+%}
+
 % if(instance.McmEnable == true){
     enetMcmCfg.enetType           = enetType;
     enetMcmCfg.instId             = instId;
@@ -588,7 +658,6 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
         {
             EnetAppUtils_print("EnetApp_enablePorts() failed to open MAC port: %d\r\n", status);
         }
-
     }
 
     if ((status == ENET_SOK) && (Enet_isCpswFamily(enetType)))
@@ -785,15 +854,15 @@ static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
 }
 
 
-%if ((soc === "am64x") || (soc === "am243x") || (soc === "am62dx")){
+%if ((soc === "am64x") || (soc === "am243x") || (soc === "am62dx") || (soc === "am261x")){
 /*
  * Function to Poll the Verify status and restart verification.
  * Application needs to call this after link-up, Verify timeout
  * is set based on the link-speed from ENET handle.
  */
-void EnetApp_doIetVerification(Enet_Handle hEnet,
-                               uint32_t coreId,
-                               Enet_MacPort macPort)
+EnetMacPort_PreemptVerifyStatus EnetApp_doIetVerification(Enet_Handle hEnet,
+                                                          const uint32_t coreId,
+                                                          const Enet_MacPort macPort)
 {
     uint32_t try = ENETAPP_NUM_IET_VERIFY_ATTEMPTS;
     int32_t status = ENET_SOK;
@@ -819,31 +888,14 @@ void EnetApp_doIetVerification(Enet_Handle hEnet,
         ClockP_usleep(50000U);
         ENET_IOCTL_SET_INOUT_ARGS(&prms, &fpe, &verifyStatus);
         ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_GET_PREEMPT_VERIFY_STATUS , &prms, status);
-        if (status != ENET_SOK)
-        {
-            EnetAppUtils_print("Failed to read IET verify status : %d\r\n", status);
-            break;
-        }
-        if(verifyStatus == ENET_MAC_VERIFYSTATUS_SUCCEEDED)
-        {
-            EnetAppUtils_print("IET verify Success \r\n");
-            break;
-        }
-        else if(verifyStatus == ENET_MAC_VERIFYSTATUS_FAILED )
-        {
-            EnetAppUtils_print("IET verify failed, trying again \r\n");
-        }
-        else
-        {
-            EnetAppUtils_print("Unexpected IET Failure : %d \r\n", verifyStatus);
-            break;
-        }
         try--;
     } while(try > 0);
 
     if(try == 0){
         EnetAppUtils_print("IET verify timeout \r\n");
     }
+
+    return verifyStatus;
 }
 %}
 

@@ -78,9 +78,6 @@ extern "C" {
 /*! \brief Cut-thru feature mask. */
 #define CPSW_FEATURE_CUTTHRU                  (ENET_BIT(3U))
 
-/*! \brief IET feature mask. */
-#define CPSW_FEATURE_IET                      (ENET_BIT(4U))
-
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */

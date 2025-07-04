@@ -88,6 +88,9 @@
 /* Second to microsecs conversion factor */
 #define ENET_APPUTILS_SEC2MICROSEC           (1000000ULL)
 
+/*! No of Iteration to run to verify IET capability before timeout */
+#define ENET_NUM_IET_VERIFY_ATTEMPTS               (20U)
+
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -1315,4 +1318,51 @@ void EnetAppUtils_delayInUsec(uint32_t delayInUsecs)
    }
 }
 
+int32_t EnetAppUtils_enableIET(Enet_Handle hEnet,
+                               const uint32_t coreId,
+                               const Enet_MacPort macPort,
+                               const EnetApp_IET_Config* pIetCfg)
+{
+    int32_t status = ENET_SOK;
+    EnetMacPort_SetPreemptMinFragSizeInArgs fragSizeInArgs;
+    EnetMacPort_SetPreemptQueueInArgs queuePreemptInArgs;
+    Enet_IoctlPrms prms;
+    EnetMacPort_GenericInArgs fpe;
+    uint32_t i;
+    bool isIetEnabled;
+
+    /* Enable preemption */
+    fpe.macPort = macPort;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &fpe);
+    ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_ENABLE_PREEMPTION, &prms, status);
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &fpe, &isIetEnabled);
+    ENET_IOCTL(hEnet, coreId, ENET_MACPORT_IOCTL_GET_PREEMPTION_ENABLE_STATUS, &prms, status);
+
+    if (status == ENET_SOK && isIetEnabled)
+    {
+        EnetAppUtils_print("ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS passed: %d\r\n", status);
+    }
+
+    fragSizeInArgs.macPort = macPort;
+    fragSizeInArgs.preemptMinFragSize = pIetCfg->minFragSize;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &fragSizeInArgs);
+    ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE, &prms, status);
+    queuePreemptInArgs.macPort = macPort;
+    for(i = 0U; i < ENET_PRI_NUM; i++)
+    {
+        if (pIetCfg->queueMode.preemptMode[i] == ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS)
+        {
+            queuePreemptInArgs.queuePreemptCfg.preemptMode[i] = ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS;
+        }
+        else
+        {
+            queuePreemptInArgs.queuePreemptCfg.preemptMode[i] = ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT;
+        }
+    }
+    ENET_IOCTL_SET_IN_ARGS(&prms, &queuePreemptInArgs);
+    ENET_IOCTL(hEnet,coreId, ENET_MACPORT_IOCTL_SET_PREEMPT_QUEUE, &prms, status);
+
+    return status;
+}
 /* end of file */
