@@ -329,9 +329,11 @@ uint64_t gStreamCounter[6];
 static int audio_aaf_avtp_push_packet(uint8_t *payload, int plsize,
 				avbtp_rcv_cb_info_t *cbinfo, void *cbdata)
 {
+    #if (AVTP_CRF_TALKER_ENABLED == 1) || (AVTP_CRF_LISTENER_ENABLED == 1)
     if(cbinfo->u.rcrfinfo.subtype==AVBTP_SUBTYPE_CRF){
         return crfrx_callback(payload, plsize, cbinfo, gCrfData);
     }
+    #endif
     avbtp_sd_info_t *rsdinfo=&cbinfo->u.rsdinfo;
     audio_listener_t *audio_listener = &gaudioListener;
     audio_stream_info_t *streaminfo = &audio_listener->rxstreams[rsdinfo->stream_id[7]];
