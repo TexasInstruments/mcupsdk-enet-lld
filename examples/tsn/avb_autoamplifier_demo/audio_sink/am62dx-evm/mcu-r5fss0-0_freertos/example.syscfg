@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM62Dx" --part "AM62D24-G" --package "ANF" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM62D-Q1" --package "FCBGA (ANF)" --variant "AM62D24-G" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.22.0+3893"}
+ * @versions {"tool":"1.24.0+4150"}
  */
 
 /**
@@ -72,8 +72,8 @@ mpu_armv76.$name    = "CONFIG_MPU_REGION5";
 mpu_armv76.baseAddr = 0x80000000;
 mpu_armv76.size     = 31;
 
-timer1.$name         = "CONFIG_TIMER0";
 timer1.timerCallback = "avbTimerIsrClassA";
+timer1.$name         = "CONFIG_TIMER1";
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
 enet_cpsw1.macOnlyEn_hostPort             = true;
@@ -108,10 +108,9 @@ enet_cpsw1.rxDmaChannel[2].PacketsCount   = 8;
 enet_cpsw1.rxDmaChannel[2].useGlobalEvt   = true;
 enet_cpsw1.rxDmaChannel[2].useDefaultFlow = false;
 
-ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
-enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
-ethphy_cpsw_icssg1.phyAddr        = 15;
-ethphy_cpsw_icssg1.extendedConfig = "/* The delay values are set based on trial and error and not tuned per port of the evm */\n.txClkShiftEn         = true,\n.rxClkShiftEn         = true,\n.txDelayInPs          = 250U,   /* 0.25 ns */\n.rxDelayInPs          = 2000U,  /* 2.00 ns */\n.txFifoDepth          = 4U,\n.impedanceInMilliOhms = 35000,  /* 35 ohms */\n.idleCntThresh        = 4U,     /* Improves short cable performance */\n.gpio0Mode            = DP83867_GPIO0_LED3,\n.gpio1Mode            = DP83867_GPIO1_COL, /* Unused */\n.ledMode              =\n{\n    DP83867_LED_LINKED,         /* Unused */\n    DP83867_LED_LINKED_100BTX,\n    DP83867_LED_RXTXACT,\n    DP83867_LED_LINKED_1000BT,\n},";
+ethphy_cpsw_icssg1.$name   = "CONFIG_ENET_ETHPHY0";
+enet_cpsw1.ethphy1         = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.phyAddr = 15;
 
 const ethphy_cpsw_icssg2 = ethphy_cpsw_icssg.addInstance({}, false);
 ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
