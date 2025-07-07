@@ -147,9 +147,6 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_ENABLE(CpswHostPort_Handl
     int32_t status = ENET_SOK;
 
     CSL_CPSW_enablePort0(regs);
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-    CSL_CPSW_enableNpacPort(regs);
-#endif
     return status;
 }
 

@@ -113,18 +113,11 @@ typedef struct CpwStats_Obj_s
      *  blocks of statistics data */
     CpswStats_PortStats *macPortStats;
 
-    /*! NPAC port statistics */
-    CpswStats_PortStats *npacPortStats;
-
     /*! Host port statistics */
     CpswStats_PortStats hostPortStatsMem;
 
     /*! MAC port statistics. Blocks of statistics data */
     CpswStats_PortStats macPortStatsMem[CPSW_STATS_MACPORT_MAX];
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-    /*! NPAC port statistics. Blocks of statistics data */
-    CpswStats_PortStats npacPortStatsMem;
-#endif
 
     /*! Number of MAC ports. The number of stats blocks in #macPortStats */
     uint32_t macPortNum;

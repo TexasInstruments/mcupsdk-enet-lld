@@ -1145,16 +1145,6 @@ static void CpswAle_setAleModeFlags(CSL_AleRegs *regs,
 
     /* Update ALE control register */
     CSL_CPSW_setAleControlReg(regs, aleCtlVal);
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-    if ((modeFlags & CPSW_ALE_CFG_MULTIHOST) != 0U)
-    {
-        CSL_CPSW_setMultihost(regs, 1);
-    }
-    else
-    {
-        CSL_CPSW_setMultihost(regs, 0);
-    }
-#endif
 }
 
 static void CpswAle_setAleAging(CSL_AleRegs *regs,

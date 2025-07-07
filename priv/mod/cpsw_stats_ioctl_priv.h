@@ -75,7 +75,6 @@ int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_VERSION(CpswStats_Handle hS
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_PRINT_REGS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
-int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_NPACPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
 int32_t CpswStats_ioctl_handler_CPSW_STATS_IOCTL_SYNC(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);

@@ -65,7 +65,6 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 static void CpswStats_readHostStats(CpswStats_Handle hStats);
-static void CpswStats_readNpacPortStats(CpswStats_Handle hStats);
 static void CpswStats_readMacStats(CpswStats_Handle hStats,
                                    Enet_MacPort macPort);
 
@@ -143,28 +142,6 @@ int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(CpswStats_Han
         ENETTRACE_ERR("Invalid GET_MACPORT_STATS params\n");
     }
     return status;
-}
-int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_NPACPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
-{
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-    int32_t status = ENET_SOK;
-
-    status = Enet_checkOutArgs(prms, sizeof(CpswStats_PortStats));
-    if (status == ENET_SOK)
-    {
-        CpswStats_PortStats *portStats = (CpswStats_PortStats *)prms->outArgs;
-
-        CpswStats_readNpacPortStats(hStats);
-        memcpy(portStats, hStats->npacPortStats, sizeof(CpswStats_PortStats));
-    }
-    else
-    {
-        ENETTRACE_ERR("Invalid GET_NPACPORT_STATS params\n");
-    }
-    return status;
-#else
-    return ENET_ENOTSUPPORTED;
-#endif
 }
 
 int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(CpswStats_Handle hStats, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms)
@@ -269,32 +246,6 @@ static void CpswStats_readHostStats(CpswStats_Handle hStats)
     }
 }
 
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-static void CpswStats_readNpacPortStats(CpswStats_Handle hStats)
-{
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
-    union CSL_CPSW_STATS portStats;
-    uint64_t *stats64;
-    uint32_t *stats32 = (uint32_t *)&portStats;
-    uint32_t i;
-
-    Enet_devAssert(hStats->npacPortStats != NULL, "Invalid npac port stats memory address\n");
-
-    /* CSL blindly reads all registers in the statistics block regardless
-     * of whether they are applicable or not to a CPSW instance type */
-    memset(&portStats.p0Hn_stats, 0, sizeof(portStats.p0Hn_stats));
-    CSL_CPSW_getPortStats(regs, 0x10U, &portStats);
-
-    stats64 = &hStats->npacPortStats->val[0U];
-    for (i = 0U; i < CPSW_STATS_BLOCK_ELEM_NUM; i++)
-    {
-        stats64[i] += stats32[i];
-    }
-
-    /* ToDo: Clear reserved fields */
-}
-
-#endif
 static void CpswStats_readMacStats(CpswStats_Handle hStats,
                                    Enet_MacPort macPort)
 {

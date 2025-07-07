@@ -294,36 +294,6 @@ void CpswHostPort_initCfg(CpswHostPort_Cfg *hostPortCfg)
     hostPortCfg->rxCsumOffloadEn   = true;
     hostPortCfg->txCsumOffloadEn   = true;
 }
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-int32_t CpswNpacPort_open(EnetMod_Handle hMod,
-                          Enet_Type enetType,
-                          uint32_t instId,
-                          const void *cfg,
-                          uint32_t cfgSize)
-{
-    CpswHostPort_Handle hPort = (CpswHostPort_Handle)hMod;
-    const CpswHostPort_Cfg *hostPortCfg = (const CpswHostPort_Cfg *)cfg;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    uint32_t status = ENET_SOK;
-
-    /* Save peripheral info to use it later to query SoC parameters */
-    hPort->enetType = enetType;
-    hPort->instId = instId;
-
-#if ENET_CFG_IS_ON(CPSW_CPPI_CAST)
-    if (hostPortCfg->crcType == ENET_CRC_ETHERNET)
-    {
-        CSL_CPSW_disableNpacTxCastagnoliCRC(regs);
-    }
-    else
-    {
-        CSL_CPSW_enableNpacTxCastagnoliCRC(regs);
-    }
-#endif
-
-    return status;
-}
-#endif
 
 int32_t CpswHostPort_open(EnetMod_Handle hMod,
                           Enet_Type enetType,
@@ -414,9 +384,6 @@ int32_t CpswHostPort_open(EnetMod_Handle hMod,
     cppiP0ControlCfg.p0RxRemapDscpIpv6 = hostPortCfg->rxDscpIPv6RemapEn ? TRUE : FALSE;
 
     CSL_CPSW_setCppiP0Control(regs, &cppiP0ControlCfg);
-#if ENET_CFG_IS_ON(CPSW_NPAC_PORT)
-    CpswNpacPort_open(hMod, enetType, instId, cfg, cfgSize);
-#endif
     return status;
 }
 

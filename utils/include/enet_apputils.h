@@ -399,8 +399,6 @@ void EnetAppUtils_printIcssgPaStats(IcssgStats_Pa *st);
  */
 void EnetAppUtils_printMacPortStats2G(CpswStats_MacPort_2g *st);
 
-void EnetAppUtils_printNpacPortStats(CpswStats_NpacPort_Ng *st);
-
 /**
  *  \brief Utils function for printing "non-zero" Host port statistics for CPSW2G
  */
