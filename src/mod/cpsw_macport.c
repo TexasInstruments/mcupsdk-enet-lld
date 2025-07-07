@@ -677,7 +677,7 @@ int32_t CpswMacPort_open(EnetMod_Handle hMod,
         }
     }
 #endif
-#if defined (SOC_TDA54) || defined(SOC_J722S)
+#if defined(SOC_J722S)
     CSL_CPGMAC_SL_disableIdleMode(regs, portNum);
 #endif
     return status;
@@ -1045,7 +1045,7 @@ static int32_t CpswMacPort_setInterface(CSL_Xge_cpswRegs *regs,
     if (status == ENET_SOK)
     {
         CSL_CPGMAC_SL_setMacControlReg(regs, portNum, macControl);
-#if defined (SOC_TDA54) || defined(SOC_J722S)
+#if defined(SOC_J722S)
         CSL_CPGMAC_SL_enableRxCEF(regs, portNum);
 #endif
     }

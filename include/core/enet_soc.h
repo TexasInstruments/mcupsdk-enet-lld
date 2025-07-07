@@ -93,10 +93,6 @@
 #include <soc/k3/j722s/enet_soc.h>
 #include <soc/k3/k3_soc.h>
 #include <drivers/udma.h>
-#elif defined (SOC_TDA54)
-#include <soc/k3/tda54/enet_soc.h>
-#include <soc/k3/k3_soc.h>
-#include <drivers/udma.h>
 #endif
 
 #ifdef __cplusplus

@@ -109,10 +109,7 @@
 #else
 #define CPSW_ALE_2G_POLICERS_MAX                (8U)
 #endif
-#if defined(SOC_TDA54)
-#define CPSW_ALE_3G_ALE_ENTRIES_MAX             (1024U)
-#define CPSW_ALE_3G_POLICERS_MAX                (128U)
-#elif defined(SOC_J722S)
+#if defined(SOC_J722S)
 #define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_3G_POLICERS_MAX                (96)
 #else
@@ -122,7 +119,7 @@
 #define CPSW_ALE_5G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_5G_POLICERS_MAX                (64U)
 #define CPSW_ALE_9G_ALE_ENTRIES_MAX             (1024U)
-#define CPSW_ALE_9G_POLICERS_MAX                (128U)
+#define CPSW_ALE_9G_POLICERS_MAX                (96U)
 
 /*! \brief CIR/PIR policing rate divider. */
 #define CPSW_ALE_IDLINCVAL_DIV_FACTOR           (32768U)

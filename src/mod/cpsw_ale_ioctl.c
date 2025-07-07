@@ -5341,11 +5341,8 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_ADD_UCAST(CpswAle_Handle hAle, CSL_
                                   inArgs->info.ageable,
                                   inArgs->info.trunk,
                                   entryIdx);
-#if defined (SOC_TDA54)
-    return ENET_SOK;
-#else
-    return status;
-#endif
+
+return status;
 }
 
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_ADD_MCAST(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
