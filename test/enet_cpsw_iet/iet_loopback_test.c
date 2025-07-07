@@ -425,7 +425,7 @@ static void EnetApp_txTask(void *args)
                 memcpy(frame->hdr.dstMac, bcastAddr, ENET_MAC_ADDR_LEN);
                 memcpy(frame->hdr.srcMac, &gEnetLpbk.hostMacAddr[0U], ENET_MAC_ADDR_LEN);
                 frame->hdr.tpid = Enet_htons(ENETAPP_VLAN_TPID);
-                frame->hdr.tci  = Enet_htons(ENETAPP_VLAN_TCI(pktCnt%20, 0, 100));
+                frame->hdr.tci  = Enet_htons(ENETAPP_VLAN_TCI(pktCnt%(ENETLPBK_TEST_PKT_NUM), 0, 100));
                 frame->hdr.etherType = Enet_htons(ENETAPP_TEST_TX_ETHERTYPE);
                 memset(&frame->payload[0U], (uint8_t)(0xA5 + pktCnt), testPacketLength);
 
