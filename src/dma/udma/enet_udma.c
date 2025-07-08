@@ -2086,7 +2086,7 @@ void EnetDma_initPktInfo(EnetDma_Pkt *pktInfo)
     pktInfo->appPriv               = NULL;
     pktInfo->tsInfo.enableHostTxTs = false;
     pktInfo->txPortNum             = ENET_MAC_PORT_INV;
-    pktInfo->txPktTc               = ENET_TRAFFIC_CLASS_INV;
+    pktInfo->txPktTc               = 0U;
     pktInfo->chkSumInfo            = 0U;
     ENET_UTILS_SET_PKT_DRIVER_STATE(&pktInfo->pktState,
                                     (uint32_t)ENET_PKTSTATE_DMA_NOT_WITH_HW);
