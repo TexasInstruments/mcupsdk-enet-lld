@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2022-2023
+ *  Copyright (c) Texas Instruments Incorporated 2022-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -448,6 +448,7 @@ static uint32_t EnetApp_preparePktQ(EnetDma_PktQ *pktQueue)
         pktInfo->chkSumInfo = 0U;
         pktInfo->appPriv = &gEnetLpbk;
         pktInfo->txPortNum = ENET_MAC_PORT_INV;
+        pktInfo->txPktTc = 0U;
         EnetDma_checkPktState(&pktInfo->pktState, ENET_PKTSTATE_MODULE_APP,
                               ENET_PKTSTATE_APP_WITH_FREEQ,
                               ENET_PKTSTATE_APP_WITH_DRIVER);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2021
+ *  Copyright (c) Texas Instruments Incorporated 2021-2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -4106,6 +4106,7 @@ void UTILS_packetTx(uint8_t port_num)
         txPktInfo->appPriv = &gEnetMp;
         txPktInfo->tsInfo.enableHostTxTs = false;
         txPktInfo->txPortNum = perCtxt->macPort[port_num];
+        txPktInfo->txPktTc = 0U;
         EnetDma_checkPktState(&txPktInfo->pktState,
                                 ENET_PKTSTATE_MODULE_APP,
                                 ENET_PKTSTATE_APP_WITH_FREEQ,
