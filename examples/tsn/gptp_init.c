@@ -432,7 +432,7 @@ static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCt
 static int EnetApp_gptpNonYangConfig(uint8_t instance)
 {
     int i;
-    int res;
+    int res = 0;
 
     for (i = 0; i < sizeof(gGptpNonYangDs)/sizeof(gGptpNonYangDs[0]); i++)
     {
