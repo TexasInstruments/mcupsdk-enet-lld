@@ -76,7 +76,7 @@ const includes_freertos_r5f = {
 const libs_freertos_r5f = {
     common: [
         "freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "freertos_fat.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
+        "freeRTOS_fat-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "drivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "enet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "board.am243x.r5f.ti-arm-clang.${ConfigName}.lib",

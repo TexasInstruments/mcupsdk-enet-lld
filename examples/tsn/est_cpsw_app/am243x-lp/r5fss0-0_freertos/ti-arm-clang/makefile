@@ -155,7 +155,7 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lfreertos_fat.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lfreeRTOS_fat-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ldrivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-lenet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-lboard.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
@@ -186,7 +186,7 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	freertos_fat.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	freeRTOS_fat-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	drivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	enet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	board.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
