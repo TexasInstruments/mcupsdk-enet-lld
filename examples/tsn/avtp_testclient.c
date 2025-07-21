@@ -1,3 +1,11 @@
+/**
+* Copyright (C) 2025 Excelfore Corporation - All Rights Reserved
+*
+* This source code is protected under international copyright law.  All rights
+* reserved and protected by the copyright holders.
+* This file is confidential and only available to authorized individuals with the
+* permission of the copyright holders.
+*/
 /*
  * avtp_testappli.c
  * test program to use l2 layer
@@ -175,6 +183,10 @@ typedef struct avtptc_data {
 	char *dbname;	//database name
 	avtptc_cfg_t *cfgd; //configuration data
 } avtptc_data_t;
+
+#define AVTPTC_DATA_INST avtptc_data_inst
+UB_SD_GETMEM_DEF(AVTPTC_DATA_INST, (int)sizeof(avtptc_data_t) + (int)sizeof(CB_THREAD_T),
+		 AVBTP_MAX_CLIENTS);
 
 /* when we run multiple 'avtp_testclient' in threads,
  * because 'avtp_running' is a static variable, calling stop_testclient stop all of
@@ -1010,17 +1022,17 @@ static void *run_avtpd(void *ptr)
 
 static int run_avtpd_inthread(avtptc_data_t *avtptcd, void **avtpdth)
 {
-	cb_xl4_thread_attr_t attr;
-	char thread_name[CB_XL4_THREAD_NAME_SIZE]={0};
+	cb_tsn_thread_attr_t attr;
+	char thread_name[CB_TSN_THREAD_NAME_SIZE]={0};
 	CB_THREAD_T *avtpd_thread;
 	int i;
 
-	*avtpdth=malloc(sizeof(CB_THREAD_T));
+	*avtpdth=(CB_THREAD_T*)UB_SD_GETMEM(AVTPTC_DATA_INST, sizeof(CB_THREAD_T));
 	if(ub_assert_fatal(*avtpdth!=NULL, __func__, "malloc")) return -1;
 	memset(*avtpdth, 0, sizeof(CB_THREAD_T));
 	avtpd_thread=(CB_THREAD_T *)*avtpdth;
-	snprintf(thread_name, CB_XL4_THREAD_NAME_SIZE, "%s","avtpd_thead");
-	cb_xl4_thread_attr_init(&attr, THREAD_NORM_PRI, THREAD_NORM_STACK, thread_name);
+	snprintf(thread_name, CB_TSN_THREAD_NAME_SIZE, "%s","avtpd_thead");
+	cb_tsn_thread_attr_init(&attr, THREAD_NORM_PRI, THREAD_NORM_STACK, thread_name);
 	if(CB_THREAD_CREATE(avtpd_thread, &attr, run_avtpd, avtptcd)){
 		UB_LOG(UBL_ERROR,"can't run avtpd\n");
 		return -1;
@@ -1043,7 +1055,7 @@ static void stop_avtpd_inthread(void *avtpdth)
 	if(!avtpdth){return;}
 	avtpd_stop();
 	CB_THREAD_JOIN(*avtpd_thread, NULL);
-	free(avtpdth);
+	UB_SD_RELMEM(AVTPTC_DATA_INST, avtpdth);
 }
 
 #else //!AVTPD_IN_LIBRARY
@@ -1152,7 +1164,7 @@ int AVTP_TESTCLIENT_MAIN(int argc, char *argv[])
 			"4,ubase:45,cbase:45,uconf:46,gptp:46,l2:46", "UBL_L2");
 		unibase_init(&init_para);
 	}
-	avtptcd=(avtptc_data_t *)malloc(sizeof(avtptc_data_t));
+	avtptcd=(avtptc_data_t *)UB_SD_GETMEM(AVTPTC_DATA_INST, sizeof(avtptc_data_t));
 	if(!avtptcd){
 		UB_CONSOLE_PRINT("can't allocate memory\n");
 		goto end;
@@ -1242,6 +1254,6 @@ end:
 		unibase_close();
 	}
 	avtpc_cfg_close(avtptcd);
-	if(avtptcd){free(avtptcd);}
+	if(avtptcd){UB_SD_RELMEM(AVTPTC_DATA_INST, avtptcd);}
 	return 0;
 }
