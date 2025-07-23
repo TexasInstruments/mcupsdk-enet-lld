@@ -11,7 +11,7 @@
 
     <project
         title="Crftalker App"
-        name = "crftalker_app_am275x-evm-dp83tg721/am275x-evm_r5fss0-0_freertos_ti-arm-clang"
+        name = "crftalker_app_am275x-evm-dp83tg721_am275x-evm_r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
