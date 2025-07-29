@@ -445,7 +445,7 @@ function getNetifConfig(instance, InstNum) {
 
 function getNetifPacketDequeueMode(instance){
     let enableTimerBasedPoll = (getNetifConfig(instance, 0).packetDequeueMode === "TimerBasedPolling") ? 1 : 0;
-    return enableTimerBasedPoll;     
+    return enableTimerBasedPoll;
 }
 
 function verifyNetifPacketDequeueMode(instance){
@@ -690,13 +690,13 @@ function getEnetCoreIdPrefix() {
         return `TISCI_DEV_${coreInfo.subsystem}${coreInfo.clusternum}_CORE_${coreInfo.core}`;
     }
 
-    if(common.getSelfSysCfgCoreName().includes("wkup-r5f")) {
-        return `TISCI_DEV_WKUP_R5FSS0_CORE0`;
-    }
-
-    if((coreInfo) && (common.getSelfSysCfgCoreName().includes("r5f"))) {
+    if((coreInfo) && (common.getSelfSysCfgCoreName().includes("mcu-r5f"))) {
         return `TISCI_DEV_MCU_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}`;
 	}
+
+    if(common.getSelfSysCfgCoreName().includes("r5f")) {
+        return `TISCI_DEV_WKUP_R5FSS0_CORE0`;
+    }
 }
 
 function getEnetCoreIntNumPrefix() {
@@ -706,13 +706,14 @@ function getEnetCoreIntNumPrefix() {
         return "CSLR_GICSS0_COMMON_0_SPI_"
     }
 
-    if(common.getSelfSysCfgCoreName().includes("wkup-r5f")) {
+    if ((coreInfo) && (common.getSelfSysCfgCoreName().includes("mcu-r5f"))) {
+        return `CSLR_MCU_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_CPU0_INTR_`
+    }
+
+    if(common.getSelfSysCfgCoreName().includes("r5f")) {
         return `CSLR_WKUP_R5FSS0_CORE0_INTR_`
     }
 
-    if ((coreInfo) && (common.getSelfSysCfgCoreName().includes("r5f"))) {
-        return `CSLR_MCU_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_CPU0_INTR_`
-    }
 }
 
 let enet_cpsw_module_name = "/networking/enet_cpsw/enet_cpsw";
