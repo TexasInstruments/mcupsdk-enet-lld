@@ -729,8 +729,7 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
  *   Note: If user wishes to change the Resource Partition the following
  *   things must be considered:
  *   1. Sum of numTxCh allocated to each core should not exceed 8.
- *   2. Sum of numRxFlows allocated to each core should not exceed 7 (not 8),
- *      as one Rx flow is reserved to the master core.
+ *   2. Sum of numRxFlows allocated to each core should not exceed 8.
  *
  */
 static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
@@ -739,14 +738,28 @@ static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
     {
         [0] =
         {
-            .coreId        = `module.getCpuID()`,
+            .coreId        = CSL_CORE_ID_R5FSS0_0,
             .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
-            .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),    /* numRxFlows. Need one additional flow for reserved flow  */
+            .numRxFlows    = 4U,    /* numRxFlows */
             .numMacAddress = 4U,    /* numMacAddress */
             .numHwPush     = 0U,
         },
+        [1] =
+        {
+            .coreId        = CSL_CORE_ID_A53SS0_0,
+            .numTxCh       = 1U,
+            .numRxFlows    = 1U,
+            .numMacAddress = 1U,
+        },
+        [2] =
+        {
+            .coreId        = CSL_CORE_ID_MCU_R5FSS0_0,
+            .numTxCh       = 1U,
+            .numRxFlows    = 3U,
+            .numMacAddress = 1U,
+        },
     },
-    .numCores = 1U,
+    .numCores = 3U,
 };
 
 const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)

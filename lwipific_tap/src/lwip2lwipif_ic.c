@@ -43,7 +43,7 @@
  */
 
 /**
- *  Copyright (c) Texas Instruments Incorporated 2021
+ *  Copyright (c) Texas Instruments Incorporated 2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -73,7 +73,7 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * This file is dervied from the ``ethernetif.c'' skeleton Ethernet network
+ * This file is derived from the ``ethernetif.c'' skeleton Ethernet network
  * interface driver for lwIP.
  */
 
@@ -311,7 +311,7 @@ static err_t LWIPIF_LWIP_IC_send(struct netif *netif,
         {
             /* Prepare and send a notification to the receiver */
             retVal = Lwip2EnetIc_remoteCorePktNotify(hLwip2EnetIc);
-            Lwip2EnetIc_assert(retVal == LWIP2ENETIC_OK); 
+            Lwip2EnetIc_assert(retVal == LWIP2ENETIC_OK);
         }
 #endif
     }
@@ -540,7 +540,7 @@ static int LWIPIF_LWIP_IC_start(struct netif *netif)
         netif_set_link_up(netif);
 
         /* Inform the world that we are operational. */
-        hLwip2EnetIc->print("[LWIPIF_LWIP_IC] Interface started successfully\n");
+        hLwip2EnetIc->print("[LWIPIF_LWIP_IC] Interface started successfully \r\n");
 
         retVal = 0;
     }
@@ -615,7 +615,7 @@ err_t LWIPIF_LWIP_IC_init(struct netif *netif)
 
     LWIPIF_LWIP_IC_start(netif);
 
-    EnetUtils_printf("[LWIPIF_LWIP_IC] NETIF INIT SUCCESS\n");
+    EnetUtils_printf("[LWIPIF_LWIP_IC] NETIF INIT SUCCESS\r\n");
 
     return ERR_OK;
 }
@@ -762,12 +762,12 @@ static uint32_t LWIPIF_LWIP_IC_ChkSum(struct pbuf *p,
                     {
                         chkSumVal = LWIPIF_LWIP_IC_getUdpChkSum(p, ipPktHdrLen, ipPktPayloadLen, pUdpHdr, &srcIp, &dstIp);
                         /* chksum zero must become 0xffff, as zero means 'no checksum' */
-                        if (chkSumVal == 0U) 
+                        if (chkSumVal == 0U)
                         {
                             chkSumVal = 0xffff;
                         }
                         pUdpHdr->chksum = chkSumVal;
-                    }                    
+                    }
                 }
                 break;
 

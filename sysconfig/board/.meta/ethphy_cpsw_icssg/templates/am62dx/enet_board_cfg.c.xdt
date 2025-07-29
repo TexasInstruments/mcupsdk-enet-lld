@@ -2,19 +2,17 @@
     let cpsw_instance = system.modules["/networking/enet_cpsw/enet_cpsw"].$instances[0];
     let cpswScript = system.getScript("/networking/enet_cpsw/enet_cpsw");
     let ethphyScript = system.getScript("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg");
+    let common = system.getScript("/common");
+    let device = common.getDeviceName();
 %%}
-% let common = system.getScript("/common");
-% let device = common.getDeviceName();
-
 % if (cpsw_instance.customBoardEnable === false) {
-
-% let module = system.modules["/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg"];
-% let instances = module.$instances;
-% let uniqueDevices = ethphyScript.getUniqueLinkedEthphy(module);
-% let linkedInstances = ethphyScript.getLinkedInstances(module);
-
+%%{
+    let module = system.modules["/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg"];
+    let instances = module.$instances;
+    let uniqueDevices = ethphyScript.getUniqueLinkedEthphy(module);
+    let linkedInstances = ethphyScript.getLinkedInstances(module);
+%%}
 % if(linkedInstances.length > 0) {
-
 #include <stdint.h>
 #include <enet.h>
 % for (let phyDevice of uniqueDevices) {

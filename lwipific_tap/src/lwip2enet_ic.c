@@ -31,9 +31,9 @@
  */
 
 /**
- * Copyright (c) 2018 Texas Instruments Incorporated
+ *  Copyright (c) Texas Instruments Incorporated 2025
  *
- * This file is dervied from the ``ethernetif.c'' skeleton Ethernet network
+ * This file is derived from the ``ethernetif.c'' skeleton Ethernet network
  * interface driver for lwIP.
  *
  */
@@ -91,6 +91,11 @@
 #define  IPC_TASK_STACK_ALIGN       0x2000U
 #endif
 
+#if defined (SOC_AM62DX)
+#define  CSL_CORE_ID_DM_R5FSS0_0     (CSL_CORE_ID_R5FSS0_0)
+#else
+#define  CSL_CORE_ID_DM_R5FSS0_0     (CSL_CORE_ID_WKUP_R5FSS0_0)
+#endif
 /* ========================================================================== */
 /*                    Local Function Declarations                             */
 /* ========================================================================== */
@@ -109,7 +114,7 @@ Lwip2EnetIc_Params gIcEnetParams[IC_ETH_MAX_VIRTUAL_IF]=
 {
     {
         .instId             = IC_ETH_IF_MCU2_0_MCU2_1,
-        .ownerId            = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .ownerId            = CSL_CORE_ID_DM_R5FSS0_0,
         .txQId              = ICQ_MCU2_0_TO_MCU2_1,
         .rxQId              = ICQ_MCU2_1_TO_MCU2_0,
         .bufPoolId          = BUFPOOL_MCU2_0_R5_0_1,
@@ -121,19 +126,19 @@ Lwip2EnetIc_Params gIcEnetParams[IC_ETH_MAX_VIRTUAL_IF]=
     },
     {
         .instId             = IC_ETH_IF_MCU2_1_MCU2_0,
-        .ownerId            = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .ownerId            = CSL_CORE_ID_DM_R5FSS0_0,
         .txQId              = ICQ_MCU2_1_TO_MCU2_0,
         .rxQId              = ICQ_MCU2_0_TO_MCU2_1,
         .bufPoolId          = BUFPOOL_MCU2_1,
         .reqEndPtId         = ICETH_IPC_ENDPT_MCU2_1,
-        .remoteCoreId       = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .remoteCoreId       = CSL_CORE_ID_DM_R5FSS0_0,
         .endPtName          = "ENDPT_ICETH_MCU2_1",
         .remoteEndPtName    = "ENDPT_ICETH_MCU2_0_R5_0_1",
         .macAddr            = {0x00,0x01,0x02,0x04,0x05,0x06},
     },
     {
         .instId             = IC_ETH_IF_MCU2_0_A72,
-        .ownerId            = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .ownerId            = CSL_CORE_ID_DM_R5FSS0_0,
         .txQId              = ICQ_MCU2_0_TO_A72,
         .rxQId              = ICQ_A72_TO_MCU2_0,
         .bufPoolId          = BUFPOOL_MCU2_0_A72,
@@ -146,7 +151,7 @@ Lwip2EnetIc_Params gIcEnetParams[IC_ETH_MAX_VIRTUAL_IF]=
 #if defined(IPC_MCU3_0)
     {
         .instId             = IC_ETH_IF_MCU2_0_MCU3_0,
-        .ownerId            = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .ownerId            = CSL_CORE_ID_DM_R5FSS0_0,
         .txQId              = ICQ_MCU2_0_TO_MCU3_0,
         .rxQId              = ICQ_MCU3_0_TO_MCU2_0,
         .bufPoolId          = BUFPOOL_MCU2_0_R5_1_0,
@@ -158,12 +163,12 @@ Lwip2EnetIc_Params gIcEnetParams[IC_ETH_MAX_VIRTUAL_IF]=
     },
     {
         .instId             = IC_ETH_IF_MCU3_0_MCU2_0,
-        .ownerId            = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .ownerId            = CSL_CORE_ID_DM_R5FSS0_0,
         .txQId              = ICQ_MCU3_0_TO_MCU2_0,
         .rxQId              = ICQ_MCU2_0_TO_MCU3_0,
         .bufPoolId          = BUFPOOL_MCU3_0,
         .reqEndPtId         = ICETH_IPC_ENDPT_MCU3_0,
-        .remoteCoreId       = CSL_CORE_ID_WKUP_R5FSS0_0,
+        .remoteCoreId       = CSL_CORE_ID_DM_R5FSS0_0,
         .endPtName          = "ENDPT_ICETH_MCU3_0",
         .remoteEndPtName    = "ENDPT_ICETH_MCU2_0_R5_1_0",
         .macAddr            = {0x00,0x01,0x02,0x07,0x08,0x09},
@@ -220,9 +225,9 @@ Lwip2EnetIc_Handle Lwip2EnetIc_open(uint32_t instId)
     Lwip2EnetIc_assert(status == SystemP_SUCCESS);
 
     hIcObj->selfCoreId = EnetSoc_getCoreId();
-    
+
     /* Only MCU2_0, MCU2_1 and MCU3_0 supported for now */
-    Lwip2EnetIc_assert( (hIcObj->selfCoreId == CSL_CORE_ID_WKUP_R5FSS0_0) ||
+    Lwip2EnetIc_assert( (hIcObj->selfCoreId == CSL_CORE_ID_DM_R5FSS0_0) ||
 #if defined(IPC_MCU3_0)
                         (hIcObj->selfCoreId == IPC_MCU3_0) ||
 #endif
@@ -241,7 +246,7 @@ Lwip2EnetIc_Handle Lwip2EnetIc_open(uint32_t instId)
     /* Initialize shared bufpool */
     hLwip2EnetIc->hBufPool =
         (BufPool_Handle)&(BufPoolTable_Handle[gIcEnetParams[instId].bufPoolId]);
-    
+
     status = BufPool_init(hLwip2EnetIc->hBufPool,
                           gIcEnetParams[instId].bufPoolId,
                           BUFPOOL_BUF_MAX);
@@ -345,7 +350,7 @@ void Lwip2EnetIc_close(Lwip2EnetIc_Handle hLwip2EnetIc)
 #if !(IC_ETH_RX_POLLING_MODE)
     SemaphoreP_pend(hLwip2EnetIc->shutDownSemObj, SystemP_WAIT_FOREVER);
 #endif
-    
+
     /* Delete the semaphore objects */
 #if !(IC_ETH_RX_POLLING_MODE)
     SemaphoreP_delete(&hLwip2EnetIc->hRxPacketSem);
@@ -392,7 +397,7 @@ static int32_t Lwip2EnetIc_ipcInit(Lwip2EnetIc_Handle hLwip2EnetIc)
         status = RPMessage_announce(RPMESSAGE_ALL, hIcObj->myEndPtId, hIcObj->myEndPtName);
     }
 
-    if(status != IPC_SOK) 
+    if(status != IPC_SOK)
     {
         hLwip2EnetIc->print("IPC init (core : %s): RPMessage_announce() for %s failed\n",
                 hIcObj->myEndPtName);
@@ -422,8 +427,8 @@ static void Lwip2EnetIc_ipcRxTaskFxn(void *arg0,
     uint16_t		len;
     int32_t		status = 0;
     IcEth_MsgObj        rxMsg;
-    
-    Lwip2EnetIc_Handle  hLwip2EnetIc; 
+
+    Lwip2EnetIc_Handle  hLwip2EnetIc;
     Ic_Object_Handle    hIcObj;
 
     hLwip2EnetIc = (Lwip2EnetIc_Handle)arg0;
@@ -437,7 +442,7 @@ static void Lwip2EnetIc_ipcRxTaskFxn(void *arg0,
                                 &remoteEndPt,
                                 &remoteProcId,
                                 IPC_RPMESSAGE_TIMEOUT_FOREVER);
-        if(status != IPC_SOK) 
+        if(status != IPC_SOK)
         {
             hLwip2EnetIc->print("\nRecvTask: failed with code %d\n", status);
         }
@@ -447,7 +452,7 @@ static void Lwip2EnetIc_ipcRxTaskFxn(void *arg0,
 
             hIcObj->numRxPktsPending += rxMsg.numPktsQd;
 
-            SemaphoreP_post(hLwip2EnetIc->hRxPacketSem); 
+            SemaphoreP_post(hLwip2EnetIc->hRxPacketSem);
         }
     }
 
@@ -482,7 +487,7 @@ int32_t Lwip2EnetIc_remoteCorePktNotify(Lwip2EnetIc_Handle hLwip2EnetIc)
                                       &remoteEndPt,
                                       SemaphoreP_WAIT_FOREVER);
 
-    if(hIcObj->remoteCoreId != remoteProcId) 
+    if(hIcObj->remoteCoreId != remoteProcId)
     {
         hLwip2EnetIc->print("\nSendTask-%d: RPMessage_getRemoteEndPt() failed, status %d\n",
                 hIcObj->remoteCoreId, status);
@@ -497,9 +502,9 @@ int32_t Lwip2EnetIc_remoteCorePktNotify(Lwip2EnetIc_Handle hLwip2EnetIc)
                                 (uint16_t)ICETH_IPC_MSG_SIZE);
     }
 
-    if (status != IPC_SOK) 
+    if (status != IPC_SOK)
     {
-        hLwip2EnetIc->print("\nSendTask-%d: Failed from %s to %s...\n", 
+        hLwip2EnetIc->print("\nSendTask-%d: Failed from %s to %s...\n",
                             hIcObj->remoteCoreId,
                             Ipc_mpGetSelfName(),
                             Ipc_mpGetName(hIcObj->remoteCoreId));
