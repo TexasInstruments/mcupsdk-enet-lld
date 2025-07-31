@@ -50,11 +50,16 @@
 #define AAF_DOLBY_SYNC_FRAME_SIZE       (768)
 #define SMPTE_HEADER_SIZE               (12)
 #define SMPTE_FRAME_SIZE                (SMPTE_HEADER_SIZE + AAF_DOLBY_SYNC_FRAME_SIZE)
-#define SHARED_MEMORY_START_ADDRESS     (0xA3000000)
 
-/* ========================================================================== */
-/*                                 Structures                                 */
-/* ========================================================================== */
+#if defined(SOC_AM62DX)
+#define SHARED_MEMORY_START_ADDRESS     (0xA3000000)
+#elif defined(SOC_AM275X)
+/*
+ * The SRAM address 0x72400000 is aliased to 0x80400000 in C7X Core,
+ * Same reflects in the linker.cmd as well.
+ */
+#define SHARED_MEMORY_START_ADDRESS     (0x80400000)
+#endif
 
 typedef struct {
     void (*avtpc_close)(void *avtpc_talker);
