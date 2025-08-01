@@ -15,7 +15,7 @@ function getInstanceInfo(module, instances, indent) {
         let instance = instances[i];
         let matchInstId = module.getInstId(instance);
         let instInfoInitStr = "\n\t[" + count + "] = " +
-                             "\n\t{"              + 
+                             "\n\t{"              +
                                 "\n\t\t.enetType       = " + matchInstId.enetType + "," +
                                 "\n\t\t.instId         = " + matchInstId.instId + "," +
                                 "\n\t\t.rgmiiEn        = " + (instance.phyToMacInterfaceMode == "RGMII") + "," +
@@ -113,19 +113,19 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
 
 
 static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                    Enet_Type enetType, 
+                                    Enet_Type enetType,
                                     uint32_t instId,
-                                    Enet_Handle hEnet, 
+                                    Enet_Handle hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId);
 
 static void EnetApp_openAllRxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet, 
+                                         Enet_Handle hEnet,
                                          uint32_t coreKey,
                                          uint32_t coreId);
 
 static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet, 
+                                         Enet_Handle hEnet,
                                          uint32_t coreKey,
                                          uint32_t coreId);
 
@@ -143,7 +143,7 @@ void EnetApp_phyStateHandler();
 static void EnetApp_phyStateHandler(void * appHandle);
 %}
 
-const EnetAppInstInfo gInstInfo []= 
+const EnetAppInstInfo gInstInfo []=
     {
         `getInstanceInfo(module, instances, 4)`
     };
@@ -394,7 +394,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 
     EnetApp_enablePorts(gEnetAppSysCfgObj.hEnet[hEnetIndex], enetType, instId, selfCoreId, macPortList, numMacPorts);
 
-    /* Enabling DSCP handler will overwrite the PCP filters and 
+    /* Enabling DSCP handler will overwrite the PCP filters and
      * will direct all untagged packets to 0th Rx flow.
      * Enable DSCP only when handling Layer2 packets doesn't need QoS support. */
     //EnetApp_ConfigureDscpMapping(enetType, instId);
@@ -421,19 +421,19 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 % }
 % }
     /* Open all DMA channels */
-    EnetApp_acquireHandleInfo(enetType, 
+    EnetApp_acquireHandleInfo(enetType,
                               instId,
                               &handleInfo);
 
     (void)handleInfo; /* Handle info not used. Kill warning */
-    EnetApp_coreAttach(enetType, 
+    EnetApp_coreAttach(enetType,
                        instId,
                        selfCoreId,
                        &attachInfo);
     EnetApp_openDmaChannels(&gEnetAppSysCfgObj.dma[0],
-                            enetType, 
+                            enetType,
                             instId,
-                            gEnetAppSysCfgObj.hEnet[hEnetIndex], 
+                            gEnetAppSysCfgObj.hEnet[hEnetIndex],
                             attachInfo.coreKey,
                             selfCoreId);
     return status;
@@ -514,7 +514,6 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
     }
 
     EnetPhy_Cfg *pPhyCfg = &pLinkArgs->phyCfg;
-    EnetPhy_initCfg(pPhyCfg);
 
     if (isInNoPhyMode)
     {
@@ -724,7 +723,7 @@ void EnetApp_closePortLink(Enet_Type enetType, uint32_t instId)
     uint32_t selfCoreId;
     uint32_t i;
     selfCoreId   = EnetSoc_getCoreId();
-    
+
     EnetApp_getEnetInstMacInfo(enetType, instId, macPortList, &numMacPorts);
 
     for (i = 0U; i < numMacPorts; i++)
@@ -811,12 +810,12 @@ static uint32_t EnetApp_retrieveFreeTxPkts(EnetDma_TxChHandle hTxCh, EnetDma_Pkt
 static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
                                     Enet_Type enetType,
                                     uint32_t instId,
-                                    Enet_Handle hEnet, 
+                                    Enet_Handle hEnet,
                                     uint32_t coreKey,
                                     uint32_t coreId)
 {
     EnetApp_openAllTxDmaChannels(dma,
-                                 hEnet, 
+                                 hEnet,
                                  coreKey,
                                  coreId);
     EnetApp_openAllRxDmaChannels(dma,

@@ -101,9 +101,9 @@ const EnetApp_IET_Config gEnetApp_IETCfg[] =
 %if(instance.macport1EnableIET == true) {
     [ENET_MAC_PORT_1] =
     {
-        .mac_verify_enable = `instance.macport1IETMacVerifyEnable`, 
+        .mac_verify_enable = `instance.macport1IETMacVerifyEnable`,
 
-        .queueMode = 
+        .queueMode =
         {
         `instance.macport1IETQueue0`,
         `instance.macport1IETQueue1`,
@@ -122,9 +122,9 @@ const EnetApp_IET_Config gEnetApp_IETCfg[] =
 %if(instance.macport2EnableIET == true) {
     [ENET_MAC_PORT_2] =
     {
-        .mac_verify_enable = `instance.macport2IETMacVerifyEnable`, 
+        .mac_verify_enable = `instance.macport2IETMacVerifyEnable`,
 
-        .queueMode = 
+        .queueMode =
         {
         `instance.macport2IETQueue0`,
         `instance.macport2IETQueue1`,
@@ -407,7 +407,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
                {
                     EnetAppUtils_print("IET Verification failed: %d", verifyStatus)
                }
-            }   
+            }
         %}
     %}
 %}
@@ -586,7 +586,6 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
     }
 
     EnetPhy_Cfg *pPhyCfg = &pLinkArgs->phyCfg;
-    EnetPhy_initCfg(pPhyCfg);
 
     if (isInNoPhyMode)
     {
