@@ -1,0 +1,128 @@
+{
+    "jobs" :
+    {
+         "test_sample_jobs" : [
+         {
+            "root_url" : "https://jenkins-proc.itg.ti.com",
+         	"job_name" : "mcu_plus_sdk_ci",
+         	"auth_uname" : "JENKINS_PROC_AUTH_UNAME",
+            "auth_key" : "JENKINS_PROC_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "main",
+                "mcu_plus_sdk" : "next",
+                "mcupsdk_internal" : "next",
+                "mcupsdk_setup" : "next",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         },
+         {
+            "root_url" : "https://jenkins-epsw.itg.ti.com",
+            "job_name" : "sitmpurtos_mcu_plus_sdk_am62x",
+            "auth_uname" : "JENKINS_EPSW_AUTH_UNAME", 
+            "auth_key" : "JENKINS_EPSW_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "k3_main",
+                "mcu_plus_sdk" : "k3_next",
+                "mcupsdk_internal" : "k3_main",
+                "mcupsdk_setup" : "k3_main",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         }
+         ],
+         "package_jobs" : [
+         {
+            "root_url" : "https://jenkins-proc.itg.ti.com",
+         	"job_name" : "mcu_plus_sdk_ci",
+         	"auth_uname" : "JENKINS_PROC_AUTH_UNAME",
+            "auth_key" : "JENKINS_PROC_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "main",
+                "mcu_plus_sdk" : "next",
+                "mcupsdk_internal" : "next",
+                "mcupsdk_setup" : "next",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         },
+         {
+            "root_url" : "https://jenkins-epsw.itg.ti.com",
+            "job_name" : "sitmpurtos_mcu_plus_sdk_am62px",
+            "auth_uname" : "JENKINS_EPSW_AUTH_UNAME", 
+            "auth_key" : "JENKINS_EPSW_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "k3_main",
+                "mcu_plus_sdk" : "k3_next",
+                "mcupsdk_internal" : "k3_main",
+                "mcupsdk_setup" : "k3_main",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         },
+         {
+            "root_url" : "https://jenkins-epsw.itg.ti.com",
+            "job_name" : "sitmpurtos_mcu_plus_sdk_am62dx",
+            "auth_uname" : "JENKINS_EPSW_AUTH_UNAME", 
+            "auth_key" : "JENKINS_EPSW_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "k3_main",
+                "mcu_plus_sdk" : "k3_next",
+                "mcupsdk_internal" : "k3_main",
+                "mcupsdk_setup" : "k3_main",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         },
+         {
+            "root_url" : "https://jenkins-epsw.itg.ti.com",
+            "job_name" : "sitmpurtos_mcu_plus_sdk_am62x",
+            "auth_uname" : "JENKINS_EPSW_AUTH_UNAME", 
+            "auth_key" : "JENKINS_EPSW_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "k3_main",
+                "mcu_plus_sdk" : "k3_next",
+                "mcupsdk_internal" : "k3_main",
+                "mcupsdk_setup" : "k3_main",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         },
+         {
+            "root_url" : "https://jenkins-epsw.itg.ti.com",
+            "job_name" : "sitmpurtos_mcu_plus_sdk_am62lx",
+            "auth_uname" : "JENKINS_EPSW_AUTH_UNAME", 
+            "auth_key" : "JENKINS_EPSW_AUTH_KEY",
+            "job_token" : "",
+            "params_template" : "{\"test_job_label\":\"DEV\",\"enable_syscfg_sanity\":\"false\",\"mcusdk_tag\":\"%mcu_plus_sdk%\",\"manifest_tag\":\"%repo_manifests%\",\"mcupsdk_internal_tag\":\"%mcupsdk_internal%\",\"mcupsdk_setup_tag\":\"%mcupsdk_setup%\",\"tag_info\":\"--mcusdk_tag=%mcu_plus_sdk%,--tsn_tag=%enet-tsn-stack%,--enet_tag=%enet-lld%,\"}",
+            "default_tag" : {
+                "repo_manifests" : "k3_main",
+                "mcu_plus_sdk" : "k3_next",
+                "mcupsdk_internal" : "k3_main",
+                "mcupsdk_setup" : "k3_main",
+                "enet-lld" : "mcupsdk_next",
+                "enet-tsn-stack" : "next"
+                },
+            "disabled" : false
+         }
+         ]
+    }
+}
