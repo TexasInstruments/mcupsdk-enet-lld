@@ -173,6 +173,9 @@ static int32_t CpswMacPort_checkSocCfg(Enet_Type enetType,
 static void CpswMacPort_reset(CSL_Xge_cpswRegs *regs,
                               Enet_MacPort macPort);
 
+static void CpswMacPort_softReset(CSL_Xge_cpswRegs *regs,
+                              Enet_MacPort macPort);
+
 static void CpswMacPort_setSwitchTxSched(CSL_Xge_cpswRegs *regs,
                                          Enet_MacPort macPort,
                                          EnetPort_EgressPriorityType priority);
@@ -555,6 +558,8 @@ int32_t CpswMacPort_open(EnetMod_Handle hMod,
     {
         CpswMacPort_reset(regs, macPort);
 
+        CpswMacPort_softReset(regs, macPort);
+
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
         if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII))
         {
@@ -706,6 +711,7 @@ void CpswMacPort_close(EnetMod_Handle hMod)
     if (enabled)
     {
         CpswMacPort_disablePort(regs, hPort->macPort);
+        CpswMacPort_softReset(regs, hPort->macPort);
     }
 }
 
@@ -888,6 +894,13 @@ static void CpswMacPort_reset(CSL_Xge_cpswRegs *regs,
         }
     }
     while (done == FALSE);
+}
+
+static void CpswMacPort_softReset(CSL_Xge_cpswRegs *regs,
+                              Enet_MacPort macPort)
+{
+    uint32_t portNum = ENET_MACPORT_NORM(macPort);
+    uint32_t done = FALSE;
 
     /* Soft-reset the Ethernet MAC logic */
     CSL_CPGMAC_SL_resetMac(regs, portNum);
