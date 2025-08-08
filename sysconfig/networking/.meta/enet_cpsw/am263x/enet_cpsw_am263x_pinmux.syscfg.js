@@ -49,6 +49,54 @@ function getPeripheralRequirements(inst, peripheralName, name)
         pinmux.setConfigurableDefault( pinResource, "rx", true );
         resources.push( pinResource);
     }
+    else if(peripheralName == "MII")
+    {
+        pinResource = pinmux.getPinRequirements(interfaceName, "COL", "COL");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "CRS", "CRS");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RX_ER", "RX_ER");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXCLK", "RXCLK");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXD0", "RXD0");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXD1", "RXD1");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXD2", "RXD2");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXD3", "RXD3");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "RXDV", "RXDV");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TX_EN", "TX_EN");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TXCLK", "TXCLK");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TXD0", "TXD0");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TXD1", "TXD1");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TXD2", "TXD2");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+        pinResource = pinmux.getPinRequirements(interfaceName, "TXD3", "TXD3");
+        pinmux.setConfigurableDefault( pinResource, "rx", true );
+        resources.push( pinResource);
+    }
     else if (name == "CPSW_CPTS")
     {
         pinResource = pinmux.getPinRequirements(interfaceName, "CPTS0_TS_SYNC", "CPTS0_TS_SYNC");
