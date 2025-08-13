@@ -85,6 +85,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM273X \
+	-DOS_NORTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -131,9 +132,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lnortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	-ldrivers.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	-lenet-cpsw.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	-llwipif-cpsw-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llwip-contrib-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -152,9 +153,9 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	drivers.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
+	enet-cpsw.am273x.r5f.ti-arm-clang.nortos.${ConfigName}.lib \
 	lwipif-cpsw-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	lwip-contrib-nortos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -312,6 +313,7 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 BOOTIMAGE_CORE_ID_r5fss0-0 = 0
 BOOTIMAGE_CORE_ID_r5fss0-1 = 1
 BOOTIMAGE_CORE_ID_c66ss0   = 2
+BOOTIMAGE_CORE_ID_m4fss0-1 = 3
 SBL_RUN_ADDRESS=0x10200000
 SBL_DEV_ID=55
 

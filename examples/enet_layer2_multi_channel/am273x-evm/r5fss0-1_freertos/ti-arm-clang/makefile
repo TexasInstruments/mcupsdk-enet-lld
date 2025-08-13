@@ -91,6 +91,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM273X \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -137,9 +138,9 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -162,9 +163,9 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -318,6 +319,7 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 BOOTIMAGE_CORE_ID_r5fss0-0 = 0
 BOOTIMAGE_CORE_ID_r5fss0-1 = 1
 BOOTIMAGE_CORE_ID_c66ss0   = 2
+BOOTIMAGE_CORE_ID_m4fss0-1 = 3
 SBL_RUN_ADDRESS=0x10200000
 SBL_DEV_ID=55
 

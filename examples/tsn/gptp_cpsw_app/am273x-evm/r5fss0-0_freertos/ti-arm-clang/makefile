@@ -103,6 +103,7 @@ DEFINES_common := \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
 	-DGPTP_ENABLED=1 \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -147,19 +148,21 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
 	-lfreertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 	-ltsn_combase-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_unibase-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_gptp-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_uniconf-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lyangemb-freertos.am273x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -182,15 +185,16 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 	tsn_combase-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_unibase-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_gptp-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_uniconf-freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	yangemb-freertos.am273x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -201,6 +205,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
@@ -345,6 +350,7 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 BOOTIMAGE_CORE_ID_r5fss0-0 = 0
 BOOTIMAGE_CORE_ID_r5fss0-1 = 1
 BOOTIMAGE_CORE_ID_c66ss0   = 2
+BOOTIMAGE_CORE_ID_m4fss0-1 = 3
 SBL_RUN_ADDRESS=0x10200000
 SBL_DEV_ID=55
 

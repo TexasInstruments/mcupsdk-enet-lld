@@ -75,6 +75,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM273X \
 	-DMBEDTLS_CONFIG_FILE=\"alt_config.h\" \
+	-DOS_FREERTOS \
 
 CFLAGS_release := \
 	-Os \
@@ -121,10 +122,10 @@ LIBS_PATH_common = \
 
 LIBS_common = \
 	-lfreertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lmbedtls.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lunity.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lmbedtls.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lunity.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -137,10 +138,10 @@ LFLAGS_common = \
 
 LIBS_NAME = \
 	freertos.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	mbedtls.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
-	unity.am273x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	mbedtls.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	unity.am273x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -291,6 +292,7 @@ BOOTIMAGE_TEMP_OUT_FILE=temp_stdout_$(PROFILE).txt
 BOOTIMAGE_CORE_ID_r5fss0-0 = 0
 BOOTIMAGE_CORE_ID_r5fss0-1 = 1
 BOOTIMAGE_CORE_ID_c66ss0   = 2
+BOOTIMAGE_CORE_ID_m4fss0-1 = 3
 SBL_RUN_ADDRESS=0x10200000
 SBL_DEV_ID=55
 
