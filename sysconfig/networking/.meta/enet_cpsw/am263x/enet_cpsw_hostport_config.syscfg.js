@@ -60,9 +60,9 @@ const enet_cpsw_hostport_config = {
         },
         {
             name: "hostportRxCsumOffloadEn",
-            longDescription: "Enable checksum offload feature which allows TCP/UDP checksum validation on receive side- to be offloaded to the CPSW HW",
+            longDescription: "Enable checksum offload feature which allows TCP/UDP checksum validation on receive side- to be offloaded to the CPSW HW. For PG version less than 1.2, there is an H/W errata i2402: CPSW: Ethernet to Host Checksum Offload does not work.",
             displayName: "Enable Rx Checksum Offload",
-            default: true,
+            default: false,
         },
         {
             name: "hostportTxCsumOffloadEn",
