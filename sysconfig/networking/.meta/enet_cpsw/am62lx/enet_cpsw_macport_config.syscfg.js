@@ -210,12 +210,6 @@ const enet_cpsw_macport_config = {
             hidden: false,
         },
         {
-            name: "isC45Phy#",
-            description: "Set if this PHY supports MDIO Clause 45 data format",
-            displayName: "Clause 45 Support",
-            default: false,
-        },
-        {
             name: "vlanCfg",
             description: "Port VLAN configuration",
             longDescription: "Port VLAN configuration. Configuration are taken from taken from 'ALE Config' -> 'Port Default Vlan Config')",
