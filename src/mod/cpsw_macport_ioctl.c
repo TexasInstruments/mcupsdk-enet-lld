@@ -950,8 +950,16 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_PREEMPT_MIN_FRAG_SIZE(C
     Enet_devAssert(macPort == inArgs->macPort,
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
-    CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
+    if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
                  XGE_CPSW_PN_IET_CONTROL_REG_MAC_ADDFRAGSIZE, inArgs->preemptMinFragSize);
+    }
+    else
+    {
+        ENETTRACE_ERR("MAC %u: Port number %u exceeds array bounds", ENET_MACPORT_ID(macPort), portNum);
+        status = ENET_EFAIL;
+    }
 
     return status;
 }
@@ -967,8 +975,16 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_GET_PREEMPT_MIN_FRAG_SIZE(C
     Enet_devAssert(macPort == inArgs->macPort,
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
-    *preemptMinFragSize   = CSL_FEXT(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
-                                        XGE_CPSW_PN_IET_CONTROL_REG_MAC_ADDFRAGSIZE);
+    if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
+    {
+        *preemptMinFragSize   = CSL_FEXT(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
+                                            XGE_CPSW_PN_IET_CONTROL_REG_MAC_ADDFRAGSIZE);
+    }
+    else
+    {
+        ENETTRACE_ERR("MAC %u: Port number %u exceeds array bounds", ENET_MACPORT_ID(macPort), portNum);
+        status = ENET_EFAIL;
+    }
 
     return status;
 }
@@ -1012,8 +1028,17 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_IET_HOLD_PREEMPT_TRAFFIC(Cp
     Enet_devAssert(macPort == inArgs->macPort,
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
-    CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
-                     XGE_CPSW_PN_IET_CONTROL_REG_MAC_HOLD, 1U);
+    if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
+                         XGE_CPSW_PN_IET_CONTROL_REG_MAC_HOLD, 1U);
+    }
+    else
+    {
+        ENETTRACE_ERR("MAC %u: Port number %u exceeds array bounds", ENET_MACPORT_ID(macPort), portNum);
+        status = ENET_EFAIL;
+    }
+
     return status;
 }
 
@@ -1027,8 +1052,17 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_IET_RELEASE_PREEMPT_TRAFFIC
     Enet_devAssert(macPort == inArgs->macPort,
                    "MAC %u: Port mismatch %u\n", ENET_MACPORT_ID(macPort), inArgs->macPort);
 
-    CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
-                     XGE_CPSW_PN_IET_CONTROL_REG_MAC_HOLD, 0U);
+    if (portNum < CSL_ARRAYSIZE(regs->ENETPORT))
+    {
+        CSL_FINS(regs->ENETPORT[portNum].PN_IET_CONTROL_REG,
+                         XGE_CPSW_PN_IET_CONTROL_REG_MAC_HOLD, 0U);
+    }
+    else
+    {
+        ENETTRACE_ERR("MAC %u: Port number %u exceeds array bounds", ENET_MACPORT_ID(macPort), portNum);
+        status = ENET_EFAIL;
+    }
+
     return status;
 }
 #endif
