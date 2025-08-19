@@ -48,7 +48,6 @@
 #include <include/phy/dp83tg721.h>
 
 #include "enetphy_priv.h"
-#include "generic_phy.h"
 #include "dp83tg721_priv.h"
 
 /* ========================================================================== */

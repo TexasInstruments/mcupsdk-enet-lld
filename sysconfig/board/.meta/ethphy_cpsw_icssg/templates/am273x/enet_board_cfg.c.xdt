@@ -26,7 +26,7 @@
 #include <enet_apputils.h>
 #include <drivers/hw_include/cslr_soc.h>
 #include <networking/enet/core/src/phy/enetphy_priv.h>
-#include <networking/enet/core/src/phy/generic_phy.h>
+#include <generic_phy.h>
 
 /* PHY drivers */
 % for (let phyDevice of uniqueDevices){

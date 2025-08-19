@@ -42,7 +42,7 @@ function getPhyInstance(inst, port){
 #include <enet_apputils.h>
 #include <kernel/dpl/SystemP.h>
 #include <networking/enet/core/src/phy/enetphy_priv.h>
-#include <networking/enet/core/src/phy/generic_phy.h>
+#include <generic_phy.h>
 #include <board/eeprom.h>
 #include "ti_board_open_close.h"
 #include "ti_drivers_open_close.h"
@@ -124,16 +124,16 @@ static const `common.camelSentence(phyName)`_Cfg gEnetCpbBoard_`common.camelSent
 static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[] =
 {
 % for (let inst of icss_instances){
-    % let matchInst = icssScript.getInstId(inst);   
+    % let matchInst = icssScript.getInstId(inst);
     % if (matchInst.mode == "SWITCH") {
     {    /* `(matchInst.instance)=="ICSSG0"?"ETH0":"ETH2"` (`matchInst.instance` Switch port 1) */
         .enetType = `matchInst.enetType`,
         .instId   = `matchInst.instId`U,
         .macPort  = ENET_MAC_PORT_1,
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
-        .phyCfg   = 
+        .phyCfg   =
         {
-            % let phyDevice1 = getPhyInstance(matchInst, "PORT_1"); 
+            % let phyDevice1 = getPhyInstance(matchInst, "PORT_1");
             .phyAddr         = `phyDevice1.phyAddr`U,
             .isStrapped      = `phyDevice1.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice1.skipExtendedConfig`,
@@ -149,7 +149,7 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
         .phyCfg   =
         {
-            % let phyDevice2 = getPhyInstance(matchInst, "PORT_2"); 
+            % let phyDevice2 = getPhyInstance(matchInst, "PORT_2");
             .phyAddr         = `phyDevice2.phyAddr`U,
             .isStrapped      = `phyDevice2.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice2.skipExtendedConfig`,
@@ -166,7 +166,7 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
         .phyCfg   =
         {
-            % let phyDevice = getPhyInstance(matchInst, matchInst.macPort); 
+            % let phyDevice = getPhyInstance(matchInst, matchInst.macPort);
             .phyAddr         = `phyDevice.phyAddr`U,
             .isStrapped      = `phyDevice.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice.skipExtendedConfig`,

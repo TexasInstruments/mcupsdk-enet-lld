@@ -50,7 +50,7 @@
 #include <priv/core/enet_trace_priv.h>
 #include <include/phy/enetphy.h>
 #include <kernel/dpl/ClockP.h>
-#include <networking/enet/core/src/phy/generic_phy.h>
+#include <generic_phy.h>
 #include <networking/enet/core/src/phy/enetphy_priv.h>
 #include "csl_mdio.h"
 

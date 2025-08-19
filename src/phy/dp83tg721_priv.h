@@ -31,7 +31,7 @@
  */
 
 /*!
- * \file  dp83tg720_priv.h
+ * \file  dp83tg721_priv.h
  *
  * \brief This file contains private type definitions and helper macros for the
  *        DP83TG721 AVB Ethernet PHY.
@@ -77,6 +77,9 @@ extern "C" {
 #define PMA_PMD_CONTROL         (0x1834U)
 #define A2D_REG_48              (0x430U)
 #define LPS_CFG3                (0x018CU)
+
+/*! \brief Loopback Configuration */
+#define BMCR_LOOPBACK           ENETPHY_BIT(14)
 
 /*! \brief MII_REG_1F bits */
 #define HW_RESET                ENETPHY_BIT(15)

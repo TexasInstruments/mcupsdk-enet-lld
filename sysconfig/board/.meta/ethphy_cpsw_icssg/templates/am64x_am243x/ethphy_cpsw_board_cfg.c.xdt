@@ -27,7 +27,7 @@
 #include <kernel/dpl/SystemP.h>
 #include <kernel/dpl/AddrTranslateP.h>
 #include <networking/enet/core/src/phy/enetphy_priv.h>
-#include <networking/enet/core/src/phy/generic_phy.h>
+#include <generic_phy.h>
 #include <drivers/gpio.h>
 #include <board/eeprom.h>
 #include "ti_board_open_close.h"
@@ -194,7 +194,7 @@ static const EnetBoard_PortCfg *EnetBoard_getPortCfg(const EnetBoard_EthPort *et
 {
     const EnetBoard_PortCfg *portCfg = NULL;
 
-    if (ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_CPB_ID) || 
+    if (ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_CPB_ID) ||
         ((portCfg == NULL) && ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_LOOPBACK_ID)))
     {
         portCfg = EnetBoard_findPortCfg(ethPort,
