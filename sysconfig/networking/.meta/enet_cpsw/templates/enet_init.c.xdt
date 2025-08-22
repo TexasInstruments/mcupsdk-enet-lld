@@ -101,42 +101,42 @@ const EnetApp_IET_Config gEnetApp_IETCfg[] =
 %if(instance.macport1EnableIET == true) {
     [ENET_MAC_PORT_1] =
     {
-        .mac_verify_enable = `instance.macport1IETMacVerifyEnable`,
+        .mac_verify_enable = `instance.macport1IetMacVerifyEnable`,
 
         .queueMode =
         {
-        `instance.macport1IETQueue0`,
-        `instance.macport1IETQueue1`,
-        `instance.macport1IETQueue2`,
-        `instance.macport1IETQueue3`,
-        `instance.macport1IETQueue4`,
-        `instance.macport1IETQueue5`,
-        `instance.macport1IETQueue6`,
-        `instance.macport1IETQueue7`,
+        `instance.macport1IetQueue0`,
+        `instance.macport1IetQueue1`,
+        `instance.macport1IetQueue2`,
+        `instance.macport1IetQueue3`,
+        `instance.macport1IetQueue4`,
+        `instance.macport1IetQueue5`,
+        `instance.macport1IetQueue6`,
+        `instance.macport1IetQueue7`,
         },
 
-        .minFragSize =  `instance.macport1IETMinFrag`,
+        .minFragSize =  `instance.macport1IetMinFrag`,
     },
 %}
 
 %if(instance.macport2EnableIET == true) {
     [ENET_MAC_PORT_2] =
     {
-        .mac_verify_enable = `instance.macport2IETMacVerifyEnable`,
+        .mac_verify_enable = `instance.macport2IetMacVerifyEnable`,
 
         .queueMode =
         {
-        `instance.macport2IETQueue0`,
-        `instance.macport2IETQueue1`,
-        `instance.macport2IETQueue2`,
-        `instance.macport2IETQueue3`,
-        `instance.macport2IETQueue4`,
-        `instance.macport2IETQueue5`,
-        `instance.macport2IETQueue6`,
-        `instance.macport2IETQueue7`,
+        `instance.macport2IetQueue0`,
+        `instance.macport2IetQueue1`,
+        `instance.macport2IetQueue2`,
+        `instance.macport2IetQueue3`,
+        `instance.macport2IetQueue4`,
+        `instance.macport2IetQueue5`,
+        `instance.macport2IetQueue6`,
+        `instance.macport2IetQueue7`,
         },
 
-        .minFragSize =  `instance.macport2IETMinFrag`,
+        .minFragSize =  `instance.macport2IetMinFrag`,
     }
 %}
 };

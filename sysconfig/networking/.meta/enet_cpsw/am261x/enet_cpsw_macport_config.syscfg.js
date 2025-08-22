@@ -100,29 +100,29 @@ const enet_cpsw_macport_config = {
                 }
                 if (inst.DisableMacPort1 === false && inst.macport1EnableIET == false)
                 {
-                    ui.macport1IETMinFrag.hidden = true;
-                    ui.macport1IETMacVerifyEnable.hidden = true;
-                    ui.macport1IETQueue0.hidden = true;
-                    ui.macport1IETQueue1.hidden = true;
-                    ui.macport1IETQueue2.hidden = true;
-                    ui.macport1IETQueue3.hidden = true;
-                    ui.macport1IETQueue4.hidden = true;
-                    ui.macport1IETQueue5.hidden = true;
-                    ui.macport1IETQueue6.hidden = true;
-                    ui.macport1IETQueue7.hidden = true;
+                    ui.macport1IetMinFrag.hidden = true;
+                    ui.macport1IetMacVerifyEnable.hidden = true;
+                    ui.macport1IetQueue0.hidden = true;
+                    ui.macport1IetQueue1.hidden = true;
+                    ui.macport1IetQueue2.hidden = true;
+                    ui.macport1IetQueue3.hidden = true;
+                    ui.macport1IetQueue4.hidden = true;
+                    ui.macport1IetQueue5.hidden = true;
+                    ui.macport1IetQueue6.hidden = true;
+                    ui.macport1IetQueue7.hidden = true;
                 }
                 if (inst.DisableMacPort2 === false && inst.macport2EnableIET == false)
                 {
-                    ui.macport2IETMinFrag.hidden = true;
-                    ui.macport2IETMacVerifyEnable.hidden = true;
-                    ui.macport2IETQueue0.hidden = true;
-                    ui.macport2IETQueue1.hidden = true;
-                    ui.macport2IETQueue2.hidden = true;
-                    ui.macport2IETQueue3.hidden = true;
-                    ui.macport2IETQueue4.hidden = true;
-                    ui.macport2IETQueue5.hidden = true;
-                    ui.macport2IETQueue6.hidden = true;
-                    ui.macport2IETQueue7.hidden = true;
+                    ui.macport2IetMinFrag.hidden = true;
+                    ui.macport2IetMacVerifyEnable.hidden = true;
+                    ui.macport2IetQueue0.hidden = true;
+                    ui.macport2IetQueue1.hidden = true;
+                    ui.macport2IetQueue2.hidden = true;
+                    ui.macport2IetQueue3.hidden = true;
+                    ui.macport2IetQueue4.hidden = true;
+                    ui.macport2IetQueue5.hidden = true;
+                    ui.macport2IetQueue6.hidden = true;
+                    ui.macport2IetQueue7.hidden = true;
                 }
                 ui.DisableMacPort1.hidden = false;
                 ui.DisableMacPort2.hidden = false;
@@ -302,60 +302,60 @@ const enet_cpsw_macport_config = {
                     onChange: function(inst, ui) {
                         if(inst.macport1EnableIET == true && inst.DisableMacPort1 == false)
                         {
-                            ui.macport1IETMinFrag.hidden = false;
-                            ui.macport1IETMacVerifyEnable.hidden = false;
-                            ui.macport1IETQueue0.hidden = false;
-                            ui.macport1IETQueue1.hidden = false;
-                            ui.macport1IETQueue2.hidden = false;
-                            ui.macport1IETQueue3.hidden = false;
-                            ui.macport1IETQueue4.hidden = false;
-                            ui.macport1IETQueue5.hidden = false;
-                            ui.macport1IETQueue6.hidden = false;
-                            ui.macport1IETQueue7.hidden = false;
+                            ui.macport1IetMinFrag.hidden = false;
+                            ui.macport1IetMacVerifyEnable.hidden = false;
+                            ui.macport1IetQueue0.hidden = false;
+                            ui.macport1IetQueue1.hidden = false;
+                            ui.macport1IetQueue2.hidden = false;
+                            ui.macport1IetQueue3.hidden = false;
+                            ui.macport1IetQueue4.hidden = false;
+                            ui.macport1IetQueue5.hidden = false;
+                            ui.macport1IetQueue6.hidden = false;
+                            ui.macport1IetQueue7.hidden = false;
                         }
                         else if(inst.macport1EnableIET == false || (inst.macport1EnableIET == true && inst.DisableMacPort1 == true))
                         {
-                            ui.macport1IETMinFrag.hidden = true;
-                            ui.macport1IETMacVerifyEnable.hidden = true;
-                            ui.macport1IETQueue0.hidden = true;
-                            ui.macport1IETQueue1.hidden = true;
-                            ui.macport1IETQueue2.hidden = true;
-                            ui.macport1IETQueue3.hidden = true;
-                            ui.macport1IETQueue4.hidden = true;
-                            ui.macport1IETQueue5.hidden = true;
-                            ui.macport1IETQueue6.hidden = true;
-                            ui.macport1IETQueue7.hidden = true;
+                            ui.macport1IetMinFrag.hidden = true;
+                            ui.macport1IetMacVerifyEnable.hidden = true;
+                            ui.macport1IetQueue0.hidden = true;
+                            ui.macport1IetQueue1.hidden = true;
+                            ui.macport1IetQueue2.hidden = true;
+                            ui.macport1IetQueue3.hidden = true;
+                            ui.macport1IetQueue4.hidden = true;
+                            ui.macport1IetQueue5.hidden = true;
+                            ui.macport1IetQueue6.hidden = true;
+                            ui.macport1IetQueue7.hidden = true;
                         }
                         if(inst.macport2EnableIET == true && inst.DisableMacPort2 == false)
                         {
-                            ui.macport2IETMinFrag.hidden = false;
-                            ui.macport2IETMacVerifyEnable.hidden = false;
-                            ui.macport2IETQueue0.hidden = false;
-                            ui.macport2IETQueue1.hidden = false;
-                            ui.macport2IETQueue2.hidden = false;
-                            ui.macport2IETQueue3.hidden = false;
-                            ui.macport2IETQueue4.hidden = false;
-                            ui.macport2IETQueue5.hidden = false;
-                            ui.macport2IETQueue6.hidden = false;
-                            ui.macport2IETQueue7.hidden = false;
+                            ui.macport2IetMinFrag.hidden = false;
+                            ui.macport2IetMacVerifyEnable.hidden = false;
+                            ui.macport2IetQueue0.hidden = false;
+                            ui.macport2IetQueue1.hidden = false;
+                            ui.macport2IetQueue2.hidden = false;
+                            ui.macport2IetQueue3.hidden = false;
+                            ui.macport2IetQueue4.hidden = false;
+                            ui.macport2IetQueue5.hidden = false;
+                            ui.macport2IetQueue6.hidden = false;
+                            ui.macport2IetQueue7.hidden = false;
                         }
                         else if(inst.macport2EnableIET == false || (inst.macport2EnableIET == true && inst.DisableMacPort2 == true))
                         {
-                            ui.macport2IETMinFrag.hidden = true;
-                            ui.macport2IETMacVerifyEnable.hidden = true;
-                            ui.macport2IETQueue0.hidden = true;
-                            ui.macport2IETQueue1.hidden = true;
-                            ui.macport2IETQueue2.hidden = true;
-                            ui.macport2IETQueue3.hidden = true;
-                            ui.macport2IETQueue4.hidden = true;
-                            ui.macport2IETQueue5.hidden = true;
-                            ui.macport2IETQueue6.hidden = true;
-                            ui.macport2IETQueue7.hidden = true;
+                            ui.macport2IetMinFrag.hidden = true;
+                            ui.macport2IetMacVerifyEnable.hidden = true;
+                            ui.macport2IetQueue0.hidden = true;
+                            ui.macport2IetQueue1.hidden = true;
+                            ui.macport2IetQueue2.hidden = true;
+                            ui.macport2IetQueue3.hidden = true;
+                            ui.macport2IetQueue4.hidden = true;
+                            ui.macport2IetQueue5.hidden = true;
+                            ui.macport2IetQueue6.hidden = true;
+                            ui.macport2IetQueue7.hidden = true;
                         }
                     },
                 },
                 {
-                    name: "macport#IETMinFrag",
+                    name: "macport#IetMinFrag",
                     description: "Minimum fragment for IET frame Pre-emption",
                     longDescription: "Minimum fragment size in bytes for IET frame Pre-emption in multiples of 64: 0=64; 1=128; 2=192 and so on",
                     displayName: "IET Minimum Fragments",
@@ -365,18 +365,18 @@ const enet_cpsw_macport_config = {
                     hidden: true,
                 },
                 {
-                    name: "macport#IETMacVerifyEnable",
+                    name: "macport#IetMacVerifyEnable",
                     description: "IET Enable Macport verification",
                     displayName: "Enable IET Macport Verification",
                     default: false,
                     hidden: true,
                 },
                 {
-                    name: "macport#IETQueueMode",
+                    name: "macport#IetQueueMode",
                     displayName: "IET Queue Fragments",
                     config: [
                         {
-                            name: "macport#IETQueue0",
+                            name: "macport#IetQueue0",
                             displayName: "IET Queue mode 0",
                             longDescription: "Traffic configuration for Queue 0",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -391,7 +391,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue1",
+                            name: "macport#IetQueue1",
                             displayName: "IET Queue mode 1",
                             longDescription: "Traffic configuration for Queue 1",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -406,7 +406,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue2",
+                            name: "macport#IetQueue2",
                             displayName: "IET Queue mode 2",
                             longDescription: "Traffic configuration for Queue 2",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -421,7 +421,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue3",
+                            name: "macport#IetQueue3",
                             displayName: "IET Queue mode 3",
                             longDescription: "Traffic configuration for Queue 3",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -436,7 +436,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue4",
+                            name: "macport#IetQueue4",
                             displayName: "IET Queue mode 4",
                             longDescription: "Traffic configuration for Queue 4",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -451,7 +451,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue5",
+                            name: "macport#IetQueue5",
                             displayName: "IET Queue mode 5",
                             longDescription: "Traffic configuration for Queue 5",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -466,7 +466,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue6",
+                            name: "macport#IetQueue6",
                             displayName: "IET Queue mode 6",
                             longDescription: "Traffic configuration for Queue 6",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
@@ -481,7 +481,7 @@ const enet_cpsw_macport_config = {
                             ]
                         },
                         {
-                            name: "macport#IETQueue7",
+                            name: "macport#IetQueue7",
                             displayName: "IET Queue mode 7",
                             longDescription: "Traffic configuration for Queue 7",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
