@@ -946,7 +946,7 @@ static void Cpsw_isolatePhy(Cpsw_Handle hCpsw)
 
     for(portNum = 0; portNum < hCpsw->macPortNum; portNum++)
     {
-        Enet_assert(portNum <= CPSW_MAC_PORT_NUM);
+        Enet_assert(portNum < CPSW_MAC_PORT_NUM);
         if(hCpsw->hPhy[portNum] != NULL)
         {
             linked = hCpsw->portLinkState[portNum].isLinkUp;
@@ -1165,6 +1165,7 @@ static void Cpsw_saveInternalCtxt(Cpsw_Handle hCpsw)
 
     for(portNum = 0; portNum < hCpsw->macPortNum; portNum++)
     {
+        Enet_assert(portNum < CPSW_MAC_PORT_NUM);
         EnetMod_saveCtxt(hCpsw->hMacPort[portNum]);
     }
 

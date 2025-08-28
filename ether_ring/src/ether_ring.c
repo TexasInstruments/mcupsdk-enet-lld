@@ -292,21 +292,23 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
     uint8_t seqNumber;
     uint16_t lookupIndex;
     uint32_t ethHeaderSize = 0U;
+    uint16_t etherringEtherType = 0U;
 
     EtherRing_pktQ rxRetrieveQ;
     EtherRing_pktQ rxDupPktQ;
     EnetQueue_initQ(&rxRetrieveQ);
     EnetQueue_initQ(&rxDupPktQ);
 
-    EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
     retVal = EnetDma_retrieveRxPktQ(pRingHandle->hRxCh, &rxRetrieveQ);
 
     pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxRetrieveQ);
     while (pktInfo != NULL)
     {
+        EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
+        memcpy(&etherringEtherType, &(pktInfo->sgList.list[0].bufPtr[ethHeaderSize]), sizeof(uint16_t));
+
         /* look-up process for only EtherRing packets */
-        if ((uint16_t)pktInfo->sgList.list[0].bufPtr[ethHeaderSize] ==
-            Enet_htons(ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER))
+        if (etherringEtherType == Enet_htons(ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER))
         {
             lastByteMac = pktInfo->sgList.list[0].bufPtr[ETHERRING_HOSTMAC_LASTBYTE_INDEX];
             seqNumber = pktInfo->sgList.list[0].bufPtr[ETHERRING_SEQUENCE_NUMBER_INDEX];
@@ -372,9 +374,10 @@ static void EtherRing_initMemPool(EtherRingPool *memPool)
 static void EtherRing_addEtherringHeader(EnetDma_Pkt *pktInfo,
                                          uint16_t seqNumber)
 {
+    Enet_assert(pktInfo != NULL);
+
     uint8_t *etherRingHeader = NULL;
     uint32_t ethHeaderSize = 0U;
-
     /*  Vlan and Non-Vlan Packets needs different handling due to
     * variation in start index of Payload */
     EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
@@ -385,7 +388,6 @@ static void EtherRing_addEtherringHeader(EnetDma_Pkt *pktInfo,
     }
 
     Enet_assert(etherRingHeader != NULL);
-    Enet_assert(pktInfo != NULL);
 
     pktInfo->sgList.list[1] = pktInfo->sgList.list[0];
     pktInfo->sgList.list[1].bufPtr += ethHeaderSize;

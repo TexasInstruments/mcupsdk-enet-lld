@@ -386,7 +386,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         else if (pInterface->hRx[rxChIdIdx]->mode == Lwip2Enet_RxMode_MacSharedChannel)
         {
             const Enet_MacPort macPort = (Enet_MacPort)((pInterface->hRx[rxChIdIdx]->refCount -1));
-            Lwip2Enet_assert(macPort < LWIPIF_MAX_NUM_MAC_PORTS);
+            Lwip2Enet_assert(macPort < CPSW_STATS_MACPORT_MAX);
             pInterface->hRx[rxChIdIdx]->mapPortToNetif[macPort] = netif;
             pInterface->macPort = macPort;
         }
@@ -395,7 +395,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
             /* rxChIdx is treated as MAC PORT in case of dedicated CH per netif.
              * This is in both ICSSG dual mac and switch usecase */
             const Enet_MacPort macPort = Lwip2Enet_findMacPortFromEnet(enetType, instId);
-            Lwip2Enet_assert(macPort < LWIPIF_MAX_NUM_MAC_PORTS);
+            Lwip2Enet_assert(macPort < CPSW_STATS_MACPORT_MAX);
             pInterface->hRx[rxChIdIdx]->mapPortToNetif[macPort] = netif;
             pInterface->macPort = macPort;
         }
@@ -1305,7 +1305,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 case Lwip2Enet_RxMode_SwitchSharedChannel:
                 case Lwip2Enet_RxMode_MacSharedChannel:
                 {
-                    Lwip2Enet_assert(rxPortNum < LWIPIF_MAX_NUM_MAC_PORTS);
+                    Lwip2Enet_assert(rxPortNum < CPSW_STATS_MACPORT_MAX);
                     netif = rx->mapPortToNetif[rxPortNum];
                     break;
                 }

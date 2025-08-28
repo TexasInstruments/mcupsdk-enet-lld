@@ -244,7 +244,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
         if (tsAdj->adjValInNsecs == 0)
         {
             CSL_CPTS_setTSPpm(regs, 0U, 0U, CSL_CPTS_TS_PPM_DIR_INCREASE);
-            for(idx = 0U; idx < 8U; idx++)
+            for(idx = 0U; idx < (sizeof(regs->TS_ESTF)/sizeof(CSL_cptsRegs_TS_ESTF)); idx++)
             {
                 if ((estfIdxMask & ((uint8_t)ENET_BIT(idx))) != 0U)
                 {
