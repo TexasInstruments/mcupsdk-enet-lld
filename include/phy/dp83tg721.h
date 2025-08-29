@@ -82,6 +82,9 @@ typedef struct Dp83tg721_Cfg_s
     uint8_t clockSource;
     uint8_t enableMediaClock;
     uint8_t mediaClockMode;
+    uint8_t enableCodecClock;
+    uint32_t codecClkDiv;
+    uint32_t mediaClkDiv;
 } Dp83tg721_Cfg;
 
 /* ========================================================================== */

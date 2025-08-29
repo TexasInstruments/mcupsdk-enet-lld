@@ -183,6 +183,8 @@ extern "C" {
 #define CRF_MAS_MCLK_LOC_NSEC_15_0    0xD96  /* Media Clock Edge Location nSec LSB */
 
 #define PTP_PLL_EN_CTL       0xD97 /* PTP_PLL Enable control */
+#define CODEC_DIV_CTL_1      0xD9B /* Codec clock Division factor 1 */
+#define CODEC_DIV_CTL_2      0xD9C /* Codec clock Division factor 2 */
 #define MCLK_PH_ADJ_LIM_1    0xD9D /* Media Clock Phase Adj Lim 1 */
 #define MCLK_PH_ADJ_LIM_2    0xD9E /* Media Clock Phase Adj Lim 2 */
 #define MCLK_DIV_CTL_1       0xD9F /* Media clock Division factor 1 */
@@ -193,6 +195,10 @@ extern "C" {
 
 #define CRF_PARSE_CTL             0xD80 /* CRF parsing control register */
 #define CRF_ETYPE                 0xD81 /* CRF ethertype control register */
+#define CRF_STREAMID_63_48        0xD82 /* CRF STREAM ID Match Value */
+#define CRF_STREAMID_47_32        0xD83 /* CRF STREAM ID Match Value */
+#define CRF_STREAMID_31_16        0xD84 /* CRF STREAM ID Match Value */
+#define CRF_STREAMID_15_0         0xD85 /* CRF STREAM ID Match Value */
 #define CRF_IP_CTL                0xD88 /* CRF IP parse control register */
 #define CRF_SAMP_CTL              0xD8A /* CRF sample control register */
 #define CRF_INT                   0xD8B /* CRF Interrupt register */

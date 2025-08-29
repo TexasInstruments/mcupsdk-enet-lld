@@ -120,6 +120,8 @@
 
 #define PHY_TRIGGER_INDEX     0
 #define PHY_EVENT_INDEX       0
+
+#define DP83TG721_BSWAP_16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -220,6 +222,9 @@ typedef struct Dp83tg721Priv_s
     uint8_t ptp_clock_source;
     /* 1 to enable, 0 to disable */
     uint8_t enableMediaClock;
+    uint8_t enableCodecClock;
+    uint32_t codecClkDiv;
+    uint32_t mediaClkDiv;
     /* 1 for listener, 0 for talker, ignored when enableMediaClock is 0*/
     uint8_t mediaClockMode;
 } Dp83tg721Priv;
@@ -276,13 +281,16 @@ static int32_t Dp83tg721_enableTriggerOutput(EthPhyDrv_Handle hPhy, uint32_t tri
 static int32_t Dp83tg721_getEventTs(EthPhyDrv_Handle hPhy, uint32_t *eventIdx,
                     uint32_t *seqId, uint64_t *ts64);
 static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy);
-static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_enableMediaClock(EthPhyDrv_Handle hPhy, uint32_t clkDiv);
 static int32_t Dp83tg721_gateMediaClock(EthPhyDrv_Handle hPhy, uint64_t startTime);
 static uint64_t Dp83tg721_getMediaClockEdge(EthPhyDrv_Handle hPhy);
-static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy);
 static int32_t Dp83tg721_getSpeedDuplex (EthPhyDrv_Handle hPhy,
                                          Phy_Link_SpeedDuplex *pConfig);
-
+static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy, uint8_t* streamIDMatchValue);
+static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy, bool isMaster, uint8_t *streamIDMatchValue,
+                                         bool enTrigOut);
+static int32_t Dp83tg721_nudgeCodecClock(EthPhyDrv_Handle hPhy, int8_t nudgeValue);
+static int32_t Dp83tg721_configCodecClock(EthPhyDrv_Handle hPhy, uint32_t clkDiv);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -316,7 +324,8 @@ Phy_DrvObj_t gEnetPhyDrvDp83tg721 =
         .enableTriggerOutput     = Dp83tg721_enableTriggerOutput,
         .getEventTs              = Dp83tg721_getEventTs,
         .getSpeedDuplex          = Dp83tg721_getSpeedDuplex,
-
+        .configMediaClock        = Dp83tg721_configMediaClock,
+        .nudgeCodecClock         = Dp83tg721_nudgeCodecClock,
     }
 };
 
@@ -481,7 +490,10 @@ static void Dp83tg721_InitPriv(Dp83tg721Priv *priv, Dp83tg721_Cfg* cfg, EthPhyDr
 
     memcpy(priv->stsFrameEthHdr, ethHdr, sizeof(ethHdr));
 
+    priv->codecClkDiv      = cfg->codecClkDiv;
+    priv->mediaClkDiv      = cfg->mediaClkDiv;
     priv->enableMediaClock = cfg->enableMediaClock;
+    priv->enableCodecClock = cfg->enableCodecClock;
     priv->mediaClockMode = cfg->mediaClockMode;
     priv->ptp_clock_source = cfg->clockSource;
     priv->ptp_clock_frequency = (priv->ptp_clock_source == PTP_CLOCK_SOURCE_PTP_PLL) ?
@@ -1176,25 +1188,14 @@ static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
 
         if (priv->enableMediaClock == 1)
         {
-            /* Condfigure the media clock */
-            Dp83tg721_configMediaClock(hPhy);
-
-            /* Set the CRF Master/Slave */
-            if (priv->mediaClockMode == 0)
-            {
-                /* Disable the media clock adjustments */
-                Dp83tg721_clearBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, 1<<14);
-                uint64_t edgeTime = Dp83tg721_getMediaClockEdge(hPhy);
-                uint32_t period = 10000000;
-                Dp83tg721_enableTriggerOutput(hPhy, PHY_TRIGGER_INDEX, edgeTime, period, true);
-                Dp83tg721_enableEventCapture(hPhy, PHY_EVENT_INDEX, false, true);
-            }
-            else /* CRF Listener. */
-            {
-                /* Configure the TG721 for CRF Parsing. */
-                Dp83tg721_configCRFParsing(hPhy);
-            }
+            /* Configure the media clock */
+            Dp83tg721_enableMediaClock(hPhy, priv->mediaClkDiv);
         }
+        else if (priv->enableCodecClock == 1)
+        {
+            Dp83tg721_configCodecClock(hPhy, priv->codecClkDiv);
+        }
+        else {}
 
         Dp83tg721_enableStatusFrames(hPhy, true, srcMacStatusFrameType);
 
@@ -1738,6 +1739,47 @@ static int32_t Dp83tg721_enableEventCapture(EthPhyDrv_Handle hPhy, uint32_t even
     return status;
 }
 
+static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy, bool isMaster, uint8_t *streamIDMatchValue,
+                                         bool enTrigOut)
+{
+    int32_t status = ENETPHY_SOK;
+
+    if (!isMaster)
+    {
+        /*
+         * If Slave, Configure to parse the
+         * CRF Frames and Adjust Media Clock.
+        */
+        if (streamIDMatchValue == NULL)
+        {
+            status = ENETPHY_EBADARGS;
+        }
+        else
+        {
+            Dp83tg721_configCRFParsing(hPhy, streamIDMatchValue);
+
+           /* Enable Auto Adjustments to Media Clock. */
+           Dp83tg721_setBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, ENET_BIT(14));
+        }
+    }
+    else
+    {
+        /* Disable the media clock adjustments */
+        Dp83tg721_clearBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, ENET_BIT(14));
+
+        if (enTrigOut)
+        {
+            uint64_t edgeTime = Dp83tg721_getMediaClockEdge(hPhy);
+            uint32_t period_ns = 10000000; /* 10ms */
+
+            /* This generates 100Hz signal phase aligned with Media clock*/
+            status = Dp83tg721_enableTriggerOutput(hPhy, PHY_TRIGGER_INDEX, edgeTime, period_ns, true);
+        }
+    }
+
+    return status;
+}
+
 static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy)
 {
     bool complete = false;
@@ -1778,25 +1820,14 @@ static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy)
     return 0;
 }
 
-static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy)
+static int32_t Dp83tg721_enableMediaClock(EthPhyDrv_Handle hPhy, uint32_t clkDiv)
 {
-    bool complete = false;
-
     /* Enable PTP PLL for Clock Division. */
     Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, 0x01 << 1);
 
-    uint32_t mediaClockFreq = 48000;
-    uint32_t mclkDiv = PTP_CLOCK_FREQ_HZ/mediaClockFreq;
-
     /* Media clock Division Register */
-    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_1, (uint16_t)mclkDiv);
-    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_2, (mclkDiv>>16)&0x0FFF);
-
-    Dp83tg721_reset(hPhy);
-    do
-    {
-        complete = Dp83tg721_isResetComplete(hPhy);
-    } while (complete == false);
+    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_1, (uint16_t)clkDiv);
+    Dp83tg721_writeExtReg(hPhy, MCLK_DIV_CTL_2, (clkDiv>>16)&0x0FFF);
 
     /* Select GPIO for Media clock Output CLKOUT */
     Dp83tg721_writeExtReg(hPhy, CLKOUT_MUX_CTL, 1<<1);
@@ -1804,15 +1835,25 @@ static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy)
     return 0;
 }
 
-static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy)
+static int32_t Dp83tg721_nudgeCodecClock(EthPhyDrv_Handle hPhy, int8_t nudgeValue)
+{
+    uint16_t writeVal = (ENET_BIT(11) | (nudgeValue<<3)) & (0x0FF8);
+    return Dp83tg721_writeExtReg(hPhy, CODEC_DIV_CTL_2, writeVal);
+}
+
+static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy, uint8_t* streamIDMatchValue)
 {
     /* Enable CRF Parsing. */
     Dp83tg721_setBitsExtReg(hPhy, CRF_PARSE_CTL, ENET_BIT(0) | ENET_BIT(9)| ENET_BIT(15));
     Dp83tg721_clearBitsExtReg(hPhy, CRF_PARSE_CTL, ENET_BIT(13));
     Dp83tg721_setBitsExtReg(hPhy, CRF_IP_CTL, ENET_BIT(3));
 
-    /* Enable Auto Adjustments to Media Clock. */
-    Dp83tg721_setBitsExtReg(hPhy, MCLK_PH_ADJ_CTL_2, ENET_BIT(14));
+    /* Feed the stream ID. */
+    Dp83tg721_writeExtReg(hPhy, CRF_STREAMID_63_48, DP83TG721_BSWAP_16(*((uint16_t*)&streamIDMatchValue[0])));
+    Dp83tg721_writeExtReg(hPhy, CRF_STREAMID_47_32, DP83TG721_BSWAP_16(*((uint16_t*)&streamIDMatchValue[2])));
+    Dp83tg721_writeExtReg(hPhy, CRF_STREAMID_31_16, DP83TG721_BSWAP_16(*((uint16_t*)&streamIDMatchValue[4])));
+    Dp83tg721_writeExtReg(hPhy, CRF_STREAMID_15_0 , DP83TG721_BSWAP_16(*((uint16_t*)&streamIDMatchValue[6])));
+
     return 0;
 }
 
@@ -2005,4 +2046,20 @@ int32_t Dp83tg721_getSpeedDuplex(EthPhyDrv_Handle hPhy, Phy_Link_SpeedDuplex *pC
     (void)speed;
 
     return status;
+}
+
+static int32_t Dp83tg721_configCodecClock(EthPhyDrv_Handle hPhy, uint32_t clkDiv)
+{
+    /* Enable PTP PLL for Clock Division. */
+    Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, 0x01 << 1);
+
+    /* Media clock Division Register */
+    Dp83tg721_writeExtReg(hPhy, CODEC_DIV_CTL_1, (uint16_t)clkDiv << 8);
+
+    Dp83tg721_writeExtReg(hPhy, CODEC_DIV_CTL_2, 0b1);
+
+    /* Select GPIO for Media clock Output CLKOUT */
+    Dp83tg721_writeExtReg(hPhy, CLKOUT_MUX_CTL, 0b1);
+
+    return 0;
 }

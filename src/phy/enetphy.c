@@ -273,8 +273,8 @@ EnetPhy_Handle EnetPhy_open(const EnetPhy_Cfg *phyCfg,
                             EnetPhy_MdioHandle hMdio,
                             Mdio_Obj * mdioArgs)
 {
-    Enet_devAssert(ETHPHYDRV_MAX_OBJ_SIZE >= sizeof(Phy_Obj_t));    
-    
+    Enet_devAssert(ETHPHYDRV_MAX_OBJ_SIZE >= sizeof(Phy_Obj_t));
+
     EnetPhy_Handle hPhy = EnetPhy_getHandle();
     bool manualMode = false;
     bool alive;
@@ -2289,6 +2289,31 @@ int32_t EnetPhy_getEventTs(EnetPhy_Handle hPhy, uint32_t *eventIdx,
     if ((hPhy->hDrvIf.fxn.name != NULL) && (hPhy->hDrvIf.fxn.getEventTs != NULL))
     {
         status = hPhy->hDrvIf.fxn.getEventTs(hPhy->hDrvIf.hDrv, eventIdx, seqId, ts64);
+    }
+
+    return status;
+}
+
+int32_t EnetPhy_configMediaClock(EnetPhy_Handle hPhy, bool isMaster, uint8_t *streamIDMatchValue,
+                                         bool enTrigOut)
+{
+    int32_t status = ENETPHY_ENOTSUPPORTED;
+
+    if ((hPhy->hDrvIf.fxn.name != NULL) && (hPhy->hDrvIf.fxn.configMediaClock != NULL))
+    {
+        status = hPhy->hDrvIf.fxn.configMediaClock(hPhy->hDrvIf.hDrv, isMaster, streamIDMatchValue, enTrigOut);
+    }
+
+    return status;
+}
+
+int32_t EnetPhy_nudgeCodecClock(EnetPhy_Handle hPhy, int8_t nudgeValue)
+{
+    int32_t status = ENETPHY_ENOTSUPPORTED;
+
+    if ((hPhy->hDrvIf.fxn.name != NULL) && (hPhy->hDrvIf.fxn.nudgeCodecClock != NULL))
+    {
+        status = hPhy->hDrvIf.fxn.nudgeCodecClock(hPhy->hDrvIf.hDrv, nudgeValue);
     }
 
     return status;

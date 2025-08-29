@@ -443,6 +443,33 @@ typedef struct EnetPhy_Drv_s
      * \return \ref EnetPhy_ErrorCodes
      */
     int32_t (*getSpeedDuplex)(EthPhyDrv_Handle hPhy, Phy_Link_SpeedDuplex* pConfig);
+
+    /*!
+     * \brief config Media Clock
+     *
+     * config Media Clock
+     *
+     * \param hPhy               PHY device handle
+     * \param isMaster           Media Clock Master/Slave Mode
+     * \param streamIDMatchValue Stream ID Match value for CRF Parsing
+     * \param enTrigOut          If true, starts 100Hz phase aligned signal
+     *                           to the media clock at LED0
+     *
+     * \return \ref EnetPhy_ErrorCodes
+     */
+    int32_t (*configMediaClock)(EthPhyDrv_Handle hPhy, bool isMaster,
+                 uint8_t *streamIDMatchValue, bool enTrigOut);
+    /*!
+     * \brief Nudge Codec Clock
+     *
+     * Nudge Codec Clock
+     *
+     * \param hPhy         PHY device handle
+     * \param NudgeValue   int8_t value to nudge Codec clock.
+     *
+     * \return \ref EnetPhy_ErrorCodes
+     */
+    int32_t (*nudgeCodecClock)(EthPhyDrv_Handle hPhy, int8_t nudgeValue);
 } EnetPhy_Drv;
 
 

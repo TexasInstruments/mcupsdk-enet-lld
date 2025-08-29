@@ -1166,6 +1166,33 @@ int32_t EnetPhy_enableTriggerOutput(EnetPhy_Handle hPhy, uint32_t triggerIdx,
  */
 int32_t EnetPhy_getEventTs(EnetPhy_Handle hPhy, uint32_t *eventIdx,
                 uint32_t *seqId, uint64_t *ts64);
+
+/*!
+ * \brief config Media Clock
+ *
+ * config Media Clock
+ *
+ * \param hPhy               PHY device handle
+ * \param isMaster           Media Clock Master/Slave Mode
+ * \param streamIDMatchValue Stream ID Match Value for CRF Parsing
+ * \param enTrigOut          If true, starts 100Hz phase aligned signal
+ *                           to the media clock at LED0
+ *
+ * \return \ref EnetPhy_ErrorCodes
+ */
+int32_t EnetPhy_configMediaClock(EnetPhy_Handle hPhy,  bool isMaster,
+                uint8_t *streamIDMatchValue, bool enTrigOut);
+/*!
+ * \brief Nudge Codec Clock
+ *
+ * Nudge Codec Clock
+ *
+ * \param hPhy         PHY device handle
+ * \param nudgeValue   int8_t value to nudge Codec clock.
+ *
+ * \return \ref EnetPhy_ErrorCodes
+ */
+int32_t EnetPhy_nudgeCodecClock(EnetPhy_Handle hPhy, int8_t nudgeValue);
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

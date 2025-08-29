@@ -326,6 +326,24 @@ enum EnetPhy_Ioctl_e
      * -  outArgs: #EnetMacPort_LinkCfg
      */
     ENET_PHY_IOCTL_GET_LINK_STATUS = ENET_PHY_PUBLIC_IOCTL(27U),
+
+        /*!
+     * \brief Config Media Clock
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetPhy_ConfigMediaClockInArgs
+     * - outArgs: None
+     */
+    ENET_PHY_IOCTL_CONFIG_MEDIA_CLOCK = ENET_PHY_PUBLIC_IOCTL(28U),
+
+    /*!
+     * \brief Nudge Codec Clock
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetPhy_NudgeCodecClockInArgs
+     * - outArgs: None
+     */
+    ENET_PHY_IOCTL_NUDGE_CODEC_CLOCK = ENET_PHY_PUBLIC_IOCTL(29U),
 };
 
 /*!
@@ -508,6 +526,25 @@ typedef struct EnetPhy_GetEventTimestampOutArgs_s
     uint32_t seqId;
     uint64_t ts64;
 } EnetPhy_GetEventTimestampOutArgs;
+/*!
+ * \brief Input args for #ENET_PHY_IOCTL_CONFIG_MEDIA_CLOCK command.
+ */
+typedef struct EnetPhy_ConfigMediaClockInArgs_s
+{
+    Enet_MacPort macPort;
+    bool isMaster;
+    uint8_t *streamIDMatchValue;
+    bool enTrigOut;
+}EnetPhy_ConfigMediaClockInArgs;
+
+/*!
+ * \brief Input args for #ENET_PHY_IOCTL_NUDGE_CODEC_CLOCK command.
+ */
+typedef struct EnetPhy_NudgeCodecClockInArgs_s
+{
+    Enet_MacPort macPort;
+    int8_t nudgeValue;
+}EnetPhy_NudgeCodecClockInArgs;
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */

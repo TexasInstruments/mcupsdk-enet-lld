@@ -435,3 +435,30 @@ int32_t EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_EVENT_TIMESTAMP(EnetPhy
                     ENET_MACPORT_ID(inArgs->macPort), status);
     return status;
 }
+
+int32_t EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_CONFIG_MEDIA_CLOCK(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms)
+{
+    const EnetPhy_ConfigMediaClockInArgs *inArgs =
+        (const EnetPhy_ConfigMediaClockInArgs *)prms->inArgs;
+
+    int32_t status = EnetPhy_configMediaClock(hPhy, inArgs->isMaster, \
+                                inArgs->streamIDMatchValue, inArgs->enTrigOut);
+
+    ENETTRACE_ERR_IF((status != ENETPHY_SOK) && (status != ENETPHY_EUNAVAILABLE),
+                    "Port %u: Failed to configure Media Clock: %d\n",
+                    ENET_MACPORT_ID(inArgs->macPort), status);
+    return status;
+}
+
+int32_t EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_NUDGE_CODEC_CLOCK(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms)
+{
+    const EnetPhy_NudgeCodecClockInArgs *inArgs =
+        (const EnetPhy_NudgeCodecClockInArgs *)prms->inArgs;
+
+    int32_t status = EnetPhy_nudgeCodecClock(hPhy, inArgs->nudgeValue);
+
+    ENETTRACE_ERR_IF((status != ENETPHY_SOK) && (status != ENETPHY_EUNAVAILABLE),
+                    "Port %u: Failed to Nudge Codec Clock: %d\n",
+                    ENET_MACPORT_ID(inArgs->macPort), status);
+    return status;
+}
