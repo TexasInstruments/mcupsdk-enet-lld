@@ -377,7 +377,7 @@ const enet_cpsw_macport_config = {
                     config: [
                         {
                             name: "macport#IetQueue0",
-                            displayName: "IET Queue mode 0",
+                            displayName: "IET Queue Mode 0",
                             longDescription: "Traffic configuration for Queue 0",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -392,7 +392,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue1",
-                            displayName: "IET Queue mode 1",
+                            displayName: "IET Queue Mode 1",
                             longDescription: "Traffic configuration for Queue 1",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -407,7 +407,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue2",
-                            displayName: "IET Queue mode 2",
+                            displayName: "IET Queue Mode 2",
                             longDescription: "Traffic configuration for Queue 2",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -422,7 +422,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue3",
-                            displayName: "IET Queue mode 3",
+                            displayName: "IET Queue Mode 3",
                             longDescription: "Traffic configuration for Queue 3",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -437,7 +437,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue4",
-                            displayName: "IET Queue mode 4",
+                            displayName: "IET Queue Mode 4",
                             longDescription: "Traffic configuration for Queue 4",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -452,7 +452,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue5",
-                            displayName: "IET Queue mode 5",
+                            displayName: "IET Queue Mode 5",
                             longDescription: "Traffic configuration for Queue 5",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -467,7 +467,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue6",
-                            displayName: "IET Queue mode 6",
+                            displayName: "IET Queue Mode 6",
                             longDescription: "Traffic configuration for Queue 6",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
@@ -482,7 +482,7 @@ const enet_cpsw_macport_config = {
                         },
                         {
                             name: "macport#IetQueue7",
-                            displayName: "IET Queue mode 7",
+                            displayName: "IET Queue Mode 7",
                             longDescription: "Traffic configuration for Queue 7",
                             default: "ENET_MAC_QUEUE_PREEMPT_MODE_PREEMPT",
                             hidden: true,
