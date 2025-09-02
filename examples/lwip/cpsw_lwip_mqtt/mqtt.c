@@ -78,6 +78,7 @@ static struct mqtt_connect_client_info_t mqtt_client_info =
   100,  /* keep alive */
   NULL, /* will_topic */
   NULL, /* will_msg */
+  0, /* will_msg length*/
   0,    /* will_qos */
   0     /* will_retain */
 #if LWIP_ALTCP && LWIP_ALTCP_TLS
