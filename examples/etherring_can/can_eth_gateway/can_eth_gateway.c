@@ -207,7 +207,8 @@ int32_t Gateway_convertCanToAvtpPacket(const MCAN_RxBufElement *canMsg,
     uint32_t totalEthPayloadLen = 0U;
     uint32_t totalAcfPayloadLen = 0U;
 
-    uint32_t canId = canMsg->id;
+    /* Fetching the CAN msgId from CAN Element */
+    uint32_t canId = (canMsg->id >> 18U) & 0x7FFU;
     uint8_t destMacAdd[6];
     uint32_t isFound = GatewayLookup_findMacAddressByCanId(&gLookupSystem, canId, &destMacAdd[0]);
 
@@ -305,7 +306,8 @@ int32_t Gateway_convertCanToAvtpPacket(const MCAN_RxBufElement *canMsg,
     }
     else
     {
-        memset(frame + currByteOffset, 0x2, 8);
+       /* Setting the timestamp as 0x0 If rxts is zero */
+        memset(frame + currByteOffset, 0x0, 8);
     }
     currByteOffset += 8;
 
@@ -327,7 +329,7 @@ int32_t Gateway_convertCanToAvtpPacket(const MCAN_RxBufElement *canMsg,
     else
     {
         /* Standard 11-bit identifier */
-        uint16_t id = canMsg->id & 0x7FF;  /* Ensure only 11 bits are used */
+        uint16_t id = canId & 0x7FF;  /* Ensure only 11 bits are used */
         uint8_t id_bytes[4];
         id_bytes[0] = 0;  /* Reserved byte */
         id_bytes[1] = 0;

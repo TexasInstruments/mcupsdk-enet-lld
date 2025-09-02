@@ -140,7 +140,7 @@ int32_t EnetApp_configureNodeMcastAddress(Enet_Handle hEnet, uint32_t coreId, ui
  *
  * @return None
  */
-void EnetApp_configureNodeId(int* nodeId);
+void EnetApp_configureNodeId(uint32_t* nodeId);
 
 /**
  * @brief Update CPSW initialization configuration

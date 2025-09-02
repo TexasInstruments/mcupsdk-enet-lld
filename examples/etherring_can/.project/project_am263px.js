@@ -10,6 +10,8 @@ const files = {
         "ethernet_config.c",
         "etherring_can_app.c",
         "etherring_can_main.c",
+        "mcan_transceiver.c",
+        "etherring_mcan.c",
     ],
 };
 
@@ -19,6 +21,7 @@ const files = {
 const filedirs = {
     common: [
     	"..",
+        "../..",
         "../../..", /* Example base */
         "../../../can_eth_gateway", /* Example base */
         "../../../can_trafficgen",

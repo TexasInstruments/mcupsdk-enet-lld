@@ -42,6 +42,8 @@ FILES_common := \
 	ethernet_config.c \
 	etherring_can_app.c \
 	etherring_can_main.c \
+	mcan_transceiver.c \
+	etherring_mcan.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -56,6 +58,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
+	../.. \
 	../../.. \
 	../../../can_eth_gateway \
 	../../../can_trafficgen \

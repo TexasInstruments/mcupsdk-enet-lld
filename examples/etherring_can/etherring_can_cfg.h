@@ -47,9 +47,29 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* ========================================================================== */
+/*                                  Macros                                    */
+/* ========================================================================== */
+/* Timestamp pool size for profiling */
+#define ETHERRING_CAN_TIMESTAMP_POOL_COUNT                            (32U)
+
+/* Macro to enable/disable the profiling. */
+#define ETHERRING_MCAN_ENABLE_PROFILING
 /* ========================================================================== */
 /*                                 Structures                                 */
 /* ========================================================================== */
+/* Structure to store 64bit timestamp */
+typedef struct
+{
+    /* Pointer to next buffer in queue
+     * Note: Keep EnetQ_Node as first member always as driver uses generic
+     * queue functions and dereferences to this member */
+    EnetQ_Node node;
+    /* CAN element containing the actual message */
+    uint64_t timeStamp;
+}EnetApp_timestampQ;
+
 /* Test parameters for each port in the multi-channel test */
 typedef struct EnetApp_Cfg_s
 {
@@ -84,6 +104,15 @@ typedef struct EnetApp_Cfg_s
     /* Queue of free RX packets */
     EnetDma_PktQ rxFreePktInfoQ;
 
+    /* Pool of Timestamps */
+    EnetApp_timestampQ timestampPool[ETHERRING_CAN_TIMESTAMP_POOL_COUNT];
+
+    /* Queue of free Timestamps */
+    EnetQ timestampFreeQ;
+
+    /* Queue of ready Timestamps */
+    EnetQ timestampReadyQ;
+
     /* Regular traffic RX flow index */
     uint32_t rxChNum;
 
@@ -113,7 +142,10 @@ typedef struct EnetApp_Cfg_s
     EtherRing_Handle hEtherRing;
 
     /* Ether-Ring Node ID*/
-    int nodeId;
+    uint32_t nodeId;
+
+    /* Test Pass boolean */
+    bool isTestPassPrinted;
 
 } EnetApp_Cfg;
 

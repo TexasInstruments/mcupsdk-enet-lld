@@ -39,14 +39,14 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 #include "etherring_can_app.h"
-
+#include "etherring_mcan.h"
 /* ========================================================================== */
 /*                                 Macros                                     */
 /* ========================================================================== */
-#define ENETAPP_AVTP_STREAMID                                               0U
-#define ENETAPP_CAN_BUSID                                                   0U
-#define ENETAPP_TX_TASK_PRIORITY                                            4U
-#define ENETAPP_RX_TASK_PRIORITY                                            3U
+#define ENETAPP_AVTP_STREAMID                                               (0U)
+#define ENETAPP_CAN_BUSID                                                   (0U)
+#define ENETAPP_TX_TASK_PRIORITY                                            (4U)
+#define ENETAPP_RX_TASK_PRIORITY                                            (3U)
 
 /* ========================================================================== */
 /*                              Global Variables                              */
@@ -57,12 +57,13 @@ static EtherRing_Cfg gEtherRingCfg;
 static uint8_t gEnetAppTaskStackTxApp[ENETAPP_TASK_STACK_SZ] __attribute__((aligned(32)));
 static uint8_t gEnetAppTaskStackRxApp[ENETAPP_TASK_STACK_SZ] __attribute__((aligned(32)));
 static uint32_t rxCanPktCounter = 0;
+static EtherringMcanObj gEtherringMcanObj;
 /* ========================================================================== */
 /*                           Function Declarations                            */
 /* ========================================================================== */
 static void EnetApp_txTask(void* args);
 static void EnetApp_rxTask(void *args);
-static int32_t EnetApp_setupConfig(CanTrafficGen_Object *tgCfg);
+static int32_t EnetApp_setupConfig(CanTrafficGen_Object *tgCfg, EnetApp_Cfg *enetAppCfg);
 static int32_t EnetApp_createTxTask(EnetApp_Cfg *enetAppCfg);
 static int32_t EnetApp_createRxTask(EnetApp_Cfg *enetAppCfg);
 
@@ -79,6 +80,9 @@ static void EnetApp_initEtherRingCfg(EtherRing_Cfg *etherRingCfg, uint8_t hostMa
 int32_t EnetApp_initApp(EnetApp_Cfg *enetAppCfg)
 {
     int32_t status = ENET_SOK;
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+    uint32_t memPoolIndex = 0U;
+#endif
 
     /* Open DMA channels for TX and RX */
     status = EnetApp_openDma(enetAppCfg);
@@ -91,7 +95,6 @@ int32_t EnetApp_initApp(EnetApp_Cfg *enetAppCfg)
     EnetAppUtils_assert(status == ENET_SOK);
 
     /* Adding vlan entry for Ether-Ring stream traffic */
-    EnetApp_addVlanEntries(enetAppCfg->hEnet, enetAppCfg->coreId, 255);
 
     /* Configure node-specific multicast address */
     EnetApp_configureNodeMcastAddress(enetAppCfg->hEnet, enetAppCfg->coreId, enetAppCfg->nodeId);
@@ -101,29 +104,49 @@ int32_t EnetApp_initApp(EnetApp_Cfg *enetAppCfg)
                          enetAppCfg->instId,
                          EnetSoc_getCoreId());
 
-    /* Setup CAN traffic generator configuration */
-    status = EnetApp_setupConfig(&gTgConfig);
-    EnetAppUtils_assert(status == ENET_SOK);
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+    /* Initialize the queue for managing CAN packet memory */
+    EnetQueue_initQ(&enetAppCfg->timestampFreeQ);
+    EnetQueue_initQ(&enetAppCfg->timestampReadyQ);
 
+    /* Enqueue all available memory blocks to the free queue */
+    for (memPoolIndex = 0; memPoolIndex < ETHERRING_CAN_TIMESTAMP_POOL_COUNT; memPoolIndex++)
+    {
+        if (&enetAppCfg->timestampPool[memPoolIndex] != NULL)
+        {
+            EnetQueue_enq(&enetAppCfg->timestampFreeQ, &enetAppCfg->timestampPool[memPoolIndex].node);
+        }
+    }
+
+    /* Verify all memory blocks were successfully enqueued */
+    if (EnetQueue_getQCount(&enetAppCfg->timestampFreeQ) != ETHERRING_CAN_TIMESTAMP_POOL_COUNT)
+    {
+        status = ENET_EFAIL;
+    }
+#endif
+
+    /* Setup CAN traffic generator configuration */
+    status = EnetApp_setupConfig(&gTgConfig, enetAppCfg);
+    EnetAppUtils_assert(status == ENET_SOK);
     return status;
 }
 
-static int32_t EnetApp_setupConfig(CanTrafficGen_Object *tgCfg)
+static int32_t EnetApp_setupConfig(CanTrafficGen_Object *tgCfg, EnetApp_Cfg *enetAppCfg)
 {
     int32_t status = ENET_SOK;
 
     /* Timer tick is dependent on Application configuration. This needs to be
     *  updated if timer tick periodicity is changed */
-    tgCfg->timerTickPeriodicityInus = 250;
+    tgCfg->timerTickPeriodicityInus = 500;
 
     /* Configure a single traffic pattern */
     tgCfg->validPktParamsCount = 1;
     tgCfg->pktParams[0].CAN_msgId = 0x2;
     tgCfg->pktParams[0].packetCountPerTick = 1;
     tgCfg->pktParams[0].payloadSize = 64;
-    tgCfg->pktParams[0].periodicity = 250;
+    tgCfg->pktParams[0].periodicity = 500;
     tgCfg->pktParams[0].packetCounter = 0;
-    tgCfg->pktParams[0].maxPacketSend = 100;
+    tgCfg->pktParams[0].maxPacketSend = ETHERRING_MCAN_TEST_PKT_COUNT;
     tgCfg->pktParams[0].hasAllCanPktsSent = false;
 
     /* Initialize traffic generator */
@@ -133,11 +156,32 @@ static int32_t EnetApp_setupConfig(CanTrafficGen_Object *tgCfg)
         EnetAppUtils_print("CAN Traffic Gen setup failed\r\n");
         status = ENET_EFAIL;
     }
+    else
+    {
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+        tgCfg->timestampFreeQPtr = &enetAppCfg->timestampFreeQ;
+        tgCfg->timestampReadyQPtr = &enetAppCfg->timestampReadyQ;
+        tgCfg->hEnet = enetAppCfg->hEnet;
+        tgCfg->coreId = enetAppCfg->coreId;
+#endif
+    }
 
     /* Initialize CAN-Ethernet gateway */
     if (status == ENET_SOK)
     {
         status = Gateway_setup();
+    }
+
+    /* Configure MCAN Driver */
+    if (status == ENET_SOK)
+    {
+        EtherringCAN_mcanConfig(&gEtherringMcanObj);
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+        gEtherringMcanObj.timestampFreeQPtr = &enetAppCfg->timestampFreeQ;
+        gEtherringMcanObj.timestampReadyQPtr = &enetAppCfg->timestampReadyQ;
+        gEtherringMcanObj.hEnet = enetAppCfg->hEnet;
+        gEtherringMcanObj.coreId = enetAppCfg->coreId;
+#endif
     }
 
     if (status != ENET_SOK)
@@ -159,13 +203,23 @@ void EnetApp_startTraffic(EnetApp_Cfg *enetAppCfg)
     }
 
     /* Create RX task to receive packets */
-    EnetApp_createRxTask(enetAppCfg);
+    status = EnetApp_createRxTask(enetAppCfg);
     if (status != ENET_SOK)
     {
-        EnetAppUtils_print("RX Task creation failed\r\n");
+        EnetAppUtils_print("Ethernet RX Task creation failed\r\n");
         status = ENET_EFAIL;
     }
-    EnetAppUtils_print("RX Task created\r\n");
+    EnetAppUtils_print("Ethernet RX Task created\r\n");
+
+    if (status == ENET_SOK)
+    {
+        status = EtherringCAN_createRxCANTask(&gEtherringMcanObj);
+    }
+
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("MCAN RX Task create failed\r\n");
+    }
 
     EnetAppUtils_assert(status == ENET_SOK);
     /* Generate CAN traffic only from Node0 */
@@ -178,7 +232,10 @@ void EnetApp_startTraffic(EnetApp_Cfg *enetAppCfg)
             EnetAppUtils_print("TX Task creation failed\r\n");
             status = ENET_EFAIL;
         }
-        EnetAppUtils_print("TX Task created\r\n");
+        else
+        {
+            EnetAppUtils_print("Ethernet TX Task created\r\n");
+        }
 
         EnetAppUtils_assert(status == ENET_SOK);
         EnetAppUtils_print("Generating CAN Traffic\r\n");
@@ -235,6 +292,13 @@ static void EnetApp_txTask(void* args)
 
         while(true)
         {
+            if (enetAppCfg->isTestPassPrinted == false &&
+                gTgConfig.canGeneratedPktCount == ETHERRING_MCAN_TEST_PKT_COUNT &&
+                gEtherringMcanObj.mcanStats.rxCanPacketCount == ETHERRING_MCAN_TEST_PKT_COUNT)
+            {
+                EnetAppUtils_print("EtherRing CAN Test Passed\r\n");
+                enetAppCfg->isTestPassPrinted = true;
+            }
             /* Check if we have CAN packets and free TX buffers */
             if(EnetQueue_getQCount(&gTgConfig.rxReadyElementQ) > 0 &&
                EnetQueue_getQCount(&enetAppCfg->txFreePktInfoQ) > 0)
@@ -332,12 +396,21 @@ static void EnetApp_rxTask(void *args)
             /* Convert AVTP packet to CAN frame */
             MCAN_TxBufElement txCanElement;
             Gateway_convertAvtpToCanPacket(ethPktInfo, &txCanElement);
+
+            /* Fetching the CAN msgId in CAN element  */
+            txCanElement.id = ((txCanElement.id  & 0x7FFU) << 18U);
             rxCanPktCounter++;
 
-            if (rxCanPktCounter % 100 == 0)
+            if (rxCanPktCounter % ETHERRING_MCAN_TEST_PKT_COUNT == 0U)
             {
-                EnetAppUtils_print("Received %u EtherRing CAN packets to Rx task\r\n", rxCanPktCounter);
+#ifndef ETHERRING_MCAN_ENABLE_PROFILING
+                EnetAppUtils_print("[Ethernet Rx App] Received %u EtherRing CAN packets to"
+                                   " Rx Eth task\r\n", rxCanPktCounter);
+#endif
             }
+            /* Sending CAN frame using MCAN driver*/
+            EtherringCAN_sendCANPacket(&txCanElement, &gEtherringMcanObj);
+
             /* Dequeue next packet */
             ethPktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxReadyQ);
         }

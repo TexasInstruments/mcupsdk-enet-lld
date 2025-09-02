@@ -128,6 +128,10 @@
         </file>
         <file path="../../../etherring_can_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
+        <file path="../../mcan_transceiver.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../etherring_mcan.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am263x/EXAMPLES_ENET_CPSW_ETHERRING.html"

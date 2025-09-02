@@ -338,7 +338,7 @@ int32_t EnetApp_configureNodeMcastAddress(Enet_Handle hEnet, uint32_t coreId, ui
     return status;
 }
 
-void EnetApp_configureNodeId(int* nodeId)
+void EnetApp_configureNodeId(uint32_t* nodeId)
 {
     /* Interactive menu to select node type */
     while (true)
@@ -348,7 +348,7 @@ void EnetApp_configureNodeId(int* nodeId)
         EnetAppUtils_print("2 - Zone Right Node\r\n");
         EnetAppUtils_print("3 - Zone Tail Node\r\n");
         EnetAppUtils_print("Enter the nodeId : \r\n");
-        DebugP_scanf("%d", nodeId);
+        DebugP_scanf("%u", nodeId);
 
         /* Validate input */
         if ((*nodeId < 0) || (*nodeId > 3))
@@ -447,7 +447,7 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
     Enet_setTraceLevel(ENET_TRACE_DEBUG);
 
     /* Configure VLAN awareness */
-    cpswCfg->vlanCfg.vlanAware = true;
+    cpswCfg->vlanCfg.vlanAware = false;
 
     /* Configure host port */
     hostPortCfg->rxVlanRemapEn  = true;
@@ -456,8 +456,8 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cp
     aleCfg->policerGlobalCfg.policingEn = true;
     aleCfg->modeFlags                          |= CPSW_ALE_CFG_MODULE_EN;
     aleCfg->nwSecCfg.vid0ModeEn                = true;
-    aleCfg->vlanCfg.aleVlanAwareMode           = true;
-    aleCfg->vlanCfg.cpswVlanAwareMode          = true;
+    aleCfg->vlanCfg.aleVlanAwareMode           = false;
+    aleCfg->vlanCfg.cpswVlanAwareMode          = false;
     aleCfg->vlanCfg.unknownUnregMcastFloodMask = CPSW_ALE_ALL_MACPORTS_MASK;
     aleCfg->vlanCfg.unknownRegMcastFloodMask   = CPSW_ALE_ALL_MACPORTS_MASK;
     aleCfg->vlanCfg.unknownVlanMemberListMask  = CPSW_ALE_ALL_MACPORTS_MASK;

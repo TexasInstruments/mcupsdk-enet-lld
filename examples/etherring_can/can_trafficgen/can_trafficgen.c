@@ -261,6 +261,12 @@ static void CanTrafficGen_tgTask(void* args)
     CanTrafficGen_Object* configTg = (CanTrafficGen_Object*)args;
     static uint64_t tgTickCount = 0;
     uint32_t dlc = 0U;
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+    int32_t status = 0;
+    EnetApp_timestampQ* timestampElement = NULL;
+    uint64_t* timeStamp = NULL;
+    Enet_IoctlPrms prms;
+#endif
 
     /* Main task loop */
     while (true)
@@ -296,11 +302,11 @@ static void CanTrafficGen_tgTask(void* args)
                     if (configTg->pktParams[index].packetCounter >= configTg->pktParams[index].maxPacketSend - 1)
                     {
                         configTg->pktParams[0].hasAllCanPktsSent = true;
-                        EnetAppUtils_print("Generated %u CAN packet of CAN Message ID: %u\r\n",
-                                           configTg->pktParams[index].maxPacketSend, configTg->pktParams[index].CAN_msgId);
                     }
                 }
 
+                /* Increment total packet count */
+                configTg->canGeneratedPktCount++;
                 /* Increment packet counter for this stream */
                 configTg->pktParams[index].packetCounter++;
                 static uint32_t pktCount = 0;
@@ -331,13 +337,13 @@ static void CanTrafficGen_tgTask(void* args)
                 CanTrafficGen_convertCanPayloadtoDlc(configTg->pktParams[index].payloadSize , &dlc);
 
                 /* Configure CAN message fields */
-                rxElement->id = configTg->pktParams[index].CAN_msgId;
+                rxElement->id = ((configTg->pktParams[index].CAN_msgId & 0x7FFU) << 18U);
                 rxElement->dlc = dlc;
                 rxElement->rtr = 0;                /* Not a remote transmission request */
-                rxElement->xtd = 1;                /* Extended identifier */
+                rxElement->xtd = 0;                /* Standard identifier */
                 rxElement->esi = 0;                /* Error state indicator */
                 rxElement->rxts = 0;               /* Rx timestamp */
-                rxElement->brs = 0;                /* Bit rate switch */
+                rxElement->brs = 1;                /* Bit rate switch */
                 rxElement->fdf = 1;                /* FD format indicator */
                 rxElement->fidx = 0;               /* Filter index */
                 rxElement->anmf = 0;               /* Accepted non-matching frame */
@@ -345,8 +351,32 @@ static void CanTrafficGen_tgTask(void* args)
                 /* Fill data with incrementing pattern */
                 memset(rxElement->data, (uint8_t)pktCount++, copySize);
 
+#ifdef ETHERRING_MCAN_ENABLE_PROFILING
+                /* Check if free packets are available */
+                if (EnetQueue_getQCount(configTg->timestampFreeQPtr) == 0)
+                {
+                    /* Queue empty, skip this iteration */
+                    EnetAppUtils_print("free timestamp not available: %d\r\n", configTg->canGeneratedPktCount);
+                }
+                /* Get a free packet from the pool */
+                timestampElement = (EnetApp_timestampQ*)EnetQueue_deq(configTg->timestampFreeQPtr);
+                timeStamp = &timestampElement->timeStamp;
+                /* Software Time stamp Push event */
+                ENET_IOCTL_SET_OUT_ARGS(&prms, timeStamp);
+                ENET_IOCTL(configTg->hEnet, configTg->coreId,
+                       ENET_TIMESYNC_IOCTL_GET_CURRENT_TIMESTAMP, &prms, status);
+                EnetQueue_enq(configTg->timestampReadyQPtr, &timestampElement->node);
+                EnetAppUtils_assert(status == ENET_SOK);
+#endif
                 /* Add packet to ready queue for processing */
                 EnetQueue_enq(&configTg->rxReadyElementQ, &rxPkt->node);
+                if (configTg->pktParams[0].hasAllCanPktsSent == true)
+                {
+#ifndef ETHERRING_MCAN_ENABLE_PROFILING
+                    EnetAppUtils_print("[Traffic Gen] Generated %u CAN packet of CAN Message ID: %u\r\n",
+                                       configTg->pktParams[index].maxPacketSend, configTg->pktParams[index].CAN_msgId);
+#endif
+                }
             }
         }
     }

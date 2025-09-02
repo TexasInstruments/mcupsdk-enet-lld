@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263Px" --part "AM263P4" --package "ZCZ_C" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM263P4" --package "NFBGA (ZCZ-C)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.23.0+4000"}
+ * @versions {"tool":"1.24.2+4234"}
  */
 
 /**
@@ -15,6 +15,8 @@ const gpio       = scripting.addModule("/drivers/gpio/gpio", {}, false);
 const gpio1      = gpio.addInstance();
 const i2c        = scripting.addModule("/drivers/i2c/i2c", {}, false);
 const i2c1       = i2c.addInstance();
+const mcan       = scripting.addModule("/drivers/mcan/mcan", {}, false);
+const mcan1      = mcan.addInstance();
 const debug_log  = scripting.addModule("/kernel/dpl/debug_log");
 const dpl_cfg    = scripting.addModule("/kernel/dpl/dpl_cfg");
 const mpu_armv7  = scripting.addModule("/kernel/dpl/mpu_armv7", {}, false);
@@ -60,6 +62,16 @@ i2c1.I2C.SCL.$assign     = "I2C1_SCL";
 i2c1.I2C.SDA.$assign     = "I2C1_SDA";
 i2c1.I2C_child.$name     = "drivers_i2c_v1_i2c_v1_template1";
 
+mcan1.$name           = "CONFIG_MCAN0";
+mcan1.MCAN.$assign    = "MCAN3";
+mcan1.MCAN.RX.$assign = "UART0_CTSn";
+mcan1.MCAN.TX.$assign = "UART0_RTSn";
+
+const mcan_v1_template  = scripting.addModule("/drivers/mcan/v1/mcan_v1_template", {}, false);
+const mcan_v1_template1 = mcan_v1_template.addInstance({}, false);
+mcan_v1_template1.$name = "drivers_mcan_v1_mcan_v1_template0";
+mcan1.child             = mcan_v1_template1;
+
 debug_log.enableUartLog            = true;
 debug_log.enableCssLog             = false;
 debug_log.uartLog.$name            = "CONFIG_UART0";
@@ -95,7 +107,7 @@ mpu_armv75.attributes = "NonCached";
 
 timer1.$name         = "CONFIG_TIMER0";
 timer1.timerCallback = "EnetApp_periodicTimerCb";
-timer1.usecPerTick   = 250;
+timer1.usecPerTick   = 500;
 
 general1.$name        = "CONFIG_GENERAL0";
 general1.stack_size   = 8192;

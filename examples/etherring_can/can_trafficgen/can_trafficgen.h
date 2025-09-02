@@ -62,6 +62,7 @@
 
 #include "ti_drivers_open_close.h"
 #include "ti_board_open_close.h"
+#include "etherring_can_cfg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,115 +81,6 @@ extern "C" {
 /* ========================================================================== */
 /*                                 Structures                                 */
 /* ========================================================================== */
-/**
- * \brief  Structure for MCAN Tx Buffer element.
- */
-typedef struct
-{
-
-    uint32_t id;
-    /**< Identifier */
-
-    uint32_t rtr;
-    /**< Remote Transmission Request
-     *   0 = Transmit data frame
-     *   1 = Transmit remote frame
-     */
-    uint32_t xtd;
-    /**< Extended Identifier
-     *   0 = 11-bit standard identifier
-     *   1 = 29-bit extended identifier
-     */
-    uint32_t esi;
-    /**< Error State Indicator
-     *   0 = ESI bit in CAN FD format depends only on error passive flag
-     *   1 = ESI bit in CAN FD format transmitted recessive
-     */
-    uint32_t dlc;
-    /**< Data Length Code
-     *   0-8  = CAN + CAN FD: transmit frame has 0-8 data bytes
-     *   9-15 = CAN: transmit frame has 8 data bytes
-     *   9-15 = CAN FD: transmit frame has 12/16/20/24/32/48/64 data bytes
-     */
-    uint32_t brs;
-    /**< Bit Rat Switching
-     *   0 = CAN FD frames transmitted without bit rate switching
-     *   1 = CAN FD frames transmitted with bit rate switching
-     */
-    uint32_t fdf;
-    /**< FD Format
-     *   0 = Frame transmitted in Classic CAN format
-     *   1 = Frame transmitted in CAN FD format
-     */
-    uint32_t efc;
-    /**< Event FIFO Control
-     *   0 = Don't store Tx events
-     *   1 = Store Tx events
-     */
-    uint32_t mm;
-    /**< Message Marker */
-
-    uint8_t  data[64];
-    /**< Data bytes.
-     *   Only first dlc number of bytes are valid.
-     */
-}MCAN_TxBufElement;
-
-/**
- * \brief  Structure for MCAN Rx Buffer element.
- */
-typedef struct
-{
-    uint32_t id;
-    /**< Identifier */
-
-    uint32_t rtr;
-    /**< Remote Transmission Request
-     *   0 = Received frame is a data frame
-     *   1 = Received frame is a remote frame
-     */
-    uint32_t xtd;
-    /**< Extended Identifier
-     *   0 = 11-bit standard identifier
-     *   1 = 29-bit extended identifier
-     */
-    uint32_t esi;
-    /**< Error State Indicator
-     *   0 = Transmitting node is error active
-     *   1 = Transmitting node is error passive
-     */
-    uint32_t rxts;
-    /**< Rx Timestamp */
-
-    uint32_t dlc;
-    /**< Data Length Code
-     *   0-8  = CAN + CAN FD: received frame has 0-8 data bytes
-     *   9-15 = CAN: received frame has 8 data bytes
-     *   9-15 = CAN FD: received frame has 12/16/20/24/32/48/64 data bytes
-     */
-    uint32_t brs;
-    /**< Bit Rat Switching
-     *   0 = Frame received without bit rate switching
-     *   1 = Frame received with bit rate switching
-     */
-    uint32_t fdf;
-    /**< FD Format
-     *   0 = Standard frame format
-     *   1 = CAN FD frame format (new DLC-coding and CRC)
-     */
-    uint32_t fidx;
-    /**< Filter Index */
-
-    uint32_t anmf;
-    /**< Accepted Non-matching Frame
-     *   0 = Received frame matching filter index FIDX
-     *   1 = Received frame did not match any Rx filter element
-     */
-    uint8_t  data[64];
-    /**< Data bytes.
-     *   Only first dlc number of bytes are valid.
-     */
-}MCAN_RxBufElement;
 /**
 * \brief  Structure for CAN packet wrapper with queue node.
 */
@@ -240,6 +132,16 @@ typedef struct
     CanFdPktPararms pktParams[ENETAPP_MAX_PKT_CONFIG];
     /* Semaphore for synchronizing TG task */
     SemaphoreP_Object tgSemObj;
+    /* Number of valid packet configurations */
+    uint32_t canGeneratedPktCount;
+    /* Pointer to the Free Timestamp Queue */
+    EnetQ *timestampFreeQPtr;
+    /* Pointer to the Ready Timestamp Queue */
+    EnetQ *timestampReadyQPtr;
+    /* Core key returned by Enet RM after attaching this core */
+    uint32_t coreId;
+    /* Enet driver handle for this peripheral type/instance */
+    Enet_Handle hEnet;
 }CanTrafficGen_Object;
 
 
