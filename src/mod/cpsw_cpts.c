@@ -328,137 +328,218 @@ void CpswCpts_initCfg(CpswCpts_Cfg *cptsCfg)
     cptsCfg->cptsRftClkFreq = CPSW_CPTS_RFTCLK_FREQ_200MHZ;
 }
 
-int32_t CpswCpts_open(EnetMod_Handle hMod,
+int32_t CpswCpts_open(CpswCpts_Handle hCpts,
                       Enet_Type enetType,
                       uint32_t instId,
-                      const void *cfg,
-                      uint32_t cfgSize)
+                      const CpswCpts_Cfg *cptsCfg)
 {
-    CpswCpts_Handle hCpts = (CpswCpts_Handle)hMod;
-    const CpswCpts_Cfg *cptsCfg = (const CpswCpts_Cfg *)cfg;
-    CSL_cptsRegs *regs = (CSL_cptsRegs *)hMod->virtAddr;
-    CSL_CPTS_CONTROL control;
-    uint32_t i;
     int32_t status = ENET_SOK;
 
-    Enet_devAssert(cfgSize == sizeof(CpswCpts_Cfg),
-                   "Invalid CPTS config params size %u (expected %u)\n",
-                   cfgSize, sizeof(CpswCpts_Cfg));
+    ENETTRACE_VERBOSE("%s: open module\n", hCpts->name);
 
-    Enet_devAssert(regs != NULL, "CPSW CPTS regs address is not valid\n");
+    if (hCpts->magic == ENET_NO_MAGIC)
+    {
+        hCpts->virtAddr  = (void *)EnetUtils_physToVirt(hCpts->physAddr, NULL);
+        hCpts->virtAddr2 = (void *)EnetUtils_physToVirt(hCpts->physAddr2, NULL);
+        CSL_cptsRegs *regs = (CSL_cptsRegs *)hCpts->virtAddr;
+        CSL_CPTS_CONTROL control;
+        uint32_t i;
+        
+        Enet_devAssert(regs != NULL, "CPSW CPTS regs address is not valid\n");
 
-    /* Check supported CPTS module versions */
+        /* Check supported CPTS module versions */
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    status = CpswCpts_isSupported(regs);
-    Enet_devAssert(status == ENET_SOK, "CPTS version is not supported\n");
+        status = CpswCpts_isSupported(regs);
+        Enet_devAssert(status == ENET_SOK, "CPTS version is not supported\n");
 #endif
 
-    hCpts->tsPushInFifo = false;
-    hCpts->activeGenfIdxMask = 0U;
-    hCpts->activeEstfIdxMask = 0U;
-    hCpts->tsAddVal = cptsCfg->cptsRftClkFreq;
+        hCpts->tsPushInFifo = false;
+        hCpts->activeGenfIdxMask = 0U;
+        hCpts->activeEstfIdxMask = 0U;
+        hCpts->tsAddVal = cptsCfg->cptsRftClkFreq;
 
-    memset(&control, 0, sizeof(CSL_CPTS_CONTROL));
+        memset(&control, 0, sizeof(CSL_CPTS_CONTROL));
 
-    /* Set default values for control register fields */
-    control.cptsEn       = TRUE;
-    control.intTest      = FALSE;
-    control.ts64bMode    = TRUE;
-    control.tsOutputBitSel = CPSW_CPTS_TS_OUTPUT_BIT_DISABLED;
-    control.seqEn        = FALSE;
-    control.tsCompToggle = FALSE;
+        /* Set default values for control register fields */
+        control.cptsEn       = TRUE;
+        control.intTest      = FALSE;
+        control.ts64bMode    = TRUE;
+        control.tsOutputBitSel = CPSW_CPTS_TS_OUTPUT_BIT_DISABLED;
+        control.seqEn        = FALSE;
+        control.tsCompToggle = FALSE;
 
-    for (i = 0U; i < hCpts->hwPushCnt; i++)
-    {
-        control.tsHwPushEn[i] = TRUE;
+        for (i = 0U; i < hCpts->hwPushCnt; i++)
+        {
+            control.tsHwPushEn[i] = TRUE;
+        }
+
+        /* Set application-based CPTS control configurations */
+        control.tsCompPolarity    = cptsCfg->tsCompPolarity;
+        control.tsDisableRxEvents = cptsCfg->tsRxEventsDis;
+        control.tsGenfClrEn       = cptsCfg->tsGenfClrEn;
+        control.tstampEn          = cptsCfg->hostRxTsEn;
+
+        CSL_CPTS_disableCpts(regs);
+
+        CSL_CPTS_setCntlReg(regs, &control);
+        CSL_CPTS_enableCpts(regs);
+
+        /* Configure timestamp add value to enable 1-ns operations */
+        CSL_CPTS_setTSAddVal(regs, cptsCfg->cptsRftClkFreq);
+        if (status == ENET_SOK)
+        {
+            hCpts->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hCpts->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hCpts->name, status);
+            hCpts->magic = ENET_NO_MAGIC;
+        }
     }
-
-    /* Set application-based CPTS control configurations */
-    control.tsCompPolarity    = cptsCfg->tsCompPolarity;
-    control.tsDisableRxEvents = cptsCfg->tsRxEventsDis;
-    control.tsGenfClrEn       = cptsCfg->tsGenfClrEn;
-    control.tstampEn          = cptsCfg->hostRxTsEn;
-
-    CSL_CPTS_disableCpts(regs);
-
-    CSL_CPTS_setCntlReg(regs, &control);
-    CSL_CPTS_enableCpts(regs);
-
-    /* Configure timestamp add value to enable 1-ns operations */
-    CSL_CPTS_setTSAddVal(regs, cptsCfg->cptsRftClkFreq);
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hCpts->name);
+        status = ENET_EALREADYOPEN;
+    }
 
     return status;
 }
 
-int32_t CpswCpts_rejoin(EnetMod_Handle hMod,
+int32_t CpswCpts_rejoin(CpswCpts_Handle hCpts,
                         Enet_Type enetType,
                         uint32_t instId)
 {
     return ENET_SOK;
 }
 
-void CpswCpts_saveCtxt(EnetMod_Handle hMod)
+void CpswCpts_saveCtxt(CpswCpts_Handle hCpts)
 {
-    CpswCpts_close(hMod);
+    ENETTRACE_VERBOSE("%s: Close module\n", hCpts->name);
+
+    bool isCptsOpen = (hCpts->magic == ENET_MAGIC) ? true : false;
+
+    if (isCptsOpen)
+    {
+        CpswCpts_close(hCpts);
+        hCpts->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hCpts->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hCpts->name);
+    }
 }
 
-int32_t CpswCpts_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswCpts_restoreCtxt(CpswCpts_Handle hCpts,
                              Enet_Type enetType,
                              uint32_t instId,
-                             const void *cfg,
-                             uint32_t cfgSize)
+                             const CpswCpts_Cfg *cptsCfg)
 {
     int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hCpts->name);
 
-    CpswCpts_open(hMod, enetType, instId, cfg, cfgSize);
+    bool isHostPortOpen = (hCpts->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen == false)
+    {
+        hCpts->virtAddr  = (void *)EnetUtils_physToVirt(hCpts->physAddr, NULL);
+        hCpts->virtAddr2 = (void *)EnetUtils_physToVirt(hCpts->physAddr2, NULL);
+
+        CpswCpts_open(hCpts, enetType, instId, cptsCfg);
+
+        if (status == ENET_SOK)
+        {
+            hCpts->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hCpts->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hCpts->name, status);
+            hCpts->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hCpts->name);
+        status = ENET_EALREADYOPEN;
+    }
 
     return status;
 }
 
-void CpswCpts_close(EnetMod_Handle hMod)
+void CpswCpts_close(CpswCpts_Handle hCpts)
 {
-    CSL_cptsRegs *regs = (CSL_cptsRegs *)hMod->virtAddr;
+    ENETTRACE_VERBOSE("%s: Close module\n", hCpts->name);
 
-    /* Disable CPTS module to disable events*/
-    CSL_CPTS_disableCpts(regs);
+    if (hCpts->magic == ENET_MAGIC)
+    {
+        CSL_cptsRegs *regs = (CSL_cptsRegs *)hCpts->virtAddr;
+
+        /* Disable CPTS module to disable events*/
+        CSL_CPTS_disableCpts(regs);
+        hCpts->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hCpts->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hCpts->name);
+    }
 }
 
-int32_t CpswCpts_ioctl(EnetMod_Handle hMod,
+int32_t CpswCpts_ioctl(CpswCpts_Handle hCpts,
                        uint32_t cmd,
                        Enet_IoctlPrms *prms)
 {
-    CpswCpts_Handle hCpts = (CpswCpts_Handle)hMod;
-    CSL_cptsRegs *regs = (CSL_cptsRegs *)hMod->virtAddr;
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
+    bool isCptsOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hCpts->name, cmd, prms);
+
+    isCptsOpen = (hCpts->magic == ENET_MAGIC) ? true : false;
+    if (isCptsOpen == true)
+    {
+        CSL_cptsRegs *regs = (CSL_cptsRegs *)hCpts->virtAddr;
+        status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate CPSW CPTS IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Validate CPSW CPTS IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswCpts_ioctlValidate,
-                                        ENET_ARRAYSIZE(gCpswCpts_ioctlValidate));
-        }
-        else
-        {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswCpts_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gCpswCpts_privIoctlValidate));
-        }
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswCpts_ioctlValidate,
+                                            ENET_ARRAYSIZE(gCpswCpts_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswCpts_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gCpswCpts_privIoctlValidate));
+            }
 
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
-    }
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
-    {
-        CpswCptsIoctlHandler * ioctlHandlerFxn;
+        if (status == ENET_SOK)
+        {
+            CpswCptsIoctlHandler * ioctlHandlerFxn;
 
-        ioctlHandlerFxn = CpswCpts_getIoctlHandlerFxn(cmd, CpswCptsIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswCptsIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hCpts, regs, prms);
+            ioctlHandlerFxn = CpswCpts_getIoctlHandlerFxn(cmd, CpswCptsIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswCptsIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hCpts, regs, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hCpts->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hCpts->name);
     }
 
     return status;

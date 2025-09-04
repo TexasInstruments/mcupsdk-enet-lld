@@ -84,40 +84,6 @@ typedef struct EnetPhyMdioDfltIoctlHandlerRegistry_s
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-int32_t EnetPhyMdioDflt_isAlive(uint32_t phyAddr,
-                                bool *isAlive,
-                                void *args);
-
-int32_t EnetPhyMdioDflt_isLinked(uint32_t phyAddr,
-                                 bool *isLinked,
-                                 void *args);
-
-int32_t EnetPhyMdioDflt_readC22(uint32_t group,
-                                uint32_t phyAddr,
-                                uint32_t reg,
-                                uint16_t *val,
-                                void *args);
-
-int32_t EnetPhyMdioDflt_writeC22(uint32_t group,
-                                 uint32_t phyAddr,
-                                 uint32_t reg,
-                                 uint16_t val,
-                                 void *args);
-
-int32_t EnetPhyMdioDflt_readC45(uint32_t group,
-                                uint32_t phyAddr,
-                                uint8_t mmd,
-                                uint16_t reg,
-                                uint16_t *val,
-                                void *args);
-
-int32_t EnetPhyMdioDflt_writeC45(uint32_t group,
-                                 uint32_t phyAddr,
-                                 uint8_t mmd,
-                                 uint16_t reg,
-                                 uint16_t val,
-                                 void *args);
-
 static int32_t EnetPhyMdioDflt_ioctl_handler_default(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 static int32_t EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_REGISTER_HANDLER(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 static int32_t EnetPhyMdioDflt_setIoctlHandlerFxn(uint32_t ioctlCmd,
@@ -184,9 +150,8 @@ EnetPhy_MdioHandle EnetPhyMdioDflt_getPhyMdio(void)
 
 int32_t EnetPhyMdioDflt_isAlive(uint32_t phyAddr,
                                 bool *isAlive,
-                                void *args)
+                                Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     bool isOpen;
     int32_t status = ENETPHY_SOK;
@@ -199,7 +164,7 @@ int32_t EnetPhyMdioDflt_isAlive(uint32_t phyAddr,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen = (hMdio->magic == ENET_MAGIC) ? true : false;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);
@@ -221,9 +186,8 @@ int32_t EnetPhyMdioDflt_isAlive(uint32_t phyAddr,
 
 int32_t EnetPhyMdioDflt_isLinked(uint32_t phyAddr,
                                  bool *isLinked,
-                                 void *args)
+                                 Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     bool isOpen;
     int32_t status = ENETPHY_SOK;
@@ -236,7 +200,7 @@ int32_t EnetPhyMdioDflt_isLinked(uint32_t phyAddr,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen = (hMdio->magic == ENET_MAGIC) ? true : false;;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);
@@ -260,9 +224,8 @@ int32_t EnetPhyMdioDflt_readC22(uint32_t group,
                                 uint32_t phyAddr,
                                 uint32_t reg,
                                 uint16_t *val,
-                                void *args)
+                                Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     EnetMdio_C22ReadInArgs inArgs;
     bool isOpen;
@@ -276,7 +239,7 @@ int32_t EnetPhyMdioDflt_readC22(uint32_t group,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen = (hMdio->magic == ENET_MAGIC) ? true : false;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);
@@ -303,9 +266,8 @@ int32_t EnetPhyMdioDflt_writeC22(uint32_t group,
                                  uint32_t phyAddr,
                                  uint32_t reg,
                                  uint16_t val,
-                                 void *args)
+                                 Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     EnetMdio_C22WriteInArgs inArgs;
     bool isOpen;
@@ -319,7 +281,7 @@ int32_t EnetPhyMdioDflt_writeC22(uint32_t group,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen = (hMdio->magic == ENET_MAGIC) ? true : false;;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);
@@ -348,9 +310,8 @@ int32_t EnetPhyMdioDflt_readC45(uint32_t group,
                                 uint8_t mmd,
                                 uint16_t reg,
                                 uint16_t *val,
-                                void *args)
+                                Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     EnetMdio_C45ReadInArgs inArgs;
     bool isOpen;
@@ -364,7 +325,7 @@ int32_t EnetPhyMdioDflt_readC45(uint32_t group,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen =(hMdio->magic == ENET_MAGIC) ? true : false;;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);
@@ -393,9 +354,8 @@ int32_t EnetPhyMdioDflt_writeC45(uint32_t group,
                                  uint8_t mmd,
                                  uint16_t reg,
                                  uint16_t val,
-                                 void *args)
+                                 Mdio_Handle hMdio)
 {
-    EnetMod_Handle hMdio = ENET_MOD(args);
     Enet_IoctlPrms prms;
     EnetMdio_C45WriteInArgs inArgs;
     bool isOpen;
@@ -409,7 +369,7 @@ int32_t EnetPhyMdioDflt_writeC45(uint32_t group,
 
     if (status == ENET_SOK)
     {
-        isOpen = EnetMod_isOpen(hMdio);
+        isOpen = (hMdio->magic == ENET_MAGIC) ? true : false;;
         if (!isOpen)
         {
             ENETTRACE_ERR("PHY %u: MDIO module is not open\n", phyAddr);

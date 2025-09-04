@@ -46,7 +46,8 @@
 
 #include <stdint.h>
 #include <include/core/enet_types.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/core/enet_trace.h>
 
 #ifdef __cplusplus
@@ -84,8 +85,29 @@ typedef struct NullMod_Cfg_s
  */
 typedef struct NullMod_Obj_s
 {
-    /*! Enet module header. Must be the first element */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 } NullMod_Obj;
 
 /*!
@@ -118,17 +140,17 @@ void NullMod_initCfg(NullMod_Cfg *nullModCfg);
  * Opens and initializes the Null Module with the configuration parameters
  * provided by the caller.
  *
- * \param hMod      Enet Module handle
- * \param enetType  Enet Peripheral type
- * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
+ * \param hNull      Null Module handle
+ * \param enetType   Enet Peripheral type
+ * \param instId     Enet Peripheral instance id
+ * \param nullModCfg Null Module Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t NullMod_open(EnetMod_Handle hMod,
+int32_t NullMod_open(NullMod_Handle hNull,
                      Enet_Type enetType,
                      uint32_t instId,
-                     const void *cfg);
+                     const NullMod_Cfg *nullModCfg);
 
 /*!
  * \brief Rejoin the Null Module.
@@ -136,13 +158,13 @@ int32_t NullMod_open(EnetMod_Handle hMod,
  * Reopens the Null Module, but doesn't perform any hardware initialization.
  * This function is expected to be called to attach to a running module.
  *
- * \param hMod      Enet Module handle
+ * \param hNull     Null Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t NullMod_rejoin(EnetMod_Handle hMod,
+int32_t NullMod_rejoin(NullMod_Handle hNull,
                        Enet_Type enetType,
                        uint32_t instId);
 
@@ -151,13 +173,13 @@ int32_t NullMod_rejoin(EnetMod_Handle hMod,
  *
  * Issues a control operation on the Null Module.
  *
- * \param hMod         Enet Module handle
+ * \param hNull        Null Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t NullMod_ioctl(EnetMod_Handle hMod,
+int32_t NullMod_ioctl(NullMod_Handle hNull,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms);
 
@@ -166,9 +188,9 @@ int32_t NullMod_ioctl(EnetMod_Handle hMod,
  *
  * Closes the Null Module.
  *
- * \param hMod         Enet Module handle
+ * \param hNull        Null Module handle
  */
-void NullMod_close(EnetMod_Handle hMod);
+void NullMod_close(NullMod_Handle hNull);
 
 
 /* ========================================================================== */

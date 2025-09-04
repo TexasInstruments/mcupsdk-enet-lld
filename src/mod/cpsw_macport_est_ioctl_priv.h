@@ -45,7 +45,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/mod/cpsw_cpts.h>
 #include "cpsw_macport_est.h"
 
@@ -64,24 +65,21 @@ extern "C" {
  * \brief Helper macro used to first register private IOCTL handler and then invoke the
  *        IOCTL
  */
-#define CPSW_MACPORT_EST_PRIV_IOCTL(hMacport, ioctlCmd,prms,status)                            \
+#define CPSW_MACPORT_EST_PRIV_IOCTL(hPort, ioctlCmd,prms,status)                            \
     do {                                                                                       \
         Enet_IoctlPrms regIoctlPrms;                                                           \
-        Enet_IoctlRegisterHandlerInArgs regIoctlInArgs;                                        \
-        EnetMod_Handle hMod;                                                                   \
+        Enet_IoctlRegisterHandlerInArgs regIoctlInArgs;                                                        \
                                                                                                \
-        hMod = (EnetMod_Handle)hMacport;                                                       \
-                                                                                               \
-        if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_EST))                         \
+        if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_EST))                         \
         {                                                                                      \
             regIoctlInArgs.cmd = ioctlCmd;                                                     \
             regIoctlInArgs.fxn = (uintptr_t)&CpswMacPortEst_ioctl_handler_##ioctlCmd;          \
                                                                                                \
             ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                            \
-            status = CpswMacPort_ioctlEst(hMod, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);    \
+            status = CpswMacPort_ioctlEst(hPort, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);    \
             if (ENET_SOK == status)                                                            \
             {                                                                                  \
-                status = CpswMacPort_ioctlEst(hMod, ioctlCmd, prms);                           \
+                status = CpswMacPort_ioctlEst(hPort, ioctlCmd, prms);                           \
             }                                                                                  \
         }                                                                                      \
         else                                                                                   \

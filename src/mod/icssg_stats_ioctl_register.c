@@ -43,7 +43,6 @@
 #include <hw_include/cslr_icss.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
 #include <priv/mod/icssg_stats_priv.h>
 #include <enet.h>
 #include <priv/core/enet_base_priv.h>

@@ -322,9 +322,6 @@ typedef struct Icssg_Obj_s
     /*! Resource Manager object */
     EnetRm_Obj rmObj;
 
-    /*! Resource Manager handle */
-    EnetMod_Handle hRm;
-
     /*! Core on which Icssg_Open() is executed */
     uint32_t selfCoreId;
 
@@ -346,29 +343,17 @@ typedef struct Icssg_Obj_s
     /*! MDIO object */
     Mdio_Obj mdioObj;
 
-    /*! MDIO handle */
-    EnetMod_Handle hMdio;
-
     /*! PHY handles */
     EnetPhy_Handle hPhy[ICSSG_MAC_PORT_MAX];
 
     /*! TimesSync object */
     IcssgTimeSync_Obj timeSyncObj;
 
-    /*! TimesSync handle */
-    EnetMod_Handle hTimeSync;
-
     /*! Stats object */
     IcssgStats_Obj statsObj;
 
-    /*! Stats handle */
-    EnetMod_Handle hStats;
-
     /*! Tas object */
     IcssgTas_Obj tasObj[ICSSG_MAC_PORT_MAX];
-
-    /*! Tas handle */
-    EnetMod_Handle hTas[ICSSG_MAC_PORT_MAX];
 
     /*! IOCTL command */
     Icssg_IoctlCmd cmd __attribute__ ((aligned(ICSSG_CACHELINE_ALIGNMENT)));

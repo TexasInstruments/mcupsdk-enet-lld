@@ -72,10 +72,10 @@ extern "C" {
         regIoctlInArgs.fxn = (uintptr_t)&Mdio_ioctl_handler_##ioctlCmd;                        \
                                                                                                \
         ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                                \
-        status = EnetMod_ioctl(hMdio, MDIO_IOCTL_REGISTER_HANDLER, &regIoctlPrms);             \
+        status = Mdio_ioctl(hMdio, MDIO_IOCTL_REGISTER_HANDLER, &regIoctlPrms);             \
         if (ENET_SOK == status)                                                                \
         {                                                                                      \
-            status = EnetMod_ioctl(hMdio, ioctlCmd,prms);                                      \
+            status = Mdio_ioctl(hMdio, ioctlCmd,prms);                                      \
         }                                                                                      \
     } while (0)
 
@@ -94,66 +94,66 @@ extern "C" {
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
 
 
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_normal_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_GET_VERSION(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_PRINT_REGS(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_MDIO_IOCTL_HANDLE_INTR(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_ENABLE_STATE_MACHINE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

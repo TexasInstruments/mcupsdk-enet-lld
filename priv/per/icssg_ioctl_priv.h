@@ -48,6 +48,7 @@
 #include <drivers/pruicss.h>
 #include <priv/core/enet_base_priv.h>
 #include <priv/mod/mdio_priv.h>
+#include <priv/per/icssg_priv.h>
 #include <priv/mod/icssg_timesync_priv.h>
 #include <priv/mod/icssg_stats_priv.h>
 #include <priv/mod/icssg_tas_priv.h>

@@ -158,8 +158,29 @@ typedef struct Mdio_Callbacks_s
  */
 typedef struct Mdio_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Whether this MDIO object has master behavior or not.  When in master role,
      *  the module will perform all MDIO configuration. In slave role, MDIO
@@ -192,43 +213,41 @@ typedef Mdio_Obj *Mdio_Handle;
 /*!
  * \brief Open and initialize MDIO.
  *
- * \param hMod      Enet Module handle
+ * \param hMdio     MDIO Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param mdioCfg   MDIO Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Mdio_open(EnetMod_Handle hMod,
+int32_t Mdio_open(Mdio_Handle hMdio,
                   Enet_Type enetType,
                   uint32_t instId,
-                  const void *cfg,
-                  uint32_t cfgSize);
+                  const Mdio_Cfg *mdioCfg);
 
 /*!
  * \brief Rejoin a running MDIO.
  *
- * \param hMod      Enet Module handle
+ * \param hMdio     MDIO Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Mdio_rejoin(EnetMod_Handle hMod,
+int32_t Mdio_rejoin(Mdio_Handle hMdio,
                     Enet_Type enetType,
                     uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on MDIO.
  *
- * \param hMod         Enet Module handle
+ * \param hMdio        MDIO Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Mdio_ioctl(EnetMod_Handle hMod,
+int32_t Mdio_ioctl(Mdio_Handle hMdio,
                    uint32_t cmd,
                    Enet_IoctlPrms *prms);
 
@@ -236,33 +255,31 @@ int32_t Mdio_ioctl(EnetMod_Handle hMod,
 /*!
  * \brief Close MDIO.
  *
- * \param hMod         Enet Module handle
+ * \param hMdio        MDIO Module handle
  */
-void Mdio_close(EnetMod_Handle hMod);
+void Mdio_close(Mdio_Handle hMdio);
 
 /*!
  * \brief Saves and Close MDIO.
  *
- * \param hMod         Enet Module handle
+ * \param hMdio        MDIO Module handle
  */
-void Mdio_saveCtxt(EnetMod_Handle hMod);
+void Mdio_saveCtxt(Mdio_Handle hMdio);
 
 /*!
  * \brief Restores and Open MDIO.
  *
- * \param hMod      Enet Module handle
+ * \param hMdio     MDIO Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param mdioCfg   MDIO Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t Mdio_restoreCtxt(EnetMod_Handle hMod,
+int32_t Mdio_restoreCtxt(Mdio_Handle hMdio,
                          Enet_Type enetType,
                          uint32_t instId,
-                         const void *cfg,
-                         uint32_t cfgSize);
+                         const Mdio_Cfg *mdioCfg);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

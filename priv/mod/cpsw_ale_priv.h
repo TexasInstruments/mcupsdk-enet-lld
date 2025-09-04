@@ -119,8 +119,29 @@ typedef struct CpswAle_PolicerPartInfo_s
  */
 typedef struct CpswAle_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! Total number of ports */
     uint32_t numPorts;
@@ -177,76 +198,72 @@ typedef CpswAle_Obj *CpswAle_Handle;
 /*!
  * \brief Open and initialize CPSW ALE.
  *
- * \param hMod      Enet Module handle
+ * \param hAle      CPSW ALE Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param aleCfg    CPSW ALE Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswAle_open(EnetMod_Handle hMod,
+int32_t CpswAle_open(CpswAle_Handle hAle,
                      Enet_Type enetType,
                      uint32_t instId,
-                     const void *cfg,
-                     uint32_t cfgSize);
+                     const CpswAle_Cfg *aleCfg);
 
 /*!
  * \brief Rejoin a running CPSW ALE module.
  *
- * \param hMod      Enet Module handle
+ * \param hAle      CPSW ALE Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswAle_rejoin(EnetMod_Handle hMod,
+int32_t CpswAle_rejoin(CpswAle_Handle hAle,
                        Enet_Type enetType,
                        uint32_t instId);
 
 /*!
  * \brief Run an IOCTL operation on CPSW ALE.
  *
- * \param hMod         Enet Module handle
+ * \param hAle         CPSW ALE Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswAle_ioctl(EnetMod_Handle hMod,
+int32_t CpswAle_ioctl(CpswAle_Handle hAle,
                       uint32_t cmd,
                       Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close CPSW ALE.
  *
- * \param hMod         Enet Module handle
+ * \param hAle         CPSW ALE Module handle
  */
-void CpswAle_close(EnetMod_Handle hMod);
+void CpswAle_close(CpswAle_Handle hAle);
 
 /*!
  * \brief Saves and Close CPSW ALE.
  *
- * \param hMod         Enet Module handle
+ * \param hAle         CPSW ALE Module handle
  */
-void CpswAle_saveCtxt(EnetMod_Handle hMod);
+void CpswAle_saveCtxt(CpswAle_Handle hAle);
 
 /*!
  * \brief Restores and Open CPSW ALE.
  *
- * \param hMod      Enet Module handle
+ * \param hAle      CPSW ALE Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param aleCfg    CPSW ALE Configuration parameters
  *
  * \return \ref Enet_ErrorCodes
  */
-int32_t CpswAle_restoreCtxt(EnetMod_Handle hMod,
+int32_t CpswAle_restoreCtxt(CpswAle_Handle hAle,
                             Enet_Type enetType,
                             uint32_t instId,
-                            const void *cfg,
-                            uint32_t cfgSize);
+                            const CpswAle_Cfg *aleCfg);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

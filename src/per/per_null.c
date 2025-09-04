@@ -102,8 +102,6 @@ int32_t NullPer_open(EnetPer_Handle hPer,
 {
     NullPer_Handle hNullPer = (NullPer_Handle)hPer;
     const NullPer_Cfg *nullPerCfg = (const NullPer_Cfg *)cfg;
-    EnetMod_Handle hMod1 = ENET_MOD(&hNullPer->mod1);
-    EnetMod_Handle hMod2 = ENET_MOD(&hNullPer->mod2);
     int32_t status = ENET_SOK;
 
     ENETTRACE_INFO("%s: Open null peripheral\n", hPer->name);
@@ -128,14 +126,14 @@ int32_t NullPer_open(EnetPer_Handle hPer,
 
     /* Open module 1 */
     ENETTRACE_INFO("%s: Opening mod1\n", hPer->name);
-    status = EnetMod_open(hMod1, enetType, instId, &nullPerCfg->mod1Cfg, sizeof(nullPerCfg->mod1Cfg));
+    status = NullMod_open(&hNullPer->mod1, enetType, instId, &nullPerCfg->mod1Cfg);
     ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to open mod1: %d\n", hPer->name, status);
 
     /* Open module 2 */
     if (status == ENET_SOK)
     {
         ENETTRACE_INFO("%s: Opening mod2\n", hPer->name);
-        status = EnetMod_open(hMod2, enetType, instId, &nullPerCfg->mod2Cfg, sizeof(nullPerCfg->mod2Cfg));
+        status = NullMod_open(&hNullPer->mod2, enetType, instId, &nullPerCfg->mod2Cfg);
         ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to open mod2: %d\n", hPer->name, status);
     }
 
@@ -147,22 +145,20 @@ int32_t NullPer_rejoin(EnetPer_Handle hPer,
                        uint32_t instId)
 {
     NullPer_Handle hNullPer = (NullPer_Handle)hPer;
-    EnetMod_Handle hMod1 = ENET_MOD(&hNullPer->mod1);
-    EnetMod_Handle hMod2 = ENET_MOD(&hNullPer->mod2);
     int32_t status = ENET_SOK;
 
     ENETTRACE_INFO("%s: Rejoin null peripheral\n", hPer->name);
 
     /* Rejoin module 1 */
     ENETTRACE_INFO("%s: Rejoining mod1\n", hPer->name);
-    status = EnetMod_rejoin(hMod1, enetType, instId);
+    status = NullMod_rejoin(&hNullPer->mod1, enetType, instId);
     ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to rejoin mod1: %d\n", hPer->name, status);
 
     /* Rejoin module 2 */
     if (status == ENET_SOK)
     {
         ENETTRACE_INFO("%s: Rejoining mod2\n", hPer->name);
-        status = EnetMod_rejoin(hMod2, enetType, instId);
+        status = NullMod_rejoin(&hNullPer->mod2, enetType, instId);
         ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to rejoin mod2: %d\n", hPer->name, status);
     }
 
@@ -174,22 +170,20 @@ int32_t NullPer_ioctl(EnetPer_Handle hPer,
                       Enet_IoctlPrms *prms)
 {
     NullPer_Handle hNullPer = (NullPer_Handle)hPer;
-    EnetMod_Handle hMod1 = ENET_MOD(&hNullPer->mod1);
-    EnetMod_Handle hMod2 = ENET_MOD(&hNullPer->mod2);
     int32_t status = ENET_SOK;
 
     ENETTRACE_INFO("%s: IOCTL %u on null peripheral\n", hPer->name, cmd);
 
     /* Do IOCTL on module 1 */
     ENETTRACE_INFO("%s: IOCTL %u on mod1\n", hPer->name, cmd);
-    status = EnetMod_ioctl(hMod1, cmd, prms);
+    status = NullMod_ioctl(&hNullPer->mod1, cmd, prms);
     ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to do IOCTL %u on mod1: %d\n", hPer->name, cmd, status);
 
     /* Do IOCTL on module 2 */
     if (status == ENET_SOK)
     {
         ENETTRACE_INFO("%s: IOCTL %u on mod2\n", hPer->name, cmd);
-        status = EnetMod_ioctl(hMod2, cmd, prms);
+        status = NullMod_ioctl(&hNullPer->mod2, cmd, prms);
         ENETTRACE_ERR_IF(status != ENET_SOK, "%s: Failed to do IOCTL %u on mod2: %d\n", hPer->name, cmd, status);
     }
 
@@ -210,16 +204,14 @@ void NullPer_periodicTick(EnetPer_Handle hPer)
 void NullPer_close(EnetPer_Handle hPer)
 {
     NullPer_Handle hNullPer = (NullPer_Handle)hPer;
-    EnetMod_Handle hMod1 = ENET_MOD(&hNullPer->mod1);
-    EnetMod_Handle hMod2 = ENET_MOD(&hNullPer->mod2);
 
     ENETTRACE_INFO("%s: Close null peripheral\n", hPer->name);
 
     /* Close module 1 */
     ENETTRACE_INFO("%s: Closing mod1\n", hPer->name);
-    EnetMod_close(hMod1);
+    NullMod_close(&hNullPer->mod1);
 
     /* Close module 2 */
     ENETTRACE_INFO("%s: Closing mod2\n", hPer->name);
-    EnetMod_close(hMod2);
+    NullMod_close(&hNullPer->mod2);
 }

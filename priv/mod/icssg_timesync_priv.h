@@ -65,6 +65,8 @@ extern "C" {
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
+
+typedef struct Icssg_Obj_s Icssg_Obj;
 /*!
  * \brief ICSSG Timesynch module Private IOCTL commands.Invoked within Enet LLD and not by application
  */
@@ -89,11 +91,32 @@ typedef enum Icssg_TimesyncPrivIoctl_e
  */
 typedef struct IcssgTimeSync_Obj_s
 {
-    /*! EnetMod must be the first member */
-    EnetMod_Obj enetMod;
+    /*! Module name */
+    const char *name;
+
+    /*! Module's physical address */
+    uint64_t physAddr;
+
+    /*! Module's virtual address */
+    void *virtAddr;
+
+    /*! Module's second physical address, if needed */
+    uint64_t physAddr2;
+
+    /*! Module's second virtual address, if needed */
+    void *virtAddr2;
+
+    /*! Module features */
+    uint32_t features;
+
+    /*! Module's applicable errata */
+    uint32_t errata;
+
+    /*! Magic number indicating if the module has been opened */
+    Enet_Magic magic;
 
     /*! ICSSG handle. Required internally cycleTime value */
-    void* hIcssg;
+    Icssg_Obj * hIcssg;
 
     /*! Drift applied on WC timers per sync interval. Workaround for rate computation */
     int32_t drift;
@@ -137,32 +160,30 @@ void IcssgTimeSync_initCfg(IcssgTimeSync_Cfg *timeSyncCfg);
  * config structure of type #IcssgTimeSync_Cfg, \p cfgSize must be passed
  * accordingly.
  *
- * \param hMod      Enet Module handle
- * \param enetType  Enet Peripheral type
- * \param instId    Enet Peripheral instance id
- * \param cfg       Configuration parameters
- * \param cfgSize   Size of the configuration parameters
+ * \param hTimeSync      Icssg TimeSync Module handle
+ * \param enetType       Enet Peripheral type
+ * \param instId         Enet Peripheral instance id
+ * \param timeSyncCfg    Icssg TimeSync Configuration parameters
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgTimeSync_open(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_open(IcssgTimeSync_Handle hTimeSync,
                            Enet_Type enetType,
                            uint32_t instId,
-                           const void *cfg,
-                           uint32_t cfgSize);
+                           const IcssgTimeSync_Cfg *timeSyncCfg);
 
 /*!
  * \brief Rejoin a running TimeSync module.
  *
  * This operation is not currently supported.
  *
- * \param hMod      Enet Module handle
+ * \param hTimeSync Icssg TimeSync Module handle
  * \param enetType  Enet Peripheral type
  * \param instId    Enet Peripheral instance id
  *
  * \retval #ENET_ENOTSUPPORTED
  */
-int32_t IcssgTimeSync_rejoin(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_rejoin(IcssgTimeSync_Handle hTimeSync,
                              Enet_Type enetType,
                              uint32_t instId);
 
@@ -171,22 +192,22 @@ int32_t IcssgTimeSync_rejoin(EnetMod_Handle hMod,
  *
  * Runs a Enet TimeSync IOCTL operation on the ICSSG TimeSync module.
  *
- * \param hMod         Enet Module handle
+ * \param hTimeSync    Icssg TimeSync Module handle
  * \param cmd          IOCTL command Id
  * \param prms         IOCTL parameters
  *
  * \return #ENET_SOK or \ref Enet_ErrorCodes in case of any failure
  */
-int32_t IcssgTimeSync_ioctl(EnetMod_Handle hMod,
+int32_t IcssgTimeSync_ioctl(IcssgTimeSync_Handle hTimeSync,
                           uint32_t cmd,
                           Enet_IoctlPrms *prms);
 
 /*!
  * \brief Close ICSSG TimeSync module.
  *
- * \param hMod         Enet Module handle
+ * \param hTimeSync      Icssg TimeSync Module handle
  */
-void IcssgTimeSync_close(EnetMod_Handle hMod);
+void IcssgTimeSync_close(IcssgTimeSync_Handle hTimeSync);
 
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */

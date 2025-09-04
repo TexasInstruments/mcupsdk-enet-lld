@@ -45,7 +45,8 @@
 #include <drivers/hw_include/hw_types.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/per/icssg.h>
 #include <src/per/icssg_utils.h>
 #include <priv/mod/icssg_tas_priv.h>
@@ -88,7 +89,7 @@ typedef enum IcssgTas_ListNum_s
  * \param cmd       IOCTL command Id
  * \param prms      IOCTL parameters
  */
-typedef int32_t IcssgTasIoctlHandlerFxn_t(EnetMod_Handle hMod,
+typedef int32_t IcssgTasIoctlHandlerFxn_t(IcssgTas_Handle hTas,
                                        uint32_t cmd,
                                        Enet_IoctlPrms *prms);
 
@@ -121,16 +122,16 @@ static int32_t IcssgTas_setTriggerForListChange(IcssgTas_Handle hTas,
 
 static EnetTas_OperStatus IccsgTas_updateOperListStatus(IcssgTas_Handle hTas);
 
-static IcssgTasIoctlHandlerFxn_t * Icssg_getTasIoctlHandler(EnetMod_Handle hMod,
+static IcssgTasIoctlHandlerFxn_t * Icssg_getTasIoctlHandler(IcssgTas_Handle hTas,
                                                                 uint32_t cmd,
                                                                 IcssgTasIoctlHandlerTableEntry_t ioctlTbl[],
                                                                 uint32_t numEntries);
 
-int32_t IcssgTas_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl_handler_default(IcssgTas_Handle hTas,
                                             uint32_t cmd,
                                             Enet_IoctlPrms *prms);
 
-int32_t IcssgTas_ioctl_handler_ICSSG_TAS_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl_handler_ICSSG_TAS_IOCTL_REGISTER_HANDLER(IcssgTas_Handle hTas,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
@@ -189,79 +190,125 @@ static Enet_IoctlValidate gIcssgTas_ioctlValidate[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t IcssgTas_open(EnetMod_Handle hMod,
+int32_t IcssgTas_open(IcssgTas_Handle hTas,
                       Enet_Type enetType,
-                      uint32_t instId,
-                      const void *cfg,
-                      uint32_t cfgSize)
+                      uint32_t instId)
 {
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
-    uintptr_t dmemOffset = (uintptr_t)hMod->virtAddr;
     int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hTas->name);
 
-    Enet_devAssert(cfgSize == 0U,
-                   "Invalid ICSSG Tas config params size %u (expected %u)\r\n",
-                   cfgSize, 0U);
+    if (hTas->magic == ENET_NO_MAGIC)
+    {
+        hTas->virtAddr  = (void *)EnetUtils_physToVirt(hTas->physAddr, NULL);
+        hTas->virtAddr2 = (void *)EnetUtils_physToVirt(hTas->physAddr2, NULL);
 
-    hTas->configStatus = (volatile EnetTas_ConfigStatus *)(dmemOffset + TAS_CONFIG_CHANGE_TIME);
+        uintptr_t dmemOffset = (uintptr_t)hTas->virtAddr;
 
-    IcssgTas_getFirmwareListPointers(hTas);
+        hTas->configStatus = (volatile EnetTas_ConfigStatus *)(dmemOffset + TAS_CONFIG_CHANGE_TIME);
 
-    memset((void*)hTas->fwActiveList, 0, sizeof(IcssgTas_FwList));
-    memset((void*)hTas->fwShadowList, 0, sizeof(IcssgTas_FwList));
+        IcssgTas_getFirmwareListPointers(hTas);
+
+        memset((void*)hTas->fwActiveList, 0, sizeof(IcssgTas_FwList));
+        memset((void*)hTas->fwShadowList, 0, sizeof(IcssgTas_FwList));
+        if (status == ENET_SOK)
+        {
+            hTas->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hTas->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hTas->name, status);
+            hTas->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hTas->name);
+        status = ENET_EALREADYOPEN;
+    }
 
     return status;
 }
 
-void IcssgTas_close(EnetMod_Handle hMod)
+void IcssgTas_close(IcssgTas_Handle hTas)
 {
+    ENETTRACE_VERBOSE("%s: Close module\n", hTas->name);
+
+    if (hTas->magic == ENET_MAGIC)
+    {
+        hTas->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hTas->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hTas->name);
+    }
+    
     return;
 }
 
-int32_t IcssgTas_rejoin(EnetMod_Handle hMod,
+int32_t IcssgTas_rejoin(IcssgTas_Handle hTas,
                         Enet_Type enetType,
                         uint32_t instId)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgTas_ioctl(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl(IcssgTas_Handle hTas,
                        uint32_t cmd,
                        Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTasIoctlHandlerFxn_t * ioctlHandler;
+    bool isTasOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hTas->name, cmd, prms);
+
+    isTasOpen = (hTas->magic == ENET_MAGIC) ? true : false;
+    if (isTasOpen == true)
+    {
+        status = ENET_SOK;
+        IcssgTasIoctlHandlerFxn_t * ioctlHandler;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
 
-    if(ENET_IOCTL_GET_MAJ(cmd) == ENET_IOCTL_TAS_BASE)
-    {
-        /* Validate ICSSG TAS Module IOCTL parameters */
-        status = Enet_validateIoctl(cmd, prms,
-                                    gIcssgTas_ioctlValidate,
-                                    ENET_ARRAYSIZE(gIcssgTas_ioctlValidate));
-        ENETTRACE_ERR_IF((status != ENET_SOK),
-                         "ICSSG_TAS: IOCTL 0x%08x params are not valid\r\n", cmd);
+        if(ENET_IOCTL_GET_MAJ(cmd) == ENET_IOCTL_TAS_BASE)
+        {
+            /* Validate ICSSG TAS Module IOCTL parameters */
+            status = Enet_validateIoctl(cmd, prms,
+                                        gIcssgTas_ioctlValidate,
+                                        ENET_ARRAYSIZE(gIcssgTas_ioctlValidate));
+            ENETTRACE_ERR_IF((status != ENET_SOK),
+                            "ICSSG_TAS: IOCTL 0x%08x params are not valid\r\n", cmd);
+        }
+        else
+        {
+            status = ENET_EINVALIDPARAMS;
+        }
+#endif
+        if(ENET_SOK == status)
+        {
+            ioctlHandler = Icssg_getTasIoctlHandler(hTas, cmd, IcssgTasIoctlHandlerTable , ENET_ARRAYSIZE(IcssgTasIoctlHandlerTable));
+            Enet_assert(ioctlHandler != NULL);
+            status = ioctlHandler(hTas, cmd, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hTas->name, cmd, status);
+        }
     }
     else
     {
-        status = ENET_EINVALIDPARAMS;
+        ENETTRACE_ERR("%s: Module is not open\n", hTas->name);
     }
-#endif
-    if(ENET_SOK == status)
-    {
-        ioctlHandler = Icssg_getTasIoctlHandler(hMod, cmd, IcssgTasIoctlHandlerTable , ENET_ARRAYSIZE(IcssgTasIoctlHandlerTable));
-        Enet_assert(ioctlHandler != NULL);
-        status = ioctlHandler(hMod, cmd, prms);
-    }
+
     return status;
 
 }
 
 void IcssgTas_getFirmwareListPointers(IcssgTas_Handle hTas)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTas);
-    uintptr_t dmemOffset = (uintptr_t)hMod->virtAddr;
+    uintptr_t dmemOffset = (uintptr_t)hTas->virtAddr;
     IcssgTas_ListNum activeList = (IcssgTas_ListNum)*(volatile uint8_t *)(dmemOffset + TAS_ACTIVE_LIST_INDEX);
 
     if (activeList == ICSSG_TAS_LIST1)
@@ -291,7 +338,7 @@ int32_t IcssgTas_setState(IcssgTas_Handle hTas,
                           Enet_MacPort macPort,
                           EnetTas_TasState state)
 {
-    Icssg_Handle hIcssg = (Icssg_Handle)hTas->hIcssg;
+    Icssg_Handle hIcssg = hTas->hIcssg;
     IcssgUtils_ioctlR30Cmd cmd;
     int32_t status = ENET_SOK;
 
@@ -327,8 +374,7 @@ int32_t IcssgTas_updateOperList(IcssgTas_Handle hTas,
                                 Enet_MacPort macPort,
                                 EnetTas_ControlList* adminList)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTas);
-    uintptr_t dmemOffset = (uintptr_t)hMod->virtAddr;
+    uintptr_t dmemOffset = (uintptr_t)hTas->virtAddr;
     uint8_t windowIdx, gateIdx, i;
     uint32_t tasAccGateCloseTime = 0U;
     uint8_t *maxSduTablePointer;
@@ -431,10 +477,9 @@ int32_t IcssgTas_updateOperList(IcssgTas_Handle hTas,
 int32_t IcssgTas_setTriggerForListChange(IcssgTas_Handle hTas,
                                          Enet_MacPort macPort)
 {
-    EnetMod_Handle hMod = ENET_MOD(hTas);
-    Icssg_Handle hIcssg = (Icssg_Handle)hTas->hIcssg;
-    uintptr_t dmemOffset = (uintptr_t)hMod->virtAddr;
-    uintptr_t smemOffset = (uintptr_t)hMod->virtAddr2;
+    Icssg_Handle hIcssg = hTas->hIcssg;
+    uintptr_t dmemOffset = (uintptr_t)hTas->virtAddr;
+    uintptr_t smemOffset = (uintptr_t)hTas->virtAddr2;
     uint32_t tsCycleCounter;
     uint64_t cycleTime;
     uint64_t baseTime;
@@ -494,7 +539,7 @@ EnetTas_OperStatus IccsgTas_updateOperListStatus(IcssgTas_Handle hTas)
         /* Copy the admin list to active list */
         memcpy(&(hTas->operList), &(hTas->adminList), sizeof(EnetTas_ControlList));
 
-        Icssg_Handle hIcssg = (Icssg_Handle)hTas->hIcssg;
+        Icssg_Handle hIcssg = hTas->hIcssg;
         hIcssg->cycleTimeNs = hTas->operList.cycleTime;
 
         operStatus = ENET_TAS_OPER_LIST_UPDATED;
@@ -503,63 +548,59 @@ EnetTas_OperStatus IccsgTas_updateOperListStatus(IcssgTas_Handle hTas)
     return operStatus;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_ADMIN_LIST(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_SET_ADMIN_LIST);
 
     EnetTas_SetAdminListInArgs *inArgs = (EnetTas_SetAdminListInArgs *)prms->inArgs;
 
     status = IcssgTas_updateOperList(hTas, inArgs->macPort, &inArgs->adminList);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
-                        "%s: Failed to set admin list: %d\r\n", hMod->name, status);
+                        "%s: Failed to set admin list: %d\r\n", hTas->name, status);
 
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST_STATUS(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_GET_OPER_LIST_STATUS);
 
     EnetTas_OperStatus *operStatus = (EnetTas_OperStatus *)prms->outArgs;
 
     *operStatus = IccsgTas_updateOperListStatus(hTas);
     ENETTRACE_ERR_IF((status != ENET_SOK),
-                        "%s: Failed to set admin list: %d\r\n", hMod->name, status);
+                        "%s: Failed to set admin list: %d\r\n", hTas->name, status);
 
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_SET_STATE(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_SET_STATE);
 
     EnetTas_SetStateInArgs *inArgs = (EnetTas_SetStateInArgs *)prms->inArgs;
 
     status = IcssgTas_setState(hTas, inArgs->macPort, inArgs->state);
     ENETTRACE_ERR_IF((status != ENET_SINPROGRESS),
-                        "%s: Failed to set TAS state: %d\r\n", hMod->name, status);
+                        "%s: Failed to set TAS state: %d\r\n", hTas->name, status);
 
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_GET_STATE);
 
     EnetTas_TasState *state = (EnetTas_TasState *)prms->outArgs;
@@ -568,12 +609,11 @@ int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_STATE(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_GET_ADMIN_LIST);
 
     EnetTas_ControlList *adminList = (EnetTas_ControlList *)prms->outArgs;
@@ -582,12 +622,11 @@ int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_ADMIN_LIST(EnetMod_Handle hMo
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_GET_OPER_LIST);
 
     EnetTas_ControlList *operList = (EnetTas_ControlList *)prms->outArgs;
@@ -596,12 +635,11 @@ int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_GET_OPER_LIST(EnetMod_Handle hMod
     return status;
 }
 
-int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(EnetMod_Handle hMod,
+int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(IcssgTas_Handle hTas,
                                              uint32_t cmd,
                                              Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
-    IcssgTas_Handle hTas = (IcssgTas_Handle)hMod;
     Enet_assert(cmd == ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS);
 
     EnetTas_ConfigStatus *configChangeStatus = (EnetTas_ConfigStatus *)prms->outArgs;
@@ -611,7 +649,7 @@ int32_t  IcssgTas_ioctl_handler_ENET_TAS_IOCTL_CONFIG_CHANGE_STATUS_PARAMS(EnetM
 }
 
 
-static int32_t Icssg_getTasIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t cmd, IcssgTasIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
+static int32_t Icssg_getTasIoctlHandlerEntry(IcssgTas_Handle hTas, uint32_t cmd, IcssgTasIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries, uint32_t *entryIdx)
 {
     uint32_t i;
     int32_t status;
@@ -636,13 +674,13 @@ static int32_t Icssg_getTasIoctlHandlerEntry(EnetMod_Handle hMod, uint32_t cmd, 
     return status;
 }
 
-static IcssgTasIoctlHandlerFxn_t * Icssg_getTasIoctlHandler(EnetMod_Handle hMod, uint32_t cmd, IcssgTasIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
+static IcssgTasIoctlHandlerFxn_t * Icssg_getTasIoctlHandler(IcssgTas_Handle hTas, uint32_t cmd, IcssgTasIoctlHandlerTableEntry_t ioctlTbl[], uint32_t numEntries)
 {
     uint32_t entryIndex;
     int32_t status;
     IcssgTasIoctlHandlerFxn_t *ioctlHandler = NULL;
 
-    status = Icssg_getTasIoctlHandlerEntry(hMod, cmd, ioctlTbl, numEntries, &entryIndex);
+    status = Icssg_getTasIoctlHandlerEntry(hTas, cmd, ioctlTbl, numEntries, &entryIndex);
     if (status == ENET_SOK)
     {
         Enet_assert(entryIndex < numEntries);
@@ -657,14 +695,14 @@ static IcssgTasIoctlHandlerFxn_t * Icssg_getTasIoctlHandler(EnetMod_Handle hMod,
 }
 
 
-int32_t IcssgTas_ioctl_handler_default(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl_handler_default(IcssgTas_Handle hTas,
                                     uint32_t cmd,
                                     Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-int32_t IcssgTas_ioctl_handler_registerHandler(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl_handler_registerHandler(IcssgTas_Handle hTas,
                                                     uint32_t cmd,
                                                     Enet_IoctlPrms *prms)
 {
@@ -675,7 +713,7 @@ int32_t IcssgTas_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     uint32_t entryIndex;
 
     Enet_assert(cmd == ICSSG_TAS_IOCTL_REGISTER_HANDLER);
-    status = Icssg_getTasIoctlHandlerEntry(hMod, ioctlHandlerToRegister->registerHandler.cmd,
+    status = Icssg_getTasIoctlHandlerEntry(hTas, ioctlHandlerToRegister->registerHandler.cmd,
                                         IcssgTasIoctlHandlerTable ,
                                         ENET_ARRAYSIZE(IcssgTasIoctlHandlerTable),
                                         &entryIndex);
@@ -694,12 +732,12 @@ int32_t IcssgTas_ioctl_handler_registerHandler(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t IcssgTas_ioctl_handler_ICSSG_TAS_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod,
+int32_t IcssgTas_ioctl_handler_ICSSG_TAS_IOCTL_REGISTER_HANDLER(IcssgTas_Handle hTas,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms)
 {
     int32_t status;
 
-    status = IcssgTas_ioctl_handler_registerHandler(hMod, cmd, prms);
+    status = IcssgTas_ioctl_handler_registerHandler(hTas, cmd, prms);
     return status;
 }

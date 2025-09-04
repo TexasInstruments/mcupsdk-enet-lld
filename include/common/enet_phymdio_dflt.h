@@ -72,6 +72,40 @@ extern "C" {
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
+int32_t EnetPhyMdioDflt_isAlive(uint32_t phyAddr,
+                                bool *isAlive,
+                                Mdio_Obj * hMdio);
+
+int32_t EnetPhyMdioDflt_isLinked(uint32_t phyAddr,
+                                  bool *isLinked,
+                                  Mdio_Obj * hMdio);
+
+int32_t EnetPhyMdioDflt_readC22(uint32_t group,
+                                uint32_t phyAddr,
+                                uint32_t reg,
+                                uint16_t *val,
+                                Mdio_Obj * hMdio);
+
+int32_t EnetPhyMdioDflt_writeC22(uint32_t group,
+                                  uint32_t phyAddr,
+                                  uint32_t reg,
+                                  uint16_t val,
+                                  Mdio_Obj * hMdio);
+
+int32_t EnetPhyMdioDflt_readC45(uint32_t group,
+                                uint32_t phyAddr,
+                                uint8_t mmd,
+                                uint16_t reg,
+                                uint16_t *val,
+                                Mdio_Obj * hMdio);
+
+int32_t EnetPhyMdioDflt_writeC45(uint32_t group,
+                                  uint32_t phyAddr,
+                                  uint8_t mmd,
+                                  uint16_t reg,
+                                  uint16_t val,
+                                  Mdio_Obj * hMdio);
+
 /*!
  * \brief Get handle to the default Enet MDIO implementation.
  *

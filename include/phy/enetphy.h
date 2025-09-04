@@ -197,6 +197,8 @@ extern "C" {
 /*                         Structures and Enums                               */
 /* ========================================================================== */
 
+typedef struct Mdio_Obj_s Mdio_Obj;
+
 /*!
  * \brief EnetPhy driver magic value, used to indicate if driver is open or not.
  */
@@ -420,7 +422,7 @@ typedef struct EnetPhy_Mdio_s
      */
     int32_t (*isAlive)(uint32_t phyAddr,
                        bool *isAlive,
-                       void *arg);
+                       Mdio_Obj * arg);
 
     /*!
      * \brief Check if PHY is linked.
@@ -436,7 +438,7 @@ typedef struct EnetPhy_Mdio_s
      */
     int32_t (*isLinked)(uint32_t phyAddr,
                         bool *isLinked,
-                        void *arg);
+                        Mdio_Obj * arg);
 
     /*!
      * \brief Read PHY register using Clause-22 frame.
@@ -455,7 +457,7 @@ typedef struct EnetPhy_Mdio_s
                        uint32_t phyAddr,
                        uint32_t reg,
                        uint16_t *val,
-                       void *arg);
+                       Mdio_Obj * arg);
 
     /*!
      * \brief Write PHY register using Clause-22 frame.
@@ -474,7 +476,7 @@ typedef struct EnetPhy_Mdio_s
                         uint32_t phyAddr,
                         uint32_t reg,
                         uint16_t val,
-                        void *arg);
+                        Mdio_Obj * arg);
 
     /*!
      * \brief Read PHY register using Clause-45 frame.
@@ -495,7 +497,7 @@ typedef struct EnetPhy_Mdio_s
                        uint8_t mmd,
                        uint16_t reg,
                        uint16_t *val,
-                       void *arg);
+                       Mdio_Obj * arg);
 
     /*!
      * \brief Write PHY register using Clause-45 frame.
@@ -516,7 +518,7 @@ typedef struct EnetPhy_Mdio_s
                         uint8_t mmd,
                         uint16_t reg,
                         uint16_t val,
-                        void *arg);
+                        Mdio_Obj * arg);
 } EnetPhy_Mdio;
 
 /*!
@@ -656,7 +658,7 @@ typedef struct EnetPhy_Obj_s
     EnetPhy_Magic magic;
 
     /*! Caller-provided arguments to be used in MDIO driver calls */
-    void *mdioArgs;
+    Mdio_Obj *mdioArgs;
 
     /*! Private data that is used by the driver */
     void *priv;
@@ -723,7 +725,7 @@ EnetPhy_Handle EnetPhy_open(const EnetPhy_Cfg *phyCfg,
                             const EnetPhy_LinkCfg *linkCfg,
                             uint32_t macPortCaps,
                             EnetPhy_MdioHandle hMdio,
-                            void *mdioArgs);
+                            Mdio_Obj *mdioArgs);
 
 /*!
  * \brief Close the PHY driver.
@@ -803,13 +805,13 @@ int32_t EnetPhy_getLinkCfg(EnetPhy_Handle hPhy,
  *
  * Reads a PHY register. It's not meant for extended registers.
  *
- * \param pArgs     PHY device handle
+ * \param pArgs    PHY device handle
  * \param reg      Register number
  * \param val      Pointer to the read value
  *
  * \return \ref EnetPhy_ErrorCodes
  */
-int32_t EnetPhy_readReg(void *pArgs,
+int32_t EnetPhy_readReg(void* pArgs,
                         uint32_t reg,
                         uint16_t *val);
 
@@ -818,13 +820,13 @@ int32_t EnetPhy_readReg(void *pArgs,
  *
  * Writes a PHY register. It's not meant for extended registers.
  *
- * \param pArgs     PHY device handle
+ * \param pArgs    PHY device handle
  * \param reg      Register number
  * \param val      Value to be written
  *
  * \return \ref EnetPhy_ErrorCodes
  */
-int32_t EnetPhy_writeReg(void *pArgs,
+int32_t EnetPhy_writeReg(void* pArgs,
                          uint32_t reg,
                          uint16_t val);
 
@@ -833,14 +835,14 @@ int32_t EnetPhy_writeReg(void *pArgs,
  *
  * Read-modify-write a PHY register. It's not meant for extended registers.
  *
- * \param pArgs     PHY device handle
+ * \param pArgs    PHY device handle
  * \param reg      Register number
  * \param mask     Bitmask to be applied on read value and value to be written
  * \param val      Value to be written
  *
  * \return \ref EnetPhy_ErrorCodes
  */
-int32_t EnetPhy_rmwReg(void *pArgs,
+int32_t EnetPhy_rmwReg(void* pArgs,
                        uint32_t reg,
                        uint16_t mask,
                        uint16_t val);
@@ -850,13 +852,13 @@ int32_t EnetPhy_rmwReg(void *pArgs,
  *
  * Reads a PHY extended register.
  *
- * \param pArgs     PHY device handle
+ * \param pArgs    PHY device handle
  * \param reg      Register number
  * \param val      Pointer to the read value
  *
  * \return \ref EnetPhy_ErrorCodes
  */
-int32_t EnetPhy_readExtReg(void *pArgs,
+int32_t EnetPhy_readExtReg(void* pArgs,
                            uint32_t reg,
                            uint16_t *val);
 
@@ -865,13 +867,13 @@ int32_t EnetPhy_readExtReg(void *pArgs,
  *
  * Writes a PHY extended register.
  *
- * \param pArgs     PHY device handle
+ * \param pArgs    PHY device handle
  * \param reg      Register number
  * \param val      Value to be written
  *
  * \return \ref EnetPhy_ErrorCodes
  */
-int32_t EnetPhy_writeExtReg(void *pArgs,
+int32_t EnetPhy_writeExtReg(void* pArgs,
                             uint32_t reg,
                             uint16_t val);
 

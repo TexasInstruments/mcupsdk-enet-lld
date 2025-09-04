@@ -71,10 +71,10 @@ extern "C" {
         regIoctlInArgs.fxn = (uintptr_t)&CpswMacPort_ioctl_handler_##ioctlCmd;                 \
                                                                                                \
         ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                                \
-        status = EnetMod_ioctl(hMacport, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);  \
+        status = CpswMacPort_ioctl(hMacport, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);  \
         if (ENET_SOK == status)                                                                \
         {                                                                                      \
-            status = EnetMod_ioctl(hMacport, ioctlCmd,prms);                                   \
+            status = CpswMacPort_ioctl(hMacport, ioctlCmd,prms);                                   \
         }                                                                                      \
     } while (0)
 

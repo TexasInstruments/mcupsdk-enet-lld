@@ -185,7 +185,7 @@ int32_t CpswStats_ioctl_handler_CPSW_STATS_IOCTL_SYNC(CpswStats_Handle hStats, C
 
 static void CpswStats_readHostStats(CpswStats_Handle hStats)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
     union CSL_CPSW_STATS portStats;
     uint64_t *stats64;
     uint32_t *stats32 = (uint32_t *)&portStats;
@@ -249,7 +249,7 @@ static void CpswStats_readHostStats(CpswStats_Handle hStats)
 static void CpswStats_readMacStats(CpswStats_Handle hStats,
                                    Enet_MacPort macPort)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
     union CSL_CPSW_STATS portStats;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);

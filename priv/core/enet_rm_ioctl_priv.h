@@ -52,7 +52,8 @@
 #include <enet_cfg.h>
 #include <include/core/enet_osal.h>
 #include <include/core/enet_queue.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/core/enet_rm.h>
 
 
@@ -83,10 +84,10 @@ extern "C" {
         regIoctlInArgs.fxn = (uintptr_t)&EnetRm_ioctl_handler_##ioctlCmd;             \
                                                                                       \
         ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                       \
-        status = EnetMod_ioctl(hRm, ENET_RM_IOCTL_REGISTER_HANDLER, &regIoctlPrms);   \
+        status = EnetRm_ioctl(hRm, ENET_RM_IOCTL_REGISTER_HANDLER, &regIoctlPrms);   \
         if (ENET_SOK == status)                                                       \
         {                                                                             \
-            status = EnetMod_ioctl(hRm, ioctlCmd,prms);                               \
+            status = EnetRm_ioctl(hRm, ioctlCmd,prms);                               \
         }                                                                             \
     } while (0)
 

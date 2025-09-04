@@ -153,18 +153,11 @@ CpswSoc_Cfg gEnetSoc_cpsw2gSocCfg =
 CpswMacPort_Obj gEnetSoc_cpsw2gMacObj[] =
 {
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.macport1",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
-            .physAddr2  = 0U,
-            .features   = (CPSW_MACPORT_FEATURE_INTERVLAN),
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswMacPort_open,
-            .rejoin     = &CpswMacPort_rejoin,
-            .ioctl      = &CpswMacPort_ioctl,
-            .close      = &CpswMacPort_close,
-        },
+        .name       = "cpsw2g.macport1",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+        .physAddr2  = 0U,
+        .features   = (CPSW_MACPORT_FEATURE_INTERVLAN),
+        .errata     = ENET_ERRATA_NONE,
         .macPort = ENET_MAC_PORT_1,
     },
 };
@@ -197,17 +190,10 @@ Cpsw_Obj gEnetSoc_cpsw2g =
     /* Host port module object */
     .hostPortObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.hostport",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
-            .features   = ENET_FEAT_BASE,
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswHostPort_open,
-            .rejoin     = &CpswHostPort_rejoin,
-            .ioctl      = &CpswHostPort_ioctl,
-            .close      = &CpswHostPort_close,
-        }
+        .name       = "cpsw2g.hostport",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+        .features   = ENET_FEAT_BASE,
+        .errata     = ENET_ERRATA_NONE,
     },
 
     /* MAC port module objects */
@@ -217,82 +203,47 @@ Cpsw_Obj gEnetSoc_cpsw2g =
     /* ALE module object */
     .aleObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.ale",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_ALE_OFFSET),
-            .features   = (CPSW_ALE_FEATURE_FLOW_PRIORITY |
-                           CPSW_ALE_FEATURE_IP_HDR_WHITELIST),
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswAle_open,
-            .rejoin     = &CpswAle_rejoin,
-            .ioctl      = &CpswAle_ioctl,
-            .close      = &CpswAle_close,
-        },
+        .name       = "cpsw2g.ale",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_ALE_OFFSET),
+        .features   = (CPSW_ALE_FEATURE_FLOW_PRIORITY |
+                        CPSW_ALE_FEATURE_IP_HDR_WHITELIST),
+        .errata     = ENET_ERRATA_NONE,
     },
 
     /* CPTS module object */
     .cptsObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.cpts",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_CPTS_OFFSET),
-            .features   = ENET_FEAT_BASE,
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswCpts_open,
-            .rejoin     = &CpswCpts_rejoin,
-            .ioctl      = &CpswCpts_ioctl,
-            .close      = &CpswCpts_close,
-        },
+        .name       = "cpsw2g.cpts",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_CPTS_OFFSET),
+        .features   = ENET_FEAT_BASE,
+        .errata     = ENET_ERRATA_NONE,
     },
 
     /* MDIO module object */
     .mdioObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.mdio",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_MDIO_OFFSET),
-            .features   = MDIO_FEATURE_CLAUSE45,
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &Mdio_open,
-            .rejoin     = &Mdio_rejoin,
-            .ioctl      = &Mdio_ioctl,
-            .close      = &Mdio_close,
-        },
+        .name       = "cpsw2g.mdio",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_MDIO_OFFSET),
+        .features   = MDIO_FEATURE_CLAUSE45,
+        .errata     = ENET_ERRATA_NONE,
     },
 
     /* Statistics module object */
     .statsObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.stats",
-            .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
-            .features   = ENET_FEAT_BASE,
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &CpswStats_open,
-            .rejoin     = &CpswStats_rejoin,
-            .ioctl      = &CpswStats_ioctl,
-            .close      = &CpswStats_close,
-        },
+        .name       = "cpsw2g.stats",
+        .physAddr   = (CSL_MCU_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),
+        .features   = ENET_FEAT_BASE,
+        .errata     = ENET_ERRATA_NONE,
     },
 
     /* RM module object */
     .rmObj =
     {
-        .enetMod =
-        {
-            .name       = "cpsw2g.rm",
-            .physAddr   = 0U,
-            .features   = ENET_FEAT_BASE,
-            .errata     = ENET_ERRATA_NONE,
-            .open       = &EnetRm_open,
-            .rejoin     = &EnetRm_rejoin,
-            .ioctl      = &EnetRm_ioctl,
-            .close      = &EnetRm_close,
-        },
+        .name       = "cpsw2g.rm",
+        .physAddr   = 0U,
+        .features   = ENET_FEAT_BASE,
+        .errata     = ENET_ERRATA_NONE,
     },
 };
 

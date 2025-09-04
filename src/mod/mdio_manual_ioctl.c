@@ -71,50 +71,50 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static void Mdio_manualModeFieldSend(EnetMod_Handle hMod,
+static void Mdio_manualModeFieldSend(Mdio_Handle hMdio,
                                     uint32_t iMsb,
                                     uint32_t iVal);
 
-static uint32_t  Mdio_manualModePhyRegRead22(EnetMod_Handle hMod,
+static uint32_t  Mdio_manualModePhyRegRead22(Mdio_Handle hMdio,
                                         uint32_t phyAddr,
                                         uint32_t regNum,
                                         uint16_t *pData);
 
-static void Mdio_manualModePhyRegWrite22(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegWrite22(Mdio_Handle hMdio,
                                   uint32_t phyAddr,
                                   uint32_t regNum,
                                   uint16_t wrVal);
 
 static void Mdio_manualModeToggleMdclk(CSL_mdioHandle hMdioRegs, const uint32_t halfCycleDelay_ns);
 
-static uint32_t Mdio_manualModeScanPhyAddress(EnetMod_Handle hMod);
+static uint32_t Mdio_manualModeScanPhyAddress(Mdio_Handle hMdio);
 
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
 
-static void Mdio_manualModePhyRegAddWriteC45(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegAddWriteC45(Mdio_Handle hMdio,
                                               uint32_t phyAddr,
                                               uint32_t mmd,
                                               uint16_t wrVal);
 
-static uint32_t  Mdio_manualModePhyRegValReadC45(EnetMod_Handle hMod,
+static uint32_t  Mdio_manualModePhyRegValReadC45(Mdio_Handle hMdio,
                                           uint32_t phyAddr,
                                           uint32_t mmd,
                                           uint16_t *pData);
 
-static int32_t Mdio_manualModePhyRegReadC45(EnetMod_Handle hMod,
+static int32_t Mdio_manualModePhyRegReadC45(Mdio_Handle hMdio,
                                             uint32_t mmd,
                                             uint8_t phyAddr,
                                             uint16_t reg,
                                             uint16_t *val);
 
-static void Mdio_manualModeSendPreamble(EnetMod_Handle hMod);
+static void Mdio_manualModeSendPreamble(Mdio_Handle hMdio);
 
-static void Mdio_manualModePhyRegValWriteC45(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegValWriteC45(Mdio_Handle hMdio,
                                               uint32_t phyAddr,
                                               uint32_t mmd,
                                               uint16_t wrVal);
 
-static int32_t Mdio_manualModePhyRegWriteC45(EnetMod_Handle hMod,
+static int32_t Mdio_manualModePhyRegWriteC45(Mdio_Handle hMdio,
                                             uint32_t mmd,
                                             uint8_t phyAddr,
                                             uint16_t reg,
@@ -130,7 +130,7 @@ static int32_t Mdio_manualModePhyRegWriteC45(EnetMod_Handle hMod,
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-static uint32_t  Mdio_manualModePhyRegRead22(EnetMod_Handle hMod,
+static uint32_t  Mdio_manualModePhyRegRead22(Mdio_Handle hMdio,
                                         uint32_t phyAddr,
                                         uint32_t regNum,
                                         uint16_t *pData)
@@ -138,17 +138,16 @@ static uint32_t  Mdio_manualModePhyRegRead22(EnetMod_Handle hMod,
     uint32_t i, sts;
     uint16_t tmp;
     char ack;
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
     CSL_MDIO_setMdclkLow(hMdioRegs); /* Disable Phy Interrupt driver */
 
     CSL_MDIO_setMdoOutputEnable(hMdioRegs); /* Enable our drive capability */
 
-    Mdio_manualModeFieldSend(hMod, 0x80000000, 0xFFFFFFFF); /* Send MDIO preamble */
-    Mdio_manualModeFieldSend(hMod, 0x8, 0x6); /* Issue clause 22 MII read function {0,1,1,0}*/
-    Mdio_manualModeFieldSend(hMod, 0x10, phyAddr); /* Send the device number MSB first */
-    Mdio_manualModeFieldSend(hMod, 0x10, regNum); /* Send the register number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x80000000, 0xFFFFFFFF); /* Send MDIO preamble */
+    Mdio_manualModeFieldSend(hMdio, 0x8, 0x6); /* Issue clause 22 MII read function {0,1,1,0}*/
+    Mdio_manualModeFieldSend(hMdio, 0x10, phyAddr); /* Send the device number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x10, regNum); /* Send the register number MSB first */
 
     CSL_MDIO_setMdoInputEnable(hMdioRegs); /* send Turn-arround cycles */
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
@@ -186,27 +185,26 @@ static uint32_t  Mdio_manualModePhyRegRead22(EnetMod_Handle hMod,
     return (sts);
 }
 
-static void Mdio_manualModePhyRegWrite22(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegWrite22(Mdio_Handle hMdio,
                                   uint32_t phyAddr,
                                   uint32_t regNum,
                                   uint16_t wrVal)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Disable Phy Interrupt driver */
     CSL_MDIO_setMdoOutputEnable(hMdioRegs);          /* Enable our drive capability */
 
-    Mdio_manualModeFieldSend(hMod, 0x80000000, 0xFFFFFFFF); /* Send 32-bit MDIO preamble */
-    Mdio_manualModeFieldSend(hMod, 0x8,0x5);     /* Issue clause 22 MII write function {0,1,0,1}*/
-    Mdio_manualModeFieldSend(hMod, 0x10,phyAddr);    /* Send the device number MSB first */
-    Mdio_manualModeFieldSend(hMod, 0x10,regNum);    /* Send the register number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x80000000, 0xFFFFFFFF); /* Send 32-bit MDIO preamble */
+    Mdio_manualModeFieldSend(hMdio, 0x8,0x5);     /* Issue clause 22 MII write function {0,1,0,1}*/
+    Mdio_manualModeFieldSend(hMdio, 0x10,phyAddr);    /* Send the device number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x10,regNum);    /* Send the register number MSB first */
 
     CSL_MDIO_setMdoHigh(hMdioRegs);          /* send Turn-arround cycles */
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
     CSL_MDIO_setMdoLow(hMdioRegs);
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
-    Mdio_manualModeFieldSend(hMod, 0x08000, wrVal); /* Send Register data MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08000, wrVal); /* Send Register data MSB first */
     CSL_MDIO_setMdoInputEnable(hMdioRegs);
 
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Give time for pull-up to work */
@@ -223,12 +221,11 @@ static void Mdio_manualModeToggleMdclk(CSL_mdioHandle hMdioRegs, const uint32_t 
     EnetUtils_delayNs(halfCycleDelay_ns);
 }
 
-static void Mdio_manualModeFieldSend(EnetMod_Handle hMod,
+static void Mdio_manualModeFieldSend(Mdio_Handle hMdio,
                                     uint32_t iMsb,
                                     uint32_t iVal)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
     for (uint32_t i = iMsb; i; i >>= 1)
     {
@@ -246,28 +243,27 @@ static void Mdio_manualModeFieldSend(EnetMod_Handle hMod,
 }
 
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
-static void Mdio_manualModePhyRegAddWriteC45(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegAddWriteC45(Mdio_Handle hMdio,
                                               uint32_t phyAddr,
                                               uint32_t mmd,
                                               uint16_t wrVal)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
-    Mdio_manualModeSendPreamble(hMod);
+    Mdio_manualModeSendPreamble(hMdio);
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Disable Phy Interrupt driver */
     CSL_MDIO_setMdoOutputEnable(hMdioRegs);          /* Enable our drive capability */
 
-    Mdio_manualModeFieldSend(hMod, 0x08, 0x0);     /* Issue clause 45 MII write function {0,0,0,1}*/
-    Mdio_manualModeFieldSend(hMod, 0x10, phyAddr);    /* Send the device number MSB first */
-    Mdio_manualModeFieldSend(hMod, 0x10, mmd);    /* Send the register number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08, 0x0);     /* Issue clause 45 MII write function {0,0,0,1}*/
+    Mdio_manualModeFieldSend(hMdio, 0x10, phyAddr);    /* Send the device number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x10, mmd);    /* Send the register number MSB first */
 
     CSL_MDIO_setMdoHigh(hMdioRegs);          /* send Turn-arround cycles */
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
     CSL_MDIO_setMdoLow(hMdioRegs);
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
 
-    Mdio_manualModeFieldSend(hMod, 0x08000, wrVal); /* Send Register data MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08000, wrVal); /* Send Register data MSB first */
     CSL_MDIO_setMdoInputEnable(hMdioRegs);
 
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Give time for pull-up to work */
@@ -277,7 +273,7 @@ static void Mdio_manualModePhyRegAddWriteC45(EnetMod_Handle hMod,
 
 }
 
-static uint32_t  Mdio_manualModePhyRegValReadC45(EnetMod_Handle hMod,
+static uint32_t  Mdio_manualModePhyRegValReadC45(Mdio_Handle hMdio,
                                           uint32_t phyAddr,
                                           uint32_t mmd,
                                           uint16_t *pData)
@@ -285,16 +281,15 @@ static uint32_t  Mdio_manualModePhyRegValReadC45(EnetMod_Handle hMod,
     uint32_t i, sts;
     uint8_t ack;
     uint16_t tmp;
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
-    Mdio_manualModeSendPreamble(hMod);
+    Mdio_manualModeSendPreamble(hMdio);
     CSL_MDIO_setMdclkLow(hMdioRegs); /* Disable Phy Interrupt driver */
     CSL_MDIO_setMdoOutputEnable(hMdioRegs); /* Enable our drive capability */
 
-    Mdio_manualModeFieldSend(hMod, 0x08, 0x3); /* Issue clause 45 MII read function {0,0,1,1}*/
-    Mdio_manualModeFieldSend(hMod, 0x10, phyAddr); /* Send the device number MSB first */
-    Mdio_manualModeFieldSend(hMod, 0x10, mmd); /* Send the register number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08, 0x3); /* Issue clause 45 MII read function {0,0,1,1}*/
+    Mdio_manualModeFieldSend(hMdio, 0x10, phyAddr); /* Send the device number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x10, mmd); /* Send the register number MSB first */
 
     CSL_MDIO_setMdclkLow(hMdioRegs); /* send Turn-arround cycles */
     CSL_MDIO_setMdoInputEnable(hMdioRegs);
@@ -333,7 +328,7 @@ static uint32_t  Mdio_manualModePhyRegValReadC45(EnetMod_Handle hMod,
     return (sts);
 }
 
-static int32_t Mdio_manualModePhyRegReadC45(EnetMod_Handle hMod,
+static int32_t Mdio_manualModePhyRegReadC45(Mdio_Handle hMdio,
                                             uint32_t mmd,
                                             uint8_t phyAddr,
                                             uint16_t reg,
@@ -342,9 +337,9 @@ static int32_t Mdio_manualModePhyRegReadC45(EnetMod_Handle hMod,
     int32_t status = CSL_EFAIL;
 
     /* Initiate register read */
-    Mdio_manualModePhyRegAddWriteC45(hMod, phyAddr, mmd, reg);
+    Mdio_manualModePhyRegAddWriteC45(hMdio, phyAddr, mmd, reg);
 
-    status = Mdio_manualModePhyRegValReadC45(hMod, phyAddr, mmd, val);
+    status = Mdio_manualModePhyRegValReadC45(hMdio, phyAddr, mmd, val);
     /* Get the value read from PHY register once transaction is complete */
 
     ENETTRACE_ERR_IF(status == CSL_ETIMEOUT,
@@ -357,10 +352,9 @@ static int32_t Mdio_manualModePhyRegReadC45(EnetMod_Handle hMod,
     return status;
 }
 
-static void Mdio_manualModeSendPreamble(EnetMod_Handle hMod)
+static void Mdio_manualModeSendPreamble(Mdio_Handle hMdio)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
     CSL_MDIO_setMdoOutputEnable(hMdioRegs); /* Enable our drive capability */
 
@@ -377,28 +371,27 @@ static void Mdio_manualModeSendPreamble(EnetMod_Handle hMod)
     }
 }
 
-static void Mdio_manualModePhyRegValWriteC45(EnetMod_Handle hMod,
+static void Mdio_manualModePhyRegValWriteC45(Mdio_Handle hMdio,
                                               uint32_t phyAddr,
                                               uint32_t mmd,
                                               uint16_t wrVal)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMod->virtAddr;
+    CSL_mdioHandle hMdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
 
-    Mdio_manualModeSendPreamble(hMod);
+    Mdio_manualModeSendPreamble(hMdio);
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Disable Phy Interrupt driver */
     CSL_MDIO_setMdoOutputEnable(hMdioRegs);          /* Enable our drive capability */
 
-    Mdio_manualModeFieldSend(hMod, 0x08, 0x1);     /* Issue clause 45 MII write function {0,0,0,1}*/
-    Mdio_manualModeFieldSend(hMod, 0x10, phyAddr);    /* Send the device number MSB first */
-    Mdio_manualModeFieldSend(hMod, 0x10, mmd);    /* Send the register number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08, 0x1);     /* Issue clause 45 MII write function {0,0,0,1}*/
+    Mdio_manualModeFieldSend(hMdio, 0x10, phyAddr);    /* Send the device number MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x10, mmd);    /* Send the register number MSB first */
 
     CSL_MDIO_setMdoHigh(hMdioRegs);          /* send Turn-arround cycles */
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
     CSL_MDIO_setMdoLow(hMdioRegs);
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);
 
-    Mdio_manualModeFieldSend(hMod, 0x08000, wrVal); /* Send Register data MSB first */
+    Mdio_manualModeFieldSend(hMdio, 0x08000, wrVal); /* Send Register data MSB first */
     CSL_MDIO_setMdoInputEnable(hMdioRegs);
 
     CSL_MDIO_setMdclkLow(hMdioRegs);          /* Give time for pull-up to work */
@@ -407,21 +400,21 @@ static void Mdio_manualModePhyRegValWriteC45(EnetMod_Handle hMod,
     Mdio_manualModeToggleMdclk(hMdioRegs, hMdio->mdcHalfCycleNs);        /* re-enable PHY Interrupt function */
 }
 
-static int32_t Mdio_manualModePhyRegWriteC45(EnetMod_Handle hMod,
+static int32_t Mdio_manualModePhyRegWriteC45(Mdio_Handle hMdio,
                                             uint32_t mmd,
                                             uint8_t phyAddr,
                                             uint16_t reg,
                                             uint16_t val)
 {
-    Mdio_manualModePhyRegAddWriteC45(hMod, phyAddr, mmd, reg);
-    Mdio_manualModePhyRegValWriteC45(hMod, phyAddr, mmd, val);
+    Mdio_manualModePhyRegAddWriteC45(hMdio, phyAddr, mmd, reg);
+    Mdio_manualModePhyRegValWriteC45(hMdio, phyAddr, mmd, val);
 
     return CSL_PASS;
 }
 #endif /* MDIO_CLAUSE45 */
 
 
-static uint32_t Mdio_manualModeScanPhyAddress(EnetMod_Handle hMod)
+static uint32_t Mdio_manualModeScanPhyAddress(Mdio_Handle hMdio)
 {
     volatile uint32_t phyActiveBm = 0;
 
@@ -429,7 +422,7 @@ static uint32_t Mdio_manualModeScanPhyAddress(EnetMod_Handle hMod)
     {
         // Phy status register
         uint16_t val = 0;
-        if (Mdio_manualModePhyRegRead22(hMod, phyAdd, PHY_BMSR, &val) == CSL_PASS)
+        if (Mdio_manualModePhyRegRead22(hMdio, phyAdd, PHY_BMSR, &val) == CSL_PASS)
         {
             phyActiveBm |= (1 << phyAdd);
         }
@@ -439,18 +432,18 @@ static uint32_t Mdio_manualModeScanPhyAddress(EnetMod_Handle hMod)
 }
 
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_ALIVE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     uint8_t *phyAddr = (uint8_t *)prms->inArgs;
     bool *alive = (bool *)prms->outArgs;
     uint16_t bmsrVal;
     int32_t status = ENET_SOK;
 
-    *alive = (Mdio_manualModePhyRegRead22(hMod, *phyAddr, PHY_BMSR, &bmsrVal) == CSL_PASS);
+    *alive = (Mdio_manualModePhyRegRead22(hMdio, *phyAddr, PHY_BMSR, &bmsrVal) == CSL_PASS);
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     uint8_t *phyAddr = (uint8_t *)prms->inArgs;
     bool *linked = (bool *)prms->outArgs;
@@ -458,7 +451,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod,
     int32_t status = ENET_SOK;
 
     *linked = false;
-    if (Mdio_manualModePhyRegRead22(hMod, *phyAddr, PHY_BMSR, &bmsrVal) == CSL_PASS)
+    if (Mdio_manualModePhyRegRead22(hMdio, *phyAddr, PHY_BMSR, &bmsrVal) == CSL_PASS)
     {
         if (bmsrVal & LINK_STATUS_BITMASK)
         {
@@ -469,7 +462,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_LINKED(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     bool *pIsEnabled = (bool *)prms->outArgs;
     int32_t status = ENET_SOK;
@@ -478,13 +471,13 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_IS_POLL_ENABLED(EnetMod_Handle
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     EnetMdio_C22ReadInArgs *inArgs = (EnetMdio_C22ReadInArgs *)prms->inArgs;
     uint16_t *val = (uint16_t *)prms->outArgs;
     int32_t status = ENET_SOK;
 
-    uint32_t ack = Mdio_manualModePhyRegRead22(hMod,
+    uint32_t ack = Mdio_manualModePhyRegRead22(hMdio,
                                               inArgs->phyAddr,
                                               inArgs->reg,
                                               val);
@@ -496,19 +489,19 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_READ(EnetMod_Handle hMod, 
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
     EnetMdio_C22WriteInArgs *inArgs = (EnetMdio_C22WriteInArgs *)prms->inArgs;
-    Mdio_manualModePhyRegWrite22(hMod,
+    Mdio_manualModePhyRegWrite22(hMdio,
                                  inArgs->phyAddr,
                                  inArgs->reg,
                                  inArgs->val);
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
@@ -516,9 +509,9 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, 
     EnetMdio_C45ReadInArgs *inArgs = (EnetMdio_C45ReadInArgs *)prms->inArgs;
     uint16_t *val = (uint16_t *)prms->outArgs;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
-        status = Mdio_manualModePhyRegReadC45(hMod,
+        status = Mdio_manualModePhyRegReadC45(hMdio,
                                  (uint32_t)inArgs->mmd,
                                  inArgs->phyAddr,
                                  inArgs->reg,
@@ -539,16 +532,16 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_READ(EnetMod_Handle hMod, 
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
     EnetMdio_C45WriteInArgs *inArgs = (EnetMdio_C45WriteInArgs *)prms->inArgs;
 
-    if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
+    if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
     {
-        status = Mdio_manualModePhyRegWriteC45(hMod,
+        status = Mdio_manualModePhyRegWriteC45(hMdio,
                                   (uint32_t)inArgs->mmd,
                                   inArgs->phyAddr,
                                   inArgs->reg,
@@ -569,7 +562,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_WRITE(EnetMod_Handle hMod,
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -578,7 +571,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_TRIGGER(EnetMod
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -587,7 +580,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_TRIGGER(EnetMo
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -596,7 +589,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_READ_COMPLETE(EnetMo
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -605,7 +598,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C22_ASYNC_WRITE_COMPLETE(EnetM
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -614,7 +607,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_TRIGGER(EnetMod
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -623,7 +616,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_TRIGGER(EnetMo
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 
@@ -632,7 +625,7 @@ int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_READ_COMPLETE(EnetMo
     return status;
 }
 
-int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+int32_t Mdio_manual_ioctl_handler_ENET_MDIO_IOCTL_C45_ASYNC_WRITE_COMPLETE(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_ENOTSUPPORTED;
 

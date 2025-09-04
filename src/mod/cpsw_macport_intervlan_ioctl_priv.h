@@ -45,7 +45,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,24 +60,21 @@ extern "C" {
  * \brief Helper macro used to first register private IOCTL handler and then invoke the
  *        IOCTL
  */
-#define CPSW_MACPORT_INTERVLAN_PRIV_IOCTL(hMacport, ioctlCmd,prms,status)                      \
+#define CPSW_MACPORT_INTERVLAN_PRIV_IOCTL(hPort, ioctlCmd,prms,status)                      \
     do {                                                                                       \
         Enet_IoctlPrms regIoctlPrms;                                                           \
         Enet_IoctlRegisterHandlerInArgs regIoctlInArgs;                                        \
-        EnetMod_Handle hMod;                                                                   \
                                                                                                \
-        hMod = (EnetMod_Handle)hMacport;                                                       \
-                                                                                               \
-        if (ENET_FEAT_IS_EN(((EnetMod_Handle)hMacport)->features, CPSW_MACPORT_FEATURE_INTERVLAN)) \
+        if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_INTERVLAN))               \
         {                                                                                      \
             regIoctlInArgs.cmd = ioctlCmd;                                                     \
             regIoctlInArgs.fxn = (uintptr_t)&CpswMacPort_interVlan_ioctl_handler_##ioctlCmd;   \
                                                                                                \
             ENET_IOCTL_SET_IN_ARGS(&regIoctlPrms, &regIoctlInArgs);                                \
-            status = CpswMacPort_ioctlInterVlan(hMod, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);  \
+            status = CpswMacPort_ioctlInterVlan(hPort, CPSW_MACPORT_IOCTL_REGISTER_HANDLER, &regIoctlPrms);  \
             if (ENET_SOK == status)                                                                \
             {                                                                                      \
-                status = CpswMacPort_ioctlInterVlan(hMod, ioctlCmd, prms);                         \
+                status = CpswMacPort_ioctlInterVlan(hPort, ioctlCmd, prms);                         \
             }                                                                                      \
         }                                                                                          \
         else                                                                                       \

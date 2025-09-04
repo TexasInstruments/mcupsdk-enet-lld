@@ -247,156 +247,199 @@ static EnetRmIoctlHandlerRegistry_t EnetRmIoctlHandlerRegistry[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t EnetRm_open(EnetMod_Handle hMod,
+int32_t EnetRm_open(EnetRm_Handle hRm,
                     Enet_Type enetType,
                     uint32_t instId,
-                    const void *cfg,
-                    uint32_t cfgSize)
+                    const EnetRm_Cfg *rmCfg)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
-    const EnetRm_Cfg *rmCfg = (const EnetRm_Cfg *)cfg;
     uint32_t i;
     int32_t status = ENET_SOK;
 
-    Enet_devAssert(cfgSize == sizeof(EnetRm_Cfg),
-                   "Invalid RM config params size %u (expected %u)\n",
-                   cfgSize, sizeof(EnetRm_Cfg));
+    ENETTRACE_VERBOSE("%s: open module\n", hRm->name);
 
-    if (rmCfg == NULL)
+    if (hRm->magic == ENET_NO_MAGIC)
     {
-        ENETTRACE_ERR("Invalid NULL RM config\n");
-        status = ENET_EBADARGS;
-    }
+        hRm->virtAddr  = (void *)EnetUtils_physToVirt(hRm->physAddr, NULL);
+        hRm->virtAddr2 = (void *)EnetUtils_physToVirt(hRm->physAddr2, NULL);
 
-    if (status == ENET_SOK)
-    {
-        status = EnetRm_validateResPartInfo(rmCfg,
-                                            ENET_ARRAYSIZE(hRm->txObj.txRes),
-                                            ENET_ARRAYSIZE(hRm->rxObj[0U].rxRes),
-                                            ENET_ARRAYSIZE(hRm->macObj.macRes));
-        ENETTRACE_ERR_IF(status != ENET_SOK,
-                         "Resource partition validation failed: %d\n", status);
-    }
-
-    if (ENET_SOK == status)
-    {
-        hRm->cfg = *rmCfg;
-        EnetRm_initTxObj(&hRm->txObj, rmCfg);
-        EnetRm_initMacObj(&hRm->macObj, rmCfg);
-        EnetRm_initHwPushObj(&hRm->hwPushObj, rmCfg);
-        EnetRm_initAttachObj(&hRm->coreAttachObj);
-
-        hRm->numRxCh = rmCfg->numRxCh;
-        for (i = 0U; i < hRm->numRxCh; i++)
+        if (rmCfg == NULL)
         {
-            EnetRm_initRxObj(&hRm->rxObj[i], rmCfg, i);
+            ENETTRACE_ERR("Invalid NULL RM config\n");
+            status = ENET_EBADARGS;
         }
+
+        if (status == ENET_SOK)
+        {
+            status = EnetRm_validateResPartInfo(rmCfg,
+                                                ENET_ARRAYSIZE(hRm->txObj.txRes),
+                                                ENET_ARRAYSIZE(hRm->rxObj[0U].rxRes),
+                                                ENET_ARRAYSIZE(hRm->macObj.macRes));
+            ENETTRACE_ERR_IF(status != ENET_SOK,
+                            "Resource partition validation failed: %d\n", status);
+        }
+
+        if (ENET_SOK == status)
+        {
+            hRm->cfg = *rmCfg;
+            EnetRm_initTxObj(&hRm->txObj, rmCfg);
+            EnetRm_initMacObj(&hRm->macObj, rmCfg);
+            EnetRm_initHwPushObj(&hRm->hwPushObj, rmCfg);
+            EnetRm_initAttachObj(&hRm->coreAttachObj);
+
+            hRm->numRxCh = rmCfg->numRxCh;
+            for (i = 0U; i < hRm->numRxCh; i++)
+            {
+                EnetRm_initRxObj(&hRm->rxObj[i], rmCfg, i);
+            }
+        }
+        if (status == ENET_SOK)
+        {
+            hRm->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hRm->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hRm->name, status);
+            hRm->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hRm->name);
+        status = ENET_EALREADYOPEN;
     }
 
     return status;
 }
 
-int32_t EnetRm_rejoin(EnetMod_Handle hMod,
+int32_t EnetRm_rejoin(EnetRm_Handle hRm,
                       Enet_Type enetType,
                       uint32_t instId)
 {
     return ENET_ENOTSUPPORTED;
 }
 
-void EnetRm_close(EnetMod_Handle hMod)
+void EnetRm_close(EnetRm_Handle hRm)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
-    EnetRm_ResPrms *resInfo = &hRm->cfg.resPartInfo;
-    EnetQ *pQ;
-    uint32_t txFreeResCnt = 0U;
-    uint32_t rxFreeResCnt[ENET_RM_NUM_RXCHAN_MAX];
-    uint32_t macFreeResCnt = 0U;
-    uint32_t i;
-    uint32_t j;
+    ENETTRACE_VERBOSE("%s: Close module\n", hRm->name);
 
-    for (j = 0U; j < hRm->numRxCh; j++)
+    if (hRm->magic == ENET_MAGIC)
     {
-        rxFreeResCnt[j] = 0U;
-    }
-
-    /* Assert all internally allocated flows are freed */
-    for (j = 0U; j < hRm->numRxCh; j++)
-    {
-        Enet_assert((hRm->rxObj[j].internalAllocCoreId == ENET_RM_INVALIDCORE) &&
-                    (hRm->rxObj[j].internalAllocCount == 0U));
-    }
-    Enet_assert(resInfo->numCores <= ENET_ARRAYSIZE(resInfo->coreResInfo));
-
-    for (i = 0U; i < resInfo->numCores; i++)
-    {
-        EnetRm_detachCore(hRm, ENET_COREID_2_COREKEY(resInfo->coreResInfo[i].coreId));
-
-        pQ = EnetRm_getFreeQ(&hRm->txObj.txResTbl, resInfo->coreResInfo[i].coreId);
-        if (NULL != pQ)
-        {
-            txFreeResCnt += EnetQueue_getQCount(pQ);
-        }
+        EnetRm_ResPrms *resInfo = &hRm->cfg.resPartInfo;
+        EnetQ *pQ;
+        uint32_t txFreeResCnt = 0U;
+        uint32_t rxFreeResCnt[ENET_RM_NUM_RXCHAN_MAX];
+        uint32_t macFreeResCnt = 0U;
+        uint32_t i;
+        uint32_t j;
 
         for (j = 0U; j < hRm->numRxCh; j++)
         {
-            pQ = EnetRm_getFreeQ(&hRm->rxObj[j].rxResTbl, resInfo->coreResInfo[i].coreId);
+            rxFreeResCnt[j] = 0U;
+        }
+
+        /* Assert all internally allocated flows are freed */
+        for (j = 0U; j < hRm->numRxCh; j++)
+        {
+            Enet_assert((hRm->rxObj[j].internalAllocCoreId == ENET_RM_INVALIDCORE) &&
+                        (hRm->rxObj[j].internalAllocCount == 0U));
+        }
+        Enet_assert(resInfo->numCores <= ENET_ARRAYSIZE(resInfo->coreResInfo));
+
+        for (i = 0U; i < resInfo->numCores; i++)
+        {
+            EnetRm_detachCore(hRm, ENET_COREID_2_COREKEY(resInfo->coreResInfo[i].coreId));
+
+            pQ = EnetRm_getFreeQ(&hRm->txObj.txResTbl, resInfo->coreResInfo[i].coreId);
             if (NULL != pQ)
             {
-                rxFreeResCnt[j] += EnetQueue_getQCount(pQ);
+                txFreeResCnt += EnetQueue_getQCount(pQ);
+            }
+
+            for (j = 0U; j < hRm->numRxCh; j++)
+            {
+                pQ = EnetRm_getFreeQ(&hRm->rxObj[j].rxResTbl, resInfo->coreResInfo[i].coreId);
+                if (NULL != pQ)
+                {
+                    rxFreeResCnt[j] += EnetQueue_getQCount(pQ);
+                }
+            }
+
+            pQ = EnetRm_getFreeQ(&hRm->macObj.macTbl, resInfo->coreResInfo[i].coreId);
+            if (NULL != pQ)
+            {
+                macFreeResCnt += EnetQueue_getQCount(pQ);
             }
         }
 
-        pQ = EnetRm_getFreeQ(&hRm->macObj.macTbl, resInfo->coreResInfo[i].coreId);
-        if (NULL != pQ)
+        Enet_assert(txFreeResCnt == hRm->txObj.resCnt);
+        Enet_assert(macFreeResCnt == hRm->macObj.resCnt);
+
+        for (j = 0U; j < hRm->numRxCh; j++)
         {
-            macFreeResCnt += EnetQueue_getQCount(pQ);
+            Enet_assert(rxFreeResCnt[j] == hRm->rxObj[j].resCnt);
         }
+        hRm->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hRm->name);
     }
-
-    Enet_assert(txFreeResCnt == hRm->txObj.resCnt);
-    Enet_assert(macFreeResCnt == hRm->macObj.resCnt);
-
-    for (j = 0U; j < hRm->numRxCh; j++)
+    else
     {
-        Enet_assert(rxFreeResCnt[j] == hRm->rxObj[j].resCnt);
+        ENETTRACE_ERR("%s: Module is not open\n", hRm->name);
     }
 }
 
-int32_t EnetRm_ioctl(EnetMod_Handle hMod,
+int32_t EnetRm_ioctl(EnetRm_Handle hRm,
                      uint32_t cmd,
                      Enet_IoctlPrms *prms)
 {
-    EnetRm_Handle hRm = (EnetRm_Handle)hMod;
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
+    bool isRmOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hRm->name, cmd, prms);
+
+    isRmOpen = (hRm->magic == ENET_MAGIC) ? true : false;
+    if (isRmOpen == true)
+    {
+        status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate Enet RM IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_GENERIC)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Validate Enet RM IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_GENERIC)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gEnetRm_ioctlValidate,
-                                        ENET_ARRAYSIZE(gEnetRm_ioctlValidate));
-        }
-        else
-        {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gEnetRm_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gEnetRm_privIoctlValidate));
-        }
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gEnetRm_ioctlValidate,
+                                            ENET_ARRAYSIZE(gEnetRm_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gEnetRm_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gEnetRm_privIoctlValidate));
+            }
 
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
-    }
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
-    {
-        EnetRmIoctlHandler * ioctlHandlerFxn;
+        if (status == ENET_SOK)
+        {
+            EnetRmIoctlHandler * ioctlHandlerFxn;
 
-        ioctlHandlerFxn = EnetRm_getIoctlHandlerFxn(cmd, EnetRmIoctlHandlerRegistry, ENET_ARRAYSIZE(EnetRmIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hRm, prms);
+            ioctlHandlerFxn = EnetRm_getIoctlHandlerFxn(cmd, EnetRmIoctlHandlerRegistry, ENET_ARRAYSIZE(EnetRmIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hRm, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hRm->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hRm->name);
     }
 
     return status;

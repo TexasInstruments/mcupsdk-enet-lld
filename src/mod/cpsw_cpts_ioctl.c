@@ -106,7 +106,7 @@ static void CpswCpts_clearEventMemPools(CpswCpts_Handle hCpts);
 
 static int32_t CpswCpts_checkTsCompCompat(CSL_cptsRegs *regs);
 
-static int32_t CpswCpts_checkGenfEstfErrata(EnetMod_Handle hMod,
+static int32_t CpswCpts_checkGenfEstfErrata(CpswCpts_Handle hCpts,
                                             CSL_cptsRegs *regs,
                                             uint32_t index,
                                             bool isGenf);
@@ -570,10 +570,8 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_GENF(CpswCpts_Handle hCpts, C
     const CpswCpts_SetFxnGenInArgs *inArgs = (const CpswCpts_SetFxnGenInArgs *)prms->inArgs;
     uint64_t adjVal;
     int32_t status = ENET_SOK;
-    EnetMod_Handle hMod;
 
-    hMod = (EnetMod_Handle) hCpts;
-    status = CpswCpts_checkGenfEstfErrata(hMod, regs, inArgs->index, true);
+    status = CpswCpts_checkGenfEstfErrata(hCpts, regs, inArgs->index, true);
     ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set GENFn due to reconfig errata\n");
 
     if (status == ENET_SOK)
@@ -646,10 +644,8 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_ESTF(CpswCpts_Handle hCpts, C
     CpswCpts_SetFxnGenInArgs *inArgs = (CpswCpts_SetFxnGenInArgs *)prms->inArgs;
     uint64_t adjVal;
     int32_t status = ENET_SOK;
-    EnetMod_Handle hMod;
 
-    hMod = (EnetMod_Handle) hCpts;
-    status = CpswCpts_checkGenfEstfErrata(hMod, regs, inArgs->index, false);
+    status = CpswCpts_checkGenfEstfErrata(hCpts, regs, inArgs->index, false);
     ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set EstFn due to reconfig errata\n");
 
     if (status == ENET_SOK)
@@ -1007,7 +1003,7 @@ static int32_t CpswCpts_checkTsCompCompat(CSL_cptsRegs *regs)
     return status;
 }
 
-static int32_t CpswCpts_checkGenfEstfErrata(EnetMod_Handle hMod,
+static int32_t CpswCpts_checkGenfEstfErrata(CpswCpts_Handle hCpts,
                                             CSL_cptsRegs *regs,
                                             uint32_t index,
                                             bool isGenf)
@@ -1015,7 +1011,7 @@ static int32_t CpswCpts_checkGenfEstfErrata(EnetMod_Handle hMod,
     uint32_t length = 0U;
     int32_t status = ENET_SOK;
 
-    if (ENET_ERRATA_IS_EN(hMod->errata, CPSW_CPTS_ERRATA_GENFN_RECONFIG))
+    if (ENET_ERRATA_IS_EN(hCpts->errata, CPSW_CPTS_ERRATA_GENFN_RECONFIG))
     {
         if (isGenf == true)
         {

@@ -45,7 +45,6 @@
 #include <drivers/hw_include/hw_types.h>
 #include <include/core/enet_base.h>
 #include <include/core/enet_utils.h>
-#include <include/core/enet_mod.h>
 #include <include/per/icssg.h>
 #include <src/per/icssg_utils.h>
 #include <priv/core/enet_base_priv.h>

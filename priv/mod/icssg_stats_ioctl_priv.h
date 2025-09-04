@@ -70,20 +70,20 @@ extern "C" {
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
-int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(EnetMod_Handle hMod,
+int32_t  IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_MACPORT_STATS(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 
 
-int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(EnetMod_Handle hMod,
+int32_t IcssgStats_ioctl_handler_ENET_STATS_IOCTL_RESET_HOSTPORT_STATS(IcssgStats_Handle hStats,
                                                                         uint32_t cmd,
                                                                         Enet_IoctlPrms *prms);
 

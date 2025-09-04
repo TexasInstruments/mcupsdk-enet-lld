@@ -182,31 +182,8 @@ typedef struct Cpsw_Obj_s
     /*! DMA handle */
     EnetDma_Handle hDma;
 
-    /*! Host port handle */
-    EnetMod_Handle hHostPort;
-
-    /*! MAC port handles */
-    EnetMod_Handle hMacPort[CPSW_MAC_PORT_NUM];
-
     /*! PHY handles */
     EnetPhy_Handle hPhy[CPSW_MAC_PORT_NUM];
-
-    /*! ALE handle */
-    EnetMod_Handle hAle;
-
-    /*! CPTS handle */
-    EnetMod_Handle hCpts;
-
-    /*! MDIO handle */
-    EnetMod_Handle hMdio;
-
-    /*! Network statistics handle */
-    EnetMod_Handle hStats;
-
-#if ENET_CFG_IS_ON(RM_PRESENT)
-    /*! Resource Manager handle */
-    EnetMod_Handle hRm;
-#endif
 
     /*! Core on which #Enet_open() is executed */
     uint32_t selfCoreId;

@@ -1035,23 +1035,12 @@ int32_t Icssg_open(EnetPer_Handle hPer,
                    "%s: Invalid ICSSG peripheral config params size %u (expected %u)\r\n",
                    ENET_PER_NAME(hIcssg), cfgSize, sizeof(Icssg_Cfg));
 
-    /* Save EnetMod and EnetPhy handles for easy access */
-    hIcssg->hTimeSync = ENET_MOD(&hIcssg->timeSyncObj);
-    hIcssg->hStats = ENET_MOD(&hIcssg->statsObj);
-    hIcssg->hMdio  = ENET_MOD(&hIcssg->mdioObj);
-    hIcssg->hRm    = ENET_MOD(&hIcssg->rmObj);
-    hIcssg->hTas[0] = ENET_MOD(&hIcssg->tasObj[0]);
-    if (enetType == ENET_ICSSG_SWITCH)
-    {
-        hIcssg->hTas[1] = ENET_MOD(&hIcssg->tasObj[1]);
-    }
+    /* save hIcssg handle in Tas Obj */
+    hIcssg->tasObj[0].hIcssg = hIcssg;
+    hIcssg->tasObj[1].hIcssg = hIcssg;
 
-    /* save hIcssg handle in hTas */
-    hIcssg->tasObj[0].hIcssg = (void*)hIcssg;
-    hIcssg->tasObj[1].hIcssg = (void*)hIcssg;
-
-    /* save hIcssg handle in hTimeSync */
-    hIcssg->timeSyncObj.hIcssg = (void*)hIcssg;
+    /* save hIcssg handle in timesync obj */
+    hIcssg->timeSyncObj.hIcssg = hIcssg;
 
     hIcssg->enetPer.enetType  = enetType;
     hIcssg->enetPer.instId    = instId;
@@ -1128,7 +1117,7 @@ int32_t Icssg_open(EnetPer_Handle hPer,
 
         if (status == ENET_SOK)
         {
-            status = EnetMod_open(hIcssg->hRm, enetType, instId, &rmCfg, sizeof(rmCfg));
+            status = EnetRm_open(&hIcssg->rmObj, enetType, instId, &rmCfg);
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: failed to open RM: %d\r\n",
                              ENET_PER_NAME(hIcssg), status);
@@ -1182,11 +1171,9 @@ int32_t Icssg_open(EnetPer_Handle hPer,
     /* Open Stats */
     if (status == ENET_SOK)
     {
-        status = EnetMod_open(hIcssg->hStats,
+        status = IcssgStats_open(&hIcssg->statsObj,
                               enetType,
-                              instId,
-                              NULL,
-                              0U);
+                              instId);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: failed to initialize stats: %d\r\n",
                          ENET_PER_NAME(hIcssg), status);
@@ -1199,11 +1186,10 @@ int32_t Icssg_open(EnetPer_Handle hPer,
         {
             if (!hIcssg->pruss->iep0InUse)
             {
-                status = EnetMod_open(hIcssg->hTimeSync,
+                status = IcssgTimeSync_open(&hIcssg->timeSyncObj,
                                       enetType,
                                       instId,
-                                      &icssgCfg->timeSyncCfg,
-                                      sizeof(icssgCfg->timeSyncCfg));
+                                      &icssgCfg->timeSyncCfg);
                 ENETTRACE_ERR_IF((status != ENET_SOK),
                                  "%s: failed to initialize time sync: %d\r\n",
                                  ENET_PER_NAME(hIcssg), status);
@@ -1221,23 +1207,22 @@ int32_t Icssg_open(EnetPer_Handle hPer,
             {
                 ENETTRACE_WARN("%s: TimeSync cannot be enabled, IEP0 already in use\r\n",
                                ENET_PER_NAME(hIcssg));
-                hIcssg->hTimeSync = NULL;
+                hIcssg->timeSyncObj.magic= ENET_NO_MAGIC;
             }
         }
         else
         {
-            hIcssg->hTimeSync = NULL;
+            hIcssg->timeSyncObj.magic = ENET_NO_MAGIC;
         }
     }
 
     /* Open MDIO */
     if (status == ENET_SOK)
     {
-        status = EnetMod_open(hIcssg->hMdio,
+        status = Mdio_open(&hIcssg->mdioObj,
                               enetType,
                               instId,
-                              &icssgCfg->mdioCfg,
-                              sizeof(icssgCfg->mdioCfg));
+                              &icssgCfg->mdioCfg);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: failed to open MDIO: %d\r\n",
                          ENET_PER_NAME(hIcssg), status);
@@ -1246,11 +1231,9 @@ int32_t Icssg_open(EnetPer_Handle hPer,
     /* Open Tas */
     if (status == ENET_SOK)
     {
-        status = EnetMod_open(hIcssg->hTas[0],
+        status = IcssgTas_open(&hIcssg->tasObj[0],
                               enetType,
-                              instId,
-                              NULL,
-                              0);
+                              instId);
         ENETTRACE_ERR_IF((status != ENET_SOK),
                          "%s: failed to initialize tas[0]: %d\n",
                          ENET_PER_NAME(hIcssg), status);
@@ -1258,11 +1241,9 @@ int32_t Icssg_open(EnetPer_Handle hPer,
         if ((status == ENET_SOK) &&
             (enetType == ENET_ICSSG_SWITCH))
         {
-            status = EnetMod_open(hIcssg->hTas[1],
+            status = IcssgTas_open(&hIcssg->tasObj[1],
                                   enetType,
-                                  instId,
-                                  NULL,
-                                  0);
+                                  instId);
             ENETTRACE_ERR_IF((status != ENET_SOK),
                              "%s: failed to initialize tas[1]: %d\n",
                              ENET_PER_NAME(hIcssg), status);
@@ -1337,7 +1318,7 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
 
             case ENET_IOCTL_MDIO_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hMdio, cmd, prms);
+                status = Mdio_ioctl(&hIcssg->mdioObj, cmd, prms);
                 ENETTRACE_ERR_IF((status != ENET_SOK),
                                  "%s: failed to run MDIO IOCTL 0x%08x: %d\r\n",
                                  ENET_PER_NAME(hIcssg), cmd, status);
@@ -1346,7 +1327,7 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
 
             case ENET_IOCTL_RM_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hRm, cmd, prms);
+                status = EnetRm_ioctl(&hIcssg->rmObj, cmd, prms);
                 ENETTRACE_ERR_IF((status != ENET_SOK),
                                  "%s: failed to run RM IOCTL 0x%08x: %d\r\n",
                                  ENET_PER_NAME(hIcssg), cmd, status);
@@ -1355,9 +1336,9 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
 
             case ENET_IOCTL_TIMESYNC_BASE:
             {
-                if (hIcssg->hTimeSync != NULL)
+                if (hIcssg->timeSyncObj.magic != ENET_NO_MAGIC)
                 {
-                    status = EnetMod_ioctl(hIcssg->hTimeSync, cmd, prms);
+                    status = IcssgTimeSync_ioctl(&hIcssg->timeSyncObj, cmd, prms);
                 }
                 else
                 {
@@ -1373,14 +1354,14 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
                  * MAC port IOCTL input args have macPort as their first member */
                 EnetTas_GenericInArgs *inArgs = (EnetTas_GenericInArgs *)prms->inArgs;
                 uint32_t portNum = ENET_MACPORT_NORM(inArgs->macPort);
-                EnetMod_Handle hTas;
+                IcssgTas_Handle hTas;
 
-                if (portNum < ENET_ARRAYSIZE(hIcssg->hTas))
+                if (portNum < ENET_ARRAYSIZE(&hIcssg->tasObj))
                 {
-                    hTas = hIcssg->hTas[portNum];
+                    hTas = &hIcssg->tasObj[portNum];
                     if (hTas != NULL)
                     {
-                        status = EnetMod_ioctl(hTas, cmd, prms);
+                        status = IcssgTas_ioctl(hTas, cmd, prms);
                     }
                     else
                     {
@@ -1417,7 +1398,7 @@ int32_t Icssg_ioctl(EnetPer_Handle hPer,
 
             case ENET_IOCTL_STATS_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hStats, cmd, prms);
+                status = IcssgStats_ioctl(&hIcssg->statsObj, cmd, prms);
             }
             break;
 
@@ -1810,14 +1791,11 @@ void Icssg_closeDma(Icssg_Handle hIcssg)
 void Icssg_close(EnetPer_Handle hPer)
 {
     Icssg_Handle hIcssg = (Icssg_Handle)hPer;
-    uintptr_t key;
 
     ENETTRACE_DBG("%s: close peripheral\r\n", ENET_PER_NAME(hIcssg));
 
-    key = EnetOsal_disableAllIntr();
-
     /* Close MDIO module */
-    EnetMod_close(hIcssg->hMdio);
+    Mdio_close(&hIcssg->mdioObj);
 
     Icssg_unregisterMdioLinkIntr(hIcssg);
 
@@ -1828,34 +1806,33 @@ void Icssg_close(EnetPer_Handle hPer)
     }
 
     /* Close TimeSync module, if opened */
-    if (hIcssg->hTimeSync != NULL)
+    if (hIcssg->timeSyncObj.magic != ENET_NO_MAGIC)
     {
-        EnetMod_close(hIcssg->hTimeSync);
+        IcssgTimeSync_close(&hIcssg->timeSyncObj);
         hIcssg->pruss->iep0InUse = false;
     }
 
     /* Close Tas module, if opened */
-    if (hIcssg->hTas[0] != NULL)
+    if (&hIcssg->tasObj[0] != NULL)
     {
-        EnetMod_close(hIcssg->hTas[0]);
+        IcssgTas_close(&hIcssg->tasObj[0]);
     }
 
     /* Close Tas module, if opened */
-    if (hIcssg->hTas[1] != NULL)
+    if (&hIcssg->tasObj[1] != NULL)
     {
-        EnetMod_close(hIcssg->hTas[1]);
+        IcssgTas_close(&hIcssg->tasObj[1]);
     }
 
     /* Close DMA */
     Icssg_closeDma(hIcssg);
 
     /* Close RM */
-    EnetMod_close(hIcssg->hRm);
+    EnetRm_close(&hIcssg->rmObj);
 
     /* Close statistics module */
-    EnetMod_close(hIcssg->hStats);
+    IcssgStats_close(&hIcssg->statsObj);
 
-    EnetOsal_restoreAllIntr(key);
 }
 
 static void Icssg_setPromiscMode(Icssg_Handle hIcssg,
@@ -2529,7 +2506,7 @@ static int32_t Icssg_openEnetPhy(Icssg_Handle hIcssg,
         {
             if (hIcssg->hPhy[portNum] == NULL)
             {
-                hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, hIcssg->hMdio);
+                hIcssg->hPhy[portNum] = EnetPhy_open(phyCfg, phyMii, phyLinkCfg, macPortCaps, hPhyMdio, &hIcssg->mdioObj);
                 if (hIcssg->hPhy[portNum] == NULL)
                 {
                     ENETTRACE_ERR("%s: Port %u: failed to open PHY\r\n", ENET_PER_NAME(hIcssg), portId);
@@ -2867,7 +2844,7 @@ static int32_t Icssg_validateFlowId(Icssg_Handle hIcssg,
         rmInArgs.flowIdx = flowIdx;
 
         ENET_IOCTL_SET_IN_ARGS(&prms, &rmInArgs);
-        ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_VALIDATE_RX_FLOW, &prms, status);
+        ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_VALIDATE_RX_FLOW, &prms, status);
     }
 
     return status;
@@ -3916,7 +3893,7 @@ static void Icssg_mdioIsr(uintptr_t arg)
 {
     Icssg_Handle hIcssg = (Icssg_Handle )arg;
     PRUICSS_Handle hPruIcss = hIcssg->pruss->hPruss;
-    EnetMod_Handle hMdio = hIcssg->hMdio;
+    Mdio_Handle hMdio = &hIcssg->mdioObj;
     Enet_IoctlPrms prms;
     Mdio_Callbacks callbacks =
     {
@@ -3929,7 +3906,7 @@ static void Icssg_mdioIsr(uintptr_t arg)
     int32_t status, pruEvtNum = 0;
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &callbacks);
-    status = EnetMod_ioctlFromIsr(hMdio, MDIO_IOCTL_HANDLE_INTR, &prms);
+    status = Mdio_ioctl(hMdio, MDIO_IOCTL_HANDLE_INTR, &prms);
 
     /* TODO: Add ISR safe error:
      * ("Failed to handle MDIO intr: %d\r\n", status); */
@@ -4751,7 +4728,7 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_ATTACH_CORE(EnetPer_Handle hPer,
     Enet_assert(cmd == ENET_PER_IOCTL_ATTACH_CORE);
 
     ENET_IOCTL_SET_INOUT_ARGS(&rmPrms, &coreId, &outArgs->coreKey);
-    ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_ATTACH, &rmPrms, status);
+    ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_ATTACH, &rmPrms, status);
     if (status == ENET_SOK)
     {
         /* Get MTU values */
@@ -4791,7 +4768,7 @@ int32_t Icssg_ioctl_handler_ENET_PER_IOCTL_DETACH_CORE(EnetPer_Handle hPer,
     Enet_assert(cmd == ENET_PER_IOCTL_DETACH_CORE);
 
     ENET_IOCTL_SET_IN_ARGS(&rmPrms, &coreKey);
-    ENET_RM_PRIV_IOCTL(hIcssg->hRm, ENET_RM_IOCTL_DETACH, &rmPrms, status);
+    ENET_RM_PRIV_IOCTL(&hIcssg->rmObj, ENET_RM_IOCTL_DETACH, &rmPrms, status);
     ENETTRACE_ERR_IF((status != ENET_SOK),
                         "%s: failed to detach core: %d\r\n",
                         ENET_PER_NAME(hIcssg), status);
@@ -5274,21 +5251,21 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
 
             case ENET_IOCTL_MDIO_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hMdio, MDIO_IOCTL_REGISTER_HANDLER, prms);
+                status = Mdio_ioctl(&hIcssg->mdioObj, MDIO_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 
             case ENET_IOCTL_RM_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hRm, ENET_RM_IOCTL_REGISTER_HANDLER, prms);
+                status = EnetRm_ioctl(&hIcssg->rmObj, ENET_RM_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 
             case ENET_IOCTL_TIMESYNC_BASE:
             {
-                if (hIcssg->hTimeSync != NULL)
+                if (hIcssg->timeSyncObj.magic != ENET_NO_MAGIC)
                 {
-                    status = EnetMod_ioctl(hIcssg->hTimeSync, ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER, prms);
+                    status = IcssgTimeSync_ioctl(&hIcssg->timeSyncObj, ICSSG_TIMESYNC_IOCTL_REGISTER_HANDLER, prms);
                 }
                 else
                 {
@@ -5310,17 +5287,17 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
                 */
                 Enet_MacPort macPort = ENET_MAC_PORT_FIRST;
                 uint32_t portNum = ENET_MACPORT_NORM(macPort);
-                EnetMod_Handle hTas;
+                IcssgTas_Handle hTas;
 
-                Enet_assert(portNum < ENET_ARRAYSIZE(hIcssg->hTas));
+                Enet_assert(portNum < ENET_ARRAYSIZE(&hIcssg->tasObj));
 
-                hTas = hIcssg->hTas[portNum];
+                hTas = &hIcssg->tasObj[portNum];
                 if (hTas != NULL)
                 {
                     tasInArgs.commonInArgs.macPort = macPort;
                     tasInArgs.registerHandler = *ioctlHandlerRegister;
                     ENET_IOCTL_SET_IN_ARGS(&tasPrms, &tasInArgs);
-                    status = EnetMod_ioctl(hTas, ICSSG_TAS_IOCTL_REGISTER_HANDLER, &tasPrms);
+                    status = IcssgTas_ioctl(hTas, ICSSG_TAS_IOCTL_REGISTER_HANDLER, &tasPrms);
                 }
                 else
                 {
@@ -5348,7 +5325,7 @@ int32_t Icssg_registerIoctlHandler(EnetPer_Handle hPer,
 
             case ENET_IOCTL_STATS_BASE:
             {
-                status = EnetMod_ioctl(hIcssg->hStats, ICSSG_STATS_IOCTL_REGISTER_HANDLER, prms);
+                status = IcssgStats_ioctl(&hIcssg->statsObj, ICSSG_STATS_IOCTL_REGISTER_HANDLER, prms);
             }
             break;
 

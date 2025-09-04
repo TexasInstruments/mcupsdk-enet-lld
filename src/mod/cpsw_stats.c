@@ -272,89 +272,102 @@ static CpswStatsIoctlHandlerRegistry_t CpswStatsIoctlHandlerRegistry[] =
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-int32_t CpswStats_open(EnetMod_Handle hMod,
+int32_t CpswStats_open(CpswStats_Handle hStats,
                        Enet_Type enetType,
-                       uint32_t instId,
-                       const void *cfg,
-                       uint32_t cfgSize)
+                       uint32_t instId)
 {
-    CpswStats_Handle hStats = (CpswStats_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    CSL_CPSW_PORTSTAT portStat;
-    uint32_t i;
-#if ENET_CFG_IS_ON(DEV_ERROR)
     int32_t status = ENET_SOK;
-#endif
 
-    Enet_devAssert(cfgSize == 0U,
-                   "Invalid stats config params size %u (expected %u)\n",
-                   cfgSize, 0U);
+    ENETTRACE_VERBOSE("%s: open module\n", hStats->name);
 
-    Enet_devAssert(regs != NULL, "CPSW stats regs address is not valid\n");
+    if (hStats->magic == ENET_NO_MAGIC)
+    {
+        hStats->virtAddr  = (void *)EnetUtils_physToVirt(hStats->physAddr, NULL);
+        hStats->virtAddr2 = (void *)EnetUtils_physToVirt(hStats->physAddr2, NULL);
 
-    /* Check supported stats module versions */
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
+        CSL_CPSW_PORTSTAT portStat;
+        uint32_t i;
+
+        Enet_devAssert(regs != NULL, "CPSW stats regs address is not valid\n");
+
+        /* Check supported stats module versions */
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    status = CpswStats_isSupported(regs);
-    Enet_devAssert(status == ENET_SOK, "Stats version is not supported\n");
+        status = CpswStats_isSupported(regs);
+        Enet_devAssert(status == ENET_SOK, "Stats version is not supported\n");
 #endif
 
-    memset(&portStat, 0, sizeof(CSL_CPSW_PORTSTAT));
+        memset(&portStat, 0, sizeof(CSL_CPSW_PORTSTAT));
 
-    /* For now, use statistics block memories from stats module object */
-    hStats->hostPortStats = &hStats->hostPortStatsMem;
-    hStats->macPortStats = &hStats->macPortStatsMem[0U];
-    hStats->macPortNum = ENET_ARRAYSIZE(hStats->macPortStatsMem);
+        /* For now, use statistics block memories from stats module object */
+        hStats->hostPortStats = &hStats->hostPortStatsMem;
+        hStats->macPortStats = &hStats->macPortStatsMem[0U];
+        hStats->macPortNum = ENET_ARRAYSIZE(hStats->macPortStatsMem);
 
-    hStats->enetType = enetType;
+        hStats->enetType = enetType;
 
-    /* Enable statistics on all applicable ports */
-    portStat.p0StatEnable = true;
-    if (enetType == ENET_CPSW_9G)
-    {
-        portStat.p1StatEnable = true;
-        portStat.p2StatEnable = true;
-        portStat.p3StatEnable = true;
-        portStat.p4StatEnable = true;
-        portStat.p5StatEnable = true;
-        portStat.p6StatEnable = true;
-        portStat.p7StatEnable = true;
-        portStat.p8StatEnable = true;
-    }
-    else if (enetType == ENET_CPSW_5G)
-    {
-        portStat.p1StatEnable = true;
-        portStat.p2StatEnable = true;
-        portStat.p3StatEnable = true;
-        portStat.p4StatEnable = true;
-    }
-    else if (enetType == ENET_CPSW_3G)
-    {
-        portStat.p1StatEnable = true;
-        portStat.p2StatEnable = true;
+        /* Enable statistics on all applicable ports */
+        portStat.p0StatEnable = true;
+        if (enetType == ENET_CPSW_9G)
+        {
+            portStat.p1StatEnable = true;
+            portStat.p2StatEnable = true;
+            portStat.p3StatEnable = true;
+            portStat.p4StatEnable = true;
+            portStat.p5StatEnable = true;
+            portStat.p6StatEnable = true;
+            portStat.p7StatEnable = true;
+            portStat.p8StatEnable = true;
+        }
+        else if (enetType == ENET_CPSW_5G)
+        {
+            portStat.p1StatEnable = true;
+            portStat.p2StatEnable = true;
+            portStat.p3StatEnable = true;
+            portStat.p4StatEnable = true;
+        }
+        else if (enetType == ENET_CPSW_3G)
+        {
+            portStat.p1StatEnable = true;
+            portStat.p2StatEnable = true;
+        }
+        else
+        {
+            portStat.p1StatEnable = true;
+        }
+
+        CSL_CPSW_setPortStatsEnableReg(regs, &portStat);
+
+        /* Clear all statistics counters */
+        CpswStats_resetHostStats(hStats);
+        for (i = 0U; i < hStats->macPortNum; i++)
+        {
+            CpswStats_resetMacStats(hStats, ENET_MACPORT_DENORM(i));
+        }
+        if (status == ENET_SOK)
+        {
+            hStats->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hStats->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hStats->name, status);
+            hStats->magic = ENET_NO_MAGIC;
+        }
     }
     else
     {
-        portStat.p1StatEnable = true;
+        ENETTRACE_ERR("%s: Module is already open\n", hStats->name);
+        status = ENET_EALREADYOPEN;
     }
 
-    CSL_CPSW_setPortStatsEnableReg(regs, &portStat);
-
-    /* Clear all statistics counters */
-    CpswStats_resetHostStats(hStats);
-    for (i = 0U; i < hStats->macPortNum; i++)
-    {
-        CpswStats_resetMacStats(hStats, ENET_MACPORT_DENORM(i));
-    }
-
-    return ENET_SOK;
+    return status;
 }
 
-int32_t CpswStats_rejoin(EnetMod_Handle hMod,
+int32_t CpswStats_rejoin(CpswStats_Handle hStats,
                          Enet_Type enetType,
                          uint32_t instId)
 {
-    CpswStats_Handle hStats = (CpswStats_Handle)hMod;
-
     /* For now, use statistics block memories from stats module object */
     hStats->hostPortStats = &hStats->hostPortStatsMem;
     hStats->macPortStats = &hStats->macPortStatsMem[0U];
@@ -368,64 +381,126 @@ int32_t CpswStats_rejoin(EnetMod_Handle hMod,
     return ENET_SOK;
 }
 
-void CpswStats_close(EnetMod_Handle hMod)
+void CpswStats_close(CpswStats_Handle hStats)
 {
-    /* Nothing to do */
-}
+    ENETTRACE_VERBOSE("%s: Close module\n", hStats->name);
 
-void CpswStats_saveCtxt(EnetMod_Handle hMod)
-{
-    CpswStats_close(hMod);
-}
-
-int32_t CpswStats_restoreCtxt(EnetMod_Handle hMod,
-                              Enet_Type enetType,
-                              uint32_t instId,
-                              const void *cfg,
-                              uint32_t cfgSize)
-{
-    int32_t status = ENET_SOK;
-    status = CpswStats_open(hMod, enetType, instId, cfg, cfgSize);
-    return status;
-}
-int32_t CpswStats_ioctl(EnetMod_Handle hMod,
-                        uint32_t cmd,
-                        Enet_IoctlPrms *prms)
-{
-    CpswStats_Handle hStats = (CpswStats_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    int32_t status = ENET_SOK;
-
-#if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate CPSW statistics IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+    if (hStats->magic == ENET_MAGIC)
     {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        /* Nothing to do */
+        hStats->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hStats->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hStats->name);
+    }
+}
+
+void CpswStats_saveCtxt(CpswStats_Handle hStats)
+{
+    ENETTRACE_VERBOSE("%s: Close module\n", hStats->name);
+
+    bool isHostPortOpen = (hStats->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen)
+    {
+        CpswStats_close(hStats);
+        hStats->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hStats->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hStats->name);
+    }
+}
+
+int32_t CpswStats_restoreCtxt(CpswStats_Handle hStats,
+                              Enet_Type enetType,
+                              uint32_t instId)
+{
+    int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hStats->name);
+
+    bool isHostPortOpen = (hStats->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen == false)
+    {
+        /* Open the host port*/
+        status = CpswStats_open(hStats, enetType, instId);;
+
+        if (status == ENET_SOK)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswStats_ioctlValidate,
-                                        ENET_ARRAYSIZE(gCpswStats_ioctlValidate));
+            hStats->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hStats->name);
         }
         else
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswStats_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gCpswStats_privIoctlValidate));
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hStats->name, status);
+            hStats->magic = ENET_NO_MAGIC;
         }
-
-        ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
     }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hStats->name);
+        status = ENET_EALREADYOPEN;
+    }
+    return status;
+}
+int32_t CpswStats_ioctl(CpswStats_Handle hStats,
+                        uint32_t cmd,
+                        Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_EFAIL;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hMod->name, cmd, prms);
+
+    bool isStatsOpen = (hStats->magic == ENET_MAGIC) ? true : false;
+
+    if (isStatsOpen)
+    {
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
+        status = ENET_SOK;
+
+#if ENET_CFG_IS_ON(DEV_ERROR)
+        /* Validate CPSW statistics IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+        {
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswStats_ioctlValidate,
+                                            ENET_ARRAYSIZE(gCpswStats_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswStats_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gCpswStats_privIoctlValidate));
+            }
+
+            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
+        if (status == ENET_SOK)
+        {
+            CpswStatsIoctlHandler * ioctlHandlerFxn;
+
+            Enet_devAssert(regs != NULL, "CPSW stats regs address is not valid\n");
+
+            ioctlHandlerFxn = CpswStats_getIoctlHandlerFxn(cmd, CpswStatsIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswStatsIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hStats, regs, prms);
+        }
+        if (status != ENET_SOK)
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hStats->name, cmd, status);
+        }
+    }
+    else
     {
-        CpswStatsIoctlHandler * ioctlHandlerFxn;
-
-        Enet_devAssert(regs != NULL, "CPSW stats regs address is not valid\n");
-
-        ioctlHandlerFxn = CpswStats_getIoctlHandlerFxn(cmd, CpswStatsIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswStatsIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hStats, regs, prms);
+        ENETTRACE_ERR("%s: Module is not open\n", hStats->name);
     }
 
     return status;
@@ -458,7 +533,7 @@ static int32_t CpswStats_isSupported(CSL_Xge_cpswRegs *regs)
 
 void CpswStats_resetHostStats(CpswStats_Handle hStats)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
     union CSL_CPSW_STATS portStats;
 
     Enet_devAssert(hStats->hostPortStats != NULL, "Invalid host port stats memory address\n");
@@ -474,7 +549,7 @@ void CpswStats_resetHostStats(CpswStats_Handle hStats)
 void CpswStats_resetMacStats(CpswStats_Handle hStats,
                                     Enet_MacPort macPort)
 {
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->enetMod.virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
     union CSL_CPSW_STATS portStats;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
 

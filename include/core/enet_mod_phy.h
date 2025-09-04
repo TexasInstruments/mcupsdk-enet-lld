@@ -45,7 +45,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 #include <include/phy/enetphy.h>
 
 #ifdef __cplusplus

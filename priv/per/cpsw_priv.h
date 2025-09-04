@@ -168,29 +168,8 @@ typedef struct Cpsw_Obj_s
     /*! CPSW DMA Rx Reserved flow Id */
     uint32_t rsvdFlowId;
 
-    /*! Host port handle */
-    EnetMod_Handle hHostPort;
-
-    /*! MAC port handles */
-    EnetMod_Handle hMacPort[CPSW_MAC_PORT_NUM];
-
     /*! PHY handles */
     EnetPhy_Handle hPhy[CPSW_MAC_PORT_NUM];
-
-    /*! ALE handle */
-    EnetMod_Handle hAle;
-
-    /*! CPTS handle */
-    EnetMod_Handle hCpts;
-
-    /*! MDIO handle */
-    EnetMod_Handle hMdio;
-
-    /*! Network statistics handle */
-    EnetMod_Handle hStats;
-
-    /*! Resource Manager handle */
-    EnetMod_Handle hRm;
 
     /*! Core on which Cpsw_Open() is executed */
     uint32_t selfCoreId;

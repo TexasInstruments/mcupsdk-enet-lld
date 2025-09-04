@@ -101,7 +101,7 @@
 /*                         Structure Declarations                             */
 /* ========================================================================== */
 
-typedef int32_t (MdioIoctlHandler)(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+typedef int32_t (MdioIoctlHandler)(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
 
 typedef struct MdioIoctlHandlerRegistry_s
 {
@@ -122,8 +122,8 @@ static int32_t Mdio_setupNormalMode(CSL_mdioHandle mdioRegs,
 
 static void Mdio_setupStatusChangeMode(CSL_mdioHandle mdioRegs,
                                        const Mdio_Cfg *cfg);
-static int32_t Mdio_ioctl_handler_default(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
-static int32_t Mdio_ioctl_handler_MDIO_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+static int32_t Mdio_ioctl_handler_default(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
+static int32_t Mdio_ioctl_handler_MDIO_IOCTL_REGISTER_HANDLER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms);
 static int32_t Mdio_setIoctlHandlerFxn(uint32_t ioctlCmd,
                                        MdioIoctlHandler *ioctlHandlerFxn,
                                        MdioIoctlHandlerRegistry_t *ioctlRegistryTbl,
@@ -225,204 +225,286 @@ void Mdio_initCfg(Mdio_Cfg *mdioCfg)
     mdioCfg->disableStateMachineOnInit = false;
 }
 
-int32_t Mdio_open(EnetMod_Handle hMod,
+int32_t Mdio_open(Mdio_Handle hMdio,
                   Enet_Type enetType,
                   uint32_t instId,
-                  const void *cfg,
-                  uint32_t cfgSize)
+                  const Mdio_Cfg *mdioCfg)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    const Mdio_Cfg *mdioCfg = (const Mdio_Cfg *)cfg;
-    CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMod->virtAddr;
-    uint32_t cppiClkFreqHz;
-    uint32_t clkdiv;
-    uint32_t ipgRatio;
     int32_t status = ENET_SOK;
 
-    Enet_devAssert(cfgSize == sizeof(Mdio_Cfg),
-                   "Invalid MDIO config params size %u (expected %u)\n",
-                   cfgSize, sizeof(Mdio_Cfg));
+    ENETTRACE_VERBOSE("%s: open module\n", hMdio->name);
 
-    Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
+    if (hMdio->magic == ENET_NO_MAGIC)
+    {
+        hMdio->virtAddr  = (void *)EnetUtils_physToVirt(hMdio->physAddr, NULL);
+        hMdio->virtAddr2 = (void *)EnetUtils_physToVirt(hMdio->physAddr2, NULL);
 
-    /* Check supported MDIO module versions */
+        CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
+        uint32_t cppiClkFreqHz;
+        uint32_t clkdiv;
+        uint32_t ipgRatio;
+        int32_t status = ENET_SOK;
+
+        Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
+
+        /* Check supported MDIO module versions */
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    status = Mdio_isSupported(mdioRegs);
-    Enet_devAssert(status == ENET_SOK, "MDIO version is not supported\n");
+        status = Mdio_isSupported(mdioRegs);
+        Enet_devAssert(status == ENET_SOK, "MDIO version is not supported\n");
 #endif
 
-    hMdio->isMaster = mdioCfg->isMaster;
-    hMdio->mode     = mdioCfg->mode;
+        hMdio->isMaster = mdioCfg->isMaster;
+        hMdio->mode     = mdioCfg->mode;
 
-    if (mdioCfg->c45EnMask != ENET_MDIO_PHY_ADDR_MASK_NONE)
-    {
-        status = ENET_ENOTSUPPORTED;
-        ENETTRACE_WARN("MDIO Clause 45 is not supported\n");
-    }
-
-    /* Perform global MDIO configuration only for module in master role */
-    if (hMdio->isMaster)
-    {
-        /* Compute MDIO clock divider */
-        if (status == ENET_SOK)
+        if (mdioCfg->c45EnMask != ENET_MDIO_PHY_ADDR_MASK_NONE)
         {
-            if (mdioCfg->mdioBusFreqHz != 0U)
-            {
-                cppiClkFreqHz = EnetSoc_getClkFreq(enetType, instId, CPSW_CPPI_CLK);
-
-                clkdiv = (cppiClkFreqHz / mdioCfg->mdioBusFreqHz) - 1U;
-                if (clkdiv > 0xFFFFU)
-                {
-                    ENETTRACE_ERR("unsupported clk div %u (CPPI %u Hz, MDIO bus %u Hz)\n",
-                                  clkdiv, cppiClkFreqHz, mdioCfg->mdioBusFreqHz);
-                    status = ENET_EFAIL;
-                }
-
-                ipgRatio = mdioCfg->mdioBusFreqHz / mdioCfg->phyStatePollFreqHz;
-                if (ipgRatio > 0xFFU)
-                {
-                    ENETTRACE_ERR("unsupported IPG ratio %u (MDIO bus %u Hz, PHY poll %u Hz)\n",
-                                  ipgRatio, mdioCfg->mdioBusFreqHz, mdioCfg->phyStatePollFreqHz);
-                    status = ENET_EFAIL;
-                }
-            }
-            else
-            {
-                ENETTRACE_ERR("invalid MDIO bus freq %u Hz\n", mdioCfg->mdioBusFreqHz);
-                status = ENET_EINVALIDPARAMS;
-            }
+            status = ENET_ENOTSUPPORTED;
+            ENETTRACE_WARN("MDIO Clause 45 is not supported\n");
         }
 
-        /* Setup MDIO mode: normal, monitor or manual mode */
-        if (status == ENET_SOK)
+        /* Perform global MDIO configuration only for module in master role */
+        if (hMdio->isMaster)
         {
-            CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 0U);
-            CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 1U);
-
-            switch (mdioCfg->mode)
+            /* Compute MDIO clock divider */
+            if (status == ENET_SOK)
             {
-                case MDIO_MODE_NORMAL:
+                if (mdioCfg->mdioBusFreqHz != 0U)
                 {
-                    status = Mdio_setupNormalMode(mdioRegs, mdioCfg);
-                }
-                break;
+                    cppiClkFreqHz = EnetSoc_getClkFreq(enetType, instId, CPSW_CPPI_CLK);
 
-                case MDIO_MODE_STATE_CHANGE_MON:
-                {
-                    Mdio_setupStatusChangeMode(mdioRegs, mdioCfg);
-                }
-                break;
+                    clkdiv = (cppiClkFreqHz / mdioCfg->mdioBusFreqHz) - 1U;
+                    if (clkdiv > 0xFFFFU)
+                    {
+                        ENETTRACE_ERR("unsupported clk div %u (CPPI %u Hz, MDIO bus %u Hz)\n",
+                                    clkdiv, cppiClkFreqHz, mdioCfg->mdioBusFreqHz);
+                        status = ENET_EFAIL;
+                    }
 
-                case MDIO_MODE_MANUAL:
-                {
-                    ENETTRACE_INFO("MDIO Manual_Mode enabled\n");
-                    hMdio->mdcHalfCycleNs = (ENET_NUM_NANOSECS_PER_SEC >> 1) / mdioCfg->mdioBusFreqHz; /* HalfTime = 1/(2*Freq). Division by 2, as it is halfCycle */;
-                    Mdio_setupManualMode(mdioRegs);
+                    ipgRatio = mdioCfg->mdioBusFreqHz / mdioCfg->phyStatePollFreqHz;
+                    if (ipgRatio > 0xFFU)
+                    {
+                        ENETTRACE_ERR("unsupported IPG ratio %u (MDIO bus %u Hz, PHY poll %u Hz)\n",
+                                    ipgRatio, mdioCfg->mdioBusFreqHz, mdioCfg->phyStatePollFreqHz);
+                        status = ENET_EFAIL;
+                    }
                 }
-                break;
+                else
+                {
+                    ENETTRACE_ERR("invalid MDIO bus freq %u Hz\n", mdioCfg->mdioBusFreqHz);
+                    status = ENET_EINVALIDPARAMS;
+                }
             }
-        }
 
-        /* Write MDIO configuration */
-        if ((status == ENET_SOK) &&
-            (mdioCfg->mode != MDIO_MODE_MANUAL))
-        {
-            CSL_MDIO_setPollIPG(mdioRegs, (uint8_t)ipgRatio);
-            CSL_MDIO_setClkDivVal(mdioRegs, (uint16_t)clkdiv);
-            if (mdioCfg->disableStateMachineOnInit != true)
+            /* Setup MDIO mode: normal, monitor or manual mode */
+            if (status == ENET_SOK)
             {
-                CSL_MDIO_enableStateMachine(mdioRegs);
+                CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 0U);
+                CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 1U);
+
+                switch (mdioCfg->mode)
+                {
+                    case MDIO_MODE_NORMAL:
+                    {
+                        status = Mdio_setupNormalMode(mdioRegs, mdioCfg);
+                    }
+                    break;
+
+                    case MDIO_MODE_STATE_CHANGE_MON:
+                    {
+                        Mdio_setupStatusChangeMode(mdioRegs, mdioCfg);
+                    }
+                    break;
+
+                    case MDIO_MODE_MANUAL:
+                    {
+                        ENETTRACE_INFO("MDIO Manual_Mode enabled\n");
+                        hMdio->mdcHalfCycleNs = (ENET_NUM_NANOSECS_PER_SEC >> 1) / mdioCfg->mdioBusFreqHz; /* HalfTime = 1/(2*Freq). Division by 2, as it is halfCycle */;
+                        Mdio_setupManualMode(mdioRegs);
+                    }
+                    break;
+                }
             }
+
+            /* Write MDIO configuration */
+            if ((status == ENET_SOK) &&
+                (mdioCfg->mode != MDIO_MODE_MANUAL))
+            {
+                CSL_MDIO_setPollIPG(mdioRegs, (uint8_t)ipgRatio);
+                CSL_MDIO_setClkDivVal(mdioRegs, (uint16_t)clkdiv);
+                if (mdioCfg->disableStateMachineOnInit != true)
+                {
+                    CSL_MDIO_enableStateMachine(mdioRegs);
+                }
 #if ENET_CFG_IS_ON(MDIO_CLAUSE45)
-            if (ENET_FEAT_IS_EN(hMod->features, MDIO_FEATURE_CLAUSE45))
-            {
-                CSL_MDIO_setClause45EnableMask(mdioRegs, mdioCfg->c45EnMask);
-            }
+                if (ENET_FEAT_IS_EN(hMdio->features, MDIO_FEATURE_CLAUSE45))
+                {
+                    CSL_MDIO_setClause45EnableMask(mdioRegs, mdioCfg->c45EnMask);
+                }
 #endif
+            }
+        }
+        if (status == ENET_SOK)
+        {
+            hMdio->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hMdio->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hMdio->name, status);
+            hMdio->magic = ENET_NO_MAGIC;
         }
     }
-
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hMdio->name);
+        status = ENET_EALREADYOPEN;
+    }
     return status;
 }
 
-int32_t Mdio_rejoin(EnetMod_Handle hMod,
+int32_t Mdio_rejoin(Mdio_Handle hMdio,
                     Enet_Type enetType,
                     uint32_t instId)
 {
     return ENET_SOK;
 }
 
-void Mdio_close(EnetMod_Handle hMod)
+void Mdio_close(Mdio_Handle hMdio)
 {
-    Mdio_Handle hMdio = (Mdio_Handle)hMod;
-    CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMod->virtAddr;
-    uint32_t i;
+    ENETTRACE_VERBOSE("%s: Close module\n", hMdio->name);
 
-    Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
-
-    if (hMdio->isMaster)
+    if (hMdio->magic == ENET_MAGIC)
     {
-        for (i = 0U; i < MDIO_PHY_MONITOR_MAX; i++)
-        {
-            CSL_MDIO_disableLinkStatusChangeInterrupt(mdioRegs, i, 0U);
-        }
+        CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
+        uint32_t i;
 
-        CSL_MDIO_disableStatusChangeModeInterrupt(mdioRegs);
-        CSL_MDIO_disableStateMachine(mdioRegs);
-        CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 0U);
-        CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 1U);
+        Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
+
+        if (hMdio->isMaster)
+        {
+            for (i = 0U; i < MDIO_PHY_MONITOR_MAX; i++)
+            {
+                CSL_MDIO_disableLinkStatusChangeInterrupt(mdioRegs, i, 0U);
+            }
+
+            CSL_MDIO_disableStatusChangeModeInterrupt(mdioRegs);
+            CSL_MDIO_disableStateMachine(mdioRegs);
+            CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 0U);
+            CSL_MDIO_clearUnmaskedLinkStatusChangeInt(mdioRegs, 1U);
+        }
+        hMdio->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hMdio->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hMdio->name);
     }
 }
 
-void Mdio_saveCtxt(EnetMod_Handle hMod)
+void Mdio_saveCtxt(Mdio_Handle hMdio)
 {
-    Mdio_close(hMod);
+    ENETTRACE_VERBOSE("%s: Close module\n", hMdio->name);
+
+    bool isMdioOpen = (hMdio->magic == ENET_MAGIC) ? true : false;
+
+    if (isMdioOpen)
+    {
+        Mdio_close(hMdio);
+        hMdio->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hMdio->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hMdio->name);
+    }
 }
 
-int32_t Mdio_restoreCtxt(EnetMod_Handle hMod,
+int32_t Mdio_restoreCtxt(Mdio_Handle hMdio,
                          Enet_Type enetType,
                          uint32_t instId,
-                         const void *cfg,
-                         uint32_t cfgSize)
+                         const Mdio_Cfg *mdioCfg)
 {
     int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hMdio->name);
 
-    status = Mdio_open(hMod, enetType, instId, cfg, cfgSize);
+    bool isMdioOpen = (hMdio->magic == ENET_MAGIC) ? true : false;
+
+    if (isMdioOpen == false)
+    {
+        hMdio->virtAddr  = (void *)EnetUtils_physToVirt(hMdio->physAddr, NULL);
+        hMdio->virtAddr2 = (void *)EnetUtils_physToVirt(hMdio->physAddr2, NULL);
+
+        status = Mdio_open(hMdio, enetType, instId, mdioCfg);
+
+        if (status == ENET_SOK)
+        {
+            hMdio->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hMdio->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hMdio->name, status);
+            hMdio->magic = ENET_NO_MAGIC;
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hMdio->name);
+        status = ENET_EALREADYOPEN;
+    }
 
     return status;
 }
 
-int32_t Mdio_ioctl(EnetMod_Handle hMod,
+int32_t Mdio_ioctl(Mdio_Handle hMdio,
                    uint32_t cmd,
                    Enet_IoctlPrms *prms)
 {
-    CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMod->virtAddr;
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
+    bool isMdioOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hMdio->name, cmd, prms);
+
+    isMdioOpen = (hMdio->magic == ENET_MAGIC) ? true : false;
+    if (isMdioOpen == true)
+    {
+        CSL_mdioHandle mdioRegs = (CSL_mdioHandle)hMdio->virtAddr;
+        status = ENET_SOK;
 
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate MDIO IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
-    {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PRIVATE)
+        /* Validate MDIO IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gMdio_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gMdio_privIoctlValidate));
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PRIVATE)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gMdio_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gMdio_privIoctlValidate));
 
-            ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+                ENETTRACE_ERR_IF(status != ENET_SOK, "IOCTL 0x%08x params are not valid\n", cmd);
+            }
         }
-    }
 #endif
 
-    if (status == ENET_SOK)
+        if (status == ENET_SOK)
+        {
+            MdioIoctlHandler * ioctlHandlerFxn;
+
+            Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
+
+            ioctlHandlerFxn = Mdio_getIoctlHandlerFxn(cmd, MdioIoctlHandlerRegistry, ENET_ARRAYSIZE(MdioIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hMdio, mdioRegs, prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hMdio->name, cmd, status);
+        }
+    }
+    else
     {
-        MdioIoctlHandler * ioctlHandlerFxn;
-
-        Enet_devAssert(mdioRegs != NULL, "MDIO reg address is not valid\n");
-
-        ioctlHandlerFxn = Mdio_getIoctlHandlerFxn(cmd, MdioIoctlHandlerRegistry, ENET_ARRAYSIZE(MdioIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hMod, mdioRegs, prms);
+        ENETTRACE_ERR("%s: Module is not open\n", hMdio->name);
     }
 
     return status;
@@ -572,7 +654,7 @@ static int32_t Mdio_setIoctlHandlerFxn(uint32_t ioctlCmd,
     return status;
 }
 
-static int32_t Mdio_ioctl_handler_MDIO_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+static int32_t Mdio_ioctl_handler_MDIO_IOCTL_REGISTER_HANDLER(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     const Enet_IoctlRegisterHandlerInArgs *inArgs = (const Enet_IoctlRegisterHandlerInArgs *)prms->inArgs;
     int32_t status;
@@ -585,7 +667,7 @@ static int32_t Mdio_ioctl_handler_MDIO_IOCTL_REGISTER_HANDLER(EnetMod_Handle hMo
 }
 
 
-static int32_t Mdio_ioctl_handler_default(EnetMod_Handle hMod, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
+static int32_t Mdio_ioctl_handler_default(Mdio_Handle hMdio, CSL_mdioHandle mdioRegs, Enet_IoctlPrms *prms)
 {
     return ENET_ENOTSUPPORTED;
 }

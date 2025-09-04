@@ -52,7 +52,8 @@
 /* ========================================================================== */
 
 #include <stdint.h>
-#include <include/core/enet_mod.h>
+#include <include/core/enet_types.h>
+#include <include/core/enet_ioctl.h>
 
 #ifdef __cplusplus
 extern "C" {

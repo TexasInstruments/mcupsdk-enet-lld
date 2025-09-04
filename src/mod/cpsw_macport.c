@@ -161,7 +161,7 @@ typedef struct CpswMacPortIoctlHandlerRegistry_s
 #if ENET_CFG_IS_ON(DEV_ERROR)
 static int32_t CpswMacPort_isSupported(CSL_Xge_cpswRegs *regs);
 #endif
-static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
+static int32_t CpswMacPort_isMiiSupported(CpswMacPort_Handle hPort,
                                           const EnetMacPort_Interface *mii);
 
 
@@ -490,210 +490,227 @@ void CpswMacPort_initCfg(CpswMacPort_Cfg *macPortCfg)
     macPortCfg->sgmiiMode         = ENET_MAC_SGMIIMODE_INVALID;
 }
 
-int32_t CpswMacPort_open(EnetMod_Handle hMod,
+int32_t CpswMacPort_open(CpswMacPort_Handle hPort,
                          Enet_Type enetType,
                          uint32_t instId,
-                         const void *cfg,
-                         uint32_t cfgSize)
+                         const CpswMacPort_ModCfg *macModCfg)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-    const CpswMacPort_ModCfg *macModCfg = (const CpswMacPort_ModCfg *)cfg;
-    const CpswMacPort_Cfg *macCfg = &macModCfg->macCfg;
-    const EnetMacPort_Interface *mii = &macModCfg->mii;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hMod->virtAddr2;
-#endif
-    Enet_MacPort macPort = hPort->macPort;
-    uint32_t portNum = ENET_MACPORT_NORM(macPort);
-    uint32_t portId = ENET_MACPORT_ID(macPort);
     int32_t status = ENET_SOK;
 
-    /* Saving macMode Cfg */
-    hPort->macModCfgCtxt = *((CpswMacPort_ModCfg *)(macModCfg));
-    ENETTRACE_VAR(portId);
-    Enet_devAssert(cfgSize == sizeof(CpswMacPort_ModCfg),
-                   "Invalid MAC port config params size %u (expected %u)\n",
-                   cfgSize, sizeof(CpswMacPort_ModCfg));
+    ENETTRACE_VERBOSE("%s: open module\n", hPort->name);
 
-    Enet_devAssert(regs != NULL, "MAC %u: regs address is not valid\n", portId);
+    if (hPort->magic == ENET_NO_MAGIC)
+    {
+        hPort->virtAddr  = (void *)EnetUtils_physToVirt(hPort->physAddr, NULL);
+        hPort->virtAddr2 = (void *)EnetUtils_physToVirt(hPort->physAddr2, NULL);
+
+        const CpswMacPort_Cfg *macCfg = &macModCfg->macCfg;
+        const EnetMacPort_Interface *mii = &macModCfg->mii;
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
+#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
+        CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
+#endif
+        Enet_MacPort macPort = hPort->macPort;
+        uint32_t portNum = ENET_MACPORT_NORM(macPort);
+        uint32_t portId = ENET_MACPORT_ID(macPort);
+
+        /* Saving macMode Cfg */
+        hPort->macModCfgCtxt = *((CpswMacPort_ModCfg *)(macModCfg));
+        ENETTRACE_VAR(portId);
+
+        Enet_devAssert(regs != NULL, "MAC %u: regs address is not valid\n", portId);
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    Enet_devAssert(sgmiiRegs != NULL, "MAC %u: SGMII regs address is not valid\n", portId);
+        Enet_devAssert(sgmiiRegs != NULL, "MAC %u: SGMII regs address is not valid\n", portId);
 #endif
 
-    /* Check supported MAC port module versions */
+        /* Check supported MAC port module versions */
 #if ENET_CFG_IS_ON(DEV_ERROR)
-    status = CpswMacPort_isSupported(regs);
-    Enet_devAssert(status == ENET_SOK, "MAC %u: version is not supported\n", portId);
+        status = CpswMacPort_isSupported(regs);
+        Enet_devAssert(status == ENET_SOK, "MAC %u: version is not supported\n", portId);
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    if ((status == ENET_SOK) && (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII)))
-    {
-        status = CpswMacPort_isSgmiiSupported(sgmiiRegs, macPort);
-        Enet_devAssert(status == ENET_SOK, "MAC %u: SGMII version is not supported\n", portId);
-    }
+        if ((status == ENET_SOK) && (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_SGMII)))
+        {
+            status = CpswMacPort_isSgmiiSupported(sgmiiRegs, macPort);
+            Enet_devAssert(status == ENET_SOK, "MAC %u: SGMII version is not supported\n", portId);
+        }
 #endif /*#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII) */
 
 #endif /*#if ENET_CFG_IS_ON(DEV_ERROR) */
 
-    /* Check if MII is supported */
-    status = CpswMacPort_isMiiSupported(hMod, mii);
-    ENETTRACE_ERR_IF(status != ENET_SOK,  "MAC %u: MII not supported\n", portId);
+        /* Check if MII is supported */
+        status = CpswMacPort_isMiiSupported(hPort, mii);
+        ENETTRACE_ERR_IF(status != ENET_SOK,  "MAC %u: MII not supported\n", portId);
 
-    /* Save peripheral info to use it later to query SoC parameters */
-    hPort->enetType = enetType;
-    hPort->instId = instId;
-    hPort->enabled = true;
+        /* Save peripheral info to use it later to query SoC parameters */
+        hPort->enetType = enetType;
+        hPort->instId = instId;
+        hPort->enabled = true;
 
-    if (status == ENET_SOK)
-    {
-        /* Check if SoC settings (if any) matches the requested MII config */
-        status = CpswMacPort_checkSocCfg(enetType, instId, macPort, mii);
-        ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: MII mismatch with SoC settings\n", portId);
-    }
+        if (status == ENET_SOK)
+        {
+            /* Check if SoC settings (if any) matches the requested MII config */
+            status = CpswMacPort_checkSocCfg(enetType, instId, macPort, mii);
+            ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: MII mismatch with SoC settings\n", portId);
+        }
 
-    /* Soft-reset the Ethernet MAC logic and SGMII port */
-    if (status == ENET_SOK)
-    {
-        CpswMacPort_reset(regs, macPort);
+        /* Soft-reset the Ethernet MAC logic and SGMII port */
+        if (status == ENET_SOK)
+        {
+            CpswMacPort_reset(regs, macPort);
 
         CpswMacPort_softReset(regs, macPort);
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-        if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII))
+            if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_SGMII))
+            {
+                if (EnetMacPort_isSgmii(mii) ||
+                    EnetMacPort_isQsgmii(mii))
+                {
+                    CpswMacPort_resetSgmiiPort(sgmiiRegs, macPort);
+                }
+            }
+#endif
+        }
+
+        /* Set CRC, MRU and port VLAN config */
+        if (status == ENET_SOK)
+        {
+            if (macCfg->crcType == ENET_CRC_ETHERNET)
+            {
+                CSL_CPGMAC_SL_disableCastagnoliCRC(regs, portNum);
+            }
+            else
+            {
+                CSL_CPGMAC_SL_enableCastagnoliCRC(regs, portNum);
+            }
+
+            CSL_CPGMAC_SL_setRxMaxLen(regs, portNum, macCfg->rxMtu);
+
+            if (macCfg->passPriorityTaggedUnchanged)
+            {
+                CSL_CPSW_enablePortPassPriTag(regs, portNum + 1U);
+            }
+            else
+            {
+                CSL_CPSW_disablePortPassPriTag(regs, portNum + 1U);
+            }
+
+            CSL_CPSW_setPortVlanReg(regs, portNum + 1U,
+                                    macCfg->vlanCfg.portVID,
+                                    macCfg->vlanCfg.portCfi,
+                                    macCfg->vlanCfg.portPri);
+
+            CpswMacPort_setSwitchTxSched(regs, macPort, macCfg->txPriorityType);
+        }
+
+        /* Set normal mode or loopback mode */
+        if (status == ENET_SOK)
+        {
+            if (macCfg->loopbackEn)
+            {
+                if (EnetMacPort_isSgmii(mii))
+                {
+#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
+                    status = CpswMacPort_enableSgmiiLoopback(regs, sgmiiRegs, macPort);
+#else
+                    status = ENET_ENOTSUPPORTED;
+#endif
+                    ENETTRACE_ERR_IF(status != ENET_SOK,
+                                    "MAC %u: failed to set SGMII loopback mode: %d\n", portId, status);
+                }
+                else
+                {
+                    status = CpswMacPort_enableLoopback(regs, macPort, mii);
+                    ENETTRACE_ERR_IF(status != ENET_SOK,
+                                    "MAC %u: failed to set loopback mode: %d\n", portId, status);
+                }
+            }
+            else
+            {
+                CSL_CPGMAC_SL_disableLoopback(regs, portNum);
+            }
+        }
+
+        /* Configure MII interface (except for SGMII loopback mode) */
+        if (status == ENET_SOK)
         {
             if (EnetMacPort_isSgmii(mii) ||
                 EnetMacPort_isQsgmii(mii))
             {
-                CpswMacPort_resetSgmiiPort(sgmiiRegs, macPort);
-            }
-        }
-#endif
-    }
-
-    /* Set CRC, MRU and port VLAN config */
-    if (status == ENET_SOK)
-    {
-        if (macCfg->crcType == ENET_CRC_ETHERNET)
-        {
-            CSL_CPGMAC_SL_disableCastagnoliCRC(regs, portNum);
-        }
-        else
-        {
-            CSL_CPGMAC_SL_enableCastagnoliCRC(regs, portNum);
-        }
-
-        CSL_CPGMAC_SL_setRxMaxLen(regs, portNum, macCfg->rxMtu);
-
-        if (macCfg->passPriorityTaggedUnchanged)
-        {
-            CSL_CPSW_enablePortPassPriTag(regs, portNum + 1U);
-        }
-        else
-        {
-            CSL_CPSW_disablePortPassPriTag(regs, portNum + 1U);
-        }
-
-        CSL_CPSW_setPortVlanReg(regs, portNum + 1U,
-                                macCfg->vlanCfg.portVID,
-                                macCfg->vlanCfg.portCfi,
-                                macCfg->vlanCfg.portPri);
-
-        CpswMacPort_setSwitchTxSched(regs, macPort, macCfg->txPriorityType);
-    }
-
-    /* Set normal mode or loopback mode */
-    if (status == ENET_SOK)
-    {
-        if (macCfg->loopbackEn)
-        {
-            if (EnetMacPort_isSgmii(mii))
-            {
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-                status = CpswMacPort_enableSgmiiLoopback(regs, sgmiiRegs, macPort);
+                /* SGMII loopback is digital loopback (before the SERDES) from the CPSGMII transmit
+                * to the CPSGMII receive. The SGMII modes are complementary to loopback so
+                * configuring MAC interface in loopback mode will cause conflicting configuration */
+                if (!macCfg->loopbackEn)
+                {
+                    status = CpswMacPort_setSgmiiInterface(regs, sgmiiRegs,
+                                                        macPort,
+                                                        macCfg->sgmiiMode,
+                                                        &macModCfg->linkCfg);
+                }
 #else
                 status = ENET_ENOTSUPPORTED;
 #endif
                 ENETTRACE_ERR_IF(status != ENET_SOK,
-                                 "MAC %u: failed to set SGMII loopback mode: %d\n", portId, status);
+                                "MAC %u: failed to set Q/SGMII interface: %d\n", portId, status);
             }
             else
             {
-                status = CpswMacPort_enableLoopback(regs, macPort, mii);
+                status = CpswMacPort_setInterface(regs, macPort, mii);
                 ENETTRACE_ERR_IF(status != ENET_SOK,
-                                 "MAC %u: failed to set loopback mode: %d\n", portId, status);
+                                "MAC %u: failed to set interface: %d\n", portId, status);
             }
         }
-        else
-        {
-            CSL_CPGMAC_SL_disableLoopback(regs, portNum);
-        }
-    }
-
-    /* Configure MII interface (except for SGMII loopback mode) */
-    if (status == ENET_SOK)
-    {
-        if (EnetMacPort_isSgmii(mii) ||
-            EnetMacPort_isQsgmii(mii))
-        {
-#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-            /* SGMII loopback is digital loopback (before the SERDES) from the CPSGMII transmit
-             * to the CPSGMII receive. The SGMII modes are complementary to loopback so
-             * configuring MAC interface in loopback mode will cause conflicting configuration */
-            if (!macCfg->loopbackEn)
-            {
-                status = CpswMacPort_setSgmiiInterface(regs, sgmiiRegs,
-                                                       macPort,
-                                                       macCfg->sgmiiMode,
-                                                       &macModCfg->linkCfg);
-            }
-#else
-            status = ENET_ENOTSUPPORTED;
-#endif
-            ENETTRACE_ERR_IF(status != ENET_SOK,
-                             "MAC %u: failed to set Q/SGMII interface: %d\n", portId, status);
-        }
-        else
-        {
-            status = CpswMacPort_setInterface(regs, macPort, mii);
-            ENETTRACE_ERR_IF(status != ENET_SOK,
-                             "MAC %u: failed to set interface: %d\n", portId, status);
-        }
-    }
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_INTERVLAN)
-    /* Open InterVLAN (clear VLAN routes) */
-    if (status == ENET_SOK)
-    {
-        if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_INTERVLAN))
+        /* Open InterVLAN (clear VLAN routes) */
+        if (status == ENET_SOK)
         {
-            CpswMacPort_openInterVlan(hMod);
+            if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_INTERVLAN))
+            {
+                CpswMacPort_openInterVlan(hPort);
+            }
         }
-    }
 #endif
 
 #if ENET_CFG_IS_ON(CPSW_MACPORT_EST)
-    if (status == ENET_SOK)
-    {
-        if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_EST))
+        if (status == ENET_SOK)
         {
-            CpswMacPort_openEst(hMod);
+            if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_EST))
+            {
+                CpswMacPort_openEst(hPort);
+            }
+        }
+#endif
+#if defined (SOC_TDA54) || defined(SOC_J722S)
+        CSL_CPGMAC_SL_disableIdleMode(regs, portNum);
+#endif
+        if (status == ENET_SOK)
+        {
+            hPort->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hPort->name);
+        }
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hPort->name, status);
+            hPort->magic = ENET_NO_MAGIC;
         }
     }
-#endif
-#if defined(SOC_J722S)
-    CSL_CPGMAC_SL_disableIdleMode(regs, portNum);
-#endif
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hPort->name);
+        status = ENET_EALREADYOPEN;
+    }
+
     return status;
 }
 
-int32_t CpswMacPort_rejoin(EnetMod_Handle hMod,
+int32_t CpswMacPort_rejoin(CpswMacPort_Handle hPort,
                            Enet_Type enetType,
                            uint32_t instId)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-
     /* Save peripheral info to use it later to query SoC parameters */
     hPort->enetType = enetType;
     hPort->instId = instId;
@@ -701,77 +718,137 @@ int32_t CpswMacPort_rejoin(EnetMod_Handle hMod,
     return ENET_SOK;
 }
 
-void CpswMacPort_close(EnetMod_Handle hMod)
+void CpswMacPort_close(CpswMacPort_Handle hPort)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-    bool enabled;
+    ENETTRACE_VERBOSE("%s: Close module\n", hPort->name);
 
-    enabled = CpswMacPort_isPortEnabled(regs, hPort->macPort);
-    if (enabled)
+    if (hPort->magic == ENET_MAGIC)
     {
-        CpswMacPort_disablePort(regs, hPort->macPort);
-        CpswMacPort_softReset(regs, hPort->macPort);
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
+        bool enabled;
+
+        enabled = CpswMacPort_isPortEnabled(regs, hPort->macPort);
+        if (enabled)
+        {
+            CpswMacPort_disablePort(regs, hPort->macPort);
+        }
+        hPort->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hPort->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
     }
 }
 
-void CpswMacPort_saveCtxt(EnetMod_Handle hMod)
+void CpswMacPort_saveCtxt(CpswMacPort_Handle hPort)
 {
-    CpswMacPort_close(hMod);
-}
+    ENETTRACE_VERBOSE("%s: Close module\n", hPort->name);
 
-int32_t CpswMacPort_restoreCtxt(EnetMod_Handle hMod, Enet_Type enetType,
-                             uint32_t instId, const void *cfg, uint32_t cfgSize)
-{
-    int32_t status = ENET_SOK;
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
+    bool isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
 
-    status = CpswMacPort_open(hMod, enetType, instId, &hPort->macModCfgCtxt, sizeof(hPort->macModCfgCtxt));
-    return status;
-}
-
-int32_t CpswMacPort_ioctl(EnetMod_Handle hMod,
-                          uint32_t cmd,
-                          Enet_IoctlPrms *prms)
-{
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
-#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hMod->virtAddr2;
-#endif
-    Enet_MacPort macPort = hPort->macPort;
-    uint32_t portId = ENET_MACPORT_ID(macPort);
-    int32_t status = ENET_SOK;
-
-    ENETTRACE_VAR(portId);
-#if ENET_CFG_IS_ON(DEV_ERROR)
-    /* Validate CPSW MAC port IOCTL parameters */
-    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+    if (isHostPortOpen)
     {
-        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+        CpswMacPort_close(hPort);
+        hPort->magic = ENET_NO_MAGIC;
+        ENETTRACE_VERBOSE("%s: Module is now closed\n", hPort->name);
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
+    }
+}
+
+int32_t CpswMacPort_restoreCtxt(CpswMacPort_Handle hPort, Enet_Type enetType,
+                             uint32_t instId, const CpswMacPort_ModCfg *macModCfg)
+{
+    int32_t status = ENET_SOK;
+    ENETTRACE_VERBOSE("%s: Open module\n", hPort->name);
+
+    bool isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
+
+    if (isHostPortOpen == false)
+    {
+        status = CpswMacPort_open(hPort, enetType, instId, &hPort->macModCfgCtxt);
+
+        if (status == ENET_SOK)
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswMacPort_ioctlValidate,
-                                        ENET_ARRAYSIZE(gCpswMacPort_ioctlValidate));
+            hPort->magic = ENET_MAGIC;
+            ENETTRACE_VERBOSE("%s: Module is now open\n", hPort->name);
         }
         else
         {
-            status = Enet_validateIoctl(cmd, prms,
-                                        gCpswMacPort_privIoctlValidate,
-                                        ENET_ARRAYSIZE(gCpswMacPort_privIoctlValidate));
+            ENETTRACE_ERR("%s: Failed to open: %d\n", hPort->name, status);
+            hPort->magic = ENET_NO_MAGIC;
         }
-
-        ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: IOCTL 0x%08x params are not valid\n", portId, cmd);
     }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is already open\n", hPort->name);
+        status = ENET_EALREADYOPEN;
+    }
+    return status;
+}
+
+int32_t CpswMacPort_ioctl(CpswMacPort_Handle hPort,
+                          uint32_t cmd,
+                          Enet_IoctlPrms *prms)
+{
+    int32_t status = ENET_EFAIL;
+    bool isHostPortOpen = true;
+
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hPort->name, cmd, prms);
+
+    isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
+    if (isHostPortOpen == true)
+    {
+        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
+#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
+        CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
+#endif
+        Enet_MacPort macPort = hPort->macPort;
+        uint32_t portId = ENET_MACPORT_ID(macPort);
+        status = ENET_SOK;
+
+        ENETTRACE_VAR(portId);
+#if ENET_CFG_IS_ON(DEV_ERROR)
+        /* Validate CPSW MAC port IOCTL parameters */
+        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+        {
+            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswMacPort_ioctlValidate,
+                                            ENET_ARRAYSIZE(gCpswMacPort_ioctlValidate));
+            }
+            else
+            {
+                status = Enet_validateIoctl(cmd, prms,
+                                            gCpswMacPort_privIoctlValidate,
+                                            ENET_ARRAYSIZE(gCpswMacPort_privIoctlValidate));
+            }
+
+            ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: IOCTL 0x%08x params are not valid\n", portId, cmd);
+        }
 #endif
 
-    if (status == ENET_SOK)
-    {
-        CpswMacPortIoctlHandler * ioctlHandlerFxn;
+        if (status == ENET_SOK)
+        {
+            CpswMacPortIoctlHandler * ioctlHandlerFxn;
 
-        ioctlHandlerFxn = CpswMacPort_getIoctlHandlerFxn(cmd, CpswMacPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswMacPortIoctlHandlerRegistry));
-        Enet_devAssert(ioctlHandlerFxn != NULL);
-        status = ioctlHandlerFxn(hPort, regs,prms);
+            ioctlHandlerFxn = CpswMacPort_getIoctlHandlerFxn(cmd, CpswMacPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswMacPortIoctlHandlerRegistry));
+            Enet_devAssert(ioctlHandlerFxn != NULL);
+            status = ioctlHandlerFxn(hPort, regs,prms);
+        }
+
+        else
+        {
+            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hPort->name, cmd, status);
+        }
+    }
+    else
+    {
+        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
     }
 
     return status;
@@ -801,7 +878,7 @@ static int32_t CpswMacPort_isSupported(CSL_Xge_cpswRegs *regs)
     return status;
 }
 #endif
-static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
+static int32_t CpswMacPort_isMiiSupported(CpswMacPort_Handle hPort,
                                           const EnetMacPort_Interface *mii)
 {
     int32_t status = ENET_ENOTSUPPORTED;
@@ -824,7 +901,7 @@ static int32_t CpswMacPort_isMiiSupported(EnetMod_Handle hMod,
              EnetMacPort_isQsgmii(mii))
     {
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-        if (ENET_FEAT_IS_EN(hMod->features, CPSW_MACPORT_FEATURE_SGMII))
+        if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_SGMII))
         {
             status = ENET_SOK;
         }

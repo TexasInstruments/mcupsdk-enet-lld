@@ -113,21 +113,19 @@ static CpswMacPortInterVlanIoctlHandlerRegistry_t CpswMacPortInterVlanIoctlHandl
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-void CpswMacPort_openInterVlan(EnetMod_Handle hMod)
+void CpswMacPort_openInterVlan(CpswMacPort_Handle hPort)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     Enet_MacPort macPort = hPort->macPort;
 
     CpswMacPort_clearAllRoutes(regs, macPort);
 }
 
-int32_t CpswMacPort_ioctlInterVlan(EnetMod_Handle hMod,
+int32_t CpswMacPort_ioctlInterVlan(CpswMacPort_Handle hPort,
                                    uint32_t cmd,
                                    Enet_IoctlPrms *prms)
 {
-    CpswMacPort_Handle hPort = (CpswMacPort_Handle)hMod;
-    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hMod->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
     Enet_MacPort macPort = hPort->macPort;
     uint32_t portId = ENET_MACPORT_ID(macPort);
     int32_t status = ENET_SOK;

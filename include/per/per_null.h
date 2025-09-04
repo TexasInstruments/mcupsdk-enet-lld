@@ -46,7 +46,6 @@
 
 #include <stdint.h>
 #include <include/core/enet_types.h>
-#include <include/core/enet_mod.h>
 #include <include/core/enet_per.h>
 #include <include/mod/mod_null.h>
 
