@@ -1063,6 +1063,42 @@ function getBoardConfigTemplateInfo(instance) {
 	return boardConfigTemplate.get(common.getSocName());
 }
 
+function getEnetResPartInfoNumCores() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.numCores;
+}
+
+function getEnetCoreResInfoNumRxCh(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numRxCh;
+}
+
+function getEnetCoreResInfoNumMac(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numMacAddress;
+}
+
+function getEnetCoreResInfoNumHwPush(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numHwPush;
+}
+
+function getEnetResPartInfoIsStatTxChAlloc() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.isStaticTxChanAllocated;
+}
+
+function getEnetResPartInfo() {
+    const ResPartInfoMap = new Map(
+                               [
+                                 ['am64x',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am243x', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                               ],
+                             );
+    let instInfo =  ResPartInfoMap.get(common.getSocName());
+    return instInfo;
+}
+
 let enet_icss_module_name = "/networking/enet_icss/enet_icss";
 
 let enet_icss_module = {
@@ -1092,6 +1128,18 @@ let enet_icss_module = {
         },
         "/networking/common/enet_config.h.xdt": {
             enet_config: "/networking/enet_icss/templates/enet_syscfg.h.xdt",
+            moduleName: enet_icss_module_name,
+        },
+        "/networking/common/enet_init.c.xdt": {
+            enet_init: "/networking/enet_icss/templates/icss_init_config.c.xdt",
+            moduleName: enet_icss_module_name,
+        },
+        "/networking/common/dma_init.h.xdt": {
+            dma_init: "/networking/enet_icss/templates/dma_init_config.h.xdt",
+            moduleName: enet_icss_module_name,
+        },
+        "/networking/common/dma_init.c.xdt": {
+            dma_init: "/networking/enet_icss/templates/dma_init_config.c.xdt",
             moduleName: enet_icss_module_name,
         },
         "/networking/common/enet_open.c.xdt": {
@@ -1280,6 +1328,12 @@ let enet_icss_module = {
     getNetifConfig,
     getNetifPacketDequeueMode,
     getMiiConfig,
+    getEnetResPartInfo,
+    getEnetResPartInfoNumCores,
+    getEnetCoreResInfoNumRxCh,
+    getEnetCoreResInfoNumMac,
+    getEnetCoreResInfoNumHwPush,
+    getEnetResPartInfoIsStatTxChAlloc,
     validate: validate,
 };
 

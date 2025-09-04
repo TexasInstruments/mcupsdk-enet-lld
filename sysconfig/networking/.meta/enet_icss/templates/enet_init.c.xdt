@@ -67,6 +67,7 @@ function getInstanceInfo(module, instances, indent) {
 
 #include "ti_enet_config.h"
 #include "ti_drivers_config.h"
+#include "ti_enet_dma_init.h"
 #include "ti_enet_open_close.h"
 #include <utils/include/enet_appsoc.h>
 
@@ -102,7 +103,13 @@ typedef struct EnetAppSysCfg_Obj_s
 %}
 }EnetAppSysCfg_Obj;
 
+extern const EnetApp_DmaCfg g_EnetApp_dmaChParams;
+
 static EnetAppSysCfg_Obj gEnetAppSysCfgObj;
+
+static void EnetApp_txPktNotifyCb(void *cbArg);
+
+static void EnetApp_rxPktNotifyCb(void *cbArg);
 
 static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
                                    Enet_Type enetType,
@@ -110,24 +117,6 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
                                    uint32_t coreId,
                                    Enet_MacPort macPortList[ENET_MAC_PORT_NUM],
                                    uint8_t numMacPorts);
-
-
-static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                    Enet_Type enetType,
-                                    uint32_t instId,
-                                    Enet_Handle hEnet,
-                                    uint32_t coreKey,
-                                    uint32_t coreId);
-
-static void EnetApp_openAllRxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet,
-                                         uint32_t coreKey,
-                                         uint32_t coreId);
-
-static void EnetApp_openAllTxDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                         Enet_Handle hEnet,
-                                         uint32_t coreKey,
-                                         uint32_t coreId);
 
 static void EnetApp_getIcssgInitCfg(Enet_Type enetType,
                                     uint32_t instId,
@@ -353,45 +342,64 @@ void EnetApp_driverDeInit()
 int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 {
     int32_t status = ENET_SOK;
-    Icssg_Cfg icssgCfg;
+
+    Icssg_Cfg * const pIcssgCfg = EnetApp_getIcssgCfg(enetType, instId);
+    EnetAppUtils_assert(pIcssgCfg != NULL);
+
+    uint32_t numMacPorts = 0;
     Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
-    uint8_t numMacPorts;
-    uint32_t selfCoreId;
-    EnetRm_ResCfg *resCfg = &icssgCfg.resCfg;
+    const uint32_t selfCoreId = EnetSoc_getCoreId();
     EnetPer_AttachCoreOutArgs attachInfo;
-    EnetApp_HandleInfo handleInfo;
-    EnetDma_Cfg dmaCfg;
 % if(instance.McmEnable == true){
     EnetMcm_InitConfig enetMcmCfg;
 % }
     EnetAppUtils_assert(Enet_isIcssFamily(enetType) == true);
-    EnetApp_getEnetInstMacInfo(enetType, instId, macPortList, &numMacPorts);
+
+%for (var inst in instances) {
+%let macPortInfo = module.getMacPortInfo(instances[inst]);
+%let instId = module.getInstId(instances[inst]);
+% if (instances[inst].mode == "DUAL MAC" && instances[inst].instance == "ICSSG0" && instances[inst].dualMacPortSelected == "ENET_MAC_PORT_1") {
+    if (enetType == ENET_ICSSG_DUALMAC && (instId == 0))
+    {
+%}
+% if (instances[inst].mode == "DUAL MAC" && instances[inst].instance == "ICSSG0" && instances[inst].dualMacPortSelected == "ENET_MAC_PORT_2") {
+    if (enetType == ENET_ICSSG_DUALMAC && (instId == 1))
+    {
+%}
+% if (instances[inst].mode == "DUAL MAC" && instances[inst].instance == "ICSSG1" && instances[inst].dualMacPortSelected == "ENET_MAC_PORT_1") {
+    if (enetType == ENET_ICSSG_DUALMAC && (instId == 2))
+    {
+%}
+% if (instances[inst].mode == "DUAL MAC" && instances[inst].instance == "ICSSG1" && instances[inst].dualMacPortSelected == "ENET_MAC_PORT_2") {
+    if (enetType == ENET_ICSSG_DUALMAC && (instId == 3))
+    {
+%}
+% else if (instances[inst].mode == "SWITCH" && instances[inst].instance == "ICSSG0") {
+    if ((enetType == ENET_ICSSG_SWITCH) && (instId == 0))
+    {
+%}
+% else if (instances[inst].mode == "SWITCH" && instances[inst].instance == "ICSSG1") {
+    if ((enetType == ENET_ICSSG_SWITCH) && (instId == 1))
+    {
+%}
+        numMacPorts = `(macPortInfo.numMacPorts)`;
+%for (var i in macPortInfo.macPortList) {
+        macPortList[`i`] = `(macPortInfo.macPortList[i])`;
+%}
+    }
+%}
     const uint32_t hEnetIndex = EnetApp_getEnetIdx(enetType, instId);
 
-    /* Open UDMA */
-    dmaCfg.rxChInitPrms.dmaPriority = UDMA_DEFAULT_RX_CH_DMA_PRIORITY;
-    dmaCfg.hUdmaDrv = EnetApp_getUdmaInstanceHandle();
-    selfCoreId   = EnetSoc_getCoreId();
-    icssgCfg.dmaCfg = &dmaCfg;
+    EnetApp_icssgInitMacAddr(enetType, instId);
+    EnetApp_updateIcssgInitCfg(enetType, instId, pIcssgCfg);
 
-    Enet_initCfg(enetType, instId, &icssgCfg, sizeof(icssgCfg));
-    icssgCfg.dmaCfg = (void *)&dmaCfg;
-
-    EnetApp_getIcssgInitCfg(enetType, instId, &icssgCfg);
-
-    resCfg = &icssgCfg.resCfg;
-    EnetAppUtils_initResourceConfig(enetType, instId, selfCoreId, resCfg);
-    EnetApp_updateIcssgInitCfg(enetType, instId, &icssgCfg);
-
-%if(instance.ExternalPhyMgmtEnable == true){
-    icssgCfg.mdioCfg.disableStateMachineOnInit = true;
-    icssgCfg.disablePhyDriver = true;
-%}
-    icssgCfg.qosLevels = `Number(instance.QoS)`U;
-    icssgCfg.isPremQueEnable = `instance.PremptionEnable`;
-    gEnetAppSysCfgObj.hEnet[hEnetIndex] = EnetApp_doIcssgOpen(enetType, instId, &icssgCfg);
-    EnetAppUtils_assert(NULL != gEnetAppSysCfgObj.hEnet[hEnetIndex]);
-
+    gEnetAppSysCfgObj.hEnet[hEnetIndex] = Enet_open(enetType, instId, (void *)pIcssgCfg, sizeof(*pIcssgCfg));
+    if(gEnetAppSysCfgObj.hEnet[hEnetIndex] == NULL_PTR)
+    {
+        EnetAppUtils_print("Enet_open failed\r\n");
+        EnetAppUtils_assert(NULL_PTR != gEnetAppSysCfgObj.hEnet[hEnetIndex]);
+    }
+    
     EnetApp_enablePorts(gEnetAppSysCfgObj.hEnet[hEnetIndex], enetType, instId, selfCoreId, macPortList, numMacPorts);
 
     /* Enabling DSCP handler will overwrite the PCP filters and
@@ -421,22 +429,106 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 % }
 % }
     /* Open all DMA channels */
-    EnetApp_acquireHandleInfo(enetType,
-                              instId,
-                              &handleInfo);
-
-    (void)handleInfo; /* Handle info not used. Kill warning */
-    EnetApp_coreAttach(enetType,
+    EnetApp_coreAttach(enetType, 
                        instId,
                        selfCoreId,
                        &attachInfo);
-    EnetApp_openDmaChannels(&gEnetAppSysCfgObj.dma[0],
-                            enetType,
-                            instId,
-                            gEnetAppSysCfgObj.hEnet[hEnetIndex],
-                            attachInfo.coreKey,
-                            selfCoreId);
+
+    for (uint32_t chIdx = 0; chIdx < ENET_SYSCFG_TX_CHANNELS_NUM; chIdx++)
+    {
+        EnetUdma_OpenTxChPrms enetTxChCfg;
+        EnetAppTxDmaSysCfg_Obj * tx;
+        int32_t status;
+        Enet_Type enetType;
+        uint32_t instId;
+        const uint32_t txChEnetType = g_EnetApp_dmaChParams.txChInitCfg[chIdx].enetType;
+        const uint32_t txChInstId = g_EnetApp_dmaChParams.txChInitCfg[chIdx].instId;
+
+        status = Enet_getHandleInfo(gEnetAppSysCfgObj.hEnet[hEnetIndex],
+                                    &enetType,
+                                    &instId);
+        EnetAppUtils_assert(status == ENET_SOK);
+        (void)instId; /* Instd id not used */
+
+        tx = &gEnetAppSysCfgObj.dma[0].tx[chIdx];
+
+        if(enetType == txChEnetType && instId == txChInstId)
+        {
+            EnetUdma_initTxChParams(&enetTxChCfg);
+            EnetApp_updateTxChInitCfg(&enetTxChCfg, chIdx);
+
+            enetTxChCfg.cbArg     = tx;
+            enetTxChCfg.notifyCb  = EnetApp_txPktNotifyCb;
+
+
+            EnetAppUtils_openTxCh(gEnetAppSysCfgObj.hEnet[hEnetIndex],
+                                attachInfo.coreKey,
+                                selfCoreId,
+                                &tx->txChNum,
+                                &tx->hTxCh,
+                                &enetTxChCfg);
+        }
+    }
+
+    for (uint32_t flowIdx = 0; flowIdx<ENET_SYSCFG_RX_FLOWS_NUM; flowIdx++)
+    {
+        EnetUdma_OpenRxFlowPrms enetRxFlowCfg;
+        EnetAppRxDmaSysCfg_Obj * rx;
+        int32_t status;
+        Enet_Type enetType;
+        uint32_t instId;
+        const uint32_t allocMacAddrCnt = g_EnetApp_dmaChParams.rxChInitCfg[flowIdx].allocMacAddrCnt;
+        const uint32_t isDefaultFlow   = g_EnetApp_dmaChParams.rxChInitCfg[flowIdx].isDefaultFlow;
+        const uint32_t rxChEnetType    = g_EnetApp_dmaChParams.rxChInitCfg[flowIdx].enetType;
+        const uint32_t rxChInstId      = g_EnetApp_dmaChParams.rxChInitCfg[flowIdx].instId;
+        const uint32_t chIdx           = g_EnetApp_dmaChParams.rxChInitCfg[flowIdx].chIdx;
+
+        status = Enet_getHandleInfo(gEnetAppSysCfgObj.hEnet[hEnetIndex],
+                                    &enetType,
+                                    &instId);
+        EnetAppUtils_assert(status == ENET_SOK);
+        (void)instId; /* Instd id not used */
+
+        rx = &gEnetAppSysCfgObj.dma[0].rx[flowIdx];
+
+        if(enetType == rxChEnetType && instId == rxChInstId)
+        {
+            EnetUdma_initRxFlowParams(&enetRxFlowCfg);
+
+            EnetApp_updateRxChInitCfg(&enetRxFlowCfg, flowIdx);
+
+            enetRxFlowCfg.cbArg     = rx;
+            enetRxFlowCfg.notifyCb  = EnetApp_rxPktNotifyCb;
+
+            EnetAppUtils_openRxFlowForChIdx(enetType,
+                                        gEnetAppSysCfgObj.hEnet[hEnetIndex],
+                                        attachInfo.coreKey,
+                                        selfCoreId,
+                                        isDefaultFlow,
+                                        allocMacAddrCnt,
+                                        chIdx,
+                                        &rx->rxFlowStartIdx,
+                                        &rx->rxFlowIdx,
+                                        rx->macAddr,
+                                        &rx->hRxCh,
+                                        &enetRxFlowCfg);
+
+            rx->numValidMacAddress = allocMacAddrCnt;
+        }
+    }
     return status;
+}
+
+static void EnetApp_txPktNotifyCb(void *cbArg)
+{
+
+
+}
+
+static void EnetApp_rxPktNotifyCb(void *cbArg)
+{
+
+
 }
 
 static void EnetApp_asyncIoctlCb(Enet_Event evt,
@@ -803,25 +895,6 @@ static uint32_t EnetApp_retrieveFreeTxPkts(EnetDma_TxChHandle hTxCh, EnetDma_Pkt
     }
 
     return txFreeQCnt;
-}
-
-
-
-static void EnetApp_openDmaChannels(EnetAppDmaSysCfg_Obj *dma,
-                                    Enet_Type enetType,
-                                    uint32_t instId,
-                                    Enet_Handle hEnet,
-                                    uint32_t coreKey,
-                                    uint32_t coreId)
-{
-    EnetApp_openAllTxDmaChannels(dma,
-                                 hEnet,
-                                 coreKey,
-                                 coreId);
-    EnetApp_openAllRxDmaChannels(dma,
-                                 hEnet,
-                                 coreKey,
-                                 coreId);
 }
 
 int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId, Enet_MacPort macPort[], uint32_t numPorts)

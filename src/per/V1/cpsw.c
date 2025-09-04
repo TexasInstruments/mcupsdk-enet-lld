@@ -77,19 +77,6 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/*! \brief Default common TX MTU. */
-#define CPSW_COMMON_TX_MTU_DEFAULT            (2024U)
-
-/*!
- * \brief Priority escalation value for switch scheduler.
- *
- * When a port is in escalate priority, this is the number of higher priority
- * packets sent before the next lower priority is allowed to send a packet.
- * Escalate priority allows lower priority packets to be sent at a fixed rate
- * relative to the next higher priority.  The min value of esc_pri_ld_val = 2
- */
-#define CPSW_ESC_PRI_LD_VAL                   (2U)
-
 /*! \brief Number of UDMA RX channels required for CPSW host port */
 #define CPSW_UDMA_NUM_RX_CH                   (1U)
 

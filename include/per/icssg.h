@@ -72,6 +72,11 @@ extern "C" {
 /*                                 Macros                                     */
 /* ========================================================================== */
 
+#define ICSSG_CFG_DEFAULT_AGING_PERIOD_MS   (0x6FC23AC00)
+
+/*! IEP default cycle time of 1 ms. */
+#define ICSSG_IEP_DFLT_CYCLE_TIME_NSECS     (1000000U)
+
 /*! \brief Helper macro to create IOCTL commands for ICSSG per. */
 #define ICSSG_PUBLIC_IOCTL(x)             (ENET_IOCTL_PER_BASE |  \
                                            ENET_IOCTL_PER_ICSSG | \

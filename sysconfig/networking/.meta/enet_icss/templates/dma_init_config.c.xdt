@@ -1,0 +1,108 @@
+%%{
+    let module = system.modules["/networking/enet_icss/enet_icss"];
+%%}
+% let instance = module.$instances[0];
+% let instances = module.$instances;
+% let common = system.getScript("/common");
+% let device = common.getDeviceName();
+% let soc = common.getSocName();
+
+#include <include/core/enet_dma.h>
+#include <drivers/udma/udma_priv.h>
+#include <utils/include/enet_apputils.h>
+#include "ti_drivers_config.h"
+#include "ti_enet_config.h"
+#include "ti_enet_dma_init.h"
+
+const EnetApp_DmaCfg g_EnetApp_dmaChParams =
+{
+    .txChInitCfg = 
+    {
+%let arrIndex = 0;
+%for (let i in instances) {
+%for (var j = 0; j < module.getTxChannelCount(instances[i]); j++) {
+        [`arrIndex`] = 
+        {
+            .txNumPkts    = `(module.getChannelConfig(instances[i], "TX", j)).PacketsCount`,
+            .useGlobalEvt = `(module.getChannelConfig(instances[i], "TX", j)).useGlobalEvt`,
+            .enetType        = `module.getInstId(instances[i]).enetType`,
+            .instId          = `module.getInstId(instances[i]).instId`,
+        },
+    %arrIndex = arrIndex + 1;
+%}
+%}
+    },
+    .rxChInitCfg = 
+    {
+    %arrIndex = 0;
+%for (let i in instances) {
+%for (var j = 0; j < module.getRxChannelCount(instances[i]); j++) {
+        [`arrIndex`] = 
+        {
+            .rxNumPkts       = `(module.getChannelConfig(instances[i], "RX", j)).PacketsCount`,
+            .useGlobalEvt    = `(module.getChannelConfig(instances[i], "RX", j)).useGlobalEvt`,
+            .allocMacAddrCnt = `(module.getChannelConfig(instances[i], "RX", j)).macAddrCount`,
+            .sizeThreshEn    = `(module.getChannelConfig(instances[i], "RX", j)).sizeThreshEn`,
+            .isDefaultFlow   = false,
+            .chIdx           = `(module.getChannelConfig(instances[i], "RX", j)).chIdx`,
+            .enetType        = `module.getInstId(instances[i]).enetType`,
+            .instId          = `module.getInstId(instances[i]).instId`,
+        },
+    %arrIndex = arrIndex + 1;
+%}
+%}
+    }
+};
+
+EnetDma_Cfg gDmaCfg =
+{
+    .hUdmaDrv = &gUdmaDrvObj[CONFIG_UDMA_PKTDMA_0],
+    .rxChInitPrms =
+    {
+        .dmaPriority = UDMA_DEFAULT_RX_CH_DMA_PRIORITY,
+    },
+};
+
+void EnetApp_updateTxChInitCfg(EnetUdma_OpenTxChPrms * pTxChPrms, uint32_t chId)
+{
+    EnetAppUtils_assert(chId < ENET_ARRAYSIZE(g_EnetApp_dmaChParams.txChInitCfg));
+    pTxChPrms->hUdmaDrv            = gDmaCfg.hUdmaDrv;
+    pTxChPrms->disableCacheOpsFlag = false;
+    pTxChPrms->numTxPkts           = g_EnetApp_dmaChParams.txChInitCfg[chId].txNumPkts;
+    pTxChPrms->useGlobalEvt        = g_EnetApp_dmaChParams.txChInitCfg[chId].useGlobalEvt;
+
+    return ;
+}
+
+void EnetApp_updateRxChInitCfg(EnetUdma_OpenRxFlowPrms * pRxFlowPrms, uint32_t chId)
+{
+    EnetAppUtils_assert(chId < ENET_ARRAYSIZE(g_EnetApp_dmaChParams.rxChInitCfg));
+    pRxFlowPrms->numRxPkts             = g_EnetApp_dmaChParams.rxChInitCfg[chId].rxNumPkts;
+    pRxFlowPrms->hUdmaDrv              = gDmaCfg.hUdmaDrv;
+    pRxFlowPrms->useGlobalEvt          = g_EnetApp_dmaChParams.rxChInitCfg[chId].useGlobalEvt;
+    pRxFlowPrms->flowPrms.sizeThreshEn = g_EnetApp_dmaChParams.rxChInitCfg[chId].sizeThreshEn;
+    pRxFlowPrms->disableCacheOpsFlag   = false;
+    pRxFlowPrms->rxFlowMtu             = ENET_MEM_LARGE_POOL_PKT_SIZE;
+
+        //TODO: take care of useRingMon param while using UDMAP
+#if (UDMA_SOC_CFG_UDMAP_PRESENT == 1)
+    {
+        /* Use ring monitor for the CQ ring of RX flow */
+        EnetUdma_UdmaRingPrms *pFqRingPrms = &pRxFlowPrms->udmaChPrms.fqRingPrms;
+        pFqRingPrms->useRingMon = rxCfg->useRingMon;
+        pFqRingPrms->ringMonCfg.mode = TISCI_MSG_VALUE_RM_MON_MODE_THRESHOLD;
+        /* Ring mon low threshold */
+
+#if defined _DEBUG_
+        /* In debug mode as CPU is processing lesser packets per event, keep threshold more */
+        pFqRingPrms->ringMonCfg.data0 = (pRxFlowPrms->numRxPkts - 10U);
+#else
+        pFqRingPrms->ringMonCfg.data0 = (pRxFlowPrms->numRxPkts - 20U);
+#endif
+        /* Ring mon high threshold - to get only low  threshold event, setting high threshold as more than ring depth*/
+        pFqRingPrms->ringMonCfg.data1 = pRxFlowPrms->numRxPkts;
+    }
+#endif
+
+    return ;
+}

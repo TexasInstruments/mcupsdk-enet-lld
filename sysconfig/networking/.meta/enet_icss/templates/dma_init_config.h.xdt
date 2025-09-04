@@ -1,0 +1,64 @@
+%%{
+    let module = system.modules["/networking/enet_icss/enet_icss"];
+%%}
+% let instance = module.$instances[0];
+% let instances = module.$instances;
+% let common = system.getScript("/common");
+% let device = common.getDeviceName();
+% let soc = common.getSocName();
+
+#include <drivers/udma/udma_priv.h>
+
+%%{
+
+function getTotalTxChCount(instances)
+{
+    let num = 0;
+    for(let i in instances)
+    {
+        num += module.getTxChannelCount(instances[i]);
+    }
+    return num;
+}
+
+function getTotalRxChCount(instances)
+{
+    let num = 0;
+    for(let i in instances)
+    {
+        num += module.getRxChannelCount(instances[i]);
+    }
+    return num;
+}
+
+%%}
+
+typedef struct EnetApp_TxChInitCfg_s
+{
+    uint32_t txNumPkts;
+    uint32_t useGlobalEvt;
+    Enet_Type enetType;
+    uint32_t instId;
+}EnetApp_TxChInitCfg;
+
+typedef struct EnetApp_RxChInitCfg_s
+{
+    uint32_t rxNumPkts;
+    uint32_t useGlobalEvt;
+    uint32_t allocMacAddrCnt;
+    uint8_t  sizeThreshEn;
+    bool     isDefaultFlow;
+    Enet_Type enetType;
+    uint32_t instId;
+    uint32_t chIdx;
+}EnetApp_RxChInitCfg;
+
+typedef struct EnetApp_DmaCfg_s
+{
+    EnetApp_TxChInitCfg txChInitCfg[(`Number(getTotalTxChCount(instances))`U)];
+    EnetApp_RxChInitCfg rxChInitCfg[`Number(getTotalRxChCount(instances))`U]; 
+}EnetApp_DmaCfg;
+
+void EnetApp_updateTxChInitCfg(EnetUdma_OpenTxChPrms * pTxChPrms, uint32_t chId);
+
+void EnetApp_updateRxChInitCfg(EnetUdma_OpenRxFlowPrms * pRxFlowPrms, uint32_t chId);

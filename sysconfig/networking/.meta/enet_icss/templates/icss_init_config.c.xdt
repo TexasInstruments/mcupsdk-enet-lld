@@ -1,0 +1,190 @@
+%%{
+    let module = system.modules["/networking/enet_icss/enet_icss"];
+%%}
+% const icsdk = require('./enet_icsdk_helper_functions');
+% let instance = module.$instances[0];
+% let instances = module.$instances;
+% let common = system.getScript("/common");
+% let device = common.getDeviceName();
+% let soc = common.getSocName();
+% let enetutilsScript = system.getScript("./../../common/enet_cpsw_utils");
+
+
+% /* Import HSR PRP headers incase we are in HSR-PRP mode (used by ICSDK only) */
+`icsdk.importHsrHeaders(instances)`
+`icsdk.importPrpHeaders(instances)`
+
+#include <include/per/icssg.h>
+#include <include/mod/icssg_timesync.h>
+#include <include/core/enet_dma.h>
+#include "ti_drivers_config.h"
+#include <drivers/udma/udma_priv.h>
+#include <utils/include/enet_apputils.h>
+#include <include/core/enet_rm.h>
+#include <utils/include/enet_appsoc.h>
+#include "ti_enet_config.h"
+
+extern EnetDma_Cfg gDmaCfg;
+
+const EnetRm_ResCfg gEnetRmResCfg =
+{
+    .selfCoreId = `module.getCpuID()`,
+    .resPartInfo = 
+    {
+        .numCores = `module.getEnetResPartInfoNumCores()`,
+        .coreResInfo =
+        {
+            %var numCores = module.getEnetResPartInfoNumCores();
+            %for (var i = 0; i < numCores; i++){
+                [`i`] =
+                {
+                    .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,
+                    .numRxCh       = `module.getEnetCoreResInfoNumRxCh(i)`,
+                    .numRxFlows    = ENET_SYSCFG_RX_FLOWS_NUM,
+                    .coreId        = `module.getCpuID()`,
+            %if (instance.mode == "SWITCH") {
+                    .numMacAddress = 4U,
+            %}
+            %else {
+                    .numMacAddress = `module.getEnetCoreResInfoNumMac(i)`,
+            %}
+                    .numHwPush     = `module.getEnetCoreResInfoNumHwPush(i)`,
+                },
+            %}
+        },
+        .isStaticTxChanAllocated = `module.getEnetResPartInfoIsStatTxChAlloc()`,
+    },
+    .ioctlPermissionInfo =
+    {
+        .defaultPermittedCoreMask = 0xFFFFFFFFU,
+        .numEntries = 0,
+        .entry = {{0}}
+    },
+    .macList =
+    {
+        .numMacAddress = 0,
+        .macAddress =
+        {
+            %for (var i = 0; i < 10; i++){
+                [`i`] = {0, 0, 0, 0, 0, 0},
+            %}
+        }
+    },
+};
+
+Icssg_Cfg gEnetIcssgCfg =
+{
+    .agingPeriod = (uint64_t)ICSSG_CFG_DEFAULT_AGING_PERIOD_MS,
+    .vlanCfg =
+    {
+        .portPri = 0U,
+        .portCfi = 0U,
+        .portVID = 0U,
+    },
+    .dmaCfg = &gDmaCfg,
+    .resCfg = gEnetRmResCfg,
+    .mdioCfg =
+    {
+        .mode               = `instance.mdioMode`,
+        .mdioBusFreqHz      = `instance.mdioBusFreqHz`,
+        .phyStatePollFreqHz = `enetutilsScript.getPhyStatePollFreqHz(instance.mdioBusFreqHz, instance.mdioIPGRatio)`,
+        .pollEnMask         = `enetutilsScript.getArraytoBitMask(instance.mdioPollEnMask)`,
+        .c45EnMask          = `enetutilsScript.getArraytoBitMask(instance.mdioC45EnMask)`,
+        .isMaster           = `instance.mdioIsMaster`,
+%if(instance.ExternalPhyMgmtEnable == true){
+        .disableStateMachineOnInit = true,
+%}
+%else {
+        .disableStateMachineOnInit = `instance.mdioDisableStateMachineOnInit`,
+%}
+    },
+    .timeSyncCfg =
+    {
+        .enable = `instance.timesyncEnable`,
+        .clkType = `instance.timesyncClkType`,
+        .syncOut_start_WC = `instance.timesyncSyncOut_start_WC`,
+        .syncOut_pwidth_WC = `instance.timesyncSyncOut_pwidth_WC`,
+    },
+    .mii =
+    {
+% if (instance.phyToMacInterfaceMode == "MII") {
+        .layerType = ENET_MAC_LAYER_MII,
+        .sublayerType = ENET_MAC_SUBLAYER_STANDARD,
+        .variantType = ENET_MAC_VARIANT_NONE,
+%}
+% else if (instance.phyToMacInterfaceMode == "RGMII") {
+        .layerType = ENET_MAC_LAYER_GMII,
+        .sublayerType = ENET_MAC_SUBLAYER_REDUCED,
+        .variantType = ENET_MAC_VARIANT_FORCED,
+%}
+% else {
+        .layerType = ENET_MAC_LAYER_MII,
+        .sublayerType = ENET_MAC_SUBLAYER_REDUCED,
+        .variantType = ENET_MAC_VARIANT_NONE,
+%}
+    },
+    .cycleTimeNs = ICSSG_IEP_DFLT_CYCLE_TIME_NSECS,
+    .mdioLinkIntCfg =
+    {
+        .mdioLinkStateChangeCb = NULL,
+        .mdioLinkStateChangeCbArg = NULL,
+    },
+    .portLinkIntCfg =
+    {
+        .portLinkStateChangeCb = NULL,
+        .portLinkStateChangeCbArg = NULL,
+    },
+%if(instance.ExternalPhyMgmtEnable == true){
+    .disablePhyDriver = true,
+%}
+%else {
+    .disablePhyDriver = false,
+%}
+    .qosLevels = `Number(instance.QoS)`U,
+    .isPremQueEnable = `instance.PremptionEnable`,
+    .clockTypeFw = ICSSG_TIMESYNC_CLKTYPE_WORKING_CLOCK,
+};
+
+Icssg_Cfg * EnetApp_getIcssgCfg(const Enet_Type enetType, const uint32_t instId)
+{
+    Icssg_Cfg * pIcssgCfg = NULL;
+
+    if(Enet_isIcssFamily(enetType))
+    {
+        pIcssgCfg = &gEnetIcssgCfg;
+    }
+
+    return pIcssgCfg;
+}
+
+void EnetApp_icssgInitMacAddr(const Enet_Type enetType,
+                              const uint32_t instId)
+{
+    int32_t status;
+    Icssg_Cfg *pIcssgCfg = NULL;
+    EnetRm_ResCfg *resCfg =NULL;
+    pIcssgCfg = EnetApp_getIcssgCfg(enetType, instId);
+
+    EnetAppUtils_assert(pIcssgCfg != NULL);
+    resCfg = &pIcssgCfg->resCfg;
+    EnetAppUtils_assert(resCfg != NULL);
+ 
+    status = EnetAppSoc_getMacAddrList(enetType,
+                                       instId,
+                                       resCfg->macList.macAddress,
+                                       &resCfg->macList.numMacAddress);
+    EnetAppUtils_assert(status == ENET_SOK);
+    if (resCfg->macList.numMacAddress > ENET_ARRAYSIZE(resCfg->macList.macAddress))
+    {
+        EnetAppUtils_print("EnetAppUtils_initResourceConfig: "
+                           "Limiting number of mac address entries to resCfg->macList.macAddress size"
+                           "Available:%u, LimitedTo: %u",
+                           resCfg->macList.numMacAddress,
+                           ENET_ARRAYSIZE(resCfg->macList.macAddress));
+        resCfg->macList.numMacAddress = ENET_ARRAYSIZE(resCfg->macList.macAddress);
+    }
+
+    EnetAppUtils_updatemacResPart(&resCfg->resPartInfo,
+                                  resCfg->macList.numMacAddress,
+                                  resCfg->selfCoreId);
+}

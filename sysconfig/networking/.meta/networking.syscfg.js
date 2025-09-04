@@ -16,6 +16,21 @@ exports = common.getSelfSysCfgCoreName().includes('pru') ? {} : {
             alwaysRun: true,
         },
         {
+            name: "/networking/common/enet_init.c.xdt",
+            outputPath: "ti_enet_init.c",
+            alwaysRun: true,
+        },
+        {
+            name: "/networking/common/dma_init.h.xdt",
+            outputPath: "ti_enet_dma_init.h",
+            alwaysRun: true,
+        },
+        {
+            name: "/networking/common/dma_init.c.xdt",
+            outputPath: "ti_enet_dma_init.c",
+            alwaysRun: true,
+        },
+        {
             name: "/networking/common/enet_open.c.xdt",
             outputPath: "ti_enet_open_close.c",
             alwaysRun: true,

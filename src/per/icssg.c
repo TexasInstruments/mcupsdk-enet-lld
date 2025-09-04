@@ -78,12 +78,8 @@
 #define ICSSG_VLAN_TBL_MAX_ENTRIES          (4096U)
 #define ICSSG_VLAN_UNTAGGED                 ((int16_t)-1)
 #define ICSSG_DRAM1_OFFSET_FROM_DRAM0       (0x2000U)
-#define ICSSG_CFG_DEFAULT_AGING_PERIOD_MS   (0x6FC23AC00)
 #define ICSSG_CFG_TX_IPG_960_NS             (0x17U)
 #define ICSSG_CFG_TX_IPG_104_NS             (0x0BU)
-
-/*! IEP default cycle time of 1 ms. */
-#define ICSSG_IEP_DFLT_CYCLE_TIME_NSECS     (1000000U)
 
 /* Implement promiscuous mode using ucast/mcast flooding as filter-based approach
  * is not fully functional for both Switch and Dual-MAC */

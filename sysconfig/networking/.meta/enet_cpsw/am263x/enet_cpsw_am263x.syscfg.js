@@ -35,7 +35,26 @@ const enet_cpsw_cpdma_channel_config = {
 	longDescription: "Configuration of Tx/Rx DMA channels",
     collapsed:true,
     config: [
-
+        {
+            name: "txInterruptPerMSec",
+            description: "Number of tx Interrupts per millisecond",
+            displayName: "Tx Interrupt Per MSec",
+            default:0,
+            isInteger:true,
+        },
+        {
+            name: "rxInterruptPerMSec",
+            description: "Number of rx Interrupts per millisecond",
+            displayName: "Rx Interrupt Per MSec",
+            default:0,
+            isInteger:true,
+        },
+        {
+            name: "enChOverrideFlag",
+            description: "Flag to enable channel override feature to be used by classifier",
+            displayName: "Enable Channel Override Flag",
+            default:false,
+        },
     ],
 };
 
@@ -631,6 +650,41 @@ function getCpuInfo() {
 	return cpuInfo.get(getCpuID());
 }
 
+function getEnetResPartInfoNumCores() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.numCores;
+}
+
+function getEnetCoreResInfoNumRxCh(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numRxCh;
+}
+
+function getEnetCoreResInfoNumMac(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numMacAddress;
+}
+
+function getEnetCoreResInfoNumHwPush(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numHwPush;
+}
+
+function getEnetResPartInfoIsStatTxChAlloc() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.isStaticTxChanAllocated;
+}
+
+function getEnetResPartInfo() {
+    const ResPartInfoMap = new Map(
+                               [
+                                 ['am263x',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                            ],
+                             );
+    let instInfo =  ResPartInfoMap.get(common.getSocName());
+    return instInfo;
+}
+
 let enet_cpsw_module_name = "/networking/enet_cpsw/enet_cpsw";
 
 let enet_cpsw_module = {
@@ -663,6 +717,18 @@ let enet_cpsw_module = {
         },
         "/networking/common/enet_config.h.xdt": {
             enet_config: "/networking/enet_cpsw/templates/enet_syscfg.h.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/enet_init.c.xdt": {
+            enet_init: "/networking/enet_cpsw/templates/cpsw_init_config.c.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.h.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.h.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.c.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.c.xdt",
             moduleName: enet_cpsw_module_name,
         },
         "/networking/common/enet_open.c.xdt": {
@@ -757,6 +823,12 @@ let enet_cpsw_module = {
     getNetifEtherringSupport,
     getDefaultNetifIdx,
     getMiiConfig,
+    getEnetResPartInfo,
+    getEnetResPartInfoNumCores,
+    getEnetCoreResInfoNumRxCh,
+    getEnetCoreResInfoNumMac,
+    getEnetCoreResInfoNumHwPush,
+    getEnetResPartInfoIsStatTxChAlloc,
     validate: validate,
 };
 

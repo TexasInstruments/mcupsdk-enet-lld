@@ -1,0 +1,60 @@
+%%{
+    let module = system.modules["/networking/enet_cpsw/enet_cpsw"];
+%%}
+% let instance = module.$instances[0];
+% let common = system.getScript("/common");
+% let device = common.getDeviceName();
+% let soc = common.getSocName();
+
+% if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+#include <drivers/udma/udma_priv.h>
+%}
+%else {
+#include <include/dma/cpdma/enet_cpdma.h>
+%}
+
+typedef struct EnetApp_TxChInitCfg_s
+{
+% if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+    uint32_t txNumPkts;
+    uint32_t useGlobalEvt;
+%}
+%else {
+    uint32_t txNumPkts;
+%}
+}EnetApp_TxChInitCfg;
+
+typedef struct EnetApp_RxChInitCfg_s
+{
+% if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+    uint32_t rxNumPkts;
+    uint32_t useGlobalEvt;
+    uint32_t allocMacAddrCnt;
+    uint8_t  sizeThreshEn;
+    bool     isDefaultFlow;
+%}
+%else {
+    uint32_t rxNumPkts;
+    uint32_t allocMacAddrCnt;
+%}
+}EnetApp_RxChInitCfg;
+
+typedef struct EnetApp_DmaCfg_s
+{
+    EnetApp_TxChInitCfg txChInitCfg[`module.getTxChannelCount(instance)`];
+    EnetApp_RxChInitCfg rxChInitCfg[`module.getRxChannelCount(instance)`]; 
+}EnetApp_DmaCfg;
+
+% if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+void EnetApp_updateTxChInitCfg(EnetUdma_OpenTxChPrms * pTxChPrms, uint32_t chId);
+%}
+%else {
+void EnetApp_updateTxChInitCfg(EnetCpdma_OpenTxChPrms * pTxChPrms, uint32_t chId);
+%}
+
+% if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+void EnetApp_updateRxChInitCfg(EnetUdma_OpenRxFlowPrms * pRxFlowPrms, uint32_t chId);
+%}
+%else {
+void EnetApp_updateRxChInitCfg(EnetCpdma_OpenRxChPrms * pRxChPrms, uint32_t chId);
+%}

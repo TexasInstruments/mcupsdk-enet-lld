@@ -716,6 +716,54 @@ function getEnetCoreIntNumPrefix() {
 
 }
 
+function getEnetResPartInfoNumCores() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.numCores;
+}
+
+function getEnetCoreResInfoCoreId(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].coreId;
+}
+
+function getEnetCoreResInfoNumRxCh(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numRxCh;
+}
+
+function getEnetCoreResInfoNumRxFlows(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numRxFlows;
+}
+
+function getEnetCoreResInfoNumMac(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numMacAddress;
+}
+
+function getEnetCoreResInfoNumHwPush(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numHwPush;
+}
+
+function getEnetResPartInfoIsStatTxChAlloc() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.isStaticTxChanAllocated;
+}
+
+function getEnetResPartInfo() {
+    const ResPartInfoMap = new Map(
+                               [
+                                 ['am62x', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62dx',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62ax', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62px',{numCores: 3, coreResInfo: [{coreId: 'CSL_CORE_ID_WKUP_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},{coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},{coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 0},{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                               ],
+                             );
+    let instInfo =  ResPartInfoMap.get(common.getSocName());
+    return instInfo;
+}
+
 let enet_cpsw_module_name = "/networking/enet_cpsw/enet_cpsw";
 
 let enet_cpsw_module = {
@@ -744,6 +792,19 @@ let enet_cpsw_module = {
         "/networking/common/enet_config.c.xdt": {
             enet_mem_config: "/networking/enet_cpsw/templates/enet_app_memutils_cfg_udma.c.xdt",
             enet_syscfg_info: "/networking/enet_cpsw/templates/enet_app_syscfg_info.c.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+
+        "/networking/common/enet_init.c.xdt": {
+            enet_init: "/networking/enet_cpsw/templates/cpsw_init_config.c.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.h.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.h.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.c.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.c.xdt",
             moduleName: enet_cpsw_module_name,
         },
         "/networking/common/enet_config.h.xdt": {
@@ -821,6 +882,14 @@ let enet_cpsw_module = {
     getDefaultNetifIdx,
     getDefaultPacketCount,
     getMiiConfig,
+    getEnetResPartInfo,
+    getEnetResPartInfoNumCores,
+    getEnetCoreResInfoCoreId,
+    getEnetCoreResInfoNumRxCh,
+    getEnetCoreResInfoNumRxFlows,
+    getEnetCoreResInfoNumMac,
+    getEnetCoreResInfoNumHwPush,
+    getEnetResPartInfoIsStatTxChAlloc,
     validate: validate,
 };
 

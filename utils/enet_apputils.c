@@ -993,7 +993,7 @@ static void EnetAppUtils_reduceCoreMacAllocation(EnetRm_ResPrms *resPrms,
     }
 }
 
-static void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
+void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
                                                     uint32_t availMacCount,
                                                     uint32_t selfCoreId)
 {

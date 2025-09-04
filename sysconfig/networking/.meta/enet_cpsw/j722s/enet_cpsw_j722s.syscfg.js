@@ -689,6 +689,41 @@ function getEnetCoreIntNumPrefix() {
     }
 }
 
+function getEnetResPartInfoNumCores() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.numCores;
+}
+
+function getEnetCoreResInfoNumRxCh(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numRxCh;
+}
+
+function getEnetCoreResInfoNumMac(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numMacAddress;
+}
+
+function getEnetCoreResInfoNumHwPush(idx) {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.coreResInfo[idx].numHwPush;
+}
+
+function getEnetResPartInfoIsStatTxChAlloc() {
+    let resPartInfo = getEnetResPartInfo();
+    return resPartInfo.isStaticTxChanAllocated;
+}
+
+function getEnetResPartInfo() {
+    const ResPartInfoMap = new Map(
+                               [
+                                 ['j722s',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                            ],
+                             );
+    let instInfo =  ResPartInfoMap.get(common.getSocName());
+    return instInfo;
+}
+
 let enet_cpsw_module_name = "/networking/enet_cpsw/enet_cpsw";
 
 let enet_cpsw_module = {
@@ -721,6 +756,18 @@ let enet_cpsw_module = {
         },
         "/networking/common/enet_config.h.xdt": {
             enet_config: "/networking/enet_cpsw/templates/enet_syscfg.h.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/enet_init.c.xdt": {
+            enet_init: "/networking/enet_cpsw/templates/cpsw_init_config.c.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.h.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.h.xdt",
+            moduleName: enet_cpsw_module_name,
+        },
+        "/networking/common/dma_init.c.xdt": {
+            dma_init: "/networking/enet_cpsw/templates/dma_init_config.c.xdt",
             moduleName: enet_cpsw_module_name,
         },
         "/networking/common/enet_open.c.xdt": {
@@ -793,6 +840,12 @@ let enet_cpsw_module = {
     getDefaultNetifIdx,
     getDefaultPacketCount,
     getMiiConfig,
+    getEnetResPartInfo,
+    getEnetResPartInfoNumCores,
+    getEnetCoreResInfoNumRxCh,
+    getEnetCoreResInfoNumMac,
+    getEnetCoreResInfoNumHwPush,
+    getEnetResPartInfoIsStatTxChAlloc,
     validate: validate,
 };
 
