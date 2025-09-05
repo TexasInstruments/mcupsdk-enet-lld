@@ -373,7 +373,7 @@ static void *EnetApp_runCrfListener(EnetApp_ModuleCtx_t *mdctx, char *stream_id)
 
 static void *EnetApp_crfListenerTask(void *arg)
 {
-    return EnetApp_runCrfListener(arg, "00:01:02:03:04:05:00:05");
+    return EnetApp_runCrfListener(arg, "00:01:02:03:04:05:00:04");
 }
 
 static uint8_t gCrfListenerStackBuf[TSN_TSK_STACK_SIZE] \
