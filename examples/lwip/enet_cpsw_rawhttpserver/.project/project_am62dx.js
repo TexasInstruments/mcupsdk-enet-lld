@@ -17,7 +17,7 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
+        "../../../..", /* Example base */
     ],
 };
 
@@ -132,7 +132,7 @@ const templates_nortos_r5f =
 
 
 const buildOptionCombos = [
-    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "nortos"},
+    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "nortos"},
 ];
 
 function getComponentProperty() {

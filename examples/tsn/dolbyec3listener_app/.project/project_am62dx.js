@@ -33,20 +33,20 @@ const remote_files = {
 const main_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
         "../../../..", /* Example base */
-        "../../../../nrt_flow", /* Example base */
-        "../../../../dolbyec3_app", /* Example base */
+        "../../../../..", /* Example base */
+        "../../../../../nrt_flow", /* Example base */
+        "../../../../../dolbyec3_app", /* Example base */
     ],
 };
 
 const remote_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
         "../../../..", /* Example base */
-        "../../../../nrt_flow", /* Example base */
-        "../../../../dolbyec3_app", /* Example base */
+        "../../../../..", /* Example base */
+        "../../../../../nrt_flow", /* Example base */
+        "../../../../../dolbyec3_app", /* Example base */
     ],
 };
 
@@ -222,8 +222,8 @@ const templates_freertos_c75 =
 ];
 
 const buildOptionCombos = [
-	{ device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "freertos"},
-    { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm", os: "freertos"},
+	{ device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
+    { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {

@@ -18,7 +18,7 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../V0", /* Example base */
+        "../../../../V0", /* Example base */
     ],
 };
 
@@ -129,7 +129,7 @@ const templates_freertos_r5f =
 ];
 
 const buildOptionCombos = [
-    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "freertos"},
+    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {

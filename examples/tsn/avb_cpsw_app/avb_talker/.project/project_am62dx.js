@@ -33,22 +33,22 @@ const remote_files = {
 const main_filedirs = {
     common: [
         "..", /* core_os_combo base */
-        "../..", /* Example base */
         "../../..", /* Example base */
         "../../../..", /* Example base */
         "../../../../..", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
+        "../../../../../..", /* Example base */
+        "../../../../../../nrt_flow", /* Example base */
     ],
 };
 
 const remote_filedirs = {
     common: [
         "..", /* core_os_combo base */
-        "../..", /* Example base */
         "../../..", /* Example base */
         "../../../..", /* Example base */
         "../../../../..", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
+        "../../../../../..", /* Example base */
+        "../../../../../../nrt_flow", /* Example base */
     ],
 };
 
@@ -225,8 +225,8 @@ const templates_freertos_c75 =
 ];
 
 const buildOptionCombos = [
-    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "freertos", isPartOfSystemProject: true},
-    { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm", os: "freertos", isPartOfSystemProject: true},
+    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos", isPartOfSystemProject: true},
+    { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos", isPartOfSystemProject: true},
 ];
 
 const systemProjects =[
@@ -235,10 +235,10 @@ const systemProjects =[
         tag: "avbtalker_app",
         skipProjectSpec: false,
         readmeDoxygenPageTag: readmeDoxygenPageTag,
-        board: "am62dx-evm",
+        board: "am62dx-evm-dp83867/am62dx-evm",
         projects: [
-            { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "freertos", isPartOfSystemProject: true},
-            { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm", os: "freertos", isPartOfSystemProject: true},
+            { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos", isPartOfSystemProject: true},
+            { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos", isPartOfSystemProject: true},
         ],
     },
 ]

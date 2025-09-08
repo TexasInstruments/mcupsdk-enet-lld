@@ -24,10 +24,10 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
         "../../../..", /* Example base */
-        "../../../../nrt_flow", /* Example base */
-        "../../../../aafpcm_app", /* Example base */    ],
+        "../../../../..", /* Example base */
+        "../../../../../nrt_flow", /* Example base */
+        "../../../../../aafpcm_app", /* Example base */    ],
 };
 
 const libdirs_freertos = {
@@ -169,7 +169,7 @@ const templates_freertos_r5f =
 ];
 
 const buildOptionCombos = [
-    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm", os: "freertos"},
+    { device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {
