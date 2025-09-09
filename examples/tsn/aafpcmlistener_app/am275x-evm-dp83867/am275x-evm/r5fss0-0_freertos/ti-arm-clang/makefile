@@ -21,24 +21,31 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=enet_cpsw_loopback_mac_end.$(PROFILE).out
+OUTNAME:=aafpcmlistener_app.$(PROFILE).out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=enet_cpsw_loopback_mac_end.$(PROFILE).mcelf
-BOOTIMAGE_NAME_XIP:=enet_cpsw_loopback_mac_end.$(PROFILE).mcelf_xip
-BOOTIMAGE_NAME_SIGNED:=enet_cpsw_loopback_mac_end.$(PROFILE).mcelf.signed
-BOOTIMAGE_NAME_HS:=enet_cpsw_loopback_mac_end.$(PROFILE).mcelf.hs
-BOOTIMAGE_NAME_HS_FS:=enet_cpsw_loopback_mac_end.$(PROFILE).mcelf.hs_fs
+BOOTIMAGE_NAME:=aafpcmlistener_app.$(PROFILE).mcelf
+BOOTIMAGE_NAME_XIP:=aafpcmlistener_app.$(PROFILE).mcelf_xip
+BOOTIMAGE_NAME_SIGNED:=aafpcmlistener_app.$(PROFILE).mcelf.signed
+BOOTIMAGE_NAME_HS:=aafpcmlistener_app.$(PROFILE).mcelf.hs
+BOOTIMAGE_NAME_HS_FS:=aafpcmlistener_app.$(PROFILE).mcelf.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
 endif
 
 FILES_common := \
-	loopback_cfg.c \
-	loopback_test.c \
-	loopback_main.c \
+	gptp_init.c \
+	avtp_init.c \
+	default_flow_cfg.c \
+	tsninit.c \
+	debug_log.c \
+	enetapp_cpsw.c \
+	tsnapp_cpsw_main.c \
+	default_flow_cpsw.c \
 	main.c \
+	sample_audio.c \
+	aaf_pcm_app.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -55,7 +62,10 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../../ \
+	../../../.. \
+	../../../../.. \
+	../../../../../nrt_flow \
+	../../../../../aafpcm_app \
 	generated \
 
 INCLUDES_common := \
@@ -77,12 +87,33 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am275x \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_inc/tsn_l2 \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_combase/tilld/sitara \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/gptpconf \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf/yangs \
 	-Igenerated \
 
 DEFINES_common := \
 	-DSOC_AM275X \
+	-DSOC_AM275DX \
 	-DENET_ENABLE_PER_CPSW=1 \
-	-DSOC_am275x \
+	-DPRINT_FORMAT_NO_WARNING \
+	-DSITARA \
+	-DNO_GETOPT_LONG=1 \
+	-DUB_LOGCAT=5 \
+	-DAVTP_ENABLED=1 \
+	-DAVTP_HAVE_NO_SIGNAL=1 \
+	-DGPTP_ENABLED=1 \
+	-DAAF_PCM_ENABLED=1 \
+	-DAAF_PCM_LISTENER_ENABLE=1 \
+	-DAVTP_DIRECT_MODE=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -94,6 +125,7 @@ CFLAGS_common := \
 	-g \
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-unused-function \
+	--include tsn_buildconf/sitara_buildconf.h \
 
 CFLAGS_release := \
 	-Os \
@@ -124,13 +156,24 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
 	-lfreertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ldrivers.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-lenet-cpsw.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lboard.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-llibc.a \
+	-llibsysbm.a \
+	-ltsn_combase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_unibase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ltsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
+	-lyangemb-freertos.am275x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -154,8 +197,16 @@ LNKOPTFLAGS_release = \
 LIBS_NAME = \
 	freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	drivers.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	enet-cpsw.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	board.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	libc.a \
+	libsysbm.a \
+	tsn_combase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_unibase-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
+	tsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
+	yangemb-freertos.am275x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -167,6 +218,9 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 LIBS_PREBUILD_PATH_NAME = \
@@ -238,7 +292,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am275x:r5fss0-0:freertos:ti-arm-clang enet_cpsw_loopback_mac_end ...
+	@echo  Scrubing: am275x:r5fss0-0:freertos:ti-arm-clang aafpcmlistener_app ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
