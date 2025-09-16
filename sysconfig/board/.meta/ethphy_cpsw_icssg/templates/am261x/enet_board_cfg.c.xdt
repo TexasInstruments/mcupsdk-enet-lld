@@ -76,7 +76,10 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
 #define MSS_CPSW_CONTROL_PORT_MODE_RMII                                   (0x1U)
 #define MSS_CPSW_CONTROL_PORT_MODE_RGMII                                  (0x2U)
 
-#define I2C_EEPROM_MAC_DATA_OFFSET                                        (0x3D)
+#define I2C_EEPROM_DATATYPE_MAC_OFFSET                                    (0x38)
+#define I2C_EEPROM_DATATYPE_MAC                                           (0x13)
+
+#define I2C_EEPROM_MAC_DATA_OFFSET                                        (I2C_EEPROM_DATATYPE_MAC_OFFSET + 0x5)
 #define I2C_EEPROM_MAC_CTRL_OFFSET                                        (0x3B)
 
 #define ENET_BOARD_NUM_MACADDR_MAX                                        (3U)
@@ -88,6 +91,8 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
 
 #define EEPROM_OFFSET_READ_PCB_REV                                        (0x0022U)
 #define EEPROM_READ_PCB_REV_DATA_LEN                                      (0x2U)
+
+#define I2C_EEPROM_IS_MAC_ADDR_VALID(mac)                                 (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -239,7 +244,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 % } else {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_MII);
 %}
-%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
+%if (cpsw_instance.BoardType === "am261x-lp"){
             EnetBoard_setMacPort1IOExpanderCfg();
 %}
             break;
@@ -252,7 +257,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 % } else {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_MII);
 %}
-%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
+%if (cpsw_instance.BoardType === "am261x-lp"){
             EnetBoard_setMacPort2IOExpanderCfg();
 %}
             break;
@@ -264,7 +269,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     return ENET_SOK;
 }
 
-%if ((cpsw_instance.BoardType === "am261x-lp (dp83826 phy)") || (cpsw_instance.BoardType === "am261x-lp (dp83tg720 phy)")){
+%if (cpsw_instance.BoardType === "am261x-lp"){
 static void EnetBoard_enableLevelTranslator(void)
 {
     TCA6408_Config  gTCA6408_Config;
@@ -300,7 +305,7 @@ void EnetBoard_setMacPort1IOExpanderCfg(void)
     int32_t status    = ENET_SOK;
     uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
 
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM1], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
     EnetAppUtils_assert(status == ENET_SOK);
 
     /* Syscfg board version is used on when Eeprom is not programmed(0xFF)  */
@@ -313,11 +318,11 @@ void EnetBoard_setMacPort1IOExpanderCfg(void)
 
     if(status == ENET_SOK)
     {
-        if((boardVer[1] == '2') && (boardVer[0] == 'E'))
-        {
-            /* board version is E2 */
-            EnetBoard_enableLevelTranslator();
-        }
+    if(((boardVer[1] == '2') && (boardVer[0] == 'E')) || ((boardVer[1] == 0) && (boardVer[0] == 'A')))
+    {
+        /* board version is or Rev-A */
+        EnetBoard_enableLevelTranslator();
+    }
     }
     EnetAppUtils_assert(status == ENET_SOK);
 
@@ -347,8 +352,14 @@ void EnetBoard_setMacPort1IOExpanderCfg(void)
         }
         else if(boardVer[1] == '1' && boardVer[0] == 'E')
         {
-            /* board Version is E1*/
+            /* board Version is E1 */
             status =  TCA6408_setOutput(&gTCA6408_Config, 4, TCA6408_OUT_STATE_HIGH);
+            EnetAppUtils_assert(status == ENET_SOK);
+        }
+        else if(boardVer[1] == 0 && boardVer[0] == 'A')
+        {
+            /* board Version is Rev-A */
+            status =  TCA6408_setOutput(&gTCA6408_Config, 3, TCA6408_OUT_STATE_LOW);
             EnetAppUtils_assert(status == ENET_SOK);
         }
     }
@@ -361,7 +372,7 @@ void EnetBoard_setMacPort2IOExpanderCfg(void)
     int32_t status    = ENET_SOK;
     uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
 
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM1], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
 
     /* Syscfg board version is used on when Eeprom is not programmed(0xFF)  */
     if ((boardVer[1] == 0xFF) && (boardVer[0] == 0xFF))
@@ -373,9 +384,9 @@ void EnetBoard_setMacPort2IOExpanderCfg(void)
 
     if(status == ENET_SOK)
     {
-        if((boardVer[1] == '2') && (boardVer[0] == 'E'))
+        if(((boardVer[1] == '2') && (boardVer[0] == 'E')) || ((boardVer[1] == 0) && (boardVer[0] == 'A')))
         {
-            /* board Version is E2 */
+            /* board Version is E2 or Rev-A */
             EnetBoard_enableLevelTranslator();
         }
     }
@@ -408,30 +419,105 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t *pAvailMacEntries)
 {
     int32_t status = ENET_SOK;
-    uint32_t macAddrCnt;
+    uint32_t macAddrCnt = 0U;
     uint32_t i;
     uint8_t numMacMax;
     uint8_t macAddrBuf[ENET_BOARD_NUM_MACADDR_MAX * ENET_MAC_ADDR_LEN];
     uint8_t validNumMac = 0U;
+    uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
 
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0],  I2C_EEPROM_MAC_CTRL_OFFSET, &numMacMax, sizeof(uint8_t));
+    /* One Mac address is programmed in each EEPROM for E1/E2 version */
+    uint32_t eepromInstanceArray[ENET_BOARD_NUM_MACADDR_MAX];
+    uint32_t eepromInstanceCount = 0U;
+    uint8_t typeWord = 0U;
+    uint8_t macAddrBuf[ENET_MAC_ADDR_LEN];
+    uint32_t eepromInstance = 0U;
+
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], EEPROM_OFFSET_READ_PCB_REV, boardVer, EEPROM_READ_PCB_REV_DATA_LEN);
     EnetAppUtils_assert(status == ENET_SOK);
-    EnetAppUtils_assert(ENET_GET_NUM_MAC_ADDR(numMacMax) <= ENET_BOARD_NUM_MACADDR_MAX);
-    EnetAppUtils_assert(pAvailMacEntries != NULL);
 
-    macAddrCnt = EnetUtils_min(ENET_GET_NUM_MAC_ADDR(numMacMax), maxMacEntries);
-
-    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBuf, (macAddrCnt * ENET_MAC_ADDR_LEN) );
-    EnetAppUtils_assert(status == ENET_SOK);
-
-    /* Save only those required to meet the max number of MAC entries */
-    /* Validating that the MAC addresses from the EEPROM are not MULTICAST addresses */
-    for (i = 0U; i < macAddrCnt; i++)
+    if ((boardVer[1] == 0) && (boardVer[0] == 'A'))
     {
-        if(!(macAddrBuf[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
-            memcpy(macAddr[validNumMac], &macAddrBuf[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
-            validNumMac++;
+        status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0],  I2C_EEPROM_MAC_CTRL_OFFSET, &numMacMax, sizeof(uint8_t));
+        EnetAppUtils_assert(status == ENET_SOK);
+        EnetAppUtils_assert(ENET_GET_NUM_MAC_ADDR(numMacMax) <= ENET_BOARD_NUM_MACADDR_MAX);
+        EnetAppUtils_assert(pAvailMacEntries != NULL);
+
+        macAddrCnt = EnetUtils_min(ENET_GET_NUM_MAC_ADDR(numMacMax), maxMacEntries);
+
+        status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBuf, (macAddrCnt * ENET_MAC_ADDR_LEN) );
+        EnetAppUtils_assert(status == ENET_SOK);
+
+        /* Save only those required to meet the max number of MAC entries */
+        /* Validating that the MAC addresses from the EEPROM are not MULTICAST addresses */
+        for (i = 0U; i < macAddrCnt; i++)
+        {
+            if(!(macAddrBuf[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
+                memcpy(macAddr[validNumMac], &macAddrBuf[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
+                validNumMac++;
+            }
         }
+    }
+    else
+    {
+        #ifdef CONFIG_EEPROM_PORT1
+        eepromInstanceArray[eepromInstanceCount] = CONFIG_EEPROM_PORT1;
+        eepromInstanceCount += 1U;
+        #endif
+
+        #ifdef CONFIG_EEPROM_PORT2
+        eepromInstanceArray[eepromInstanceCount] = CONFIG_EEPROM_PORT2;
+        eepromInstanceCount += 1U;
+        #endif
+
+        /* There is one MAC Address in Each EEPROM.
+           take number of mac reads as min(eepromInstanceCount, maxMacEntries) */
+        eepromInstanceCount = EnetUtils_min(eepromInstanceCount, maxMacEntries);
+
+        for (int32_t eepromIndex = 0U; eepromIndex <= eepromInstanceCount; eepromIndex++)
+        {
+            eepromInstance = eepromInstanceArray[eepromIndex];
+
+            /* Check the mac address type word. */
+            typeWord = 0;
+            status = EEPROM_read(gEepromHandle[eepromInstance], I2C_EEPROM_DATATYPE_MAC_OFFSET,
+                                 &typeWord, sizeof(typeWord));
+
+            if (status != SystemP_SUCCESS)
+            {
+                EnetAppUtils_print("Unable to read from eeprom instance number %d\r\n", eepromInstance);
+                continue;
+            }
+            if (typeWord != I2C_EEPROM_DATATYPE_MAC)
+            {
+                EnetAppUtils_print("MAC is not fused in eeprom instance number %d, Invalid typeword %02X\r\n", eepromInstance, (int)typeWord);
+                continue;
+           }
+
+            /* Both read EEPROM and typeword check is success.
+               Now, read MAC Address from EEPROM. */
+            status = EEPROM_read(gEepromHandle[eepromInstance], I2C_EEPROM_MAC_DATA_OFFSET,
+                                                            macAddrBuf, sizeof(macAddrBuf));
+            if (status != SystemP_SUCCESS)
+            {
+                EnetAppUtils_print("Unable to read from eeprom instance number %d\r\n", eepromInstance);
+                continue;
+            }
+
+            /* Validate the MAC Addresses. */
+            if (!I2C_EEPROM_IS_MAC_ADDR_VALID(macAddrBuf))
+            {
+                EnetAppUtils_print("Invalid MAC Address from eeprom instance number %d\r\n", eepromInstance);
+                continue;
+            }
+            if(!(macAddrBuf[0U] & ENET_MAC_ADDR_VALIDATE_MASK))
+            {
+                /* Copy the MAC address to the output buffer */
+                memcpy(macAddr[validNumMac], macAddrBuf, ENET_MAC_ADDR_LEN);
+                validNumMac++;
+            }
+        }
+        macAddrCnt = EnetUtils_min(validNumMac, maxMacEntries);
     }
 
     *pAvailMacEntries = validNumMac;

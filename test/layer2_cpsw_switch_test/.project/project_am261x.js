@@ -4,10 +4,10 @@ let device = "am261x";
 
 const files = {
     common: [
-            "app_cpswconfighandler.c",
-            "app_tcpclient.c",
-            "app_main.c",
+            "l2_cpsw_main.c",
             "main.c",
+            "l2_cpsw_cfg.c",
+            "l2_cpsw_dataflow.c",
     ],
 };
 
@@ -17,7 +17,7 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../..", /* Example base */
+        "../../../../V1", /* Example base */
     ],
 };
 
@@ -28,7 +28,6 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
 
     ],
 };
@@ -41,21 +40,16 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am261x/r5f",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/core",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/am261x",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/include",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/include",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib",
-        "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am261x/enet",
+
     ],
 };
 
@@ -64,10 +58,7 @@ const libs_freertos_r5f = {
         "freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
         "drivers.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
         "enet-cpsw.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "lwipif-cpsw-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "lwip-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
         "board.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "lwip-contrib-freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib",
     ],
 };
 
@@ -86,11 +77,28 @@ const defines_r5f = {
 const cflags_r5f = {
     common: [
     ],
+    release: [
+        "-Oz",
+        "-flto",
+    ],
 };
 
 const lflags_r5f = {
     common: [
         "--zero_init=on",
+        "--use_memset=fast",
+        "--use_memcpy=fast"
+    ],
+};
+
+const loptflags_r5f = {
+    release: [
+        "-mcpu=cortex-r5",
+        "-mfloat-abi=hard",
+        "-mfpu=vfpv3-d16",
+        "-mthumb",
+        "-Oz",
+        "-flto"
     ],
 };
 
@@ -102,7 +110,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_LWIP_CPSW_TCPCLIENT";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_LAYER2_CPSW_SWITCH";
 
 const templates_freertos_r5f =
 [
@@ -110,13 +118,16 @@ const templates_freertos_r5f =
         input: "source/networking/enet/core/sysconfig/.project/templates/freertos/main_freertos.c.xdt",
         output: "../main.c",
         options: {
-            entryFunction: "appMain",
+            entryFunction: "EnetApp_mainTask",
+            taskPri : "2",
+            stackSize : "8192",
         },
     },
 ];
 
 const buildOptionCombos = [
-    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am261x-lp", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am261x-lp-dp83tg720/am261x-lp", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am261x-lp-dp83826/am261x-lp", os: "freertos"},
 ];
 
 function getComponentProperty() {
@@ -124,8 +135,8 @@ function getComponentProperty() {
 
     property.dirPath = path.resolve(__dirname, "..");
     property.type = "executable";
-    property.name = "enet_cpsw_tcpclient";
-    property.isInternal = false;
+    property.name = "l2_cpsw_switch_test";
+    property.isInternal = true;
     property.buildOptionCombos = buildOptionCombos;
 
     return property;
@@ -161,6 +172,7 @@ function getComponentBuildProperty(buildOption) {
             build_property.cflags = cflags_r5f;
             build_property.lflags = lflags_r5f;
             build_property.projectspecLnkPath = linker_includePath_freertos;
+            build_property.loptflags = loptflags_r5f;
         }
     }
 

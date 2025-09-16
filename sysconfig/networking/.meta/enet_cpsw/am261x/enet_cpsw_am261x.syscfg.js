@@ -741,13 +741,10 @@ let enet_cpsw_module = {
             name: "BoardType",
             description: "Board selection for AM261x",
             displayName: "BoardType",
-            default: "am261x-lp (dp83tg720 phy)",
+            default: "am261x-lp",
             options: [
                 {
-                    name: "am261x-lp (dp83tg720 phy)",
-                },
-                {
-                    name: "am261x-lp (dp83826 phy)",
+                    name: "am261x-lp",
                 },
                 {
                     name: "am261x-som",
