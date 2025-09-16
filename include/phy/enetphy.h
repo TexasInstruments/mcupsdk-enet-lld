@@ -801,6 +801,21 @@ int32_t EnetPhy_getLinkCfg(EnetPhy_Handle hPhy,
                            EnetPhy_LinkCfg *linkCfg);
 
 /*!
+ * \brief Get link speed, duplex from phy registers.
+ *
+ * Gets the link speed and duplexity from phy registers. This API will not have longterm support
+ * and it will eventually be merged to EnetPhy_getLinkCfg() in upcoming release. So EnetPhy_getLinkCfg()
+ * API can be continued to use to get the phy link speed, duplexity
+ *
+ * \param hPhy         PHY device handle
+ * \param speed        Link speed read from phy register
+ * \param duplex       Link duplexity read from phy register
+ *
+ * \return \ref EnetPhy_ErrorCodes
+ */
+int32_t EnetPhy_getLinkStatus(EnetPhy_Handle hPhy, EnetPhy_Speed *speed, EnetPhy_Duplexity *duplex);
+
+/*!
  * \brief Read PHY register.
  *
  * Reads a PHY register. It's not meant for extended registers.

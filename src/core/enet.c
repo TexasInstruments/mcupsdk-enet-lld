@@ -618,6 +618,10 @@ static Enet_IoctlValidate gEnetPhy_ioctlValidate[] =
                           sizeof(EnetPhy_GenericInArgs),
                           sizeof(EnetMacPort_LinkCfg)),
 
+    ENET_IOCTL_VALID_PRMS(ENET_PHY_IOCTL_GET_LINK_STATUS,
+                          sizeof(EnetPhy_GenericInArgs),
+                          sizeof(EnetMacPort_LinkCfg)),
+
     ENET_IOCTL_VALID_PRMS(ENET_PHY_IOCTL_RESET,
                           sizeof(EnetPhy_GenericInArgs),
                           0U),

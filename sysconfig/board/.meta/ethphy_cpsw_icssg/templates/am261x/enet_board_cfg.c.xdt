@@ -475,7 +475,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
            take number of mac reads as min(eepromInstanceCount, maxMacEntries) */
         eepromInstanceCount = EnetUtils_min(eepromInstanceCount, maxMacEntries);
 
-        for (int32_t eepromIndex = 0U; eepromIndex <= eepromInstanceCount; eepromIndex++)
+        for (int32_t eepromIndex = 0U; eepromIndex < eepromInstanceCount; eepromIndex++)
         {
             eepromInstance = eepromInstanceArray[eepromIndex];
 

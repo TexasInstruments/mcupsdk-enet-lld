@@ -1572,7 +1572,7 @@ static int32_t Cpsw_handleLinkUp(Cpsw_Handle hCpsw,
     CpswAle_SetPortStateInArgs setPortStateInArgs;
     EnetPhy_LinkCfg phyLinkCfg;
     EnetMacPort_LinkCfg macLinkCfg;
-    int32_t status;
+    int32_t status = ENET_SOK;
 
     /* Assert if port number is not correct */
     Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
@@ -1580,9 +1580,10 @@ static int32_t Cpsw_handleLinkUp(Cpsw_Handle hCpsw,
 
     ENETTRACE_VAR(portId);
 
-    /* Get link parameters (speed/duplexity) from PHY state machine */
-    status = EnetPhy_getLinkCfg(hPhy, &phyLinkCfg);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Port %u: Failed to get PHY link config: %d\r\n", portId, status);
+    /* Get link parameters (speed/duplexity) from PHY registers */
+    status = EnetPhy_getLinkStatus(hPhy, &phyLinkCfg.speed, &phyLinkCfg.duplexity);
+
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Port %u: Failed to read phy link speed, duplexity: %d\r\n", portId, status);
 
     /* Enable MAC port */
     if (status == ENET_SOK)

@@ -315,6 +315,17 @@ enum EnetPhy_Ioctl_e
      * - outArgs: #EnetPhy_GetEventTimestampOutArgs
      */
     ENET_PHY_IOCTL_GET_EVENT_TIMESTAMP = ENET_PHY_PUBLIC_IOCTL(26U),
+
+    /*!
+     * \brief Get Phy Link status. This IOTCL will not have longterm support and this functionality
+     *  will eventually be merged to ENET_PHY_IOCTL_GET_LINK_MODE IOCTL in upcoming release.
+     *  So ENET_PHY_IOCTL_GET_LINK_MODE IOCTL can be continued to use to get the phy link speed, duplexity
+     *
+     * IOCTL parameters:
+     * -  inArgs: #EnetPhy_GenericInArgs
+     * -  outArgs: #EnetMacPort_LinkCfg
+     */
+    ENET_PHY_IOCTL_GET_LINK_STATUS = ENET_PHY_PUBLIC_IOCTL(27U),
 };
 
 /*!

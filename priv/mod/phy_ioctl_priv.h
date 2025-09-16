@@ -79,6 +79,7 @@ int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_LOOPBACK_STATE(EnetPhy
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_IS_ALIVE(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_IS_LINKED(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_LINK_MODE(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
+int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_LINK_STATUS(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_RESET(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_READ_REG(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_WRITE_REG(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms);

@@ -576,7 +576,6 @@ static void EnetApp_macMode2MacMii(emac_mode macMode, EnetMacPort_Interface *pMi
 static void EnetApp_initLinkArgs(const Enet_Type enetType,
                           const uint32_t instId,
                           const Enet_MacPort macPort,
-                          const bool isInNoPhyMode,
                           EnetPer_PortLinkCfg *pLinkArgs)
 {
     EnetMacPort_LinkCfg *pLinkCfg = &pLinkArgs->linkCfg;
@@ -607,38 +606,21 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
 
     EnetPhy_Cfg *pPhyCfg = &pLinkArgs->phyCfg;
 
-    if (isInNoPhyMode)
+    const EnetBoard_PhyCfg* pBoardPhyCfg = EnetBoard_getPhyCfg(&ethPort);
+    if (pBoardPhyCfg != NULL)
     {
-        /* In No-PHY MODE, speed and duplexity can not be in AUTO */
-
-        /* In No-PHY mode, speed of 10M is not possible to operate,
-         * as 10M needs in-band isignalling from PHY to set MAC port clock speed.
-         * Hence, only 100M and 1G is supported in No-PHY mode */
-
-        pPhyCfg->phyAddr    = ENETPHY_INVALID_PHYADDR;
-        pLinkCfg->speed     = (pLinkArgs->mii.layerType == ENET_MAC_LAYER_GMII) ? ENET_SPEED_1GBIT : ENET_SPEED_100MBIT;
-        pLinkCfg->duplexity = ENET_DUPLEX_FULL;
-        EnetAppUtils_print("Setting in NO-PHY mode for MAC port %u\r\n", ENET_MACPORT_ID(macPort));
+        pPhyCfg->phyAddr     = pBoardPhyCfg->phyAddr;
+        pPhyCfg->isStrapped  = pBoardPhyCfg->isStrapped;
+        pPhyCfg->loopbackEn  = `instance.macportLoopbackMode === "LOOPBACK_MODE_PHY"`;
+        pPhyCfg->skipExtendedCfg = pBoardPhyCfg->skipExtendedCfg;
+        pPhyCfg->extendedCfgSize = pBoardPhyCfg->extendedCfgSize;
+        memcpy(pPhyCfg->extendedCfg, pBoardPhyCfg->extendedCfg, pPhyCfg->extendedCfgSize);
     }
     else
     {
-        const EnetBoard_PhyCfg* pBoardPhyCfg = EnetBoard_getPhyCfg(&ethPort);
-        if (pBoardPhyCfg != NULL)
-        {
-            pPhyCfg->phyAddr     = pBoardPhyCfg->phyAddr;
-            pPhyCfg->isStrapped  = pBoardPhyCfg->isStrapped;
-            pPhyCfg->loopbackEn  = `instance.macportLoopbackMode === "LOOPBACK_MODE_PHY"`;
-            pPhyCfg->skipExtendedCfg = pBoardPhyCfg->skipExtendedCfg;
-            pPhyCfg->extendedCfgSize = pBoardPhyCfg->extendedCfgSize;
-            memcpy(pPhyCfg->extendedCfg, pBoardPhyCfg->extendedCfg, pPhyCfg->extendedCfgSize);
-        }
-        else
-        {
-            EnetAppUtils_print("No PHY configuration found for MAC port %u\r\n", ENET_MACPORT_ID(macPort));
-            EnetAppUtils_assert(false);
-        }
+        EnetAppUtils_print("No PHY configuration found for MAC port %u\r\n", ENET_MACPORT_ID(macPort));
+        EnetAppUtils_assert(false);
     }
-
 }
 
 
@@ -675,7 +657,7 @@ static int32_t EnetApp_enablePorts(Enet_Handle hEnet,
         linkArgs.macCfg = &icssgMacCfg;
         linkArgs.macPort = macPortList[i];
 
-        EnetApp_initLinkArgs(enetType, instId, macPortList[i], false, &linkArgs);
+        EnetApp_initLinkArgs(enetType, instId, macPortList[i], &linkArgs);
 %if (instance.GigabitSupportEnable == false) {
         {
             /* If gigabit support is disabled at instance level, update the phy userCaps to

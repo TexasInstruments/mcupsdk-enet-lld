@@ -153,7 +153,6 @@ static void EnetApp_rxPktNotifyCb(void *cbArg);
 static void EnetApp_initLinkArgs(const Enet_Type enetType,
                           const uint32_t instId,
                           const Enet_MacPort macPort,
-                          const bool isInNoPhyMode,
                           EnetPer_PortLinkCfg *linkArgs);
 
 static int32_t EnetApp_enableHostPort(Enet_Handle hEnet,
@@ -644,18 +643,29 @@ void EnetApp_macMode2MacMii(emac_mode macMode, EnetMacPort_Interface *pMii)
 static void EnetApp_initLinkArgs(const Enet_Type enetType,
                           const uint32_t instId,
                           const Enet_MacPort macPort,
-                          const bool isInNoPhyMode,
                           EnetPer_PortLinkCfg *pLinkArgs)
 {
     EnetMacPort_LinkCfg *pLinkCfg = &pLinkArgs->linkCfg;
     int32_t status = ENET_SOK;
     EnetAppUtils_print("Open MAC port %u\r\n", ENET_MACPORT_ID(macPort));
+    bool isInNoPhyMode = false;
+    CpswMacPort_Cfg *macCfgPtr = NULL;
 
     /* Set port link params */
     EnetApp_getMacPortInitConfig(pLinkArgs->macCfg, macPort);
     pLinkArgs->macPort = macPort;
     EnetBoard_getMiiConfig(&pLinkArgs->mii);
     EnetApp_getMacPortLinkCfg(pLinkCfg, macPort);
+
+    if (pLinkArgs->macCfg != NULL)
+    {
+        macCfgPtr = (CpswMacPort_Cfg *)pLinkArgs->macCfg;
+        isInNoPhyMode = macCfgPtr->loopbackEn;
+    }
+    else
+    {
+        EnetAppUtils_print("Invalid Mac%u configuration\r\n", ENET_MACPORT_ID(macPort));
+    }
 
     /* Setup board for requested Ethernet port */
     EnetBoard_EthPort ethPort =
@@ -758,7 +768,7 @@ static int32_t EnetApp_enableMacPort(Enet_Handle hEnet,
     EnetPhy_initCfg(&linkArgs.phyCfg);
 
     /* in MAC loopback mode, we should not configure PHYs. It shall be treated as NO-PHY system */
-    EnetApp_initLinkArgs(enetType, instId, macPort, cpswMacCfg.loopbackEn, &linkArgs);
+    EnetApp_initLinkArgs(enetType, instId, macPort, &linkArgs);
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &linkArgs);
     ENET_IOCTL(hEnet,

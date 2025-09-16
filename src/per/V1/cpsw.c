@@ -1381,12 +1381,16 @@ static int32_t Cpsw_handleLinkUp(Cpsw_Handle hCpsw,
         ENETTRACE_ERR("Port %u: Failed to get link indicator: %d\r\n", portId, status);
     }
 
-    /* Get link parameters (speed/duplexity) from PHY state machine */
-    if (status == ENET_SOK)
+    if (status == ENET_SOK && isPortLinked == true)
     {
-        status = EnetPhy_getLinkCfg(hPhy, &phyLinkCfg);
-        ENETTRACE_ERR_IF(status != ENET_SOK, "Port %u: Failed to get PHY link config: %d\r\n", portId, status);
+        /* Get link parameters (speed/duplexity) from PHY registers */
+        status = EnetPhy_getLinkStatus(hPhy, &phyLinkCfg.speed, &phyLinkCfg.duplexity);
     }
+    else
+    {
+        status = ENET_EFAIL;
+    }
+    ENETTRACE_ERR_IF(status != ENET_SOK, "Port %u: Failed to read phy link speed, duplexity: %d\r\n", portId, status);
 
     /* Enable MAC port */
     if (status == ENET_SOK)

@@ -65,6 +65,7 @@ extern "C" {
 #define ENETPHY_MASK(h, l) ((0xFFFF - (1 << (l)) + 1) & (0xFFFF >> (15 - (h))))
 
 /* General registers */
+#define DP83TG721_PHYSTS        (0x10U)
 #define MII_REG_12              (0x12U)
 #define MII_REG_13              (0x13U)
 #define MII_REG_18              (0x18U)
@@ -111,6 +112,9 @@ extern "C" {
 /*! \brief RGMII_DELAY_CTRL */
 #define RGMII_RX_SHIFT          ENETPHY_BIT(1)
 #define RGMII_TX_SHIFT          ENETPHY_BIT(0)
+
+/*! \brief PHY STS bits */
+#define DP83TG721_PHYSTS_LINK   ENETPHY_BIT(0)
 
 /* 1588 PTP registers */
 #define PTP_CTL      0xD00 /* PTP Control Register */

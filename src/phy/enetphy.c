@@ -615,6 +615,106 @@ int32_t EnetPhy_getLinkCfg(EnetPhy_Handle hPhy,
     return status;
 }
 
+/* API to convert Phy_Link_SpeedDuplex enum to EnetPhy_Speed,EnetPhy_Duplexity */
+static int32_t EnetPhy_convertPhyLinkToSpeedDuplex(const Phy_Link_SpeedDuplex speedDuplex,
+                                                   EnetPhy_Speed *speed,
+                                                   EnetPhy_Duplexity *duplex)
+{
+    int32_t status = ENETPHY_SOK;
+    if (speedDuplex != PHY_LINK_INVALID)
+    {
+        switch(speedDuplex)
+        {
+            case PHY_LINK_FD10:
+                *speed = ENETPHY_SPEED_10MBIT;
+                *duplex = ENETPHY_DUPLEX_FULL;
+                break;
+            case PHY_LINK_FD100:
+                *speed = ENETPHY_SPEED_100MBIT;
+                *duplex = ENETPHY_DUPLEX_FULL;
+                break;
+            case PHY_LINK_FD1000:
+                *speed = ENETPHY_SPEED_1GBIT;
+                *duplex = ENETPHY_DUPLEX_FULL;
+                break;
+            case PHY_LINK_HD10:
+                *speed = ENETPHY_SPEED_10MBIT;
+                *duplex = ENETPHY_DUPLEX_HALF;
+                break;
+            case PHY_LINK_HD100:
+                *speed = ENETPHY_SPEED_100MBIT;
+                *duplex = ENETPHY_DUPLEX_HALF;
+                break;
+            case PHY_LINK_HD1000:
+                *speed = ENETPHY_SPEED_1GBIT;
+                *duplex = ENETPHY_DUPLEX_HALF;
+                break;
+            default:
+                status = ENETPHY_EFAIL;
+        }
+    }
+    else
+    {
+        status = ENETPHY_EFAIL;
+    }
+
+    return status;
+}
+
+int32_t EnetPhy_getLinkStatus(EnetPhy_Handle hPhy, EnetPhy_Speed *speed, EnetPhy_Duplexity *duplex)
+{
+    bool isLinked = false;
+    int32_t status = ENETPHY_EFAIL;
+    Phy_Link_SpeedDuplex speedDuplex = PHY_LINK_INVALID;
+    EnetPhy_LinkCfg linkCfg;
+
+    Enet_devAssert(hPhy != NULL, "PHY %u: Null phy handle address\r\n", hPhy->addr);
+
+    if (hPhy == NULL)
+    {
+        status = ENETPHY_EPERM;
+    }
+    else if (hPhy->phyCfg.loopbackEn)
+    {
+        /* If phy loopback is enabled, read the phy link speed, duplexity from state machine. In this
+         * scenario phy link is down in phy registers which causes 'getSpeedDuplex' API to return invalid
+         * link speed, duplexity */
+        status = EnetPhy_getLinkCfg(hPhy, &linkCfg);
+        if (status == ENETPHY_SOK)
+        {
+            *speed = linkCfg.speed;
+            *duplex = linkCfg.duplexity;
+        }
+    }
+    else
+    {
+        /* Read the phy speed, duplex only If link state is up */
+        isLinked = EnetPhy_isLinked(hPhy);
+        if (isLinked)
+        {
+            if ((hPhy->hDrvIf.fxn.name != NULL) && (hPhy->hDrvIf.fxn.getSpeedDuplex != NULL))
+            {
+                status = hPhy->hDrvIf.fxn.getSpeedDuplex(hPhy->hDrvIf.hDrv,&speedDuplex);
+                if (status == ENETPHY_SOK)
+                {
+                    status = EnetPhy_convertPhyLinkToSpeedDuplex(speedDuplex, speed, duplex);
+                }
+                if (status != ENETPHY_SOK)
+                {
+                    ENETTRACE_WARN("PHY %u: Invalid link status\r\n", hPhy->addr);
+                }
+            }
+        }
+        else
+        {
+            ENETTRACE_WARN("PHY %u: PHY is not linked, can't get link status\r\n", hPhy->addr);
+            status = ENETPHY_EPERM;
+        }
+    }
+
+    return status;
+}
+
 int32_t EnetPhy_readReg(void* pArgs,
                         uint32_t reg,
                         uint16_t *val)

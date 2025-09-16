@@ -428,6 +428,21 @@ typedef struct EnetPhy_Drv_s
      */
     int32_t (*getEventTs)(EnetPhy_Handle hPhy, uint32_t *eventIdx,
                 uint32_t *seqId, uint64_t *ts64);
+
+
+    /*!
+     * \brief Provides selected speed and duplex when link is up
+     *
+     * Accessing vendor specific or extended registers based on type of PHY to provide
+     * agreed speed and duplex mode for actual connection.
+     *
+     * \param hPhy           PHY device handle
+     * \param pConfig        Contains speed/duplex combination used for actual
+     *                       connection. See \ref Phy_Link_SpeedDuplex_e.
+     *
+     * \return \ref EnetPhy_ErrorCodes
+     */
+    int32_t (*getSpeedDuplex)(EthPhyDrv_Handle hPhy, Phy_Link_SpeedDuplex* pConfig);
 } EnetPhy_Drv;
 
 

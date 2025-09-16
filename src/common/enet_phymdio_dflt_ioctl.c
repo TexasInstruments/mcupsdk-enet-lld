@@ -151,6 +151,19 @@ int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_LINK_MODE(EnetPhy_Hand
     return status;
 }
 
+int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_GET_LINK_STATUS(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms)
+{
+    EnetMacPort_LinkCfg *linkCfg = (EnetMacPort_LinkCfg *)prms->outArgs;
+    int32_t status = ENET_SOK;
+
+    status = EnetPhy_getLinkStatus(hPhy, (EnetPhy_Speed*)&linkCfg->speed, (EnetPhy_Duplexity*)&linkCfg->duplexity);
+    if (status != ENETPHY_SOK)
+    {
+        ENETTRACE_ERR("Phy %u: Failed to read phy link speed, duplex: %d\n", hPhy->addr, status);
+    }
+    return status;
+}
+
 int32_t  EnetPhyMdioDflt_ioctl_handler_ENET_PHY_IOCTL_RESET(EnetPhy_Handle hPhy, Enet_IoctlPrms *prms)
 {
     int32_t status = ENET_SOK;

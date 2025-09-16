@@ -281,6 +281,8 @@ static int32_t Dp83tg721_configMediaClock(EthPhyDrv_Handle hPhy);
 static int32_t Dp83tg721_gateMediaClock(EthPhyDrv_Handle hPhy, uint64_t startTime);
 static uint64_t Dp83tg721_getMediaClockEdge(EthPhyDrv_Handle hPhy);
 static int32_t Dp83tg721_configCRFParsing(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_getSpeedDuplex (EthPhyDrv_Handle hPhy,
+                                         Phy_Link_SpeedDuplex *pConfig);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -314,6 +316,8 @@ Phy_DrvObj_t gEnetPhyDrvDp83tg721 =
         .enableEventCapture      = Dp83tg721_enableEventCapture,
         .enableTriggerOutput     = Dp83tg721_enableTriggerOutput,
         .getEventTs              = Dp83tg721_getEventTs,
+        .getSpeedDuplex          = Dp83tg721_getSpeedDuplex,
+
     }
 };
 
@@ -1973,4 +1977,33 @@ static int32_t Dp83tg721_gateMediaClock(EthPhyDrv_Handle hPhy, uint64_t startTim
     Dp83tg721_writeExtReg(hPhy, CLKOUT_MUX_CTL, ENET_BIT(1));
 
     return 0;
+}
+
+int32_t Dp83tg721_getSpeedDuplex(EthPhyDrv_Handle hPhy, Phy_Link_SpeedDuplex *pConfig)
+{
+    int32_t  status;
+    uint32_t speed;
+    uint16_t val;
+
+    Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
+
+    /* Restart is complete when RESET bit has self-cleared */
+    status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, DP83TG721_PHYSTS, &val);
+    if (status == PHY_SOK)
+    {
+        if (val & DP83TG721_PHYSTS_LINK)
+        {
+            speed = 1000;
+            *pConfig = PHY_LINK_FD1000;
+            EnetUtils_printf("PHY %u: selected speed is %d Mbps with full-duplex\n",
+                             PhyPriv_getPhyAddr(hPhy), speed);
+        } else
+        {
+            *pConfig = PHY_LINK_INVALID;
+        }
+    }
+
+    (void)speed;
+
+    return status;
 }
