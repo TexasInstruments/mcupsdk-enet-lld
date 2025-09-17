@@ -22,10 +22,10 @@ const filedirs = {
     common: [
     	"..",
         "../..",
-        "../../..", /* Example base */
-        "../../../can_eth_gateway", /* Example base */
-        "../../../can_trafficgen",
-        "../../../ethernet_config",  
+        "../../../..", /* Example base */
+        "../../../../can_eth_gateway", /* Example base */
+        "../../../../can_trafficgen",
+        "../../../../ethernet_config",  
            ],
 };
 
@@ -138,7 +138,7 @@ const templates_freertos_r5f =
 ];
 
 const buildOptionCombos = [
-	{ device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-lp", os: "freertos"},
+	{ device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-lp-dp83869/am263px-lp", os: "freertos"},
 ];
 
 function getComponentProperty() {
