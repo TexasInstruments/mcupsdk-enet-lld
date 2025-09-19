@@ -414,6 +414,7 @@ void EnetBoard_setMacPort2IOExpanderCfg(void)
 }
 %}
 
+%if (cpsw_instance.BoardType === "am261x-lp"){
 void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
@@ -422,7 +423,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
     uint32_t macAddrCnt = 0U;
     uint32_t i;
     uint8_t numMacMax;
-    uint8_t macAddrBuf[ENET_BOARD_NUM_MACADDR_MAX * ENET_MAC_ADDR_LEN];
+    uint8_t macAddrBufRevA[ENET_BOARD_NUM_MACADDR_MAX * ENET_MAC_ADDR_LEN];
     uint8_t validNumMac = 0U;
     uint8_t boardVer[EEPROM_READ_PCB_REV_DATA_LEN] = "";
 
@@ -445,15 +446,15 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
 
         macAddrCnt = EnetUtils_min(ENET_GET_NUM_MAC_ADDR(numMacMax), maxMacEntries);
 
-        status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBuf, (macAddrCnt * ENET_MAC_ADDR_LEN) );
+        status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBufRevA, (macAddrCnt * ENET_MAC_ADDR_LEN) );
         EnetAppUtils_assert(status == ENET_SOK);
 
         /* Save only those required to meet the max number of MAC entries */
         /* Validating that the MAC addresses from the EEPROM are not MULTICAST addresses */
         for (i = 0U; i < macAddrCnt; i++)
         {
-            if(!(macAddrBuf[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
-                memcpy(macAddr[validNumMac], &macAddrBuf[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
+            if(!(macAddrBufRevA[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
+                memcpy(macAddr[validNumMac], &macAddrBufRevA[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
                 validNumMac++;
             }
         }
@@ -528,6 +529,47 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
         EnetAppUtils_assert(false);
     }
 }
+% } else if (cpsw_instance.BoardType === "am261x-som"){
+void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
+                              uint32_t maxMacEntries,
+                              uint32_t *pAvailMacEntries)
+{
+    int32_t status = ENET_SOK;
+    uint32_t macAddrCnt;
+    uint32_t i;
+    uint8_t numMacMax;
+    uint8_t macAddrBuf[ENET_BOARD_NUM_MACADDR_MAX * ENET_MAC_ADDR_LEN];
+    uint8_t validNumMac = 0U;
+
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0],  I2C_EEPROM_MAC_CTRL_OFFSET, &numMacMax, sizeof(uint8_t));
+    EnetAppUtils_assert(status == ENET_SOK);
+    EnetAppUtils_assert(ENET_GET_NUM_MAC_ADDR(numMacMax) <= ENET_BOARD_NUM_MACADDR_MAX);
+    EnetAppUtils_assert(pAvailMacEntries != NULL);
+
+    macAddrCnt = EnetUtils_min(ENET_GET_NUM_MAC_ADDR(numMacMax), maxMacEntries);
+
+    status = EEPROM_read(gEepromHandle[CONFIG_EEPROM0], I2C_EEPROM_MAC_DATA_OFFSET, macAddrBuf, (macAddrCnt * ENET_MAC_ADDR_LEN) );
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    /* Save only those required to meet the max number of MAC entries */
+    /* Validating that the MAC addresses from the EEPROM are not MULTICAST addresses */
+    for (i = 0U; i < macAddrCnt; i++)
+    {
+        if(!(macAddrBuf[i * ENET_MAC_ADDR_LEN] & ENET_MAC_ADDR_VALIDATE_MASK)){
+            memcpy(macAddr[validNumMac], &macAddrBuf[i * ENET_MAC_ADDR_LEN], ENET_MAC_ADDR_LEN);
+            validNumMac++;
+        }
+    }
+
+    *pAvailMacEntries = validNumMac;
+
+    if (macAddrCnt == 0U)
+    {
+        EnetAppUtils_print("EnetBoard_getMacAddrList Failed - IDK not present\n");
+        EnetAppUtils_assert(false);
+    }
+}
+%}
 
 /*
  * Get ethernet board id
