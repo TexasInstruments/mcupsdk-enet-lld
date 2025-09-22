@@ -611,7 +611,7 @@ function getEnetResPartInfoIsStatTxChAlloc() {
 function getEnetResPartInfo() {
     const ResPartInfoMap = new Map(
                                [
-                                 ['am273x',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am273x',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
                             ],
                              );
     let instInfo =  ResPartInfoMap.get(common.getSocName());

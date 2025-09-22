@@ -82,13 +82,13 @@ function getIpNxtWhitelistInitArray(instance) {
 #include <include/per/cpsw.h>
 #include <include/core/enet_dma.h>
 #include "ti_drivers_config.h"
-#include <drivers/udma/udma_priv.h>
 #include <utils/include/enet_apputils.h>
 #include <include/core/enet_rm.h>
 #include <utils/include/enet_appsoc.h>
 #include "ti_enet_config.h"
 
 % if(module.getDmaInterface(instance) == "ENET_SOC_HOSTPORT_DMA_TYPE_UDMA") {
+#include <drivers/udma/udma_priv.h>
 extern EnetDma_Cfg gDmaCfg;
 %}
 %else {

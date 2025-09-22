@@ -97,6 +97,51 @@ typedef struct EnetAppSysCfg_Obj_s
 %}
 }EnetAppSysCfg_Obj;
 
+const EnetApp_IET_Config gEnetApp_IETCfg[] =
+{
+%if(instance.macport1EnableIET == true) {
+    [ENET_MAC_PORT_1] =
+    {
+        .mac_verify_enable = `instance.macport1IetMacVerifyEnable`,
+
+        .queueMode =
+        {
+        `instance.macport1IetQueue0`,
+        `instance.macport1IetQueue1`,
+        `instance.macport1IetQueue2`,
+        `instance.macport1IetQueue3`,
+        `instance.macport1IetQueue4`,
+        `instance.macport1IetQueue5`,
+        `instance.macport1IetQueue6`,
+        `instance.macport1IetQueue7`,
+        },
+
+        .minFragSize =  `instance.macport1IetMinFrag`,
+    }
+%}
+
+%if(instance.macport2EnableIET == true) {
+    ,[ENET_MAC_PORT_2] =
+    {
+        .mac_verify_enable = `instance.macport2IetMacVerifyEnable`,
+
+        .queueMode =
+        {
+        `instance.macport2IetQueue0`,
+        `instance.macport2IetQueue1`,
+        `instance.macport2IetQueue2`,
+        `instance.macport2IetQueue3`,
+        `instance.macport2IetQueue4`,
+        `instance.macport2IetQueue5`,
+        `instance.macport2IetQueue6`,
+        `instance.macport2IetQueue7`,
+        },
+
+        .minFragSize =  `instance.macport2IetMinFrag`,
+    }
+%}
+};
+
 extern const EnetApp_DmaCfg g_EnetApp_dmaChParams;
 
 static EnetAppSysCfg_Obj gEnetAppSysCfgObj;
@@ -710,6 +755,8 @@ static int32_t EnetApp_enableMacPort(Enet_Handle hEnet,
     linkArgs.macCfg = &cpswMacCfg;
     CpswMacPort_initCfg(&cpswMacCfg);
 
+    EnetPhy_initCfg(&linkArgs.phyCfg);
+
     /* in MAC loopback mode, we should not configure PHYs. It shall be treated as NO-PHY system */
     EnetApp_initLinkArgs(enetType, instId, macPort, cpswMacCfg.loopbackEn, &linkArgs);
 
@@ -863,8 +910,6 @@ void EnetApp_driverClose(Enet_Type enetType, uint32_t instId)
 
 % }
 
-
-
 static uint32_t EnetApp_retrieveFreeTxPkts(EnetDma_TxChHandle hTxCh, EnetDma_PktQ *txPktInfoQ)
 {
     EnetDma_PktQ txFreeQ;
@@ -900,7 +945,7 @@ static uint32_t EnetApp_retrieveFreeTxPkts(EnetDma_TxChHandle hTxCh, EnetDma_Pkt
     return txFreeQCnt;
 }
 
-%if ((soc === "am64x") || (soc === "am243x") || (soc === "am62dx")){
+%if ((soc === "am64x") || (soc === "am243x") || (soc === "am62dx") || (soc === "am261x")){
 /*
  * Function to Poll the Verify status and restart verification.
  * Application needs to call this after link-up, Verify timeout
