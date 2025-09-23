@@ -86,13 +86,13 @@ mpu_armv74.baseAddr          = 0x70000000;
 mpu_armv74.size              = 21;
 
 mpu_armv75.$name      = "CONFIG_MPU_REGION4";
-mpu_armv75.attributes = "NonCached";
 mpu_armv75.baseAddr   = 0x70040000;
-mpu_armv75.size       = 12;
+mpu_armv75.size       = 14;
+mpu_armv75.attributes = "NonCached";
 
 general1.$name        = "CONFIG_GENERAL0";
 general1.stack_size   = 8192;
-general1.heap_size    = 1024;
+general1.heap_size    = 200000;
 general1.linker.$name = "TIARMCLANG0";
 
 region1.$name                               = "MEMORY_REGION_CONFIGURATION0";
@@ -226,38 +226,36 @@ section9.output_section.create(1);
 section9.output_section[0].$name     = ".bss:ENET_DMA_PKT_MEMPOOL";
 section9.output_section[0].alignment = 128;
 
-enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
-enet_cpsw1.cptsHostRxTsEn               = false;
-enet_cpsw1.BoardType                    = "am261x-som";
-enet_cpsw1.cptsRftClkFreq               = "CPSW_CPTS_RFTCLK_FREQ_200MHZ";
-enet_cpsw1.LargePoolPktCount            = 32;
-enet_cpsw1.MediumPoolPktCount           = 16;
-enet_cpsw1.RGMII1.$assign               = "RGMII1";
-enet_cpsw1.RGMII1.RD0.$assign           = "GPIO31";
-enet_cpsw1.RGMII1.RD1.$assign           = "GPIO32";
-enet_cpsw1.RGMII1.RD2.$assign           = "GPIO33";
-enet_cpsw1.RGMII1.RD3.$assign           = "GPIO34";
-enet_cpsw1.RGMII1.RX_CTL.$assign        = "GPIO30";
-enet_cpsw1.RGMII1.RXC.$assign           = "GPIO29";
-enet_cpsw1.RGMII1.TD0.$assign           = "GPIO37";
-enet_cpsw1.RGMII1.TD1.$assign           = "GPIO38";
-enet_cpsw1.RGMII1.TD2.$assign           = "GPIO39";
-enet_cpsw1.RGMII1.TD3.$assign           = "GPIO40";
-enet_cpsw1.RGMII1.TX_CTL.$assign        = "GPIO36";
-enet_cpsw1.RGMII1.TXC.$assign           = "GPIO35";
-enet_cpsw1.RGMII2.$assign               = "RGMII2";
-enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
-enet_cpsw1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
-enet_cpsw1.rxDmaChannel[0].PacketsCount = 16;
+enet_cpsw1.$name                  = "CONFIG_ENET_CPSW0";
+enet_cpsw1.cptsHostRxTsEn         = false;
+enet_cpsw1.BoardType              = "am261x-som";
+enet_cpsw1.PktInfoOnlyEnable      = true;
+enet_cpsw1.LargePoolPktCount      = 32;
+enet_cpsw1.DisableMacPort2        = true;
+enet_cpsw1.RtosVariant            = "NoRTOS";
+enet_cpsw1.RGMII1.$assign         = "RGMII1";
+enet_cpsw1.RGMII1.RD0.$assign     = "GPIO31";
+enet_cpsw1.RGMII1.RD1.$assign     = "GPIO32";
+enet_cpsw1.RGMII1.RD2.$assign     = "GPIO33";
+enet_cpsw1.RGMII1.RD3.$assign     = "GPIO34";
+enet_cpsw1.RGMII1.RX_CTL.$assign  = "GPIO30";
+enet_cpsw1.RGMII1.RXC.$assign     = "GPIO29";
+enet_cpsw1.RGMII1.TD0.$assign     = "GPIO37";
+enet_cpsw1.RGMII1.TD1.$assign     = "GPIO38";
+enet_cpsw1.RGMII1.TD2.$assign     = "GPIO39";
+enet_cpsw1.RGMII1.TD3.$assign     = "GPIO40";
+enet_cpsw1.RGMII1.TX_CTL.$assign  = "GPIO36";
+enet_cpsw1.RGMII1.TXC.$assign     = "GPIO35";
+enet_cpsw1.RGMII2.$assign         = "RGMII2";
+enet_cpsw1.txDmaChannel[0].$name  = "ENET_DMA_TX_CH0";
+enet_cpsw1.rxDmaChannel[0].$name  = "ENET_DMA_RX_CH0";
+enet_cpsw1.netifInstance.create(1);
+enet_cpsw1.netifInstance[0].$name = "NETIF_INST_ID0";
 
 ethphy_cpsw_icssg1.$name      = "CONFIG_ENET_ETHPHY0";
 ethphy_cpsw_icssg1.boardType  = "am261x-som";
 ethphy_cpsw_icssg1.peripheral = "CPSW_MAC_PORT_1";
 enet_cpsw1.ethphy1            = ethphy_cpsw_icssg1;
-
-const ethphy_cpsw_icssg2 = ethphy_cpsw_icssg.addInstance({}, false);
-ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
-enet_cpsw1.ethphy2       = ethphy_cpsw_icssg2;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

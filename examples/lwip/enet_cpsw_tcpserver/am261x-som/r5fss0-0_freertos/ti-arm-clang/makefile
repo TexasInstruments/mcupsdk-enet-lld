@@ -1,5 +1,5 @@
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -21,14 +21,14 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=enet_lwip_cpsw.$(PROFILE).out
-COREOUTNAME:=enet_lwip_cpsw.$(PROFILE).optishare.out
+OUTNAME:=enet_cpsw_tcpserver.$(PROFILE).out
+COREOUTNAME:=enet_cpsw_tcpserver.$(PROFILE).optishare.out
 
 BOOTIMAGE_PATH=$(abspath .)
 oeconfig?=None
 
-BOOTIMAGE_NAME_MCELF:=enet_lwip_cpsw.$(PROFILE).mcelf
-BOOTIMAGE_NAME_MCELF_HS:=enet_lwip_cpsw.$(PROFILE).mcelf.hs
+BOOTIMAGE_NAME_MCELF:=enet_cpsw_tcpserver.$(PROFILE).mcelf
+BOOTIMAGE_NAME_MCELF_HS:=enet_cpsw_tcpserver.$(PROFILE).mcelf.hs
 TARGETS := $(BOOTIMAGE_NAME_MCELF)
 
 ifeq ($(DEVICE_TYPE), HS)
@@ -36,16 +36,10 @@ ifeq ($(DEVICE_TYPE), HS)
 endif
 
 FILES_common := \
-	test.c \
-	test_enet.c \
-	test_enet_cpsw.c \
+	app_cpswconfighandler.c \
+	app_tcpserver.c \
+	app_main.c \
 	main.c \
-	udp_iperf.c \
-	enetextphy.c \
-	enetextphy_phymdio_dflt.c \
-	dp83867.c \
-	dp83869.c \
-	generic_phy.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -62,8 +56,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../extPhyMgmt \
+	../../.. \
 	generated \
 
 INCLUDES_common := \
@@ -88,9 +81,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-contrib \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am261x/enet \
-	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/lwip/enet_lwip_cpsw/extPhyMgmt \
 	-Igenerated \
 
 DEFINES_common := \
@@ -108,11 +100,6 @@ CFLAGS_common := \
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-unused-function \
 
-CFLAGS_release := \
-	-Os \
-	-Oz \
-	-flto \
-
 CFLAGS_cpp_common := \
 	-Wno-c99-designator \
 	-Wno-extern-c-compat \
@@ -128,6 +115,9 @@ CFLAGS_cpp_common := \
 
 CFLAGS_debug := \
 	-D_DEBUG_=1 \
+
+CFLAGS_release := \
+	-Os \
 
 LNK_FILES_common = \
 	generated/linker.cmd \
@@ -158,16 +148,7 @@ LFLAGS_common = \
 	-Wl,--reread_libs \
 	-Wl,--gen_xml_func_hash \
 	-Wl,--zero_init=on \
-	-Wl,--use_memset=fast \
-	-Wl,--use_memcpy=fast \
 
-LNKOPTFLAGS_release = \
-		   -mcpu=cortex-r5 \
-		   -mfloat-abi=hard \
-		   -mfpu=vfpv3-d16 \
-		   -mthumb \
-		   -Oz \
-		   -flto \
 
 LIBS_NAME = \
 	freertos.am261x.r5f.ti-arm-clang.${ConfigName}.lib \
@@ -274,7 +255,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am261x:r5fss0-0:freertos:ti-arm-clang enet_lwip_cpsw ...
+	@echo  Scrubing: am261x:r5fss0-0:freertos:ti-arm-clang enet_cpsw_tcpserver ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
@@ -402,12 +383,12 @@ endif
 
 .PHONY: coverage
 coverage:
-	@echo Creating Coverage Report for enet_lwip_cpsw.$(PROFILE) ...
+	@echo Creating Coverage Report for enet_cpsw_tcpserver.$(PROFILE) ...
 	$(MKDIR) coverage
-	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o enet_lwip_cpsw.$(PROFILE).profdata
-	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=enet_lwip_cpsw.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
-	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=enet_lwip_cpsw.$(PROFILE).profdata > coverage/enet_lwip_cpsw.$(PROFILE).profdata.json
-	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/enet_lwip_cpsw.$(PROFILE).profdata.json --output-json=coverage/enet_lwip_cpsw.$(PROFILE).analysis.json --output=../enet_lwip_cpsw.annotations.$(PROFILE).S --top-function-count=500
+	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o enet_cpsw_tcpserver.$(PROFILE).profdata
+	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=enet_cpsw_tcpserver.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
+	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=enet_cpsw_tcpserver.$(PROFILE).profdata > coverage/enet_cpsw_tcpserver.$(PROFILE).profdata.json
+	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/enet_cpsw_tcpserver.$(PROFILE).profdata.json --output-json=coverage/enet_cpsw_tcpserver.$(PROFILE).analysis.json --output=../enet_cpsw_tcpserver.annotations.$(PROFILE).S --top-function-count=500
 	@echo Coverage Report Generated at $(COVERAGE_PATH)/coverage folder !!!
 
 -include $(addprefix $(OBJDIR)/, $(DEPS))
