@@ -231,7 +231,6 @@ section9.output_section[0].alignment = 128;
 enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
 enet_cpsw1.cptsHostRxTsEn        = false;
 enet_cpsw1.BoardType             = "am261x-som";
-enet_cpsw1.macAddrConfig         = "Manual Entry";
 enet_cpsw1.macport1EnableIET     = true;
 enet_cpsw1.macport2EnableIET     = true;
 enet_cpsw1.macport1IetQueue1     = "ENET_MAC_QUEUE_PREEMPT_MODE_EXPRESS";

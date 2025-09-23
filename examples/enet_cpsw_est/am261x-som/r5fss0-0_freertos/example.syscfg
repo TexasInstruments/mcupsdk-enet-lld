@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM261x_ZCZ" --part "AM2611" --package "ZCZ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2611" --package "NFBGA (ZCZ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.25.0+4268"}
  */
 
 /**
@@ -47,10 +47,10 @@ const enet_cpsw1         = enet_cpsw.addInstance();
  */
 eeprom1.$name = "CONFIG_EEPROM0";
 
+
+
 gpio1.$name          = "CONFIG_GPIO0";
-
 gpio1.pinDir         = "OUTPUT";
-
 gpio1.defaultValue   = "1";
 gpio1.GPIO_n.$assign = "GPIO74";
 
@@ -233,7 +233,7 @@ enet_cpsw1.cptsHostRxTsEn               = false;
 enet_cpsw1.BoardType                    = "am261x-som";
 enet_cpsw1.LargePoolPktCount            = 16;
 enet_cpsw1.MediumPoolPktCount           = 8;
-enet_cpsw1.DisableMacPort2              = true;
+enet_cpsw1.cptsRftClkFreq               = "CPSW_CPTS_RFTCLK_FREQ_200MHZ";
 enet_cpsw1.RGMII1.$assign               = "RGMII1";
 enet_cpsw1.RGMII1.RD0.$assign           = "GPIO31";
 enet_cpsw1.RGMII1.RD1.$assign           = "GPIO32";
@@ -258,6 +258,10 @@ ethphy_cpsw_icssg1.enableCustomBoard = scripting.forceWrite(false);
 ethphy_cpsw_icssg1.boardType         = "am261x-som";
 ethphy_cpsw_icssg1.peripheral        = "CPSW_MAC_PORT_1";
 enet_cpsw1.ethphy1                   = ethphy_cpsw_icssg1;
+
+const ethphy_cpsw_icssg2 = ethphy_cpsw_icssg.addInstance({}, false);
+ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
+enet_cpsw1.ethphy2       = ethphy_cpsw_icssg2;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

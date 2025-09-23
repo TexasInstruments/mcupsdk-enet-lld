@@ -229,7 +229,6 @@ section9.output_section[0].alignment = 128;
 enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
 enet_cpsw1.cptsHostRxTsEn        = false;
 enet_cpsw1.BoardType             = "am261x-som";
-enet_cpsw1.macAddrConfig         = "Manual Entry";
 enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_PHY";
 enet_cpsw1.macport1LinkSpeed     = "ENET_SPEED_100MBIT";
 enet_cpsw1.macport1LinkDuplexity = "ENET_DUPLEX_FULL";

@@ -228,7 +228,6 @@ enet_cpsw1.macport2LinkSpeed     = "ENET_SPEED_100MBIT";
 enet_cpsw1.DisableMacPort2       = true;
 enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_MAC";
 enet_cpsw1.BoardType             = "am261x-som";
-enet_cpsw1.macAddrConfig         = "Manual Entry";
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
 
