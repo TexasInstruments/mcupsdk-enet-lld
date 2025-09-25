@@ -1116,7 +1116,7 @@ static int32_t CpswMacPort_setInterface(CSL_Xge_cpswRegs *regs,
     else if (EnetMacPort_isRgmii(mii))
     {
         CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_EXT_EN, 0U);
-        CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_GIG_FORCE, 1U);
+        CSL_FINS(macControl, XGE_CPSW_PN_MAC_CONTROL_REG_GIG_FORCE, 0U);
         status = ENET_SOK;
     }
 #if ENET_CFG_IS_ON(CPSW_XGMII)
