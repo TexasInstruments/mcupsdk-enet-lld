@@ -309,6 +309,13 @@ EnetPhy_Handle EnetPhy_open(const EnetPhy_Cfg *phyCfg,
                 {
                     hPhy->reqLinkCaps = ENETPHY_LINK_CAP_ALL;
                 }
+
+                /* 1G FD/HD advertisement disabled If PHY is in MII or RMII mode */
+                if (mii == ENETPHY_MAC_MII_MII || mii == ENETPHY_MAC_MII_RMII)
+                {
+                    hPhy->reqLinkCaps = hPhy->reqLinkCaps & ~(ENETPHY_LINK_CAP_HD1000|ENETPHY_LINK_CAP_FD1000);
+                    ENETTRACE_DBG("PHY %u: 1G FD/HD advertisement disabled for MII/RMII modes\r\n", phyCfg->phyAddr);
+                }
             }
             else
             {

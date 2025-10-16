@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM261x_ZFG" --part "AM2612" --package "ZFG" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2612" --package "NFBGA (ZFG)" --variant "500MHz" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.24.2+4234"}
+ * @versions {"tool":"1.25.0+4268"}
  */
 
 /**
@@ -47,9 +47,7 @@ const enet_cpsw1         = enet_cpsw.addInstance();
 eeprom1.$name      = "CONFIG_EEPROM0";
 eeprom1.i2cAddress = 0x51;
 
-
 i2c1.$name               = "CONFIG_I2C0";
-
 eeprom1.peripheralDriver = i2c1;
 i2c1.I2C.$assign         = "I2C0";
 i2c1.I2C.SCL.$assign     = "GPIO135";
@@ -229,7 +227,6 @@ enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
 enet_cpsw1.PktInfoOnlyEnable            = true;
 enet_cpsw1.LargePoolPktCount            = 32;
 enet_cpsw1.cptsHostRxTsEn               = false;
-enet_cpsw1.BoardType             = "am261x-lp";
 enet_cpsw1.macOnlyEn_hostPort           = true;
 enet_cpsw1.macOnlyEn_macPort1           = true;
 enet_cpsw1.macOnlyEn_macPort2           = true;
@@ -241,11 +238,13 @@ enet_cpsw1.netifInstance[0].$name       = "NETIF_INST_ID0";
 enet_cpsw1.netifInstance[1].$name       = "NETIF_INST_ID1";
 enet_cpsw1.netifInstance[1].isDefault   = false;
 
-ethphy_cpsw_icssg1.$name = "CONFIG_ENET_ETHPHY0";
-enet_cpsw1.ethphy1       = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
+enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.extendedConfig = "/* Extended PHY configuration for DP83869 */\n.txClkShiftEn         = true,\n.rxClkShiftEn         = true,\n.txDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_RX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.rxDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_TX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.txFifoDepth          = 4U,\n.impedanceInMilliOhms = 35000,  /* 35 ohms */\n.idleCntThresh        = 4U,     /* Improves short cable performance */\n.gpio0Mode            = DP83869_GPIO0_COL,\n.gpio1Mode            = DP83869_GPIO1_CONSTANT0, /* Unused */\n.ledMode              =\n{\n\tDP83869_LED_LINKED,         /* Unused */\n\tDP83869_LED_RXERR,\n\tDP83869_LED_COLLDET,\n\tDP83869_LED_LINKED_1000BT,\n},";
 
-ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
-enet_cpsw1.ethphy2       = ethphy_cpsw_icssg2;
+ethphy_cpsw_icssg2.$name          = "CONFIG_ENET_ETHPHY1";
+enet_cpsw1.ethphy2                = ethphy_cpsw_icssg2;
+ethphy_cpsw_icssg2.extendedConfig = "/* Extended PHY configuration for DP83869 */\n.txClkShiftEn         = true,\n.rxClkShiftEn         = true,\n.txDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_RX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.rxDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_TX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.txFifoDepth          = 4U,\n.impedanceInMilliOhms = 35000,  /* 35 ohms */\n.idleCntThresh        = 4U,     /* Improves short cable performance */\n.gpio0Mode            = DP83869_GPIO0_COL,\n.gpio1Mode            = DP83869_GPIO1_CONSTANT0, /* Unused */\n.ledMode              =\n{\n\tDP83869_LED_LINKED,         /* Unused */\n\tDP83869_LED_RXERR,\n\tDP83869_LED_COLLDET,\n\tDP83869_LED_LINKED_1000BT,\n},";
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

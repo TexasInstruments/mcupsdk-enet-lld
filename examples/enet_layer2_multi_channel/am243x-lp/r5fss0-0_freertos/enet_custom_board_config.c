@@ -110,7 +110,7 @@ static const Dp83869_Cfg gEnetCpbBoard_dp83869PhyCfg =
     .txFifoDepth          = 4U,
     .impedanceInMilliOhms = 35000,  /* 35 ohms */
     .idleCntThresh        = 4U,     /* Improves short cable performance */
-    .gpio0Mode            = DP83869_GPIO0_LED3,
+    .gpio0Mode            = DP83869_GPIO0_RX_SFD,
     .gpio1Mode            = DP83869_GPIO1_COL, /* Unused */
     .ledMode              =
     {
