@@ -79,7 +79,6 @@ void LwipifEnetAppCb_releaseTxHandle(LwipifEnetAppIf_ReleaseTxHandleInfo *releas
 void LwipifEnetAppCb_releaseRxHandle(LwipifEnetAppIf_ReleaseRxHandleInfo *releaseInfo);
 void LwipifEnetAppCb_pbuf_free_custom(struct pbuf *p);
 
-%}
 
 /*
  *  Functions provided by enet_netif_manager.c to initialize a new netif, create tx & rx tasks, and start a scheduler OS agnostically.
@@ -94,3 +93,5 @@ struct netif * LwipifEnetApp_getNetifFromName(NetifName_e name);
 
 
 #endif /* TI_ENET_LWIPIF_H_ */ 
+
+%}
