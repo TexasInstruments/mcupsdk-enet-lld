@@ -401,10 +401,11 @@ void EnetAppUtils_enableClkOut(Enet_Type enetType,
             CSL_REG32_FINS(&mainRegs->CLKOUT_CTRL,
                            MAIN_CTRL_MMR_CFG0_CLKOUT_CTRL_CLK_SEL,
                            clkVal);
+#if defined(SOC_AM64X) || defined(SOC_AM243X)
             CSL_REG32_FINS(&mainRegs->CLKOUT_CTRL,
                            MAIN_CTRL_MMR_CFG0_CLKOUT_CTRL_CLK_EN,
                            1U);
-            EnetAppUtils_assert(false); // MAIN_CTRL_MMR_CFG0_CLKOUT_CTRL_CLK_EN is added in the CSL. check this first
+#endif
             if (prevLockState == ENETAPPUTILS_LOCK_MMR)
             {
                 EnetAppUtils_mainMmrCtrl(ENETAPPUTILS_MMR_LOCK1, ENETAPPUTILS_LOCK_MMR);
