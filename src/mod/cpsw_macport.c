@@ -794,61 +794,55 @@ int32_t CpswMacPort_ioctl(CpswMacPort_Handle hPort,
                           uint32_t cmd,
                           Enet_IoctlPrms *prms)
 {
-    int32_t status = ENET_EFAIL;
-    bool isHostPortOpen = true;
+    int32_t status = ENET_SOK;
 
     ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hPort->name, cmd, prms);
 
-    isHostPortOpen = (hPort->magic == ENET_MAGIC) ? true : false;
-    if (isHostPortOpen == true)
-    {
-        CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-        CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
+    CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
 #endif
-        Enet_MacPort macPort = hPort->macPort;
-        uint32_t portId = ENET_MACPORT_ID(macPort);
-        status = ENET_SOK;
+    Enet_MacPort macPort = hPort->macPort;
+    uint32_t portId = ENET_MACPORT_ID(macPort);
 
-        ENETTRACE_VAR(portId);
+    ENETTRACE_VAR(portId);
 #if ENET_CFG_IS_ON(DEV_ERROR)
-        /* Validate CPSW MAC port IOCTL parameters */
-        if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+    /* Validate CPSW MAC port IOCTL parameters */
+    if (ENET_IOCTL_GET_PER(cmd) == ENET_IOCTL_PER_CPSW)
+    {
+        if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
         {
-            if (ENET_IOCTL_GET_TYPE(cmd) == ENET_IOCTL_TYPE_PUBLIC)
-            {
-                status = Enet_validateIoctl(cmd, prms,
-                                            gCpswMacPort_ioctlValidate,
-                                            ENET_ARRAYSIZE(gCpswMacPort_ioctlValidate));
-            }
-            else
-            {
-                status = Enet_validateIoctl(cmd, prms,
-                                            gCpswMacPort_privIoctlValidate,
-                                            ENET_ARRAYSIZE(gCpswMacPort_privIoctlValidate));
-            }
-
-            ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: IOCTL 0x%08x params are not valid\n", portId, cmd);
+            status = Enet_validateIoctl(cmd, prms,
+                                        gCpswMacPort_ioctlValidate,
+                                        ENET_ARRAYSIZE(gCpswMacPort_ioctlValidate));
         }
-#endif
-
-        if (status == ENET_SOK)
-        {
-            CpswMacPortIoctlHandler * ioctlHandlerFxn;
-
-            ioctlHandlerFxn = CpswMacPort_getIoctlHandlerFxn(cmd, CpswMacPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswMacPortIoctlHandlerRegistry));
-            Enet_devAssert(ioctlHandlerFxn != NULL);
-            status = ioctlHandlerFxn(hPort, regs,prms);
-        }
-
         else
         {
-            ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hPort->name, cmd, status);
+            status = Enet_validateIoctl(cmd, prms,
+                                        gCpswMacPort_privIoctlValidate,
+                                        ENET_ARRAYSIZE(gCpswMacPort_privIoctlValidate));
         }
+
+        ENETTRACE_ERR_IF(status != ENET_SOK, "MAC %u: IOCTL 0x%08x params are not valid\n", portId, cmd);
+    }
+#endif
+
+    if (status == ENET_SOK)
+    {
+        CpswMacPortIoctlHandler * ioctlHandlerFxn;
+
+        ioctlHandlerFxn = CpswMacPort_getIoctlHandlerFxn(cmd, CpswMacPortIoctlHandlerRegistry, ENET_ARRAYSIZE(CpswMacPortIoctlHandlerRegistry));
+        Enet_devAssert(ioctlHandlerFxn != NULL);
+        status = ioctlHandlerFxn(hPort, regs,prms);
     }
     else
     {
-        ENETTRACE_ERR("%s: Module is not open\n", hPort->name);
+        ENETTRACE_ERR("%s: IOCTL validation failed for cmd 0x%08x: %d\n", hPort->name, cmd, status);
+    }
+
+    if (status != ENET_SOK)
+    {
+        ENETTRACE_ERR("%s: Failed to do IOCTL cmd 0x%08x: %d\n", hPort->name, cmd, status);
     }
 
     return status;
