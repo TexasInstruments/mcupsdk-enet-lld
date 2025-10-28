@@ -188,7 +188,7 @@ int32_t GenericPhy_writeExtReg(EthPhyDrv_Handle hPhy,
 	uint16_t devad = MMD_CR_DEVADDR;
     int32_t status;
 
-    ENETTRACE_VERBOSE("PHY %u: write %u val 0x%04x\n", ((Phy_Obj_t*) hPhy)->phyAddr;, reg, val);
+    ENETTRACE_VERBOSE("PHY %u: write %u val 0x%04x\n", ((Phy_Obj_t*) hPhy)->phyAddr, reg, val);
 
     status = pRegAccessApi->EnetPhy_writeReg(pRegAccessApi->pArgs, PHY_MMD_CR, devad | MMD_CR_ADDR);
     if (status == ENETPHY_SOK)

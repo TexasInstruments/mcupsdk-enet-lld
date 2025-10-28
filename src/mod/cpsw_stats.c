@@ -453,7 +453,7 @@ int32_t CpswStats_ioctl(CpswStats_Handle hStats,
 {
     int32_t status = ENET_EFAIL;
 
-    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hMod->name, cmd, prms);
+    ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hStats->name, cmd, prms);
 
     bool isStatsOpen = (hStats->magic == ENET_MAGIC) ? true : false;
 
