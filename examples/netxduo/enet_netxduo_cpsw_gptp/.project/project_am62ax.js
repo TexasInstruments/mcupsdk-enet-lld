@@ -113,6 +113,19 @@ const cflags = {
     ],
 };
 
+const cflags_a53 = {
+    common: [
+        "--include tsn_buildconf/sitara_buildconf.h",
+    ],
+    release: [
+        "-Os",
+        "-flto",
+    ],
+    debug: [
+        "-Wno-error"
+    ],
+};
+
 const lflags = {
     common: [
         "-mno-fix-cortex-a53-835769",
@@ -184,7 +197,11 @@ function getComponentBuildProperty(buildOption) {
     build_property.includes = includes;
     build_property.templates = templates;
     build_property.libs = libs;
-    build_property.cflags = cflags;
+if(buildOption.cpu.match(/a53*/)) {
+    build_property.cflags = cflags_a53;
+} else {
+    build_property.cflags = cflags;    
+}
     build_property.lflags = lflags;
     build_property.loptflags = loptflags;
     build_property.defines = defines;
