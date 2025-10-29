@@ -127,7 +127,7 @@ CFLAGS_common := \
 
 CFLAGS_release := \
 	-O2 \
-	-Oz \
+	-Os \
 	-flto \
 
 CFLAGS_debug := \

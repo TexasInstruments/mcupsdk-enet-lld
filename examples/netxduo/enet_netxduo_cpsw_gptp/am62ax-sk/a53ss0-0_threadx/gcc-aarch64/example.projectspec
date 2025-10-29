@@ -139,7 +139,7 @@
         <configuration name="Release"
             compilerBuildOptions="
                 -O2
-                -Oz
+                -Os
                 -flto
             "
             linkerBuildOptions="
