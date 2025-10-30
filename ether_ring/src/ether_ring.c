@@ -332,7 +332,7 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
                 pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] = 0;
                 pRingHandle->etherRingStats.etherRingDuplicatedRxPacketCount++;
                 EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
-                EtherRing_submitRxPktQ(pRingHandle, &rxDupPktQ);
+                EnetDma_submitRxPktQ(pRingHandle->hRxCh, &rxDupPktQ);
             }
             else
             {
@@ -343,7 +343,7 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
         {
             /* Submitting the non-Etherring packets back to the Hardware(CPDMA) */
             EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
-            EtherRing_submitRxPktQ(pRingHandle, &rxDupPktQ);
+            EnetDma_submitRxPktQ(pRingHandle->hRxCh, &rxDupPktQ);
         }
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxRetrieveQ);
     }
