@@ -47,17 +47,15 @@
 #include <kernel/dpl/ClockP.h>
 #include "kernel/dpl/TimerP.h"
 #include "ti_dpl_config.h"
-#include "../dolbyec3_app/shm_cirbuf.h"
+#include "../shm_cirbuf.h"
 #include "string.h"
 
-/* A copy of params in aaf_dolby_ec3_app.c */
-#define SHM_AVB_DATA_RX_SIZE         (0x80000)
-#define AAF_DOLBY_SYNC_FRAME_SIZE    (768)
-#define SMPTE_HEADER_SIZE            (12)
-#define SMPTE_FRAME_SIZE             (SMPTE_HEADER_SIZE + AAF_DOLBY_SYNC_FRAME_SIZE)
-
-/* Dolby Shared Memory Address. */
-uint8_t *gDbyShmAddress = (uint8_t *)0xA3000000;
+/* A copy of params in aes3_aaf_app.c */
+#define SHM_AVB_DATA_RX_SIZE            (0x80000)
+#define AAF_DOLBY_SYNC_FRAME_SIZE       (768)
+#define SMPTE_HEADER_SIZE               (12)
+#define SMPTE_FRAME_SIZE                (SMPTE_HEADER_SIZE + AAF_DOLBY_SYNC_FRAME_SIZE)
+#define SHARED_MEMORY_START_ADDRESS     (0xA3000000)
 
 SemaphoreP_Object gRemoteAppTimerSem;
 
@@ -77,7 +75,7 @@ shm_handle remoteAppInitShm(void* const address, const int blockSize, const int 
 
 void RemoteApp_mainTask(void *args)
 {
-    shm_handle shmHandle = remoteAppInitShm(gDbyShmAddress,
+    shm_handle shmHandle = remoteAppInitShm((void*)SHARED_MEMORY_START_ADDRESS,
                         SMPTE_FRAME_SIZE, SHM_AVB_DATA_RX_SIZE);
 
     SemaphoreP_constructBinary(&gRemoteAppTimerSem, 0);

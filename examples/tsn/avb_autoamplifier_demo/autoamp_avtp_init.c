@@ -43,7 +43,6 @@
 #include "debug_log.h"
 #include "tsninit.h"
 #include "common.h"
-#include "dolbyec3_app/aaf_dolby_ec3_app.h"
 #include "aaf_pcm_app.h"
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -54,7 +53,6 @@
 #define CRF_LISTENER_TASK_PRIORITY  (2)
 #define CRF_TALKER_TASK_PRIORITY    (2)
 #define ACF_TASK_PRIORITY           (2)
-#define AAF_DOLBY_EC3_TASK_PRIORITY (2)
 #define AAF_PCM_TASK_PRIORITY (2)
 #define AUTOAMP_APP_CLASSD1_TASK_PRIORITY (10)
 #define AUTOAMP_APP_TASK_PRIORITY (31)
@@ -76,7 +74,6 @@
 #define CRF_LISTENER_TASK_NAME  "crf_listener_task"
 #define ACF_TASK_NAME           "acf_task"
 
-#define AAF_DOLBY_EC3_TASK_NAME "aaf_dolby_task"
 #define AAF_PCM_TASK_NAME       "aaf_pcm_task"
 
 /* ========================================================================== */
@@ -417,43 +414,6 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
     }
 #endif //AVTP_ACF_ENABLED
 
-#ifdef DOLBY_EC3_ENABLED
-static void *EnetApp_dolbyTask(void *arg)
-{
-#ifndef AVTP_DIRECT_MODE
-    // loop forever
-    WAIT_AVTPD_READY;
-#else
-#ifdef HAVE_GPTP_READY_NOTICE
-    waitGptpReady();
-#endif // HAVE_GPTP_READY_NOTICE
-#endif // AVTP_DIRECT_MODE
-
-#ifdef DOLBYEC3_TALKER_ENABLE
-    start_aaf_dolby_ec3_talker("tilld0");
-#else
-    start_aaf_dolby_ec3_listener("tilld0");
-#endif
-    return NULL;
-}
-
-static uint8_t gDolbyStackBuf[TSN_TSK_STACK_SIZE] \
-__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
-
-#define AVTP_AAF_DOLBY_EC3_ENTRY \
-    [ENETAPP_AAF_DOLBY_EC3_TASK_IDX]={ \
-        .enable = BTRUE, \
-        .stopFlag = BTRUE, \
-        .taskPriority = AAF_DOLBY_EC3_TASK_PRIORITY, \
-        .taskName = AAF_DOLBY_EC3_TASK_NAME, \
-        .stackBuffer = gDolbyStackBuf, \
-        .stackSize = sizeof(gDolbyStackBuf), \
-        .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_dolbyTask, \
-        .appCtx = &gAppCtx \
-    }
-#endif // DOLBY_EC3_ENABLED
-
 #ifdef AAF_PCM_ENABLED
 static void *EnetApp_aafpcmTask(void *arg)
 {
@@ -633,9 +593,6 @@ static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 #endif
 #ifdef AVTP_ACF_ENABLED
         AVTP_ACF_ENTRY,
-#endif
-#ifdef DOLBY_EC3_ENABLED
-        AVTP_AAF_DOLBY_EC3_ENTRY,
 #endif
 #ifdef AAF_PCM_ENABLED
         AVTP_AAF_PCM_ENTRY,

@@ -42,7 +42,7 @@
 #include "debug_log.h"
 #include "tsninit.h"
 #include "common.h"
-#include "dolbyec3_app/aaf_dolby_ec3_app.h"
+#include "aes3_aaf/aes3_aaf_app.h"
 #include "aafpcm_app/aaf_pcm_app.h"
 
 /* ========================================================================== */
@@ -54,7 +54,7 @@
 #define CRF_LISTENER_TASK_PRIORITY  (2)
 #define CRF_TALKER_TASK_PRIORITY    (2)
 #define ACF_TASK_PRIORITY           (2)
-#define AAF_DOLBY_EC3_TASK_PRIORITY (2)
+#define AAF_AES3_AAF_TASK_PRIORITY (2)
 #define AAF_PCM_TASK_PRIORITY (2)
 
 #define AVTPD_TASK_NAME         "avtpd_task"
@@ -73,7 +73,7 @@
 #define CRF_LISTENER_TASK_NAME  "crf_listener_task"
 #define ACF_TASK_NAME           "acf_task"
 
-#define AAF_DOLBY_EC3_TASK_NAME "aaf_dolby_task"
+#define AAF_AES3_AAF_TASK_NAME  "aes3_aaf_task"
 #define AAF_PCM_TASK_NAME       "aaf_pcm_task"
 
 /* ========================================================================== */
@@ -428,8 +428,8 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
     }
 #endif //AVTP_ACF_ENABLED
 
-#ifdef DOLBY_EC3_ENABLED
-static void *EnetApp_dolbyTask(void *arg)
+#ifdef AES3_AAF_ENABLED
+static void *EnetApp_aes3_aafTask(void *arg)
 {
 #ifndef AVTP_DIRECT_MODE
     // loop forever
@@ -442,30 +442,30 @@ static void *EnetApp_dolbyTask(void *arg)
     EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
     int64_t tid=(int64_t)&modCtx->hTaskHandle;
     uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
-#ifdef DOLBYEC3_TALKER_ENABLE
-    start_aaf_dolby_ec3_talker("tilld0");
+#ifdef AES3_AAF_TALKER_ENABLE
+    start_aes3_aaf_talker("tilld0");
 #else
-    start_aaf_dolby_ec3_listener("tilld0");
+    start_aes3_aaf_listener("tilld0");
 #endif
     return NULL;
 }
 
-static uint8_t gDolbyStackBuf[TSN_TSK_STACK_SIZE] \
+static uint8_t gAes3aafStackBuf[TSN_TSK_STACK_SIZE] \
 __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
 
-#define AVTP_AAF_DOLBY_EC3_ENTRY \
-    [ENETAPP_AAF_DOLBY_EC3_TASK_IDX]={ \
+#define AVTP_AES3_AAF_ENTRY \
+    [ENETAPP_AES3_AAF_TASK_IDX]={ \
         .enable = BTRUE, \
         .stopFlag = BTRUE, \
-        .taskPriority = AAF_DOLBY_EC3_TASK_PRIORITY, \
-        .taskName = AAF_DOLBY_EC3_TASK_NAME, \
-        .stackBuffer = gDolbyStackBuf, \
-        .stackSize = sizeof(gDolbyStackBuf), \
+        .taskPriority = AAF_AES3_AAF_TASK_PRIORITY, \
+        .taskName = AAF_AES3_AAF_TASK_NAME, \
+        .stackBuffer = gAes3aafStackBuf, \
+        .stackSize = sizeof(gAes3aafStackBuf), \
         .onModuleDBInit = NULL, \
-        .onModuleRunner = EnetApp_dolbyTask, \
+        .onModuleRunner = EnetApp_aes3_aafTask, \
         .appCtx = &gAppCtx \
     }
-#endif // DOLBY_EC3_ENABLED
+#endif // AES3_AAF_ENABLED
 
 #ifdef AAF_PCM_ENABLED
 static void *EnetApp_aafpcmTask(void *arg)
@@ -529,8 +529,8 @@ static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 #ifdef AVTP_ACF_ENABLED
         AVTP_ACF_ENTRY,
 #endif
-#ifdef DOLBY_EC3_ENABLED
-        AVTP_AAF_DOLBY_EC3_ENTRY,
+#ifdef AES3_AAF_ENABLED
+        AVTP_AES3_AAF_ENTRY,
 #endif
 #ifdef AAF_PCM_ENABLED
         AVTP_AAF_PCM_ENTRY,
