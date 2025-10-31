@@ -2,7 +2,7 @@
 # Auto generated makefile
 #
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 include $(MCU_PLUS_SDK_PATH)/devconfig/devconfig.mak
 
@@ -21,17 +21,17 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=dolbyec3listener_app.$(PROFILE).out
+OUTNAME:=aes3_aaflistener_app.$(PROFILE).out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=dolbyec3listener_app.$(PROFILE).appimage
-BOOTIMAGE_NAME_XIP:=dolbyec3listener_app.$(PROFILE).appimage_xip
-BOOTIMAGE_NAME_SIGNED:=dolbyec3listener_app.$(PROFILE).appimage.signed
-BOOTIMAGE_RPRC_NAME:=dolbyec3listener_app.$(PROFILE).rprc
-BOOTIMAGE_RPRC_NAME_XIP:=dolbyec3listener_app.$(PROFILE).rprc_xip
-BOOTIMAGE_RPRC_NAME_TMP:=dolbyec3listener_app.$(PROFILE).rprc_tmp
-BOOTIMAGE_NAME_HS:=dolbyec3listener_app.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=dolbyec3listener_app.$(PROFILE).appimage.hs_fs
+BOOTIMAGE_NAME:=aes3_aaflistener_app.$(PROFILE).appimage
+BOOTIMAGE_NAME_XIP:=aes3_aaflistener_app.$(PROFILE).appimage_xip
+BOOTIMAGE_NAME_SIGNED:=aes3_aaflistener_app.$(PROFILE).appimage.signed
+BOOTIMAGE_RPRC_NAME:=aes3_aaflistener_app.$(PROFILE).rprc
+BOOTIMAGE_RPRC_NAME_XIP:=aes3_aaflistener_app.$(PROFILE).rprc_xip
+BOOTIMAGE_RPRC_NAME_TMP:=aes3_aaflistener_app.$(PROFILE).rprc_tmp
+BOOTIMAGE_NAME_HS:=aes3_aaflistener_app.$(PROFILE).appimage.hs
+BOOTIMAGE_NAME_HS_FS:=aes3_aaflistener_app.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
@@ -53,8 +53,6 @@ FILES_PATH_common = \
 	.. \
 	../../../.. \
 	../../../../.. \
-	../../../../../nrt_flow \
-	../../../../../dolbyec3_app \
 	generated \
 
 INCLUDES_common := \
@@ -201,7 +199,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am62dx:c75ss0-0:freertos:ti-c7000 dolbyec3listener_app ...
+	@echo  Scrubing: am62dx:c75ss0-0:freertos:ti-c7000 aes3_aaflistener_app ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out

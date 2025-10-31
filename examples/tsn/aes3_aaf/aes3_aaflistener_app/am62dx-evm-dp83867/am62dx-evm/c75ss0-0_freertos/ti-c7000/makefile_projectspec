@@ -2,12 +2,12 @@
 # Auto generated makefile
 #
 
-export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../..)
+export MCU_PLUS_SDK_PATH?=$(abspath ../../../../../../../../../../../..)
 include $(MCU_PLUS_SDK_PATH)/imports.mak
 
 PROFILE?=Release
 
-PROJECT_NAME=dolbyec3listener_app_am62dx-evm-dp83867/am62dx-evm_c75ss0-0_freertos_ti-c7000
+PROJECT_NAME=aes3_aaflistener_app_am62dx-evm-dp83867/am62dx-evm_c75ss0-0_freertos_ti-c7000
 
 all:
 	$(CCS_ECLIPSE) -noSplash -data $(MCU_PLUS_SDK_PATH)/ccs_projects -application com.ti.ccstudio.apps.projectBuild -ccs.projects $(PROJECT_NAME) -ccs.configuration $(PROFILE)

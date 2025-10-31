@@ -10,8 +10,8 @@
     </applicability>
 
     <project
-        title="Dolbyec3listener App"
-        name = "dolbyec3listener_app_am62dx-evm-dp83867_am62dx-evm_mcu-r5fss0-0_freertos_ti-arm-clang"
+        title="Aes3 Aaflistener App"
+        name = "aes3_aaflistener_app_am62dx-evm-dp83867_am62dx-evm_mcu-r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -77,7 +77,7 @@
             -DAVTP_ENABLED=1
             -DAVTP_HAVE_NO_SIGNAL=1
             -DGPTP_ENABLED=1
-            -DDOLBY_EC3_ENABLED=1
+            -DAES3_AAF_ENABLED=1
             -DAVTP_DIRECT_MODE=1
         "
         linkerBuildOptions="
@@ -90,7 +90,7 @@
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
-            -m=dolbyec3listener_app.${ConfigName}.map
+            -m=aes3_aaflistener_app.${ConfigName}.map
             --diag_suppress=10063
             --priority
             --ram_model
@@ -107,7 +107,7 @@
             --context mcu-r5fss0-0 --part AM62D24-G --package ANF
         "
 
-        description="A Dolbyec3listener App FREERTOS project">
+        description="A Aes3 Aaflistener App FREERTOS project">
 
         <configuration name="Debug"
             compilerBuildOptions="
@@ -154,35 +154,35 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../debug_log.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../debug_log.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../enetapp_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../enetapp_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../tsnapp_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../tsnapp_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../nrt_flow/default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../../nrt_flow/default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../dolbyec3_app/sample_audio.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../sample_audio.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../dolbyec3_app/aaf_dolby_ec3_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../aes3_aaf_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../../dolbyec3_app/shm_cirbuf.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../shm_cirbuf.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am62dx/EXAMPLES_DOLBYEC3_TALKER_APP.html"
+        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am62dx/EXAMPLES_ENET_CPSW_TSN_AES3_AAF_APP.html"
                 openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">
         </file>
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">

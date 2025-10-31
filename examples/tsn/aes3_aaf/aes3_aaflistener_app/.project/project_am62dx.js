@@ -2,7 +2,7 @@ let path = require('path');
 
 let device = "am62dx";
 
-const files = {
+const main_files = {
     common: [
         "gptp_init.c",
         "avtp_init.c",
@@ -14,20 +14,38 @@ const files = {
         "default_flow_cpsw.c",
         "main.c",
         "sample_audio.c",
-        "aaf_dolby_ec3_app.c",
+        "aes3_aaf_app.c",
+        "shm_cirbuf.c"
+    ],
+};
+
+const remote_files = {
+    common: [
+        "main.c",
+        "shm_cirbuf.c",
+        "remote_main.c"
     ],
 };
 
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
-const filedirs = {
+const main_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
-        "../../../../../dolbyec3_app", /* Example base */    ],
+        "../../../..", /* aes3_aaf_listener_app */
+        "../../../../..", /* aes3_aaf */
+        "../../../../../..", /* tsn */
+        "../../../../../../nrt_flow", /* nrt_flow */
+    ],
+};
+
+const remote_filedirs = {
+    common: [
+        "..",       /* core_os_combo base */
+        "../../../..", /* aes3_aaf_listener_app */
+        "../../../../..", /* aes3_aaf */
+    ],
 };
 
 const libdirs_freertos = {
@@ -75,6 +93,15 @@ const includes_freertos_r5f = {
     ],
 };
 
+const includes_freertos_c75 = {
+    common: [
+        "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
+        "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_CGT/DSP_C75X",
+        "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am62dx/c75x",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn/avb_cpsw_app",
+    ],
+};
+
 const libs_freertos_r5f = {
     common: [
 	"freertos.am62dx.r5f.ti-arm-clang.${ConfigName}.lib",
@@ -92,6 +119,13 @@ const libs_freertos_r5f = {
     ],
 };
 
+const libs_freertos_c75 = {
+    common: [
+        "freertos.am62dx.c75x.ti-c7000.${ConfigName}.lib",
+        "drivers.am62dx.c75x.ti-c7000.${ConfigName}.lib",
+    ],
+};
+
 const linker_includePath_freertos = {
     common: [
         "${PROJECT_BUILD_DIR}/syscfg",
@@ -99,9 +133,15 @@ const linker_includePath_freertos = {
     ],
 };
 
-const defines_r5f = {
+const defines_c75 = {
     common: [
         "SOC_AM62DX",
+    ],
+};
+
+const defines_r5f = {
+    common: [
+        'SOC_AM62DX',
         "ENET_ENABLE_PER_CPSW=1",
         'PRINT_FORMAT_NO_WARNING',
         'SITARA',
@@ -110,8 +150,7 @@ const defines_r5f = {
         'AVTP_ENABLED=1',
         'AVTP_HAVE_NO_SIGNAL=1',
         'GPTP_ENABLED=1',
-        'DOLBY_EC3_ENABLED=1',
-        'DOLBYEC3_TALKER_ENABLE=1',
+        'AES3_AAF_ENABLED=1',
         'AVTP_DIRECT_MODE=1'
     ],
 };
@@ -153,7 +192,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_DOLBYEC3_TALKER_APP";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_TSN_AES3_AAF_APP";
 
 const templates_freertos_r5f =
 [
@@ -168,8 +207,21 @@ const templates_freertos_r5f =
     },
 ];
 
+const templates_freertos_c75 =
+[
+    {
+        input: "source/networking/enet/core/sysconfig/.project/templates/freertos/main_freertos.c.xdt",
+        output: "../main.c",
+        options: {
+            entryFunction: "RemoteApp_mainTask",
+            stackSize: 64*1024,
+        },
+    }
+];
+
 const buildOptionCombos = [
 	{ device: device, cpu: "mcu-r5fss0-0", cgt: "ti-arm-clang", board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
+    { device: device, cpu: "c75ss0-0",     cgt: "ti-c7000",     board: "am62dx-evm-dp83867/am62dx-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {
@@ -177,7 +229,7 @@ function getComponentProperty() {
 
     property.dirPath = path.resolve(__dirname, "..");
     property.type = "executable";
-    property.name = "dolbyec3talker_app";
+    property.name = "aes3_aaflistener_app";
     property.isInternal = false;
     property.buildOptionCombos = buildOptionCombos;
 
@@ -187,8 +239,17 @@ function getComponentProperty() {
 function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
-    build_property.files = files;
-    build_property.filedirs = filedirs;
+    if(buildOption.cpu.match(/mcu-r5f*/))
+    {
+        build_property.files = main_files;
+        build_property.filedirs = main_filedirs;
+    }
+    else if(buildOption.cpu.match(/c75*/))
+    {
+        build_property.files = remote_files;
+        build_property.filedirs = remote_filedirs;
+    }
+
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
     build_property.projecspecFileAction = "link";
@@ -216,6 +277,14 @@ function getComponentBuildProperty(buildOption) {
             build_property.projectspecLnkPath = linker_includePath_freertos;
             build_property.loptflags = loptflags_r5f;
         }
+    }
+    else if(buildOption.cpu.match(/c75*/))
+    {
+        build_property.defines = defines_c75;
+        build_property.includes = includes_freertos_c75;
+        build_property.libdirs = libdirs_freertos;
+        build_property.libs = libs_freertos_c75;
+        build_property.templates = templates_freertos_c75;
     }
 
     return build_property;

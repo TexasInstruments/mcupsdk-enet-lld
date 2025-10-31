@@ -95,14 +95,14 @@ SECTIONS
         .init_array: {} palign(8)   /* Contains function pointers called before main */
         .fini_array: {} palign(8)   /* Contains function pointers called after main */
     } > MSRAM
-    
+
         .enet_dma_mem (NOLOAD) : {
         *(*ENET_DMA_DESC_MEMPOOL)
         *(*ENET_DMA_RING_MEMPOOL)
 #if (ENET_SYSCFG_PKT_POOL_ENABLE == 1)
         *(*ENET_DMA_PKT_MEMPOOL)
 #endif
-    } > DDR    
+    } > DDR
 
 }
 
@@ -114,5 +114,5 @@ MEMORY
 
     MSRAM     : ORIGIN = 0x79100000 , LENGTH = 0x80000
     DDR       : ORIGIN = 0x9BA00000 , LENGTH = 0x200000
-     
+
 }
