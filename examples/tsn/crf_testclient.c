@@ -336,8 +336,16 @@ static int start_crf(crfdata_t *crfdata)
 
     MCC_handle hMCC = MCC_init(freq, crfts_period);
     #if AVTP_CRF_TALKER_ENABLED
+    CB_SLEEP(15);
     CB_SEM_INIT(&gCRF_Tick, 0, 0);
     TimerP_start(gTimerBaseAddr[CONFIG_TIMER0]);
+    uint8_t streamID[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x04};
+    MCC_configMediaClock(hMCC, true, streamID);
+    MCC_enableEventCapture(hMCC, 0);
+    #elif AVTP_CRF_LISTENER_ENABLED
+    CB_SLEEP(15);
+    uint8_t streamID[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x04};
+    MCC_configMediaClock(hMCC, false, streamID);
     #endif
 
     while(s_running) {
@@ -346,7 +354,7 @@ static int start_crf(crfdata_t *crfdata)
             for (int i = 0; i < 2;)
             {
                 CB_SEM_WAIT(&gCRF_Tick);
-                if (MCC_getTimestamp(hMCC, &crfTimestamps[i]) == 0)
+                if (MCC_getTimestamp(hMCC, 0, &crfTimestamps[i]) == 0)
                 {
                     /* Extrapolate the timestamps. */
                     for (int j = 0; j < TS_PER_AVTPDU/2; j++)

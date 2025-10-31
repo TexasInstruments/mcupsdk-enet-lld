@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2024-2025
+ *  Copyright (c) Texas Instruments Incorporated 2025
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -81,10 +81,61 @@ MCC_handle MCC_init(uint32_t mcFrequency, uint32_t timestampInterval);
  * This function retrieves the current timestamp from the media clock control instance.
  *
  * @param handle The handle to the media clock control instance.
+ * @param eventNum  Event number for which timestamp is extracted
  * @param timestamp Pointer to a variable where the retrieved timestamp will be stored.
  *
  * @return int32_t Returns 0 on success, or a negative error code on failure.
  */
-int32_t MCC_getTimestamp(MCC_handle handle, uint64_t* timestamp);
+int32_t MCC_getTimestamp(MCC_handle handle, uint32_t eventNum, uint64_t* timestamp);
+
+/**
+ * @brief Register the Timestamping Event
+ *
+ * This function registers to an event index of eventNum
+ *
+ * @param handle The handle to the media clock control instance.
+ * @param eventNum  Event number for which timestamp is extracted
+ *
+ * @return int32_t Returns 0 on success, or a negative error code on failure.
+ */
+int32_t MCC_registerEvent(MCC_handle handle, uint32_t eventNum);
+
+/**
+ * @brief Nudges the Media Clock
+ *
+ * This Function Nudges the media Clock by "cycles"
+ *
+ * @param handle The handle to the media clock control instance.
+ * @param cycles Number of cycles to be nudged
+ *
+ * @return int32_t Returns 0 on success, or a negative error code on failure.
+ */
+int32_t MCC_NudgeClock(MCC_handle handle, int8_t cycles);
+
+/**
+ * @brief Enables event capture for a specified event index.
+ *
+ * This function enables the capture of events for the given event index
+ * using the provided media clock control handle.
+ *
+ * @param handle      Handle to the media clock control instance.
+ * @param eventIndex  Index of the event to enable capture for.
+ *
+ * @return Returns 0 on success, or a negative error code on failure.
+ */
+int32_t MCC_enableEventCapture(MCC_handle handle, int eventIndex);
+/**
+ * @brief Configures the media clock for a given stream.
+ *
+ * This function sets up the media clock.
+ *
+ * @param handle      Handle to the media clock controller instance.
+ * @param isMaster    Boolean flag indicating if the clock should be configured as
+ *                    master (true) or slave (false).
+ * @param streamID    Array of 8 bytes representing the unique identifier for the media stream.
+ *
+ * @return Returns 0 on success, or a negative error code on failure.
+ */
+int32_t MCC_configMediaClock(MCC_handle handle, bool isMaster, uint8_t streamID[8]);
 
 #endif /* __MEDIA_CLOCK_CTRL_H__ */

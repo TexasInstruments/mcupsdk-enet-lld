@@ -41,6 +41,7 @@
 /* ========================================================================== */
 #include "media_clock_ctrl.h"
 #include <enet_apputils.h>
+#include "dp83tg721.h"
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -87,7 +88,30 @@ MCC_handle MCC_init(uint32_t mcFrequency, uint32_t timestampInterval)
     }
 }
 
-int32_t MCC_getTimestamp(MCC_handle handle, uint64_t* timestamp)
+int32_t MCC_registerEvent(MCC_handle handle, uint32_t eventNum)
+{
+    int32_t status;
+    Enet_IoctlPrms prms;
+    EnetPhy_EnableEventCaptureInArgs inArgs;
+
+    inArgs.macPort  = ENET_MAC_PORT_1;
+    inArgs.eventIdx = eventNum;
+    inArgs.falling  = false;
+    inArgs.on       = true;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(handle->hEnet, handle->coreId,
+            ENET_PHY_IOCTL_ENABLE_EVENT_CAPTURE, &prms, status);
+
+    if (status != ENET_SOK)
+    {
+        DebugP_logError("Failed to register event: %d\n", status);
+    }
+
+    return status;
+}
+
+int32_t MCC_getTimestamp(MCC_handle handle, uint32_t eventNum, uint64_t* timestamp)
 {
     int32_t status = ENET_EFAIL;
     EnetPhy_GetEventTimestampOutArgs outArgs;
@@ -108,12 +132,61 @@ int32_t MCC_getTimestamp(MCC_handle handle, uint64_t* timestamp)
             break;
         }
     }
-    while (outArgs.eventIdx != PHY_EVENT_INDEX);
+    while (outArgs.eventIdx != eventNum);
 
     if (status == ENET_SOK)
     {
         *timestamp = outArgs.ts64;
     }
 
+    return status;
+}
+
+int32_t MCC_configMediaClock(MCC_handle handle, bool isMaster, uint8_t streamID[8])
+{
+    int32_t status = ENET_EFAIL;
+    Enet_IoctlPrms prms;
+    EnetPhy_ConfigMediaClockInArgs inArgs = {
+        .macPort            = ENET_MAC_PORT_1,
+        .isMaster           = isMaster,
+        .enTrigOut          = true,
+    };
+    inArgs.streamIDMatchValue = (uint8_t*)streamID;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(handle->hEnet, handle->coreId,
+            ENET_PHY_IOCTL_CONFIG_MEDIA_CLOCK, &prms, status);
+
+    return status;
+}
+
+int32_t MCC_enableEventCapture(MCC_handle handle, int eventIndex)
+{
+    int32_t status = ENET_EFAIL;
+    Enet_IoctlPrms prms;
+    EnetPhy_EnableEventCaptureInArgs inArgs = {
+        .macPort  = ENET_MAC_PORT_1,
+        .eventIdx = eventIndex,
+        .falling  = false,
+        .on       = true,
+    };
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(handle->hEnet, handle->coreId,
+            ENET_PHY_IOCTL_ENABLE_EVENT_CAPTURE, &prms, status);
+
+    return status;
+}
+
+int32_t MCC_NudgeClock(MCC_handle handle, int8_t cycles)
+{
+    int32_t status = ENET_EFAIL;
+    EnetPhy_NudgeCodecClockInArgs inArgs = {
+        .macPort = ENET_MAC_PORT_1,
+        .nudgeValue = cycles,
+    };
+    Enet_IoctlPrms prms;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(handle->hEnet, handle->coreId,
+            ENET_PHY_IOCTL_NUDGE_CODEC_CLOCK, &prms, status);
     return status;
 }
