@@ -31,17 +31,16 @@
  */
 
 /*!
- * \file  ale_vlan.c
+ * \file  ale_unicast.c
  *
- * \brief This file contains the functions used for configuring VLAN.
+ * \brief This file contains scripts to add unicast entry to ALE
  */
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include "cli_common.h"
-#include "ale_vlan.h"
+#include "cli_ale_unicast.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -59,7 +58,7 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static int32_t EnetApp_addVlanEntry(CpswAle_VlanEntryInfo args);
+static int32_t EnetApp_addUcastEntry(uint8_t *macAddr);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -71,90 +70,83 @@ static int32_t EnetApp_addVlanEntry(CpswAle_VlanEntryInfo args);
 /*                          Function Definitions                              */
 /* ========================================================================== */
 
-BaseType_t EnetCLI_addVlan(char *writeBuffer, size_t writeBufferLen,
+BaseType_t EnetCLI_addUcast(char *writeBuffer, size_t writeBufferLen,
         const char *commandString)
 {
-    int status = ENET_SOK;
+    int32_t status;
+    uint8_t macAddr[ENET_MAC_ADDR_LEN];
     char *parameter;
     BaseType_t paramLen;
-    uint32_t paramCnt = 2;
-    CpswAle_VlanEntryInfo inArgs;
-    memset(&inArgs, 0, sizeof(inArgs));
-
-    parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
-    if (atoi(parameter) > 0 && atoi(parameter) < 4096)
-    {
-        inArgs.vlanIdInfo.tagType = ENET_VLAN_TAG_TYPE_INNER;
-        inArgs.vlanIdInfo.vlanId = atoi(parameter);
-    }
-    else
-    {
-        snprintf(writeBuffer, writeBufferLen, "Invalid Vlan ID\r\n");
-    }
+    uint32_t paramCnt = 1;
+    uint8_t makeDefault = 0;
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, paramCnt,
             &paramLen);
     while (parameter != NULL)
     {
-        uint8_t portNum = atoi(parameter);
-        if (portNum > EnetApp_inst.numMacPorts)
+        if (strncmp(parameter, "-d", paramLen) == 0)
+            makeDefault = 1;
+        else
         {
-            snprintf(writeBuffer, writeBufferLen, "Invalid port number %d\r\n",
-                    portNum);
-            return pdFALSE;
+            status = EnetAppUtils_macAddrAtoI(parameter, macAddr);
+            if (status)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Parameter\r\n");
+                return pdFALSE;
+            }
+            break;
         }
-        inArgs.vlanMemberList |= (1 << portNum);
-        inArgs.regMcastFloodMask |= (1 << portNum);
-        inArgs.unregMcastFloodMask |= (1 << portNum);
-
         paramCnt++;
         parameter = (char*) FreeRTOS_CLIGetParameter(commandString, paramCnt,
                 &paramLen);
     }
 
-    if (paramCnt == 2)
-    {
-        snprintf(writeBuffer, writeBufferLen, "No ports specified\r\n");
-        return pdFALSE;
-    }
-
-    status = EnetApp_addVlanEntry(inArgs);
+    /* Add unicast entry to ALE */
+    status = EnetApp_addUcastEntry(macAddr);
     if (status)
-        snprintf(writeBuffer, writeBufferLen, "Failed to configure VLAN\r\n");
+        snprintf(writeBuffer, writeBufferLen,
+                "Failed to add unicast entry to ALE\r\n");
     else
-        snprintf(writeBuffer, writeBufferLen, "VLAN configured\r\n");
+    {
+        snprintf(writeBuffer, writeBufferLen, "Added unicast entry to ALE\r\n");
+        if (makeDefault)
+        {
+            EnetUtils_copyMacAddr(EnetApp_inst.hostMacAddr, macAddr);
+            EnetAppUtils_print("[INF] %s: Default MAC address set to ",
+                    __func__);
+            EnetAppUtils_printMacAddr(EnetApp_inst.hostMacAddr);
+        }
+    }
     return pdFALSE;
 }
 
-BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
+BaseType_t EnetCLI_removeUcast(char *writeBuffer, size_t writeBufferLen,
         const char *commandString)
 {
-    int status = ENET_SOK;
+    int32_t status;
+    CpswAle_MacAddrInfo inArgs;
     char *parameter;
     BaseType_t paramLen;
-    CpswAle_VlanIdInfo inArgs;
-    memset(&inArgs, 0, sizeof(inArgs));
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
-    if (atoi(parameter) > 0 && atoi(parameter) < 4096)
+    status = EnetAppUtils_macAddrAtoI(parameter, inArgs.addr);
+    if (status)
     {
-        inArgs.tagType = ENET_VLAN_TAG_TYPE_INNER;
-        inArgs.vlanId = atoi(parameter);
-    }
-    else
-    {
-        snprintf(writeBuffer, writeBufferLen, "Invalid Vlan ID\r\n");
+        snprintf(writeBuffer, writeBufferLen, "Invalid Parameter\r\n");
+        return pdFALSE;
     }
 
-    /* Remove VLAN config from ALE */
+    /* Remove unicast entry from ALE */
     Enet_IoctlPrms prms;
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
     ENET_IOCTL(EnetApp_inst.hEnet, EnetApp_inst.coreId,
-            CPSW_ALE_IOCTL_REMOVE_VLAN, &prms, status);
+            CPSW_ALE_IOCTL_REMOVE_ADDR, &prms, status);
     if (status)
-        snprintf(writeBuffer, writeBufferLen, "Failed to remove VLAN\r\n");
+        snprintf(writeBuffer, writeBufferLen,
+                "Failed to remove unicast entry to ALE\r\n");
     else
-        snprintf(writeBuffer, writeBufferLen, "VLAN configuration removed\r\n");
+        snprintf(writeBuffer, writeBufferLen,
+                "Removed unicast entry from ALE\r\n");
     return pdFALSE;
 }
 
@@ -162,26 +154,33 @@ BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
 /*                   Static Function Definitions                              */
 /* ========================================================================== */
 
-static int32_t EnetApp_addVlanEntry(CpswAle_VlanEntryInfo args)
+static int32_t EnetApp_addUcastEntry(uint8_t *macAddr)
 {
-    int32_t status = ENET_SOK;
+    CpswAle_SetUcastEntryInArgs setUcastInArgs;
+    uint32_t entryIdx;
     Enet_IoctlPrms prms;
-    uint32_t outArgs;
+    int32_t status;
 
-    args.forceUntaggedEgressMask = 0U;
-    args.noLearnMask = 0U;
-    args.vidIngressCheck = false;
-    args.limitIPNxtHdr = false;
-    args.disallowIPFrag = false;
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &args, &outArgs);
-    ENET_IOCTL(EnetApp_inst.hEnet, EnetApp_inst.coreId, CPSW_ALE_IOCTL_ADD_VLAN,
-            &prms, status);
-    if (status)
+    setUcastInArgs.addr.vlanId = 0U;
+    setUcastInArgs.info.portNum = CPSW_ALE_HOST_PORT_NUM;
+    setUcastInArgs.info.blocked = false;
+    setUcastInArgs.info.secure = false;
+    setUcastInArgs.info.super = false;
+    setUcastInArgs.info.ageable = false;
+    setUcastInArgs.info.trunk = false;
+    EnetUtils_copyMacAddr(&setUcastInArgs.addr.addr[0U], macAddr);
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &setUcastInArgs, &entryIdx);
+
+    ENET_IOCTL(EnetApp_inst.hEnet, EnetApp_inst.coreId,
+            CPSW_ALE_IOCTL_ADD_UCAST, &prms, status);
+    if (status != ENET_SOK)
     {
-        EnetAppUtils_print("[ERR] %s: Failed to configure VLAN %d", __func__,
-                status);
+        EnetAppUtils_print("[ERR] %s: Failed to add unicast entry: %d\r\n",
+                __func__, status);
         return 1;
     }
+    EnetAppUtils_print("[INF] %s: Added Unicast entry with MAC address: ",
+            __func__);
+    EnetAppUtils_printMacAddr(macAddr);
     return 0;
 }
-

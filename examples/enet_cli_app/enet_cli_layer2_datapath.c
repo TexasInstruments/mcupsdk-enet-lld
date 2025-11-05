@@ -41,9 +41,9 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include "cli_common.h"
-#include "l2_networking.h"
-#include "gptp_stack.h"
+#include "enet_cli.h"
+#include "enet_cli_layer2_datapath.h"
+#include "cli_gptp/cli_gptp_app.h"
 #include "cli_lwip.h"
 
 /* ========================================================================== */

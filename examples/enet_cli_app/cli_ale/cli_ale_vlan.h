@@ -31,19 +31,19 @@
  */
 
 /*!
- * \file  ale_unicast.h
+ * \file  ale_vlan.h
  *
- * \brief This is the header file for ale_unicast.c
+ * \brief This is the header file for ale_vlan.c.
  */
 
-#ifndef _ALE_UNICAST_H_
-#define _ALE_UNICAST_H_
+#ifndef _ALE_VLAN_H_
+#define _ALE_VLAN_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-/* None */
+#include "../enet_cli.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -54,7 +54,7 @@ extern "C"
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* None */
+/* Nine */
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -66,10 +66,10 @@ extern "C"
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-BaseType_t EnetCLI_addUcast(char *writeBuffer, size_t writeBufferLen,
+BaseType_t EnetCLI_addVlan(char *writebuffer, size_t writeBufferLen,
         const char *commandString);
 
-BaseType_t EnetCLI_removeUcast(char *writeBuffer, size_t writeBufferLen,
+BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
         const char *commandString);
 
 /* ========================================================================== */
@@ -82,4 +82,4 @@ BaseType_t EnetCLI_removeUcast(char *writeBuffer, size_t writeBufferLen,
 }
 #endif
 
-#endif /* _ALE_UNICAST_H_ */
+#endif /* _ALE_VLAN_H_ */

@@ -43,7 +43,62 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 
-#include "tsnapp_porting.h"
+#include <kernel/dpl/ClockP.h>
+#include <kernel/dpl/DebugP.h>
+#include <core/enet_types.h>
+#include <core/enet_mod_tas.h>
+#include <core/enet_types.h>
+#include <enet_apputils.h>
+#include <enet_ethutils.h>
+#include "../enet_cli.h"
+
+#ifndef DISABLE_FAT_FS
+
+#include <ff_stdio.h>
+
+#define INTERFACE_CONFFILE_PATH "/sd0/conffiles/interface.conf"
+#define UNICONF_DBFILE_PATH     "/sd0/uniconfdb/example.bin"
+
+typedef FF_Stat_t       EnetApp_fsInfo_t;
+#define FSTAT(fn, st)   ff_stat((fn), (st))
+#define FSSTAT_OK       (0)
+#define NETCONF_YANG_SCHEMA_DIR "/sd0/schemas/xmlsafe"
+
+#endif //DISABLE_FAT_FS
+
+#define TSN_TSK_STACK_SIZE 16U * 1024U
+#define TSN_TSK_STACK_ALIGN 32U
+
+#define EnetApp_sleep           ClockP_usleep
+#define EnetApp_yield           TaskP_yield
+#define ENDLINE "\r\n"
+#define USE_CRLF
+#ifndef BTRUE
+#define BTRUE    ((bool) 1)
+#endif
+
+#ifndef BFALSE
+#define BFALSE    ((bool) 0)
+#endif
+
+static inline char EnetTsnApp_getChar(void)
+{
+    char ch;
+
+    DebugP_scanf("%c", &ch);
+
+    return ch;
+}
+
+static inline int32_t EnetTsnApp_getNum(void)
+{
+    int32_t num;
+
+    DebugP_scanf("%d", &num);
+
+    return num;
+}
+
 
 /* Writing log directly to the console can impact the performance.
  * So by the default the log will be written to the buffer and then a log task
@@ -70,3 +125,4 @@ int Logger_init(Logger_onConsoleOut consoleOutCb);
 void Logger_deInit(void);
 
 #endif /* _GPTP_LOG_H */
+

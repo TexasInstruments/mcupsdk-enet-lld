@@ -4,15 +4,20 @@ let device = "am243x";
 
 const files = {
     common: [
-            "cli_common.c",
-            "shell.c",
-            "gptp_log.c",
-            "gptp_stack.c",
+            "enet_cli_wrapper.c",
+            "enet_cli.c",
+            "cli_ale_unicast.c",
+            "cli_ale_vlan.c",
+            "lwip_shell.c",
             "cli_lwip.c",
-            "l2_networking.c",
-            "ale_unicast.c",
-            "ale_vlan.c",
-            "cli_main.c",
+            "cli_gptp_log.c",
+            "cli_gptp_app.c",
+            "enet_cli_config.c",
+            "enet_cli_debug.c",
+            "enet_cli_layer2_datapath.c",
+            "enet_cli_phy.c",
+            "enet_cli_utils.c",
+            "enet_cli_main.c",
             "main.c",
     ],
 };
@@ -24,6 +29,10 @@ const filedirs = {
     common: [
         "..",       /* core_os_combo base */
         "../../..", /* Example base */
+        "../../../cli_gptp", /* Example base */
+        "../../../cli_lwip", /* Example base */
+        "../../../enet_cli_wrapper", /* Example base */
+        "../../../cli_ale", /* Example base */
     ],
 };
 
@@ -34,7 +43,6 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet_cli/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib",
@@ -47,8 +55,6 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Plus-CLI",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet_cli/portable/freertos_plus_cli/include",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet_cli/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am243x/r5f",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet",
@@ -58,13 +64,13 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/per",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/core",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am64x_am243x",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
-        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp",
         "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_unibase",
@@ -78,13 +84,17 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am243x",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_gptp",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper",
     ],
 };
 
 const libs_freertos_r5f = {
     common: [
         "freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "enet_cli_freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "drivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "enet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
         "board.am243x.r5f.ti-arm-clang.${ConfigName}.lib",
@@ -206,6 +216,7 @@ const templates_freertos_r5f =
 
 const buildOptionCombos = [
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am243x-lp", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am243x-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {

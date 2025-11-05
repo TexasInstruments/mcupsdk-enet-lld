@@ -31,19 +31,49 @@
  */
 
 /*!
- * \file  ale_vlan.h
+ * \file  enet_cli_port.h
  *
- * \brief This is the header file for ale_vlan.c.
+ * \brief Porting layer of enet_cli lib for FreeRTOS+CLI command interpreter.
  */
 
-#ifndef _ALE_VLAN_H_
-#define _ALE_VLAN_H_
+/*!
+ * \ingroup  ENET_CLI_API
+ * \defgroup FREERTOS_PLUS_CLI FreeRTOS Plus CLI Porting Layer
+ *
+ * @{
+ */
+
+#ifndef _ENET_CLI_MAIN_H_
+#define _ENET_CLI_MAIN_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-/* None */
+#include <stdint.h>
+#include <string.h>
+#include <assert.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include <include/core/enet_osal.h>
+#include <kernel/dpl/TaskP.h>
+#include <kernel/dpl/ClockP.h>
+#include <kernel/dpl/SemaphoreP.h>
+
+#include <enet.h>
+#include <enet_cfg.h>
+#include <include/core/enet_dma.h>
+#include <include/per/cpsw.h>
+
+#include <enet_apputils.h>
+#include <enet_appmemutils.h>
+#include <enet_appmemutils_cfg.h>
+
+#include "FreeRTOS.h"
+#include "FreeRTOS_CLI.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -54,7 +84,7 @@ extern "C"
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* Nine */
+/* None */
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -66,12 +96,44 @@ extern "C"
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-BaseType_t EnetCLI_addVlan(char *writebuffer, size_t writeBufferLen,
-        const char *commandString);
+/*!
+ * \brief Register custom commands to command interpreter.
+ *
+ * Use this function to register user defined commands when using FreeRTOS
+ * Plus CLI command interpreter.
+ *
+ * \param commandList       Array of commands which needs to be registered
+ * \param numOfCommands     Number of commands that needs to be registered
+ */
+void EnetCli_registerCustomCommands(CLI_Command_Definition_t *commandList,
+        uint32_t numOfCommands);
 
-BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
-        const char *commandString);
+/*!
+ * \brief Processes the command and runs the associated function.
+ *
+ * Processes the command and executes the function that is associated to the
+ * command.
+ *
+ * \param pCommandInput     The command to be processed
+ * \param pWriteBuffer      Buffer to store output after command is executed
+ * \param writeBufferLen    Length of the output buffer
+ *
+ * \return true if more data needs to be returned. Otherwise false.
+ */
+bool EnetCli_processCommand(const char *pCommandInput, char *pWriteBuffer,
+        size_t writeBufferLen);
 
+/*!
+ * \brief Extracts a specific parameter from the command.
+ *
+ * \param pCommandString    The command from which the parameter needs to be extracted
+ * \param wantedParam       The parameter index that needs to be extracted
+ * \param paramLen          The length of the extracted parameter
+ *
+ * \return A pointer to the first character of the extracted parameter string.
+ */
+const char* EnetCli_getParameter(const char *pCommandString,
+        uint32_t wantedParam, uint32_t *paramLen);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -82,4 +144,6 @@ BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
 }
 #endif
 
-#endif /* _ALE_VLAN_H_ */
+#endif /* _ENET_CLI_MAIN_H_ */
+
+/*! @} */

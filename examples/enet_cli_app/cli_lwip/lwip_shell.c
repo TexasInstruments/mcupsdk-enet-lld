@@ -30,7 +30,7 @@
  *
  */
 
-#include "shell.h"
+#include "lwip_shell.h"
 
 #include "lwip/opt.h"
 

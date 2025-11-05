@@ -40,13 +40,12 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include "cli_common.h"
-#include "l2_networking.h"
-#include "ale_unicast.h"
-#include "ale_vlan.h"
-#include "gptp_stack.h"
-#include "cli_lwip.h"
 #include "enet_cli.h"
+#include "enet_cli_layer2_datapath.h"
+#include "cli_ale_unicast.h"
+#include "cli_ale_vlan.h"
+#include "cli_gptp_app.h"
+#include "cli_lwip.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */

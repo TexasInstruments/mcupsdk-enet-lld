@@ -40,9 +40,7 @@
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
-
-#include "cli_common.h"
-#include "gptp_stack.h"
+#include "cli_gptp_app.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -560,9 +558,9 @@ static int EnetTsn_uniconfInit(EnetTsn_ModuleCtx *modCtx,
     for (i = 0; i < appCtx->netdevSize; i++)
     {
         uint8_t up=1;
-		YDBI_SET_ITEM(ifk1vk0, (char*)appCtx->netdev[i],
-			      IETF_INTERFACES_ENABLED, YDBI_CONFIG,
-			      &up, 1, YDBI_PUSH_NOTICE);
+        YDBI_SET_ITEM(ifk1vk0, (char*)appCtx->netdev[i],
+                  IETF_INTERFACES_ENABLED, YDBI_CONFIG,
+                  &up, 1, YDBI_PUSH_NOTICE);
     }
     return 0;
 #else
@@ -622,10 +620,10 @@ static void EnetTsn_gptpUpdateDomainMap(int instance, int domain, EnetTsn_Ctx *a
         yang_db_item_access_t *ydbia=ydbi_access_handle();
         uint16_t dmap;
         uint8_t aps[]={IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP,
-		IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP, 255};
-	    yang_db_access_para_t dbpara={((instance | domain) != 0) ? YANG_DB_ACTION_APPEND:YANG_DB_ACTION_CREATE, 
+        IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP, 255};
+        yang_db_access_para_t dbpara={((instance | domain) != 0) ? YANG_DB_ACTION_APPEND:YANG_DB_ACTION_CREATE,
                                         YANG_DB_ONHW_NOACTION,
-		                                NULL, aps, NULL, NULL, &dmap, sizeof(uint16_t)};
+                                        NULL, aps, NULL, NULL, &dmap, sizeof(uint16_t)};
         dmap=instance<<8|domain;
         if(yang_db_action(ydbia->dbald, NULL, &dbpara)!=0){
             DPRINT("%s:Can't create instance|domainmap=0x%04x", __func__, dmap);

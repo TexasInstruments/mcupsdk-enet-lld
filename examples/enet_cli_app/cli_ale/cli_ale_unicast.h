@@ -31,23 +31,19 @@
  */
 
 /*!
- * \file  enet_cli_lwip.h
+ * \file  ale_unicast.h
  *
- * \brief HEader file for cli_lwip.c
+ * \brief This is the header file for ale_unicast.c
  */
 
-#ifndef _CLI_LWIP_H_
-#define _CLI_LWIP_H_
+#ifndef _ALE_UNICAST_H_
+#define _ALE_UNICAST_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include "lwip/opt.h"
-#include "lwip/sys.h"
-#include "lwip/tcpip.h"
-#include "lwip/dhcp.h"
-#include "shell.h"
+#include "../enet_cli.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -58,9 +54,7 @@ extern "C"
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* Status flag for LwIP shell */
-#define SHELL_RUNNING 1
-#define SHELL_IDLE 0
+/* None */
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -72,10 +66,11 @@ extern "C"
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-BaseType_t EnetCLI_lwipShell(char *writeBuffer, size_t writeBufferLen,
+BaseType_t EnetCLI_addUcast(char *writeBuffer, size_t writeBufferLen,
         const char *commandString);
 
-void Lwip_shutdownNetworkStack();
+BaseType_t EnetCLI_removeUcast(char *writeBuffer, size_t writeBufferLen,
+        const char *commandString);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -87,4 +82,4 @@ void Lwip_shutdownNetworkStack();
 }
 #endif
 
-#endif /* _CLI_LWIP_H_ */
+#endif /* _ALE_UNICAST_H_ */

@@ -31,17 +31,16 @@
  */
 
 /*!
- * \file  cli_common.c
+ * \file  enet_cli.c
  *
- * \brief This file contains definitions of some commmon functions used by
- *        the CLI application.
+ * \brief This file contains the function definitions for enet_cli library.
  */
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include "cli_common.h"
+#include "enet_cli.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -59,11 +58,57 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-/* None */
+static BaseType_t EnetCli_boolToBaseType(bool val);
+
+static BaseType_t EnetCli_configCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString);
+
+static BaseType_t EnetCli_debugCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString);
+
+static BaseType_t EnetCli_phyCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString);
+
+static BaseType_t EnetCli_utilsCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
+EnetCli_Obj EnetCli_inst;
+
+/* Commands for modifying ethernet configuration */
+static CLI_Command_Definition_t enetConfigCommands =
+        { .pcCommand = "enet_cfg",
+            .pcHelpString =
+                    "enet_cfg {help|mqprio|tracelvl|classifier}:\r\n Commands to modify ethernet configurations.\r\n\n",
+            .pxCommandInterpreter = EnetCli_configCommandWrapper,
+            .cExpectedNumberOfParameters = -1 };
+
+/* Commands to print debug data */
+static CLI_Command_Definition_t enetDebugCommands =
+        { .pcCommand = "enet_dbg",
+            .pcHelpString =
+                    "enet_dbg {help|cpswstats|dumpale|dumppolicer}:\r\n Commands to print debug data.\r\n\n",
+            .pxCommandInterpreter = EnetCli_debugCommandWrapper,
+            .cExpectedNumberOfParameters = -1 };
+
+/* Commands to access PHY */
+static CLI_Command_Definition_t phyCommands =
+        { .pcCommand = "phy",
+            .pcHelpString =
+                    "phy {help|scan|status|dump|write|read}:\r\n Commands to access ethernet PHYs.\r\n\n",
+            .pxCommandInterpreter = EnetCli_phyCommandWrapper,
+            .cExpectedNumberOfParameters = -1 };
+
+/* Utility Commands for SOC */
+static CLI_Command_Definition_t utilsCommands =
+        { .pcCommand = "utils",
+            .pcHelpString =
+                    "utils {help|cpuload|readmem|writemem}:\r\n Utility commands for SOC.\r\n\n",
+            .pxCommandInterpreter = EnetCli_utilsCommandWrapper,
+            .cExpectedNumberOfParameters = -1 };
 
 /* Destructive backspace */
 char UART_destructiveBackSpc[3] = "\b \b";
@@ -73,10 +118,40 @@ char UART_endOfLine[3] = "\r\n";
 
 /* UART transaction object */
 UART_Transaction UART_trans;
-
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
+
+void EnetCli_init(Enet_Type enetType, uint32_t instId)
+{
+    /* Retrieve board info and enet handle */
+    memset(&EnetCli_inst, 0, sizeof(EnetCli_Obj));
+    EnetCli_inst.enetType = enetType;
+    EnetCli_inst.instId = instId;
+    EnetCli_inst.coreId = Enet_getCoreId();
+    EnetCli_inst.hEnet = Enet_getHandle(enetType, instId);
+    EnetCli_inst.numMacPorts = Enet_getMacPortMax(enetType, instId);
+
+    EnetAppUtils_assert(EnetCli_inst.hEnet != NULL);
+    EnetAppUtils_assert(EnetCli_inst.enetType == ENET_CPSW_3G);
+}
+
+
+
+/* Function to register built-in CLI commands */
+void EnetCli_registerBuiltInCommands()
+{
+    BaseType_t status;
+    status = FreeRTOS_CLIRegisterCommand(&enetConfigCommands);
+    EnetAppUtils_assert(status == pdPASS);
+    status = FreeRTOS_CLIRegisterCommand(&enetDebugCommands);
+    EnetAppUtils_assert(status == pdPASS);
+    status = FreeRTOS_CLIRegisterCommand(&phyCommands);
+    EnetAppUtils_assert(status == pdPASS);
+    status = FreeRTOS_CLIRegisterCommand(&utilsCommands);
+    EnetAppUtils_assert(status == pdPASS);
+}
+
 
 void UART_readCLI(char *rxBuffer, uint32_t rxBufferLen)
 {
@@ -152,4 +227,40 @@ void UART_writeCLI(char *txBuffer)
 /*                   Static Function Definitions                              */
 /* ========================================================================== */
 
-/* None */
+static BaseType_t EnetCli_configCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString)
+{
+    bool moreDataToFollow = EnetCli_configCommandHandler(writeBuffer,
+            writeBufferLen, commandString);
+    return EnetCli_boolToBaseType(moreDataToFollow);
+}
+
+static BaseType_t EnetCli_debugCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString)
+{
+    bool moreDataToFollow = EnetCli_debugCommandHandler(writeBuffer,
+            writeBufferLen, commandString);
+    return EnetCli_boolToBaseType(moreDataToFollow);
+}
+
+static BaseType_t EnetCli_phyCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString)
+{
+    bool moreDataToFollow = EnetCli_phyCommandHandler(writeBuffer,
+            writeBufferLen, commandString);
+    return EnetCli_boolToBaseType(moreDataToFollow);
+}
+
+static BaseType_t EnetCli_utilsCommandWrapper(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString)
+{
+    bool moreDataToFollow = EnetCli_utilsCommandHandler(writeBuffer,
+            writeBufferLen, commandString);
+    return EnetCli_boolToBaseType(moreDataToFollow);
+}
+
+
+static BaseType_t EnetCli_boolToBaseType(bool val)
+{
+    return (val == true) ? pdTRUE : pdFALSE;
+}

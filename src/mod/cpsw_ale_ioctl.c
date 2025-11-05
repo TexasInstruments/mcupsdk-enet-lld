@@ -5304,6 +5304,7 @@ int32_t CpswAle_ioctl_handler_ENET_FDB_IOCTL_PRINT_REGS(CpswAle_Handle hAle, CSL
     CpswAle_printRegs(hAle, regs);
     return status;
 }
+#endif
 
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DUMP_TABLE(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
 {
@@ -5312,7 +5313,7 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DUMP_TABLE(CpswAle_Handle hAle, CSL
     CpswAle_dumpTable(hAle, regs);
     return status;
 }
-#endif
+
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_ADD_UCAST(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
 {
     const CpswAle_SetUcastEntryInArgs *inArgs = (const CpswAle_SetUcastEntryInArgs *)prms->inArgs;

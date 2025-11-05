@@ -31,39 +31,26 @@
  */
 
 /*!
- * \file  cli_common.h
+ * \file  enet_cli.h
  *
- * \brief This is the common header file of the CLI application.
+ * \brief This file contains the APIs of enet_cli lib.
  */
 
-#ifndef _CLI_COMMON_H_
-#define _CLI_COMMON_H_
+/*!
+ * \ingroup  NETWORKING_MODULE
+ * \defgroup ENET_CLI_API Enet CLI API
+ *
+ * @{
+ */
+
+#ifndef _ENET_CLI_H_
+#define _ENET_CLI_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include <stdint.h>
-#include <string.h>
-#include <assert.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-
-#include <include/core/enet_osal.h>
-#include <kernel/dpl/TaskP.h>
-#include <kernel/dpl/ClockP.h>
-#include <kernel/dpl/SemaphoreP.h>
-
-#include <enet.h>
-#include <enet_cfg.h>
-#include <include/core/enet_dma.h>
-#include <include/per/cpsw.h>
-
-#include <enet_apputils.h>
-#include <enet_appmemutils.h>
-#include <enet_appmemutils_cfg.h>
-
+#include "enet_cli_wrapper/enet_cli_wrapper.h"
 /* SDK includes */
 #include "ti_drivers_open_close.h"
 #include "ti_board_open_close.h"
@@ -71,12 +58,6 @@
 #include "ti_enet_open_close.h"
 #include "ti_enet_config.h"
 #include "ti_enet_lwipif.h"
-
-/* FreeRTOS CLI library */
-#include "FreeRTOS.h"
-#include "FreeRTOS_CLI.h"
-
-//#include "enet_cli.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -100,6 +81,21 @@ extern "C"
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */
+
+typedef enum EnetCLi_RemapType_e
+{
+    ENET_CLI_REMAP_INGRESS = 0,
+    ENET_CLI_REMAP_EGRESS = 1
+}EnetCli_RemapType;
+
+typedef struct EnetCli_Obj_s
+{
+    Enet_Type enetType;
+    uint32_t instId;
+    Enet_Handle hEnet;
+    uint8_t numMacPorts;
+    uint32_t coreId;
+} EnetCli_Obj;
 
 /* Structure with parameters of an Ethernet object */
 typedef struct EnetApp_Obj_s
@@ -135,14 +131,29 @@ typedef struct EnetApp_Obj_s
     int8_t tsnFlag;
     int8_t shellFlag;
 } EnetApp_Obj;
-
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-void EnetApp_createClock(void);
+/*!
+ * \brief Initialize variables necessary for CLI.
+ *
+ * Gets necessary data like enet handle, core ID and number of MAC
+ * ports that are required by the built-in commands.
+ *
+ * \param enetType  Enet peripheral type
+ * \param instId    Enet peripheral instance ID
+ */
+void EnetCli_init(Enet_Type enetType, uint32_t instId);
 
-void EnetApp_deleteClock(void);
+/*!
+ * \brief Registers all built-in commands to command interpreter.
+ *
+ * Use this to enable built-in commands in the application. Should be
+ * called only after calling EnetCli_init().
+ */
+void EnetCli_registerBuiltInCommands();
+
 
 /* Function to read user input from the terminal */
 void UART_readCLI(char *rxBuffer, uint32_t rxBufferLen);
@@ -150,9 +161,23 @@ void UART_readCLI(char *rxBuffer, uint32_t rxBufferLen);
 /* Function to display string on the terminal */
 void UART_writeCLI(char *txBuffer);
 
+bool EnetCli_configCommandHandler(char *writeBuffer,
+        size_t writeBufferLen, const char *commandString);
+
+bool EnetCli_debugCommandHandler(char *writeBuffer, size_t writeBufferLen,
+        const char *commandString);
+
+bool EnetCli_phyCommandHandler(char *writeBuffer, size_t writeBufferLen,
+        const char *commandString);
+
+bool EnetCli_utilsCommandHandler(char *writeBuffer, size_t writeBufferLen,
+        const char *commandString);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
+extern EnetCli_Obj EnetCli_inst;
+
 
 /* Enet object instance declaration */
 EnetApp_Obj EnetApp_inst;
@@ -165,9 +190,10 @@ int32_t EnetApp_pktPerTxCh[ENET_SYSCFG_TX_CHANNELS_NUM];
 
 /* Number of packets per rx channel */
 int32_t EnetApp_pktPerRxCh[ENET_SYSCFG_RX_FLOWS_NUM];
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _CLI_COMMON_H_ */
+#endif /* _ENET_CLI_H_ */
+
+/*! @} */

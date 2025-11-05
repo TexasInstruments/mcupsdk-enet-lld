@@ -40,10 +40,9 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 
+#include "cli_gptp_log.h"
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include "gptp_log.h"
-#include "tsninit.h"
 
 Logger_onConsoleOut sDrvConsoleOut;
 /* Reason: Printing to the console directly will create a lot of timing issue in gptp.
@@ -212,3 +211,4 @@ void Logger_deInit(void)
     CB_THREAD_MUTEX_DESTROY(&gLogMutex);
 #endif
 }
+

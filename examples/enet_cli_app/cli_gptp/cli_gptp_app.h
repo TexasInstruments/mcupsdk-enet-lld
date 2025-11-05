@@ -43,6 +43,7 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 
+#include "cli_gptp_log.h"
 #include <tsn_combase/tilld/lldtype.h>
 #include <tsn_combase/combase.h>
 #include <tsn_unibase/unibase_binding.h>
@@ -54,7 +55,6 @@
 #include <tsn_uniconf/yangs/ieee1588-ptp-tt_access.h>
 #include <tsn_uniconf/ucman.h>
 #include <tsn_uniconf/uc_dbal.h>
-#include "gptp_log.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -65,14 +65,12 @@ extern "C"
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define UNICONF_TASK_PRIORITY 2
+
 #define GPTP_TASK_PRIORITY 2
-
-#define TSN_TSK_STACK_SIZE 16U * 1024U
-#define TSN_TSK_STACK_ALIGN 32U
-
 #define MAX_KEY_SIZE 256
 
+#define UNICONF_TASK_PRIORITY   (2)
+#define UNICONF_TASK_NAME       "uniconf_task"
 #define AVTP_TALKER_NUM 2
 #define AVTP_LISTENER_NUM 2
 
@@ -82,10 +80,16 @@ extern "C"
 #define UNICONF_CONF_FILE_NUM   (0)
 #define INTERFACE_CONFFILE_PATH (NULL)
 #define UNICONF_DBFILE_PATH     (NULL)
+extern const uint8_t* ucinit[];
+extern int ucinit_size;
+#define UCINIT_DATA ucinit;
+#define UCINIT_SIZE ucinit_size;
 #else
 #define UNICONF_CONF_FILE_NUM   (1)
 #define INTERFACE_CONFFILE_PATH "/sd0/conffiles/interface.conf"
 #define UNICONF_DBFILE_PATH     "/sd0/uniconfdb/example.bin"
+#define UCINIT_DATA NULL;
+#define UCINIT_SIZE 0;
 #endif //DISABLE_FAT_FS
 
 /* Status flags for TSN */
