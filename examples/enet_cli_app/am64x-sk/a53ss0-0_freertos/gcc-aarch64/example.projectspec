@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectSpec>
+    <applicability>
+        <when>
+            <context
+                deviceFamily="ARM"
+                deviceId="Cortex A.AM64x"
+            />
+        </when>
+    </applicability>
+
+    <project
+        title="Enet Cli App"
+        name = "enet_cli_app_am64x-sk_a53ss0-0_freertos_gcc-aarch64"
+        products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
+        configurations="
+                Debug,
+                Release,
+        "
+        connection="TIXDS110_Connection.xml"
+        toolChain="GNU"
+        toolVersion="9.2"
+        device="Cortex A.AM64x"
+        deviceCore="CortexA53_0"
+        ignoreDefaultDeviceSettings="true"
+        ignoreDefaultCCSSettings="false"
+        endianness="little"
+        outputFormat="ELF"
+        outputType="executable"
+
+        compilerBuildOptions="
+            -I${MCU_PLUS_SDK_PATH}/source
+            -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include
+            -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port
+            -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include
+            -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Plus-CLI
+            -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/GCC/ARM_CA53
+            -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am64x/a53
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/per
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/core
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/k3/am64x_am243x
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/tsn
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/tilld
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_combase/tilld/sitara
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_gptp/gptpconf
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_uniconf/yangs
+            -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-port/freertos/include
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc
+            -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib
+            -I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am64x
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_gptp
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/FreeRTOS-Plus-CLI
+            -mcpu=cortex-a53+fp+simd
+            -mabi=lp64
+            -mcmodel=large
+            -mstrict-align
+            -mfix-cortex-a53-835769
+            -mfix-cortex-a53-843419
+            -Wall
+            -Werror
+            -g
+            -Wno-int-to-pointer-cast
+            -Wno-pointer-to-int-cast
+            -Wno-unused-but-set-variable
+            -fdata-sections
+            -ffunction-sections
+            --include tsn_buildconf/sitara_buildconf.h
+            -Wno-unused-function
+            -DSOC_AM64X
+            -DENET_ENABLE_PER_CPSW=1
+            -DPRINT_FORMAT_NO_WARNING
+            -DSITARA
+            -DGPTP_ENABLED=1
+            -DOS_FREERTOS
+        "
+        linkerBuildOptions="
+            -L${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
+            -L${MCU_PLUS_SDK_PATH}/source/drivers/lib
+            -L${MCU_PLUS_SDK_PATH}/source/board/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
+            -L${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
+            -L$(CGT_GCC_AARCH64_PATH)/lib
+            -Wl,-Map=enet_cli_app.${ConfigName}.map
+            -Wl,-static
+            -Wl,--gc-sections
+            -Wl,--build-id=none
+            -lstdc++
+            -lgcc
+            -lm
+            -lc
+            -lrdimon
+        "
+
+        postBuildStep="$(MAKE) -C ${CCS_PROJECT_DIR} -f makefile_ccs_bootimage_gen OUTNAME=${BuildArtifactFileBaseName} PROFILE=${ConfigName} MCU_PLUS_SDK_PATH=${MCU_PLUS_SDK_PATH} CG_TOOL_ROOT=${CG_TOOL_ROOT} CCS_INSTALL_DIR=${CCS_INSTALL_DIR} CCS_IDE_MODE=${CCS_IDE_MODE} DEVICE=am64x"
+
+        enableSysConfigTool="true"
+        sysConfigBuildOptions="
+            --context a53ss0-0 --part Default --package ALV
+        "
+
+        description="A Enet Cli App FREERTOS project">
+
+        <configuration name="Debug"
+            compilerBuildOptions="
+                -D_DEBUG_=1
+            "
+            linkerBuildOptions="
+                -lfreertos.am64x.a53.gcc-aarch64.debug.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.debug.lib
+                -ltsn_combase-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -ltsn_unibase-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -ltsn_gptp-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -ltsn_uniconf-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -llwipif-cpsw-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -llwip-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -llwip-contrib-freertos.am64x.a53.gcc-aarch64.debug.lib
+                -lyangemb-freertos.am64x.a53.gcc-aarch64.lib
+            "
+        ></configuration>
+        <configuration name="Release"
+            compilerBuildOptions="
+                -O2
+                -flto
+            "
+            linkerBuildOptions="
+                -lfreertos.am64x.a53.gcc-aarch64.release.lib
+                -ldrivers.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lenet-cpsw.am64x.a53.gcc-aarch64.freertos.release.lib
+                -lboard.am64x.a53.gcc-aarch64.freertos.release.lib
+                -ltsn_combase-freertos.am64x.a53.gcc-aarch64.release.lib
+                -ltsn_unibase-freertos.am64x.a53.gcc-aarch64.release.lib
+                -ltsn_gptp-freertos.am64x.a53.gcc-aarch64.release.lib
+                -ltsn_uniconf-freertos.am64x.a53.gcc-aarch64.release.lib
+                -llwipif-cpsw-freertos.am64x.a53.gcc-aarch64.release.lib
+                -llwip-freertos.am64x.a53.gcc-aarch64.release.lib
+                -llwip-contrib-freertos.am64x.a53.gcc-aarch64.release.lib
+                -lyangemb-freertos.am64x.a53.gcc-aarch64.lib
+            "
+        ></configuration>
+        <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
+        <file path="../../../enet_cli_wrapper/enet_cli_wrapper.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_ale/cli_ale_unicast.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_ale/cli_ale_vlan.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_lwip/lwip_shell.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_lwip/cli_lwip.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_gptp/cli_gptp_log.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../cli_gptp/cli_gptp_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_config.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_debug.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_layer2_datapath.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_phy.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_utils.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../enet_cli_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am64x/EXAMPLES_ENET_CLI_APP.html"
+                openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">
+        </file>
+        <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile_ccs_bootimage_gen" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="makefile.defs" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+    </project>
+</projectSpec>
