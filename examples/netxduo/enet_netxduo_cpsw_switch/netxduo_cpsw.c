@@ -107,7 +107,6 @@ int netxduo_cpsw_main(ULONG arg)
     Enet_Type enetType;
     uint32_t instId;
     EnetApp_GetMacAddrOutArgs outArgs;
-    Enet_MacPort macPort;
     ULONG ipAddr;
     ULONG netMask;
     ULONG actual_status;
@@ -172,9 +171,9 @@ int netxduo_cpsw_main(ULONG arg)
         NetxEnetDriver_allocTxCh(outArgs.hTxCh, outArgs.maxNumTxPkts, &txChs[k]);
     }
 
-    macPort = NetxEnetApp_getMacPort(0, 0);
+
     EnetApp_getMacAddress(rxChIds[0], &outArgs);
-    NetxEnetDriver_allocIf("PRI", macPort, &outArgs.macAddr[0][0], &rxChs[0], rxChCnt, txChs, txChCnt);
+    NetxEnetDriver_allocIf("PRI", ENET_MAC_PORT_INV, &outArgs.macAddr[0][0], &rxChs[0], rxChCnt, txChs, txChCnt);
 
 
     /* Create an IP instance.  */
