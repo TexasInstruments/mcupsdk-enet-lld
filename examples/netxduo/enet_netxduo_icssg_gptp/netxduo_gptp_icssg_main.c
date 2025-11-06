@@ -47,10 +47,16 @@
 #include "ti_drivers_open_close.h"
 #include "ti_board_open_close.h"
 #include "ti_board_config.h"
-#include "ti_enet_open_close.h"
 #include "ti_enet_config.h"
 #include <kernel/dpl/TaskP.h>
 #include <kernel/dpl/ClockP.h>
+
+#include <tsn_combase/combase.h>
+#include <tsn_combase/combase_link.h>
+#include "debug_log.h"
+#include "dataflow.h"
+#include "tsninit.h"
+#include "enetapp_icssg.h"
 
 #include <include/per/icssg.h>
 #include <priv/per/icssg_priv.h>
@@ -68,16 +74,20 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
+#define LOG_BUFFER_SIZE (1024)
+
 #define PACKET_SIZE     1536
 #define POOL_SIZE      ((sizeof(NX_PACKET) + PACKET_SIZE) * (ENET_SYSCFG_TOTAL_NUM_RX_PKT + ENET_SYSCFG_TOTAL_NUM_TX_PKT))
 
-#define IP_THREAD_STACK_SIZE        8192u
-#define IP_ARP_THREAD_STACK_SIZE    8192u
+#define IP_THREAD_STACK_SIZE        4096u
+#define IP_ARP_THREAD_STACK_SIZE    4096u
+
 
 
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
 
 static uint8_t gIpThreadStack[IP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
 static uint8_t gIpArpThreadStack[IP_ARP_THREAD_STACK_SIZE]__attribute__((aligned(ENET_UTILS_CACHELINE_SIZE)));
@@ -89,11 +99,22 @@ static NX_IP gIp;
 static NX_DHCP gDhcpClient;
 
 
+/* these vars are shared with gptp task to configure gptp, put it in the global mem */
+static char g_netdevices[MAX_NUM_MAC_PORTS][CB_MAX_NETDEVNAME] = {0};
+
+
+#define EnetAppAbort(message) \
+    EnetAppUtils_print(message);                \
+    EnetAppUtils_assert(false);
+
+
 /* ========================================================================== */
 /*                          Function Prototypes                               */
 /* ========================================================================== */
 
 static int32_t EnetApp_setMacAddress(const Enet_Type enetType, uint32_t instId, Enet_MacPort macPort, uint8_t macAddr[ENET_MAC_ADDR_LEN]);
+
+static int EnetApp_initTsn(Enet_Type enetType, uint32_t instId, Enet_MacPort macPortList[], uint8_t numMacPort);
 
 
 /* ========================================================================== */
@@ -105,17 +126,20 @@ int netxduo_icssg_main(ULONG arg)
     Enet_Type enetType;
     uint32_t instId;
     Enet_MacPort macPort;
+    uint32_t rxChCnt;
+    uint32_t txChCnt;
     ULONG actual_status;
     ULONG netMask;
     ULONG ipAddr;
+    Enet_MacPort macPortList[ENET_SYSCFG_MAX_MAC_PORTS];
+    uint8_t numMacPort;
     EnetApp_GetMacAddrOutArgs outArgs;
-    uint32_t rxChCnt;
-    uint32_t txChCnt;
+    nx_enet_drv_rx_ch_hndl_t rxChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
+    nx_enet_drv_tx_ch_hndl_t txChs[ENET_NETX_MAX_RX_CHANNELS_PER_PHERIPHERAL];
     const uint32_t *rxChIds;
     const uint32_t *txChIds;
-    nx_enet_drv_rx_ch_hndl_t rxChs[ENET_SYSCFG_RX_FLOWS_NUM];
-    nx_enet_drv_tx_ch_hndl_t txChs[ENET_SYSCFG_TX_CHANNELS_NUM];
     int32_t status = ENET_SOK;
+    int res;
 
     Drivers_open();
     Board_driversOpen();
@@ -126,21 +150,24 @@ int netxduo_icssg_main(ULONG arg)
 
 
     EnetApp_getEnetInstInfo(CONFIG_ENET_ICSS0, &enetType, &instId);
-
     EnetAppUtils_enableClocks(enetType, instId);
 
     EnetApp_driverInit();
     status = EnetApp_driverOpen(enetType, instId);
     DebugP_assert(status == ENET_SOK);
 
+    EnetApp_getEnetInstMacInfo(enetType, instId, &macPortList[0], &numMacPort);
+    res = EnetApp_initTsn(enetType, instId, &macPortList[0], numMacPort);
+    EnetAppUtils_assert(res == ENET_SOK);
 
+
+#if 1
     /* Initialize the NetX system.  */
     nx_system_initialize();
 
     /* Create a packet pool.  */
     status = nx_packet_pool_create(&gPacketPool, "NetX Main Packet Pool", PACKET_SIZE, &gPoolMem[0], POOL_SIZE);
     EnetAppUtils_assert(status == NX_SUCCESS);
-
 
     /* Allocate NetX Rx channel and corresponding buffers. */
     NetxEnetApp_getAllRxChIDs(&rxChIds, &rxChCnt);
@@ -176,6 +203,7 @@ int netxduo_icssg_main(ULONG arg)
     NetxEnetDriver_allocIf("PRI", ENET_MAC_PORT_INV, &outArgs.macAddr[0][0], &rxChs[0], rxChCnt, &txChs[0], txChCnt);
 
 
+
     /* Create an IP instance.  */
     status = nx_ip_create(&gIp, "NetX IP Instance 0", IP_ADDRESS(0, 0, 0, 0), 0xFFFFFF00UL, &gPacketPool, _nx_enet_driver, (void *)&gIpThreadStack[0], IP_THREAD_STACK_SIZE, 1);
     EnetAppUtils_assert(status == NX_SUCCESS);
@@ -200,6 +228,7 @@ int netxduo_icssg_main(ULONG arg)
 
     nx_dhcp_interface_enable(&gDhcpClient, 0u);
 
+
     /* Start the DHCP Client.  */
     status = nx_dhcp_interface_start(&gDhcpClient, 0u);
     EnetAppUtils_assert(status == NX_SUCCESS);
@@ -223,10 +252,14 @@ int netxduo_icssg_main(ULONG arg)
 
     DebugP_log("Local Interface IP is: %lu.%lu.%lu.%lu\n", ((ipAddr >> 24u) & 0xFF), ((ipAddr >> 16u) & 0xFF), ((ipAddr >> 8u) & 0xFF), (ipAddr & 0xFF));
 
+    /* Notify the TSN stack that the link is up. */
+    notify_linkchange();
+
     while (1) {
 
         tx_thread_sleep(100);
     }
+#endif
 
     return 0;
 }
@@ -287,3 +320,80 @@ static int32_t EnetApp_setMacAddress(const Enet_Type enetType, uint32_t instId, 
     return status;
 }
 
+
+void EnetApp_updateIcssgInitCfg(Enet_Type enetType, uint32_t instId, Icssg_Cfg *icssgCfg)
+{
+#if (ENET_SYSCFG_ENABLE_MDIO_MANUALMODE == 1U)
+    icssgCfg->mdioLinkIntCfg.mdioLinkStateChangeCb = NULL;
+    icssgCfg->mdioLinkIntCfg.mdioLinkStateChangeCbArg  = NULL;
+#else
+    #if (ENET_SYSCFG_ENABLE_EXTPHY == 1U)
+        EnetApp_initMdioLinkIntCfg(enetType, instId, icssgCfg);
+    #else
+        icssgCfg->mdioLinkIntCfg.mdioLinkStateChangeCb = &EnetApp_mdioLinkStatusChange;
+        icssgCfg->mdioLinkIntCfg.mdioLinkStateChangeCbArg  = NULL;
+    #endif
+    EnetApp_updateMdioLinkIntCfg(enetType, instId, &icssgCfg->mdioLinkIntCfg);
+#endif
+}
+
+void ConsolePrint(const char *pcString, ...)
+{
+    /* Use DebugP_log() because EnetAppUtils_print() has limit bufsize */
+    va_list args;
+    char buffer[LOG_BUFFER_SIZE];
+
+    va_start(args, pcString);
+    vsnprintf(buffer, sizeof(buffer), pcString, args);
+    va_end(args);
+
+    DebugP_log("%s", buffer);
+}
+
+
+
+static int EnetApp_initTsn(Enet_Type enetType, uint32_t instId, Enet_MacPort macPortList[], uint8_t numMacPort)
+{
+    lld_ethdev_t ethdevs[MAX_NUMBER_ENET_DEVS] = {0};
+    EnetApp_GetMacAddrOutArgs outArgs;
+    int i;
+    int res = 0;
+    AppTsnCfg_t appCfg =
+    {
+        .consoleOutCb = ConsolePrint,
+    };
+
+    for (i = 0; i < numMacPort; i++)
+    {
+        snprintf(&g_netdevices[i][0], CB_MAX_NETDEVNAME, "tilld%d", i);
+        appCfg.netdevs[i] = &g_netdevices[i][0];
+        ethdevs[i].netdev = g_netdevices[i];
+        ethdevs[i].macport = macPortList[i];
+        if (i == 0)
+        {
+            /* tilld0 reuses the allocated source mac, other interfaces will allocate
+             * the mac by themself */
+            EnetApp_getMacAddress(ENET_DMA_RX_CH0, &outArgs);
+            EnetAppUtils_assert(outArgs.macAddressCnt == 1);
+            memcpy(ethdevs[i].srcmac, &outArgs.macAddr[0][0], ENET_MAC_ADDR_LEN);
+        }
+    }
+    appCfg.netdevs[i] = NULL;
+    if (EnetApp_initTsnByCfg(&appCfg) < 0)
+    {
+        EnetAppAbort("Failed to int tsn!\r\n");
+    }
+    if (cb_lld_init_devs_table(ethdevs, i, enetType, instId) < 0)
+    {
+        EnetAppAbort("Failed to int devs table!\r\n");
+    }
+    cb_socket_set_lldcfg_update_cb(EnetApp_lldCfgUpdateCb);
+
+    if (EnetApp_startTsn() < 0)
+    {
+        EnetAppAbort("Failed to start TSN App!\r\n");
+    }
+    EnetAppUtils_print("%s:TSN app start done!\r\n", __func__);
+
+    return res;
+}
