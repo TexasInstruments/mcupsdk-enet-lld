@@ -755,9 +755,9 @@ function getEnetResPartInfo() {
     const ResPartInfoMap = new Map(
                                [
                                  ['am62x', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62dx',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62ax', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62px',{numCores: 3, coreResInfo: [{coreId: 'CSL_CORE_ID_WKUP_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},{coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},{coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 0},{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62dx',{numCores: 3, coreResInfo: [{coreId: 'CSL_CORE_ID_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},{coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},{coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 3, numMacAddress: 2, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62ax',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62px',{numCores: 3, coreResInfo: [{coreId: 'CSL_CORE_ID_WKUP_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},{coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},{coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 0}], isStaticTxChanAllocated: false}],
                                ],
                              );
     let instInfo =  ResPartInfoMap.get(common.getSocName());

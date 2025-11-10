@@ -29,7 +29,7 @@ extern EnetDma_Cfg gDmaCfg;
 const EnetRm_ResCfg gEnetRmResCfg =
 {
     .selfCoreId = `module.getCpuID()`,
-    .resPartInfo = 
+    .resPartInfo =
     {
         .numCores = `module.getEnetResPartInfoNumCores()`,
         .coreResInfo =
@@ -168,7 +168,7 @@ void EnetApp_icssgInitMacAddr(const Enet_Type enetType,
     EnetAppUtils_assert(pIcssgCfg != NULL);
     resCfg = &pIcssgCfg->resCfg;
     EnetAppUtils_assert(resCfg != NULL);
- 
+
     status = EnetAppSoc_getMacAddrList(enetType,
                                        instId,
                                        resCfg->macList.macAddress,
@@ -176,7 +176,7 @@ void EnetApp_icssgInitMacAddr(const Enet_Type enetType,
     EnetAppUtils_assert(status == ENET_SOK);
     if (resCfg->macList.numMacAddress > ENET_ARRAYSIZE(resCfg->macList.macAddress))
     {
-        EnetAppUtils_print("EnetAppUtils_initResourceConfig: "
+        EnetAppUtils_print("EnetApp_icssgInitMacAddr: "
                            "Limiting number of mac address entries to resCfg->macList.macAddress size"
                            "Available:%u, LimitedTo: %u",
                            resCfg->macList.numMacAddress,

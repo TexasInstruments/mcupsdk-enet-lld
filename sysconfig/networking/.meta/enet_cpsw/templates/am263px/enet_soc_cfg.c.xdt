@@ -187,7 +187,7 @@ Cpsw_Obj gEnetSoc_cpsw3g =
         .physAddr     = (CSL_CPSW0_U_BASE + CPSW_NU_OFFSET),
         .physAddr2    = (CSL_CPSW0_U_BASE + CPSW_NUSS_OFFSET),
         .features     = (ENET_FEAT_BASE |
-                         CPSW_FEATURE_EST | 
+                         CPSW_FEATURE_EST |
                          CPSW_FEATURE_INTERVLAN),
         .errata       = ENET_ERRATA_NONE,
         .initCfg      = &Cpsw_initCfg,
@@ -276,9 +276,9 @@ Enet_Obj gEnetSoc_perObj[] =
     },
 };
 
-EnetCpdma_DrvObj gEnetSoc_dmaObj[ENET_ARRAYSIZE(gEnetSoc_perObj)] = 
+EnetCpdma_DrvObj gEnetSoc_dmaObj[ENET_ARRAYSIZE(gEnetSoc_perObj)] =
 {
-    [0] = 
+    [0] =
     {
         .enetType   = ENET_CPSW_3G,
         .cpdmaRegs  = (CSL_CpdmaRegs *)(CSL_CPSW0_U_BASE + CPSW_CPDMA_OFFSET),
@@ -729,56 +729,6 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
                                uint32_t instId)
 {
     return gEnetSoc_cpsw3gSocCfg.txChCount;
-}
-/*!
- *  \brief CPSW3G default configuration
- *
- *   Note: If user wishes to change the Resource Partition the following
- *   things must be considered:
- *   1. Sum of numTxCh allocated to each core should not exceed 8.
- *   2. Sum of numRxFlows allocated to each core should not exceed 7 (not 8),
- *      as one Rx flow is reserved to the master core.
- *
- */
-static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
-{
-    .coreResInfo =
-    {
-        [0] =
-        {
-            .coreId        = `module.getCpuID()`,
-            .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
-            .numRxFlows    = ENET_SYSCFG_RX_FLOWS_NUM,    /* numRxFlows */
-            .numMacAddress = 4U,    /* numMacAddress */
-            .numHwPush     = 0U,
-        },
-    },
-    .numCores = 1U,
-};
-
-const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
-{
-    EnetRm_ResPrms *rmInitPrms = NULL;
-
-    switch (enetType)
-    {
-        case ENET_CPSW_3G:
-        {
-            rmInitPrms = &gEnetAppRmDefCfg_3G;
-            break;
-        }
-        default:
-        {
-            rmInitPrms = NULL;
-        }
-    }
-    if (rmInitPrms != NULL)
-    {
-        /* Update coreid to the local core */
-        rmInitPrms->coreResInfo[0].coreId = EnetSoc_getCoreId();
-    }
-
-    return(rmInitPrms);
 }
 
 /* Cores IOCTL Privileges */

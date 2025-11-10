@@ -714,52 +714,7 @@ uint32_t EnetSoc_getTxChCount(Enet_Type enetType,
     return txChCount;
 
 }
-/*!
- *  \brief CPSW3G default configuration
- *
- *   Note: If user wishes to change the Resource Partition the following
- *   things must be considered:
- *   1. Sum of numTxCh allocated to each core should not exceed 8.
- *   2. Sum of numRxFlows allocated to each core should not exceed 7 (not 8),
- *      as one Rx flow is reserved to the master core.
- *
- */
-static EnetRm_ResPrms gEnetAppRmDefCfg_3G =
-{
-    .coreResInfo =
-    {
-        [0] =
-        {
-            .coreId        = `module.getCpuID()`,
-            .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,    /* numTxCh */
-            .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),    /* numRxFlows. Need one additional flow for reserved flow  */
-            .numMacAddress = 4U,    /* numMacAddress */
-            .numHwPush     = 0U,
-        },
-    },
-    .numCores = 1U,
-    
-};
 
-const EnetRm_ResPrms *EnetAppRm_getResPartInfo(Enet_Type enetType)
-{
-    const EnetRm_ResPrms *rmInitPrms = NULL;
-
-    switch (enetType)
-    {
-        case ENET_CPSW_3G:
-        {
-            rmInitPrms = &gEnetAppRmDefCfg_3G;
-            break;
-        }
-        default:
-        {
-            rmInitPrms = NULL;
-        }
-    }
-
-    return(rmInitPrms);
-}
 /* Cores IOCTL Privileges */
 static const EnetRm_IoctlPermissionTable gEnetAppIoctlPermission_3G =
 {

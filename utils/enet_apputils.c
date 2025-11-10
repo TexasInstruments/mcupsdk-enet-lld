@@ -1034,45 +1034,6 @@ void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
 
 #endif
 
-void EnetAppUtils_initResourceConfig(Enet_Type enetType,
-                                     uint32_t instId,
-                                     uint32_t selfCoreId,
-                                     EnetRm_ResCfg *resCfg)
-{
-#if ENET_CFG_IS_ON(RM_PRESENT)
-    int32_t status;
-    const EnetRm_ResPrms *resPrms         = EnetAppRm_getResPartInfo(enetType);
-    const EnetRm_IoctlPermissionTable *ioPerms = EnetAppRm_getIoctlPermissionInfo(enetType);
-
-    EnetAppUtils_assert(resPrms != NULL);
-    resCfg->resPartInfo = *resPrms;
-
-    EnetAppUtils_assert(ioPerms != NULL);
-    resCfg->ioctlPermissionInfo = *ioPerms;
-
-    status =
-        EnetAppSoc_getMacAddrList(enetType,
-                                  instId,
-                                  resCfg->macList.macAddress,
-                                  &resCfg->macList.numMacAddress);
-    EnetAppUtils_assert(status == ENET_SOK);
-    if (resCfg->macList.numMacAddress > ENET_ARRAYSIZE(resCfg->macList.macAddress))
-    {
-        EnetAppUtils_print("EnetAppUtils_initResourceConfig: "
-                           "Limiting number of mac address entries to resCfg->macList.macAddress size"
-                           "Available:%u, LimitedTo: %u",
-                           resCfg->macList.numMacAddress,
-                           ENET_ARRAYSIZE(resCfg->macList.macAddress));
-        resCfg->macList.numMacAddress = ENET_ARRAYSIZE(resCfg->macList.macAddress);
-    }
-
-    EnetAppUtils_updatemacResPart(&resCfg->resPartInfo,
-                                            resCfg->macList.numMacAddress,
-                                            selfCoreId);
-    resCfg->selfCoreId = selfCoreId;
-#endif
-}
-
 void EnetAppUtils_setNoPhyCfgRgmii(EnetMacPort_Interface *interface,
                                    EnetPhy_Cfg *phyCfg)
 {

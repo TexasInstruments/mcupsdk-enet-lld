@@ -98,7 +98,7 @@ extern EnetDma_Cfg gDmaCfg;
 const EnetRm_ResCfg gEnetRmResCfg =
 {
     .selfCoreId = `module.getCpuID()`,
-    .resPartInfo = 
+    .resPartInfo =
     {
         .numCores = `module.getEnetResPartInfoNumCores()`,
         .coreResInfo =
@@ -108,9 +108,13 @@ const EnetRm_ResCfg gEnetRmResCfg =
             %for (var i = 0; i < numCores; i++){
                 [`i`] =
                 {
+            % if((socName == 'am62px'|| socName == 'am62dx') && (i>0)) {
+                    .numTxCh = 1,
+            % } else {
                     .numTxCh = ENET_SYSCFG_TX_CHANNELS_NUM,
+            % }
                     .numRxCh = `module.getEnetCoreResInfoNumRxCh(i)`,
-            % if(socName == 'am62px') {
+            % if(socName == 'am62px'|| socName == 'am62dx') {
                     .coreId = `module.getEnetCoreResInfoCoreId(i)`,
                     .numRxFlows = `module.getEnetCoreResInfoNumRxFlows(i)`,
             %}
@@ -147,14 +151,14 @@ Cpsw_Cfg gEnetCpswCfg =
 {
     .escalatePriorityLoadVal = CPSW_ESC_PRI_LD_VAL,
     .dmaCfg = &gDmaCfg,
-    .vlanCfg = 
+    .vlanCfg =
     {
         .vlanAware = false,
         .vlanSwitch = ENET_VLAN_TAG_TYPE_INNER,
         .outerVlan = 0x88A8U,
         .innerVlan = 0x8100U,
     },
-    .txMtu = 
+    .txMtu =
     {
         1536,
         1536,
@@ -165,7 +169,7 @@ Cpsw_Cfg gEnetCpswCfg =
         1536,
         1536
     },
-    .hostPortCfg = 
+    .hostPortCfg =
     {
         .crcType           = `instance.hostportCrcType`,
         .removeCrc         = `instance.hostportRemoveCrc`,
@@ -187,10 +191,10 @@ Cpsw_Cfg gEnetCpswCfg =
         .rxPriorityType    = `instance.hostportRxPriorityType`,
         .txPriorityType    = `instance.hostportTxPriorityType`,
     },
-    .aleCfg = 
+    .aleCfg =
     {
         .modeFlags = `getAleModeFlags(module,instance)`,
-        .policerGlobalCfg = 
+        .policerGlobalCfg =
         {
             .policingEn = `instance.policingEn`,
             .yellowDropEn = `instance.yellowDropEn`,
@@ -309,11 +313,11 @@ Cpsw_Cfg gEnetCpswCfg =
                         .vlanId   = `instance["vlanId_macPort"+i]`,
                         .tagType  = `instance["tagType_macPort"+i]`,
                     },
-                    .vlanMemberList          = `getAlePortMask(instance,"vlanMemberList_macPort"+"i_")`,
-                    .unregMcastFloodMask     = `getAlePortMask(instance,"unregMcastFloodMask_macPort"+"i_")`,
-                    .regMcastFloodMask       = `getAlePortMask(instance,"regMcastFloodMask_macPort"+"i_")`,
-                    .forceUntaggedEgressMask = `getAlePortMask(instance,"forceUntaggedEgressMask_macPort"+"i_")`,
-                    .noLearnMask             = `getAlePortMask(instance,"noLearnMask_macPort"+"i_")`,
+                    .vlanMemberList          = `getAlePortMask(instance,"vlanMemberList_macPort"+i+"_")`,
+                    .unregMcastFloodMask     = `getAlePortMask(instance,"unregMcastFloodMask_macPort"+i+"_")`,
+                    .regMcastFloodMask       = `getAlePortMask(instance,"regMcastFloodMask_macPort"+i+"_")`,
+                    .forceUntaggedEgressMask = `getAlePortMask(instance,"forceUntaggedEgressMask_macPort"+i+"_")`,
+                    .noLearnMask             = `getAlePortMask(instance,"noLearnMask_macPort"+i+"_")`,
                     .vidIngressCheck         = `instance["vidIngressCheck_macPort"+i]`,
                     .limitIPNxtHdr           = `instance["limitIPNxtHdr_macPort"+i]`,
                     .disallowIPFrag          = `instance["disallowIPFrag_macPort"+i]`,
@@ -327,7 +331,7 @@ Cpsw_Cfg gEnetCpswCfg =
 
         }
     },
-    .cptsCfg = 
+    .cptsCfg =
     {
         .hostRxTsEn     = `instance.cptsHostRxTsEn`,
         .tsCompPolarity = `(instance.cptsTsCompPolarity === "ASSERT_HIGH") ? true : false`,
@@ -389,7 +393,7 @@ void EnetApp_cpswInitMacAddr(const Enet_Type enetType,
     EnetAppUtils_assert(pCpswCfg != NULL);
     resCfg = &pCpswCfg->resCfg;
     EnetAppUtils_assert(resCfg != NULL);
- 
+
     status = EnetAppSoc_getMacAddrList(enetType,
                                        instId,
                                        resCfg->macList.macAddress,
@@ -397,7 +401,7 @@ void EnetApp_cpswInitMacAddr(const Enet_Type enetType,
     EnetAppUtils_assert(status == ENET_SOK);
     if (resCfg->macList.numMacAddress > ENET_ARRAYSIZE(resCfg->macList.macAddress))
     {
-        EnetAppUtils_print("EnetAppUtils_initResourceConfig: "
+        EnetAppUtils_print("EnetApp_cpswInitMacAddr: "
                            "Limiting number of mac address entries to resCfg->macList.macAddress size"
                            "Available:%u, LimitedTo: %u",
                            resCfg->macList.numMacAddress,

@@ -496,20 +496,12 @@ int32_t EnetAppUtils_showTxChStats(EnetDma_TxChHandle hTxCh);
 int32_t EnetAppUtils_showRxChStats(EnetDma_RxChHandle hRxCh);
 
 /**
- *  \brief Utility function to init resource config structure part of Cpsw_Cfg
- */
-void EnetAppUtils_initResourceConfig(Enet_Type enetType,
-                                     uint32_t instId,
-                                     uint32_t selfCoreId,
-                                     EnetRm_ResCfg *resCfg);
-
-/**
  *  \brief Utility function to update resource config's mac part of Cpsw_Cfg
  */
 void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
                                    uint32_t availMacCount,
                                    uint32_t selfCoreId);
-                                   
+
 /*!
  * \brief Converts given character in Hexadecimal to Decimal value
  *
