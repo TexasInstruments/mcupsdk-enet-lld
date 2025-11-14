@@ -54,8 +54,11 @@
 #define CRF_LISTENER_TASK_PRIORITY  (2)
 #define CRF_TALKER_TASK_PRIORITY    (2)
 #define ACF_TASK_PRIORITY           (2)
-#define AAF_AES3_AAF_TASK_PRIORITY (2)
-#define AAF_PCM_TASK_PRIORITY (2)
+#define AAF_AES3_AAF_TASK_PRIORITY  (2)
+#define AAF_PCM_TASK_PRIORITY       (2)
+#define AVB_AUDIO_PLAYBACK_TASK_PRIORITY   (8)
+
+#define AVB_AUDIO_PLAYBCK_TASK_NAME   "avb_audio_pb_task"
 
 #define AVTPD_TASK_NAME         "avtpd_task"
 
@@ -507,6 +510,37 @@ __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
     }
 #endif // AAF_PCM_ENABLED
 
+#ifdef AVB_AUDIO_PLAYBACK_DEMO
+static uint8_t gAvbAudioPlaybackTaskStack[TSN_TSK_STACK_SIZE] \
+                    __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
+#define AVB_AUDIO_PLAYBACK_DEMO_ENTRY \
+    [ENETAPP_AVB_AUDIO_PLAYBACK_DEMO_IDX]={ \
+        .enable = BTRUE, \
+        .stopFlag = BTRUE, \
+        .taskPriority = AVB_AUDIO_PLAYBACK_TASK_PRIORITY, \
+        .taskName = AVB_AUDIO_PLAYBCK_TASK_NAME, \
+        .stackBuffer = gAvbAudioPlaybackTaskStack, \
+        .stackSize = sizeof(gAvbAudioPlaybackTaskStack), \
+        .onModuleDBInit = NULL, \
+        .onModuleRunner = EnetApp_AvbAudioPlaybackTask, \
+        .appCtx = &gAppCtx \
+    }
+
+void EnetApp_AudioPlaybackDemoMain(void* args);
+
+static void* EnetApp_AvbAudioPlaybackTask(void* args)
+{
+    EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)args;
+    int64_t tid = (int64_t)&modCtx->hTaskHandle;
+    uc_dbal_setproc(ydbi_access_handle()->dbald, "l2", tid);
+
+    EnetApp_AudioPlaybackDemoMain(NULL);
+
+    return NULL;
+}
+
+#endif /* AVB_AUDIO_PLAYBACK_DEMO */
+
 static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 {
     int i;
@@ -534,6 +568,9 @@ static int EnetApp_addAvtpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
 #endif
 #ifdef AAF_PCM_ENABLED
         AVTP_AAF_PCM_ENTRY,
+#endif
+#ifdef AVB_AUDIO_PLAYBACK_DEMO
+        AVB_AUDIO_PLAYBACK_DEMO_ENTRY,
 #endif
     };
 

@@ -51,7 +51,7 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-#define GPTP_TASK_PRIORITY      (2)
+#define GPTP_TASK_PRIORITY      (10)
 #define GPTP_TASK_NAME          "gptp2d_task"
 extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
 #define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
@@ -167,7 +167,12 @@ static EnetApp_DbKeyVal_IntItem_t gGptpPortDsInt[] =
 static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsInt[] =
 {
     // rw
+    #if GPTP_MASTER
+    {IEEE1588_PTP_TT_PRIORITY1, 200, sizeof(uint32_t), true},
+    #else
     {IEEE1588_PTP_TT_PRIORITY1, 248, sizeof(uint32_t), true},
+    #endif
+
     {IEEE1588_PTP_TT_PRIORITY2, 248, sizeof(uint32_t), true},
     {IEEE1588_PTP_TT_EXTERNAL_PORT_CONFIG_ENABLE, false, 1, true},
     // ro
