@@ -58,6 +58,13 @@ const enet_cpsw_system_config = {
     collapsed:true,
     config: [
         {
+            name: "IsEthFw_macOnlyEn",
+            description: "Flag to indicate if this is an EthFw application with MAC-only ports enabled",
+            displayName: "EthFw Application with MAC-only ports",
+            default: false,
+            hidden: true,
+        },
+        {
             name: "McmEnable",
             description: "Flag to enable multi-client manager. Required for multi-core, multiple Enet client use cases",
             displayName: "Mcm Enable",
@@ -552,7 +559,7 @@ function validate(instance, report) {
                 report.logError("Both MAC ports in 'MAC PORT Config' should be enabled to support two NetIfs", instance);
             }
 
-            if ((instance.macOnlyEn_hostPort === false) || (instance.macOnlyEn_macPort1 === false) || (instance.macOnlyEn_macPort2 === false))
+            if ((instance.IsEthFw_macOnlyEn === false) && ((instance.macOnlyEn_hostPort === false) || (instance.macOnlyEn_macPort1 === false) || (instance.macOnlyEn_macPort2 === false)))
             {
                 report.logError("All Ports in 'ALE Config -> ALE Port Config -> MAC-only mode config' should be in MAC-only mode in case of two NetIfs", instance);
             }
