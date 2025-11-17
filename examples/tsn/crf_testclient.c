@@ -210,6 +210,10 @@ int crfrx_callback(uint8_t *payload, int payload_size,
     int pdups;
     int64_t tsdiff;
 
+#if (AUTOAMP_APP_ENABLED && AVTP_CRF_LISTENER_ENABLED)
+    return 0;
+#endif
+
     if(rcrfinfo->subtype!=AVBTP_SUBTYPE_CRF){
         UB_LOG(UBL_INFO,"%s:Unsupported subtype: %d\n",__func__, rcrfinfo->subtype);
         return -1;
@@ -335,16 +339,16 @@ static int start_crf(crfdata_t *crfdata)
     crfdata->sts = ub_mt_gettime64();
 
     MCC_handle hMCC = MCC_init(freq, crfts_period);
+    uint8_t streamID[8];
+    ub_str2bytearray(streamID, crfcfg.stream_id, 16);
     #if AVTP_CRF_TALKER_ENABLED
     CB_SLEEP(15);
     CB_SEM_INIT(&gCRF_Tick, 0, 0);
     TimerP_start(gTimerBaseAddr[CONFIG_TIMER0]);
-    uint8_t streamID[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x04};
     MCC_configMediaClock(hMCC, true, streamID);
     MCC_enableEventCapture(hMCC, 0);
     #elif AVTP_CRF_LISTENER_ENABLED
     CB_SLEEP(15);
-    uint8_t streamID[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x04};
     MCC_configMediaClock(hMCC, false, streamID);
     #endif
 
