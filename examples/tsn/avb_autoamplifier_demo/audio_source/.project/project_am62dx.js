@@ -4,19 +4,17 @@ let device = "am62dx";
 
 const files = {
     common: [
-        "gptp_init.c",
+        "autoamp_main.c",
         "autoamp_avtp_init.c",
-        "default_flow_cfg.c",
-        "tsninit.c",
         "debug_log.c",
-        "enetapp_cpsw.c",
-        "tsnapp_cpsw_main.c",
+        "default_flow_cfg.c",
         "default_flow_cpsw.c",
+        "enetapp_cpsw.c",
+        "gptp_init.c",
         "main.c",
-        "sample_audio.c",
-        "aaf_pcm_app.c",
-        "est_configure.c",
         "qosapp_misc.c",
+        "tsnapp_cpsw_main.c",
+        "tsninit.c",
     ],
 };
 
@@ -116,14 +114,10 @@ const defines_r5f = {
         'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\\\"',
         'AVTP_DIRECT_MODE=1',
         'AUTOAMP_APP_ENABLED=1',
-        'AAF_TX_CLASS_A_APPNO=4', // Map with stream 00:01:02:03:04:05-00:04
-        'AAF_TX_CLASS_D1_1_APPNO=1', // Map with stream 00:01:02:03:04:05-00:01
-        'AAF_TX_CLASS_D1_2_APPNO=2', // Map with stream 00:01:02:03:04:05-00:02
-        'AAF_TX_CLASS_D1_3_APPNO=3', // Map with stream 00:01:02:03:04:05-00:03
-        'AAF_RX_1_APPNO=0', // Map with stream 00:01:02:03:04:05-00:00
-        'AAF_RX_2_APPNO=5', // Map with stream 00:01:02:03:04:05-00:05
-        'WITH_EST_CONFIG=1',
+        'AVB_AUTOAMP_SOURCE_DEMO=1',
         'RX_REPORT=1',
+        'GPTP_QUICKSYNC=1',
+        'GPTP_MASTER=1',
     ],
 };
 
@@ -189,7 +183,7 @@ function getComponentProperty() {
     property.dirPath = path.resolve(__dirname, "..");
     property.type = "executable";
     property.name = "audio_source";
-    property.isInternal = true;
+    property.isInternal = false;
     property.buildOptionCombos = buildOptionCombos;
 
     return property;

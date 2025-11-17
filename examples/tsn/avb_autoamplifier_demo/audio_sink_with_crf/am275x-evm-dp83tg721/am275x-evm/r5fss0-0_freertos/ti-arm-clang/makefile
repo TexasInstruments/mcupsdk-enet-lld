@@ -35,6 +35,7 @@ ifeq ($(DEVICE_TYPE), HS)
 endif
 
 FILES_common := \
+	autoamp_main.c \
 	gptp_init.c \
 	autoamp_avtp_init.c \
 	default_flow_cfg.c \
@@ -44,9 +45,6 @@ FILES_common := \
 	app_tcpserver.c \
 	default_flow_cpsw.c \
 	main.c \
-	sample_audio.c \
-	aaf_pcm_app.c \
-	est_configure.c \
 	qosapp_misc.c \
 	crf_testclient.c \
 	media_clock_ctrl.c \
@@ -122,17 +120,11 @@ DEFINES_common := \
 	-DAVTP_HAVE_NO_SIGNAL=1 \
 	-DGPTP_ENABLED=1 \
 	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\" \
-	-DAVTP_DIRECT_MODE=1 \
 	-DAUTOAMP_APP_ENABLED=1 \
-	-DAAF_TX_CLASS_A_APPNO=0 \
-	-DAAF_TX_CLASS_D1_1_APPNO=5 \
-	-DAAF_RX_1_APPNO=4 \
-	-DAAF_RX_2_APPNO=2 \
-	-DAAF_RX_3_APPNO=3 \
-	-DAAF_RX_4_APPNO=1 \
-	-DWITH_EST_CONFIG=1 \
+	-DAVB_AUTOAMP_SINK_DEMO=1 \
+	-DMEASURE_AVB_LATENCY=0 \
+	-DAVTP_DIRECT_MODE=1 \
 	-DAVTP_CRF_TALKER_ENABLED=1 \
-	-DCRF_HAVE_NO_SIGNAL=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \

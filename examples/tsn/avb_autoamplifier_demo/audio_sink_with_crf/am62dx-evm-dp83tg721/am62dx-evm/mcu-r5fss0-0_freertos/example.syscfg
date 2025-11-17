@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM62Dx" --part "AM62D24-G" --package "ANF" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM62D-Q1" --package "FCBGA (ANF)" --variant "AM62D24-G" --context "mcu-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.24.0+4150"}
+ * @versions {"tool":"1.24.2+4234"}
  */
 
 /**
@@ -73,14 +73,13 @@ mpu_armv76.$name    = "CONFIG_MPU_REGION5";
 mpu_armv76.baseAddr = 0x80000000;
 mpu_armv76.size     = 31;
 
-timer1.timerCallback = "avbTimerIsrClassA";
 timer1.usecPerTick   = 125;
-timer1.$name         = "CONFIG_TIMER1";
+timer1.timerCallback = "avbTickTimer_callback";
+timer1.$name         = "AVB_TICK_TIMER";
 
 timer2.timerCallback = "crf_tick";
 timer2.usecPerTick   = 10000;
 timer2.$name         = "CONFIG_TIMER0";
-scripting.suppress("Solution may have changed,No suggested solution was provided, so this value may differ from the last time this tool was run", timer2.MCU_TIMER, "$assign");
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
 enet_cpsw1.macOnlyEn_hostPort             = true;
@@ -140,8 +139,8 @@ i2c1.I2C.SDA.$suggestSolution                   = "I2C0_SDA";
 debug_log.uartLog.MCU_UART.$suggestSolution     = "MCU_USART0";
 debug_log.uartLog.MCU_UART.RXD.$suggestSolution = "MCU_UART0_RXD";
 debug_log.uartLog.MCU_UART.TXD.$suggestSolution = "MCU_UART0_TXD";
-timer1.MCU_TIMER.$suggestSolution               = "MCU_DMTIMER1";
-timer2.MCU_TIMER.$suggestSolution               = "MCU_DMTIMER2";
+timer1.MCU_TIMER.$suggestSolution               = "MCU_DMTIMER2";
+timer2.MCU_TIMER.$suggestSolution               = "MCU_DMTIMER1";
 enet_cpsw1.MDIO.$suggestSolution                = "MDIO0";
 enet_cpsw1.MDIO.MDC.$suggestSolution            = "MDIO0_MDC";
 enet_cpsw1.MDIO.MDIO.$suggestSolution           = "MDIO0_MDIO";

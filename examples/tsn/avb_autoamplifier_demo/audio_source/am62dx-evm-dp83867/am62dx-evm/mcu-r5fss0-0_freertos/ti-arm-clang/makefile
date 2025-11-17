@@ -38,19 +38,17 @@ ifeq ($(DEVICE_TYPE), HS)
 endif
 
 FILES_common := \
-	gptp_init.c \
+	autoamp_main.c \
 	autoamp_avtp_init.c \
-	default_flow_cfg.c \
-	tsninit.c \
 	debug_log.c \
-	enetapp_cpsw.c \
-	tsnapp_cpsw_main.c \
+	default_flow_cfg.c \
 	default_flow_cpsw.c \
+	enetapp_cpsw.c \
+	gptp_init.c \
 	main.c \
-	sample_audio.c \
-	aaf_pcm_app.c \
-	est_configure.c \
 	qosapp_misc.c \
+	tsnapp_cpsw_main.c \
+	tsninit.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -118,14 +116,10 @@ DEFINES_common := \
 	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\" \
 	-DAVTP_DIRECT_MODE=1 \
 	-DAUTOAMP_APP_ENABLED=1 \
-	-DAAF_TX_CLASS_A_APPNO=4 \
-	-DAAF_TX_CLASS_D1_1_APPNO=1 \
-	-DAAF_TX_CLASS_D1_2_APPNO=2 \
-	-DAAF_TX_CLASS_D1_3_APPNO=3 \
-	-DAAF_RX_1_APPNO=0 \
-	-DAAF_RX_2_APPNO=5 \
-	-DWITH_EST_CONFIG=1 \
+	-DAVB_AUTOAMP_SOURCE_DEMO=1 \
 	-DRX_REPORT=1 \
+	-DGPTP_QUICKSYNC=1 \
+	-DGPTP_MASTER=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \

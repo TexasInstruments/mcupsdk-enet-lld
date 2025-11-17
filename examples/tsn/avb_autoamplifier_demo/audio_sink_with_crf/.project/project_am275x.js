@@ -4,6 +4,7 @@ let device = "am275x";
 
 const files = {
     common: [
+        "autoamp_main.c",
         "gptp_init.c",
         "autoamp_avtp_init.c",
         "default_flow_cfg.c",
@@ -13,9 +14,6 @@ const files = {
         "app_tcpserver.c",
         "default_flow_cpsw.c",
         "main.c",
-        "sample_audio.c",
-        "aaf_pcm_app.c",
-        "est_configure.c",
         "qosapp_misc.c",
         "crf_testclient.c",
         "media_clock_ctrl.c",
@@ -126,17 +124,11 @@ const defines_r5f = {
         'AVTP_HAVE_NO_SIGNAL=1',
         'GPTP_ENABLED=1',
         'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\\\"',
-        'AVTP_DIRECT_MODE=1',
         'AUTOAMP_APP_ENABLED=1',
-        'AAF_TX_CLASS_A_APPNO=0', // HWTimer0. Map with stream 00:01:02:03:04:05-00:00
-        'AAF_TX_CLASS_D1_1_APPNO=5', // HWTimer1. Map with stream 00:01:02:03:04:05-00:05
-        'AAF_RX_1_APPNO=4', // Map with stream 00:01:02:03:04:05-00:01
-        'AAF_RX_2_APPNO=2', // Map with stream 00:01:02:03:04:05-00:02
-        'AAF_RX_3_APPNO=3', // Map with stream 00:01:02:03:04:05-00:03
-        'AAF_RX_4_APPNO=1', // Map with stream 00:01:02:03:04:05-00:04
-        'WITH_EST_CONFIG=1',
-        'AVTP_CRF_TALKER_ENABLED=1',
-        'CRF_HAVE_NO_SIGNAL=1'
+        'AVB_AUTOAMP_SINK_DEMO=1',
+        'MEASURE_AVB_LATENCY=0',
+        'AVTP_DIRECT_MODE=1',
+        'AVTP_CRF_TALKER_ENABLED=1'
     ],
 };
 
