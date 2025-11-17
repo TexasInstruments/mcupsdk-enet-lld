@@ -108,10 +108,10 @@ const EnetRm_ResCfg gEnetRmResCfg =
             %for (var i = 0; i < numCores; i++){
                 [`i`] =
                 {
-            % if((socName == 'am62px'|| socName == 'am62dx') && (i>0)) {
-                    .numTxCh = 1,
+            % if(socName == 'am62px'|| socName == 'am62dx') {
+                    .numTxCh = `module.getEnetResPartInfoNumTxCh(i)`,
             % } else {
-                    .numTxCh = ENET_SYSCFG_TX_CHANNELS_NUM,
+                    .numTxCh = 1,
             % }
                     .numRxCh = `module.getEnetCoreResInfoNumRxCh(i)`,
             % if(socName == 'am62px'|| socName == 'am62dx') {

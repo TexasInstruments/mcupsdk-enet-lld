@@ -90,9 +90,7 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     .rxChPeerThreadId = CSL_PSILCFG_DMSS_CPSW2_PSILS_THREAD_OFFSET,
     .txChCount        = CSL_PSILCFG_DMSS_CPSW2_PSILD_THREAD_CNT,
 
-    /* Note- Though CPSW supports 64 distinct flow Ids, there are only
-     * 8 policer/classifier so can effectively assign only 8 flow ids in CPSW3G */
-    .rxFlowCount     = 8U,
+    .rxFlowCount     = 16U,
     .hwPushCnt       = 0U,
 };
 
