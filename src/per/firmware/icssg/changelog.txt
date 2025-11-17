@@ -1,10 +1,4 @@
-Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.05 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.09
+Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.09 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.10
 
-- Added 2 clock delay between FDB address xout and FDB data xin
-- Cleared fdb_wa_task_flag in Rx EOF short frame path
-- Added firmware counter for 802.1Q 12.6.1.1.3 Out_discard - discard valid frame.
-- Replaced HW buffer-pool widget management operations with firmware emulation of the same
-- Fix Tx underflow seen in 100M MII mode with 100% bidirectional load.
-- Fix RX Drop at 10Mbps & 333MHz core clock speed due to incorrect timeout value.
-- Disable task manager for each PRU core in beginning to avoid task switching during firmware initialization
+- Firmware implementation of buffer pool management in ICSSG replacing the usage of ICSSG HW Buffer pool widget 
 
