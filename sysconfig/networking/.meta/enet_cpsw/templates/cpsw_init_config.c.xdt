@@ -111,7 +111,7 @@ const EnetRm_ResCfg gEnetRmResCfg =
             % if(socName == 'am62px'|| socName == 'am62dx') {
                     .numTxCh = `module.getEnetResPartInfoNumTxCh(i)`,
             % } else {
-                    .numTxCh = 1,
+                    .numTxCh = ENET_SYSCFG_TX_CHANNELS_NUM,
             % }
                     .numRxCh = `module.getEnetCoreResInfoNumRxCh(i)`,
             % if(socName == 'am62px'|| socName == 'am62dx') {
