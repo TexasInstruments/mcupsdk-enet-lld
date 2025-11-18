@@ -98,36 +98,54 @@ extern EnetDma_Cfg gDmaCfg;
 const EnetRm_ResCfg gEnetRmResCfg =
 {
     .selfCoreId = `module.getCpuID()`,
+    %let socName = common.getSocName();
     .resPartInfo =
     {
+        %if ((socName == 'am62px'|| socName == 'am62dx' || socName == 'am62ax' || socName == 'am62x')) {
+        .numCores = `module.getEnetResPartInfoNumCores(instance)`,
+        .coreResInfo =
+        {
+            %var numCores = module.getEnetResPartInfoNumCores(instance);
+            %for (var i = 0; i < numCores; i++){
+            [`i`] =
+            {
+                %if (instance.IsEthFw){
+                .numTxCh       = `module.getEnetResPartInfoNumTxCh(instance, i)`,
+                .coreId        = `module.getEnetCoreResInfoCoreId(instance, i)`,
+                .numRxFlows    = `module.getEnetCoreResInfoNumRxFlows(instance, i)`,
+                %} else {
+                .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,
+                .coreId        = `module.getCpuID()`,
+                .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),
+                %}
+                .numRxCh       = `module.getEnetCoreResInfoNumRxCh(instance, i)`,
+                .numMacAddress = `module.getEnetCoreResInfoNumMac(instance, i)`,
+                .numHwPush     = `module.getEnetCoreResInfoNumHwPush(instance, i)`,
+            },
+            %}
+        },
+        .isStaticTxChanAllocated = `module.getEnetResPartInfoIsStatTxChAlloc(instance)`,
+        %}
+        % else {
         .numCores = `module.getEnetResPartInfoNumCores()`,
         .coreResInfo =
         {
-            %let socName = common.getSocName();
             %var numCores = module.getEnetResPartInfoNumCores();
             %for (var i = 0; i < numCores; i++){
-                [`i`] =
-                {
-            % if(socName == 'am62px'|| socName == 'am62dx') {
-                    .numTxCh = `module.getEnetResPartInfoNumTxCh(i)`,
-            % } else {
-                    .numTxCh = ENET_SYSCFG_TX_CHANNELS_NUM,
-            % }
-                    .numRxCh = `module.getEnetCoreResInfoNumRxCh(i)`,
-            % if(socName == 'am62px'|| socName == 'am62dx') {
-                    .coreId = `module.getEnetCoreResInfoCoreId(i)`,
-                    .numRxFlows = `module.getEnetCoreResInfoNumRxFlows(i)`,
-            %}
-            %else {
-                    .numRxFlows = (ENET_SYSCFG_RX_FLOWS_NUM + 1),
-                    .coreId = `module.getCpuID()`,
-            %}
-                    .numMacAddress = `module.getEnetCoreResInfoNumMac(i)`,
-                    .numHwPush = `module.getEnetCoreResInfoNumHwPush(i)`,
-                },
+            [`i`] =
+            {
+                .numTxCh       = ENET_SYSCFG_TX_CHANNELS_NUM,
+                .numRxCh       = `module.getEnetCoreResInfoNumRxCh(i)`,
+                .coreId        = `module.getCpuID()`,
+                .numRxFlows    = (ENET_SYSCFG_RX_FLOWS_NUM + 1),
+                .numMacAddress = `module.getEnetCoreResInfoNumMac(i)`,
+                .numHwPush     = `module.getEnetCoreResInfoNumHwPush(i)`,
+
+            },
             %}
         },
         .isStaticTxChanAllocated = `module.getEnetResPartInfoIsStatTxChAlloc()`,
+        %}
     },
     .ioctlPermissionInfo =
     {

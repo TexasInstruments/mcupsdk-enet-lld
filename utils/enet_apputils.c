@@ -998,19 +998,12 @@ void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
                                                     uint32_t selfCoreId)
 {
     uint32_t totalResPartMacCnt;
-    uint32_t thisCoreNumMac;
     uint32_t i;
 
-    thisCoreNumMac = 0;
     totalResPartMacCnt = 0;
     for (i = 0; i < resPrms->numCores; i++)
     {
         totalResPartMacCnt += resPrms->coreResInfo[i].numMacAddress;
-
-        if (resPrms->coreResInfo[i].coreId == selfCoreId)
-        {
-            thisCoreNumMac = resPrms->coreResInfo[i].numMacAddress;
-        }
     }
 
     if (totalResPartMacCnt > availMacCount)
@@ -1021,7 +1014,7 @@ void EnetAppUtils_updatemacResPart(EnetRm_ResPrms *resPrms,
          * If the available mac addr count is less than expected, Divide the available
          * mac addresses among the cores giving preference to the present core.
         */
-        EnetAppUtils_reduceCoreMacAllocation(resPrms, &reduceCount, thisCoreNumMac, false, selfCoreId);
+        EnetAppUtils_reduceCoreMacAllocation(resPrms, &reduceCount, 1, false, selfCoreId);
         if (reduceCount)
         {
             /* Next reduce mac address for core other than self core to 0 */
