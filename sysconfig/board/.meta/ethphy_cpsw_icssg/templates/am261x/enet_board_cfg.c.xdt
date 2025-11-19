@@ -7,13 +7,10 @@
 % let device = common.getDeviceName();
 
 % if (cpsw_instance.customBoardEnable === false) {
-
 % let module = system.modules["/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg"];
 % let instances = module.$instances;
 % let uniqueDevices = ethphyScript.getUniqueLinkedEthphy(module);
 % let linkedInstances = ethphyScript.getLinkedInstances(module);
-
-% if(linkedInstances.length > 0) {
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
@@ -33,18 +30,22 @@
 #include <board/ioexp/ioexp_tca6408.h>
 
 /* PHY drivers */
+% if(linkedInstances.length > 0) {
 % for (let phyDevice of uniqueDevices){
 extern Phy_DrvObj_t gEnetPhyDrv`common.camelSentence(phyDevice)`;
 %}
 extern Phy_DrvObj_t gEnetPhyDrvGeneric;
+%}
 
 /*! \brief All the registered PHY specific drivers. */
 static const EthPhyDrv_If gEnetPhyDrvs[] =
 {
+% if(linkedInstances.length > 0) {
 % for (let phyDevice of uniqueDevices){
     &gEnetPhyDrv`common.camelSentence(phyDevice)`,    /* `phyDevice` */
 %}
-    &gEnetPhyDrvGeneric,   /* Generic PHY - must be last */
+    &gEnetPhyDrvGeneric,    /* Generic PHY - must be last */
+%}
 };
 
 const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
@@ -579,5 +580,4 @@ uint32_t EnetBoard_getId(void)
     return ENETBOARD_AM261X_EVM;
 }
 
-% }
 % }

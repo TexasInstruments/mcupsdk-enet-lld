@@ -11,7 +11,10 @@
 % let instances = module.$instances;
 % let uniqueDevices = ethphyScript.getUniqueLinkedEthphy(module);
 % let linkedInstances = ethphyScript.getLinkedInstances(module);
-% if(linkedInstances.length > 0) {
+/* ========================================================================== */
+/*                             Include Files                                  */
+/* ========================================================================== */
+
 #include <stdint.h>
 #include <enet.h>
 % for (let phyDevice of uniqueDevices) {
@@ -44,18 +47,22 @@
 static void EnetBoard_setMacPortIOExpanderCfg(void);
 
 /* PHY drivers */
+% if(linkedInstances.length > 0) {
 % for (let phyDevice of uniqueDevices){
 extern Phy_DrvObj_t gEnetPhyDrv`common.camelSentence(phyDevice)`;
 %}
 extern Phy_DrvObj_t gEnetPhyDrvGeneric;
+%}
 
 /*! \brief All the registered PHY specific drivers. */
 static const EthPhyDrv_If gEnetPhyDrvs[] =
 {
+% if(linkedInstances.length > 0) {
 % for (let phyDevice of uniqueDevices){
     &gEnetPhyDrv`common.camelSentence(phyDevice)`,    /* `phyDevice` */
 %}
     &gEnetPhyDrvGeneric,    /* Generic PHY - must be last */
+%}
 };
 
 const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
@@ -63,7 +70,6 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
     .numHandles = ENET_ARRAYSIZE(gEnetPhyDrvs),
     .hPhyDrvList = gEnetPhyDrvs,
 };
-
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
@@ -364,5 +370,4 @@ uint32_t EnetBoard_getId(void)
     return ENETBOARD_AM62LX_EVM;
 }
 
-% }
 % }

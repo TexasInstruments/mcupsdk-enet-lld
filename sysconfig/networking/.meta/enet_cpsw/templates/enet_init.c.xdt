@@ -55,8 +55,8 @@ void EnetApp_fixPinmux();
 #endif
 
 #define ENETAPP_PHY_STATEHANDLER_TASK_PRIORITY        (7U)
-#define ENETAPP_PHY_STATEHANDLER_TASK_STACK     (3 * 1024)
-#define AppEventId_CPSW_PERIODIC_POLL    (1 << 3)
+#define ENETAPP_PHY_STATEHANDLER_TASK_STACK           (3 * 1024)
+#define AppEventId_CPSW_PERIODIC_POLL                 (1 << 3)
 
 #define ENETAPP_NUM_IET_VERIFY_ATTEMPTS               (20U)
 
@@ -73,7 +73,6 @@ typedef struct EnetAppDmaSysCfg_Obj_s
     EnetAppTxDmaSysCfg_Obj tx[ENET_SYSCFG_TX_CHANNELS_NUM];
     EnetAppRxDmaSysCfg_Obj rx[ENET_SYSCFG_RX_FLOWS_NUM];
 } EnetAppDmaSysCfg_Obj;
-
 
 typedef struct EnetAppSysCfg_Obj_s
 {
@@ -151,9 +150,10 @@ static void EnetApp_txPktNotifyCb(void *cbArg);
 static void EnetApp_rxPktNotifyCb(void *cbArg);
 
 static void EnetApp_initLinkArgs(const Enet_Type enetType,
-                          const uint32_t instId,
-                          const Enet_MacPort macPort,
-                          EnetPer_PortLinkCfg *linkArgs);
+                                 const uint32_t instId,
+                                 const Enet_MacPort macPort,
+                                 EnetPer_PortLinkCfg *linkArgs,
+                                 bool isPortNoPhy);
 
 static int32_t EnetApp_enableHostPort(Enet_Handle hEnet,
                                       Enet_Type enetType,
@@ -164,7 +164,8 @@ static int32_t EnetApp_enableMacPort(Enet_Handle hEnet,
                                      Enet_Type enetType,
                                      uint32_t instId,
                                      uint32_t coreId,
-                                     Enet_MacPort macPort);
+                                     Enet_MacPort macPort,
+                                     bool isPortNoPhy);
 
 static int32_t EnetApp_getPhyAliveStatus(Enet_Handle hEnet,
                                          uint32_t coreId,
@@ -339,6 +340,14 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
         [`i`] = `(cpswInstInfo.macPortList[i])`,
 %}
     };
+
+%let arr = [];
+%for (let i = 1; i <= (cpswInstInfo.numMacPorts); i++) {
+    %let isNoPhyPort = (!instance['DisableMacPort'+i] && !instance.customBoardEnable && instance['ethphy'+i].phySelect === 'NO-PHY');
+    %arr.push(isNoPhyPort);
+%}
+    /* Port ethphy device is set to NO-PHY or not */
+    const bool portNoPhyStatus[`cpswInstInfo.numMacPorts`] = {`arr`};
     const uint32_t numMacPorts = `(cpswInstInfo.numMacPorts)`;
     const uint32_t selfCoreId = `module.getCpuID()`;
     uint32_t i;
@@ -363,7 +372,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 
     for(i = 0; i < numMacPorts; i++)
     {
-        status = EnetApp_enableMacPort(gEnetAppSysCfgObj.hEnet, enetType, instId, selfCoreId, macPortList[i]);
+        status = EnetApp_enableMacPort(gEnetAppSysCfgObj.hEnet, enetType, instId, selfCoreId, macPortList[i], portNoPhyStatus[i]);
         EnetAppUtils_assert(status == ENET_SOK);
     }
 
@@ -641,9 +650,10 @@ void EnetApp_macMode2MacMii(emac_mode macMode, EnetMacPort_Interface *pMii)
 }
 
 static void EnetApp_initLinkArgs(const Enet_Type enetType,
-                          const uint32_t instId,
-                          const Enet_MacPort macPort,
-                          EnetPer_PortLinkCfg *pLinkArgs)
+                                 const uint32_t instId,
+                                 const Enet_MacPort macPort,
+                                 EnetPer_PortLinkCfg *pLinkArgs,
+                                 bool isPortNoPhy)
 {
     EnetMacPort_LinkCfg *pLinkCfg = &pLinkArgs->linkCfg;
     int32_t status = ENET_SOK;
@@ -660,7 +670,7 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
     if (pLinkArgs->macCfg != NULL)
     {
         macCfgPtr = (CpswMacPort_Cfg *)pLinkArgs->macCfg;
-        isInNoPhyMode = macCfgPtr->loopbackEn;
+        isInNoPhyMode = isPortNoPhy || macCfgPtr->loopbackEn;
     }
     else
     {
@@ -752,10 +762,11 @@ static int32_t EnetApp_getPhyAliveStatus(Enet_Handle hEnet,
 }
 
 static int32_t EnetApp_enableMacPort(Enet_Handle hEnet,
-                                   Enet_Type enetType,
-                                   uint32_t instId,
-                                   uint32_t coreId,
-                                   Enet_MacPort macPort)
+                                     Enet_Type enetType,
+                                     uint32_t instId,
+                                     uint32_t coreId,
+                                     Enet_MacPort macPort,
+                                     bool isPortNoPhy)
 {
     int32_t status = ENET_SOK;
     Enet_IoctlPrms prms;
@@ -768,7 +779,7 @@ static int32_t EnetApp_enableMacPort(Enet_Handle hEnet,
     EnetPhy_initCfg(&linkArgs.phyCfg);
 
     /* in MAC loopback mode, we should not configure PHYs. It shall be treated as NO-PHY system */
-    EnetApp_initLinkArgs(enetType, instId, macPort, &linkArgs);
+    EnetApp_initLinkArgs(enetType, instId, macPort, &linkArgs, isPortNoPhy);
 
     ENET_IOCTL_SET_IN_ARGS(&prms, &linkArgs);
     ENET_IOCTL(hEnet,

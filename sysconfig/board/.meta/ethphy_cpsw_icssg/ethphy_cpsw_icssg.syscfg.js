@@ -49,24 +49,24 @@ const ethphy_devices = [
     },
 ];
 
-function getNumValidInstances(module) {
-    let num_instances = 0;
+function getValidInstances(module) {
+    let validInstances = [];
 
     for(let i = 0; i < module.$instances.length; i++) {
         let instance = module.$instances[i];
         if(instance.phySelect != "NO-PHY")
         {
-            num_instances = num_instances + 1;
+            validInstances.push(i);
         }
     }
-    return num_instances;
+    return validInstances;
 }
 
 function getLinkedInstances(module) {
     let instances = module.$instances;
     let linkedInstances = [];
 
-	for (var idx = 0; idx < getNumValidInstances(module); idx++) {
+    for (let idx of getValidInstances(module)) {
         if(instances[idx].$sharedBy.length !== 0) {
             linkedInstances.push(idx);
         }
@@ -77,7 +77,8 @@ function getLinkedInstances(module) {
 function getUniqueLinkedEthphy(module) {
     let instances = module.$instances;
     let uniq = [];
-    for(let i = 0; i < getLinkedInstances(module).length; i++) {
+
+    for(let i of getLinkedInstances(module)) {
         let ethphyDevice = instances[i].phySelect;
         if (ethphyDevice === "CUSTOM") {
             ethphyDevice = instances[i].customDeviceName;
@@ -245,7 +246,7 @@ let ethphy_module = {
             }]
         },
     },
-    getNumValidInstances,
+    getValidInstances,
     getLinkedInstances,
     getUniqueLinkedEthphy,
 };

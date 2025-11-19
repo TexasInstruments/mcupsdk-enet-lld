@@ -11,8 +11,6 @@
 % let instances = module.$instances;
 % let uniqueDevices = ethphy_script.getUniqueLinkedEthphy(module);
 % let linkedInstances = ethphy_script.getLinkedInstances(module);
-
-% if (linkedInstances.length > 0) {
 %%{
 function getPhyInstance(inst, port){
     let matchInst;
@@ -62,19 +60,23 @@ function getPhyInstance(inst, port){
 
 static void EnetBoard_setMacPort2IOExpanderCfg(void);
 
+% if (linkedInstances.length > 0) {
 /* PHY drivers */
 % for (let phyDevice of uniqueDevices){
 extern Phy_DrvObj_t gEnetPhyDrv`common.camelSentence(phyDevice)`;
 %}
 extern Phy_DrvObj_t gEnetPhyDrvGeneric;
+%}
 
 /*! \brief All the registered PHY specific drivers. */
 static const EthPhyDrv_If gEnetPhyDrvs[] =
 {
+% if (linkedInstances.length > 0) {
 % for (let phyDevice of uniqueDevices){
     &gEnetPhyDrv`common.camelSentence(phyDevice)`,    /* `phyDevice` */
 %}
     &gEnetPhyDrvGeneric,    /* Generic PHY - must be last */
+%}
 };
 
 const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
@@ -82,7 +84,6 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
     .numHandles = ENET_ARRAYSIZE(gEnetPhyDrvs),
     .hPhyDrvList = gEnetPhyDrvs,
 };
-
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
@@ -124,8 +125,11 @@ static const `common.camelSentence(phyName)`_Cfg gEnetCpbBoard_`common.camelSent
 static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[] =
 {
 % for (let inst of icss_instances){
-    % let matchInst = icssScript.getInstId(inst);
-    % if (matchInst.mode == "SWITCH") {
+% let matchInst = icssScript.getInstId(inst);
+% if (matchInst.mode == "SWITCH") {
+    % let phyDevice1 = getPhyInstance(matchInst, "PORT_1");
+    % let phyDevice2 = getPhyInstance(matchInst, "PORT_2");
+    % if (phyDevice1.phySelect != 'NO-PHY') {
     {    /* `(matchInst.instance)=="ICSSG0"?"ETH0":"ETH2"` (`matchInst.instance` Switch port 1) */
         .enetType = `matchInst.enetType`,
         .instId   = `matchInst.instId`U,
@@ -133,7 +137,6 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
         .phyCfg   =
         {
-            % let phyDevice1 = getPhyInstance(matchInst, "PORT_1");
             .phyAddr         = `phyDevice1.phyAddr`U,
             .isStrapped      = `phyDevice1.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice1.skipExtendedConfig`,
@@ -142,6 +145,8 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         },
         .flags    = 0U,
     },
+    % }
+    % if (phyDevice2.phySelect != 'NO-PHY') {
     {    /* `(matchInst.instance)=="ICSSG0"?"ETH0":"ETH2"` (`matchInst.instance` Switch port 2) */
         .enetType = `matchInst.enetType`,
         .instId   = `matchInst.instId`U,
@@ -149,7 +154,6 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
         .phyCfg   =
         {
-            % let phyDevice2 = getPhyInstance(matchInst, "PORT_2");
             .phyAddr         = `phyDevice2.phyAddr`U,
             .isStrapped      = `phyDevice2.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice2.skipExtendedConfig`,
@@ -158,7 +162,10 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         },
         .flags    = 0U,
     },
-    % } else {
+    % }
+% } else {
+    % let phyDevice = getPhyInstance(matchInst, matchInst.macPort);
+    % if (phyDevice.phySelect != 'NO-PHY') {
     {    /* `(matchInst.instance)=="ICSSG0"?"ETH0":"ETH2"` (`matchInst.instance` Dual-MAC port `matchInst.macPort.slice(-1)`) */
         .enetType = `matchInst.enetType`,
         .instId   = `matchInst.instId`U,
@@ -166,7 +173,6 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .mii      = {`icssScript.getMiiConfig(inst).layerType`, `icssScript.getMiiConfig(inst).sublayerType`},
         .phyCfg   =
         {
-            % let phyDevice = getPhyInstance(matchInst, matchInst.macPort);
             .phyAddr         = `phyDevice.phyAddr`U,
             .isStrapped      = `phyDevice.isStrappedPhy`,
             .skipExtendedCfg = `phyDevice.skipExtendedConfig`,
@@ -176,6 +182,7 @@ static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[]
         .flags    = 0U,
     },
     % }
+% }
 % }
 };
 
@@ -312,6 +319,5 @@ uint32_t EnetBoard_getId(void)
 {
     return ENETBOARD_AM64X_AM243X_EVM;
 }
-% }
 % }
 
