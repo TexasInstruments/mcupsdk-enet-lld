@@ -40,9 +40,10 @@
 
 /* Maximum number of MAC address to be set per CPSW peripheral.
 CPSW_3G can support upto two MACs. But for multicore applications,
-each core needs one MAC address. So, this is set to 5 here.
-2 addresses for MAC, and 3 addresses for remote cores */
-#define MAC_ADDR_LIST_LEN_SHARED_PER_PER (5U)
+each core needs one MAC address. This is set to 6 here.
+2 addresses for MAC + 3 addresses for remote cores + 1 additional
+address for MAC-only port support with Ethfw */
+#define MAC_ADDR_LIST_LEN_SHARED_PER_PER (6U)
 % if (instance.macAddrConfig === "Auto Assign") {
 #define ENET_MAX_NUM_MAC_ADDR_STORED (5U)
 % } else {
@@ -68,7 +69,7 @@ EnetApp_MacAddrPool gEnetMacAddrPool = { .isInitialized = false };
 void EnetApp_getEnetInstInfo(uint32_t enetInstanceId, Enet_Type *enetType, uint32_t *instId)
 {
     uint32_t idx = 0;
-    const uint32_t instInfoTable[ENET_SYSCFG_MAX_ENET_INSTANCES][3] = `module.getInstIdTable(instances)`; 
+    const uint32_t instInfoTable[ENET_SYSCFG_MAX_ENET_INSTANCES][3] = `module.getInstIdTable(instances)`;
 
     EnetAppUtils_assert(enetInstanceId < ENET_SYSCFG_MAX_ENET_INSTANCES);
     for (idx = 0; idx < ENET_SYSCFG_MAX_ENET_INSTANCES; idx++)
@@ -317,7 +318,7 @@ static int32_t EnetApp_getMacAddrFromPool(uint8_t macAddr[ENET_MAC_ADDR_LEN])
 static int32_t EnetApp_releaseMacAddrToPool(uint8_t macAddr[ENET_MAC_ADDR_LEN])
 {
     int32_t status = ENET_EALLOC;
-    
+
     for (uint32_t entryIdx = 0; entryIdx < gEnetMacAddrPool.macAddrContainerLen; entryIdx++)
     {
         EnetApp_MacAddrElem* pElem = &gEnetMacAddrPool.macAddrContainer[entryIdx];
