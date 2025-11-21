@@ -38,6 +38,7 @@
 #include "ti_drivers_open_close.h"
 #include <board/cdce6214/cdce6214_drv.h>
 #include "board/ioexp/ioexp_tca6416.h"
+#include "board/ioexp/ioexp_tca6424.h"
 
 #define CDCE6214_I2C_ADDR    (0x68)
 
@@ -600,4 +601,52 @@ int32_t Board_MuxSelMcASP4(void)
     /* Todo: Implement Close function. */
     return status;
 }
+
+int32_t Board_MuxSelPhyRefClk(void)
+{
+    /*
+        Configure the clock mux using IO Expander
+        Ref: PROC190E1 (AM275-EVM Schematics)
+
+        To connect RGMII1_BCLK to AUDIO_EXT_REFCLK2
+        IO Expander Addr: 0x22
+        AUDIO_EXT_REFCLK2_SO -> P24 -> 0(LOW)
+        AUDIO_EXT_REFCLK2_S1 -> P25 -> 1(HIGH)
+    */
+   const uint32_t I2C_ADDRESS = 0x22;
+   const uint32_t REFCLK2_S0  = (8 * 2) + 4; // P24
+   const uint32_t REFCLK2_S1  = (8 * 2) + 5; // P25
+
+    int32_t status;
+    /* IO Expander Config Object */
+    static TCA6424_Config IOExp_Config;
+
+    TCA6424_Params  IOExp_Params = {
+        .i2cInstance = CONFIG_I2C0,
+        .i2cAddress  = I2C_ADDRESS,
+    };
+    /* open the IO Expander object */
+    status = TCA6424_open(&IOExp_Config, &IOExp_Params);
+
+    if (status == SystemP_SUCCESS)
+    {
+        status = TCA6424_config(&IOExp_Config,
+            REFCLK2_S0, TCA6424_MODE_OUTPUT);
+        status += TCA6424_config(&IOExp_Config,
+            REFCLK2_S1, TCA6424_MODE_OUTPUT);
+    }
+
+    if (status == SystemP_SUCCESS)
+    {
+        status = TCA6424_setOutput(&IOExp_Config,
+            REFCLK2_S0, TCA6424_OUT_STATE_LOW);
+        status += TCA6424_setOutput(&IOExp_Config,
+            REFCLK2_S1, TCA6424_OUT_STATE_HIGH);
+    }
+
+    TCA6424_close(&IOExp_Config);
+
+    return status;
+}
+
 

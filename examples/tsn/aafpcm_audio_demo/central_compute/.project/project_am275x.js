@@ -4,7 +4,7 @@ let device = "am275x";
 
 const main_files = {
     common: [
-        "gptp_init.c",
+        "gptp_config.c",
         "avtp_init.c",
         "default_flow_cfg.c",
         "tsninit.c",
@@ -16,12 +16,11 @@ const main_files = {
         "sample_audio.c",
         "aaf_pcm_app.c",
         "board.c",
-        "demo_main.c",
+        "demo_task.c",
         "crf_hw_config.c",
         "crf_app.c",
         "central_aaf_app.c",
         "shm_cirbuf.c",
-        "ts_mcasp_config.c",
         "gpio_sm.c",
     ],
 };
@@ -151,7 +150,7 @@ const defines_c75 = {
     ],
 };
 
-const defines_r5f = {
+const defines_r5f_cdce_mcr = {
     common: [
         "SOC_AM275X",
         "CORE_R5F",
@@ -170,6 +169,31 @@ const defines_r5f = {
         'AVTP_DIRECT_MODE=1',
         'MCASP_PLAYBACK=1',
         'AVTP_CRF_TALKER=1',
+        'DEF_NODE_CENTRAL=1',
+        'CDCE_MCR=1',
+    ],
+};
+const defines_r5f_autophy_mcr = {
+    common: [
+        "SOC_AM275X",
+        "CORE_R5F",
+        "ENET_ENABLE_PER_CPSW=1",
+        'PRINT_FORMAT_NO_WARNING',
+        'SITARA',
+        'NO_GETOPT_LONG=1',
+        'UB_LOGCAT=5',
+        'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\\\"',
+        'AVTP_ENABLED=1',
+        'AVB_AUDIO_PLAYBACK_DEMO',
+        'AVTP_HAVE_NO_SIGNAL=1',
+        'GPTP_ENABLED=1',
+        'GPTP_MASTER=1',
+        'AVTP_DIRECT_MODE=1',
+        'MCASP_PLAYBACK=1',
+        'AVTP_CRF_TALKER=1',
+        'DEF_NODE_CENTRAL=1',
+        'AUTOPHY_MCR=1',
+        'GPTP_QUICKSYNC=1',
     ],
 };
 
@@ -240,6 +264,8 @@ const templates_freertos_c75 =
 const buildOptionCombos = [
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am275x-evm-dp83867/am275x-evm", os: "freertos"},
     { device: device, cpu: "c75ss0-0", cgt: "ti-c7000",     board: "am275x-evm-dp83867/am275x-evm", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am275x-evm-dp83tg721/am275x-evm", os: "freertos"},
+    { device: device, cpu: "c75ss0-0", cgt: "ti-c7000",     board: "am275x-evm-dp83tg721/am275x-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {
@@ -290,7 +316,14 @@ function getComponentBuildProperty(buildOption) {
             build_property.libdirs = libdirs_freertos_cpy;
             build_property.libs = libs_freertos_r5f;
             build_property.templates = templates_freertos_r5f;
-            build_property.defines = defines_r5f;
+            if (buildOption.board.match(/dp83867*/))
+            {
+                build_property.defines = defines_r5f_cdce_mcr;
+            }
+            if (buildOption.board.match(/dp83tg721*/))
+            {
+                build_property.defines = defines_r5f_autophy_mcr;
+            }
             build_property.cflags = cflags_r5f;
             build_property.lflags = lflags_r5f;
             build_property.projectspecLnkPath = linker_includePath_freertos;

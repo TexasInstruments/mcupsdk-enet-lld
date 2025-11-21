@@ -74,25 +74,74 @@
 #define ATL_BWSX_MCASP3_AFSX_IN             (0b1000)
 #define ATL_BWSX_MCASP4_AFSX_IN             (0b1001)
 
+typedef enum
+{
+    CRF_HW_CONFIG_CLKSRC_INVALID,
+    CRF_HW_CONFIG_CLKSRC_PHY,
+    CRF_HW_CONFIG_CLKSRC_CDCE,
+} mediaClkSrc;
+
+typedef struct
+{
+    mediaClkSrc clkSrc;
+    uint32_t mediaClkFreq;
+    uint32_t timestampingInterval;
+    uint32_t mediaClkAtlSignal;
+    uint32_t timestampingAtlSignal;
+    int32_t edgeDiff;
+}crfHwCfg_info;
+
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-int32_t crfHwConfig_setTimeSyncRouter(const uint32_t src, const uint32_t dest, uint32_t set);
+/**
+ * @brief Initializes the CRF hardware configuration.
+ *
+ * @param[in] info Pointer to the CRF hardware configuration information structure.
+ * @return Status of the initialization (0 for success, negative for error).
+ */
+int32_t crfHwConfig_init(const crfHwCfg_info* info);
 
-void crfHwConfig_setAtlMux(const uint32_t atlBwsReg, uint32_t muxVal);
+/**
+ * @brief Sets up the CRF hardware configuration to be called after Clock is stable
+ *
+ * @param[in,out] info Pointer to the CRF hardware configuration information structure.
+ * @return Status of the setup (0 for success, negative for error).
+ */
+int32_t crfHwConfig_setup(crfHwCfg_info* info);
 
-void crfHwConfig_setPinmux(void);
+/**
+ * @brief Retrieves the media clock edge timestamp.
+ *
+ * @param[in] info Pointer to the CRF hardware configuration information structure.
+ * @return Media clock edge timestamp as a 64-bit unsigned integer.
+ */
+uint64_t crfHwConfig_getMediaClockEdge(const crfHwCfg_info* info);
 
-int32_t crfHwConfig_AtlMuxConfig(void);
+/**
+ * @brief Fine-tunes the frequency of the Media Clock.
+ *
+ * @param[in] info Pointer to the CRF hardware configuration information structure.
+ * @param[in] relPPM Relative frequency adjustment in parts per million (PPM).
+ * @return Status of the frequency fine-tuning (0 for success, negative for error).
+ */
+int32_t crfHwConfig_fineTuneFreq(const crfHwCfg_info* info, double relPPM);
 
-int32_t crfHwConfig_setMediaClockAtSyncOut(void);
+/**
+ * @brief Adjusts the phase of the Media Clock.
+ *
+ * @param[in] info Pointer to the CRF hardware configuration information structure.
+ * @param[in] cycles Number of cycles to adjust the phase by (positive or negative).
+ * @return Status of the phase adjustment (0 for success, negative for error).
+ */
+int32_t crfHwConfig_adjPhase(const crfHwCfg_info* info, int8_t cycles);
 
-int64_t crfHwConfig_estimateEdgeDiff(int atlTsSignal, int atlMcSignal, \
-                        double mediaClockFreq, double tsSignalFreq);
-
-int32_t crfHwConfig_attachTssToCpts(int atlTsSignal, void (*tssCb)(void*));
-
-uint64_t crfHwConfig_getMediaClockEdge(void);
+/**
+ * @brief Hook function called when a CRF timestamp is available.
+ *
+ * @param[in] args Pointer to user-defined arguments or context.
+ */
+void CrfHwConfig_crfTsCb(void* args);
 
 #endif /* __CRF_HW_CONFIG_H_ */

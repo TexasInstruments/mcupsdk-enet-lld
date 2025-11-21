@@ -39,12 +39,14 @@
 
 #include <stdint.h>
 #include "avtpc_crf.h"
+#include "crf_hw_config.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* None */
+#define CRFAPP_CORRECT_PHASE     (1<<0)
+#define CRFAPP_CORRECT_FREQUENCY (1<<1)
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */
@@ -58,6 +60,8 @@ typedef struct
     uint16_t vlanID;
     uint8_t vlanPCP;
     bool isListener;
+    uint32_t correctionFlag;
+    crfHwCfg_info* hwInfo;
 }crfApp_crfConfig;
 
 /* ========================================================================== */
@@ -96,7 +100,13 @@ int crfApp_rxCallback(uint8_t *payload, int payload_size,
  */
 void crfApp_tick(uint64_t mediaClockEdge);
 
-
+/**
+ * @brief Retrieves the frequency stability status.
+ *
+ * This function returns true if frequency is currently stable.
+ *
+ * @return true if the frequency is stable, false otherwise.
+ */
 bool crfApp_getFreqStableStatus(void);
 
 #endif /* __CRF_APP_H__ */

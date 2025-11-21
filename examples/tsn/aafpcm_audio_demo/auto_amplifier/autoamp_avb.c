@@ -67,9 +67,17 @@ typedef struct
 extern uint8_t C7X_TO_R5F_SHM_CIRC_BUFFER[];
 extern uint8_t R5F_TO_C7X_SHM_CIRC_BUFFER[];
 
+extern SemaphoreP_Object gStartAVBTxSem;
+
+/*
+ *   Note: According to the IEEE1722 and IEEE802.1Q,
+ *         the first 6 bytes of stream ID must have the source MAC Address.
+ *         This rule is not being followed in this Demo to simplify the application
+ *         implemenation and the performance is not affected because of this change.
+*/
 const ub_streamid_t CONST_PART_SID = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00};
 
-uint32_t gTickCounter = 0;
+static uint32_t gTickCounter = 0;
 
 static const avtp_pcm_conf gTxStreamConf = {
      .netdev          = "tilld0",
@@ -95,9 +103,9 @@ static const avtp_pcm_conf gRxStreamConf = {
 
 static SemaphoreP_Object gAvbTickSem;
 
-bool gSemInit = false;
+static bool gSemInit = false;
 
-gpioStateMachine gListenerGpioSm = {
+static gpioStateMachine gListenerGpioSm = {
     .isEnabled = true,
     .isRxMode = false,
     .Periodicity = 3000,
@@ -105,13 +113,15 @@ gpioStateMachine gListenerGpioSm = {
     .counter    = 0,
 };
 
-gpioStateMachine gTalkerGpioSm = {
+static gpioStateMachine gTalkerGpioSm = {
     .isEnabled = true,
     .isRxMode = false,
     .Periodicity = 3000,
     .pulseWidth = 30,
     .counter    = 0,
 };
+
+static uint8_t gTxCopyBuffer[APP_MCASP_SHM_BLOCK_SIZE];
 
 /* ========================================================================== */
 /*                          Function Declerations                             */
@@ -122,9 +132,11 @@ static aaf_avtpc_listener_data_t* init_aaf_pcm_listener(void* cbArgs);
 static int autoamp_avtpRxPacketCallback(uint8_t *payload, int plsize,
                                 avbtp_rcv_cb_info_t *cbinfo, void *cbdata);
 static shm_handle central_createSharedMemory(void* const address, const int blockSize, const int totalSize);
+
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
+
 static void init_conl2_params(const avtp_pcm_conf* conf, conl2_basic_conparas_t *bcp)
 {
     bcp->vid       = conf->vlanID;
@@ -162,10 +174,11 @@ static aaf_avtpc_talker_data_t *autoAmpDemo_initPcmTalker(const avtp_pcm_conf* c
     return talker;
 }
 
-void aaf_audio_task(void *args)
+void EnetApp_aafAudioTask(void *args)
 {
     /* Initialize the AVB Tick Semaphore. */
     SemaphoreP_constructBinary(&gAvbTickSem, 0);
+
     gSemInit = true;
 
     shm_handle shmRxHandle = central_createSharedMemory((void*)C7X_TO_R5F_SHM_CIRC_BUFFER, APP_MCASP_SHM_BLOCK_SIZE, \
@@ -181,6 +194,15 @@ void aaf_audio_task(void *args)
 
     (void)init_aaf_pcm_listener((void*)shmTxHandle);
 
+    const uint32_t pduSize = (gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels)* \
+                            ((gTxStreamConf.pcminfo.srate)*gTxStreamConf.timeInterval_us)/UB_SEC_US;
+
+    const uint32_t samplesPerPdu = pduSize/((gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels));\
+
+    uint64_t gptpTime = 0;
+
+    SemaphoreP_pend(&gStartAVBTxSem, SystemP_WAIT_FOREVER);
+
     while (1)
     {
         SemaphoreP_pend(&gAvbTickSem, SystemP_WAIT_FOREVER);
@@ -193,19 +215,13 @@ void aaf_audio_task(void *args)
             gTickCounter--;
         }
 
-        uint64_t gptpTime = 0;
-        // uint64_t gptpTime = gptpmasterclock_getts64()/UB_USEC_NS;
-        uint8_t buffer[192];
-        uint16_t reqSize = 6*4*8;
-        (void)talker;
-        (void)gptpTime;
-        /* Read from Shared Memory. */
-        shm_read(shm_core_r5f, shmRxHandle, buffer, &reqSize);
+        uint16_t reqSize = pduSize;
+
+        shm_read(shm_core_r5f, shmRxHandle, gTxCopyBuffer, &reqSize);
         if (reqSize != 0)
         {
-            uint32_t sampleSize = 6;
-            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)buffer, sampleSize);
-            aaf_avtpc_talker_write(talker, gptpTime , buffer, (int)reqSize);
+            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)gTxCopyBuffer, samplesPerPdu);
+            aaf_avtpc_talker_write(talker, gptpTime , gTxCopyBuffer, (int)reqSize);
         }
     }
 }

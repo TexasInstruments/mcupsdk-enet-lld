@@ -56,7 +56,7 @@
 #define ACF_TASK_PRIORITY           (2)
 #define AAF_AES3_AAF_TASK_PRIORITY  (2)
 #define AAF_PCM_TASK_PRIORITY       (2)
-#define AVB_AUDIO_PLAYBACK_TASK_PRIORITY   (8)
+#define AVB_AUDIO_PLAYBACK_TASK_PRIORITY   (2)
 
 #define AVB_AUDIO_PLAYBCK_TASK_NAME   "avb_audio_pb_task"
 

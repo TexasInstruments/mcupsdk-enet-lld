@@ -58,23 +58,6 @@
 /*                         Structure Declarations                             */
 /* ========================================================================== */
 
-gpioStateMachine gMcaspRxSm = {
-    .isEnabled = true,
-    .isRxMode = true,
-    .Periodicity = 8000,
-    .pulseWidth = 80,
-    .counter    = 0,
-};
-
-uint32_t gTickCounter = 0;
-
-/*
- *   Note: According to the IEEE1722 and IEEE802.1Q,
- *         the first 6 bytes of stream ID must have the source MAC Address.
- *         This rule is not being followed in this Demo to simplify the application
- *         implemenation and the performance is not affected because of this change.
-*/
-const ub_streamid_t CONST_PART_SID = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00};
 typedef struct
 {
     char netdev[CB_MAX_NETDEVNAME];
@@ -97,6 +80,18 @@ typedef struct
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
+extern SemaphoreP_Object gStartAVBTxSem;
+
+/*
+*   Note: According to the IEEE1722 and IEEE802.1Q,
+*         the first 6 bytes of stream ID must have the source MAC Address.
+*         This rule is not being followed in this Demo to simplify the application
+*         implemenation and the performance is not affected because of this change.
+*/
+const ub_streamid_t CONST_PART_SID = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00};
+
+static uint32_t gTickCounter = 0;
 
 static const avtp_pcm_conf gTxStreamConf = {
      .netdev          = "tilld0",
@@ -122,8 +117,7 @@ static const avtp_pcm_conf gRxStreamConf = {
 
 static SemaphoreP_Object gAvbTickSem;
 
-
-gpioStateMachine gListenerGpioSm = {
+static gpioStateMachine gListenerGpioSm = {
     .isEnabled = true,
     .isRxMode = false,
     .Periodicity = 3000,
@@ -131,7 +125,7 @@ gpioStateMachine gListenerGpioSm = {
     .counter    = 0,
 };
 
-gpioStateMachine gTalkerGpioSm = {
+static gpioStateMachine gTalkerGpioSm = {
     .isEnabled = true,
     .isRxMode = false,
     .Periodicity = 3000,
@@ -139,7 +133,9 @@ gpioStateMachine gTalkerGpioSm = {
     .counter    = 0,
 };
 
-bool gSemInit = false;
+static bool gSemInit = false;
+
+static uint8_t gTxCopyBuffer[APP_MCASP_SHM_BLOCK_SIZE];
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
@@ -149,6 +145,7 @@ int crfApp_rxCallback(uint8_t *payload, int payload_size, avbtp_rcv_cb_info_t *c
 static aaf_avtpc_listener_data_t* init_aaf_pcm_listener(void* cbArgs);
 static int autoamp_avtpRxPacketCallback(uint8_t *payload, int plsize, avbtp_rcv_cb_info_t *cbinfo, void *cbdata);
 static shm_handle central_createSharedMemory(void* const address, const int blockSize, const int totalSize);
+
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -189,10 +186,11 @@ static aaf_avtpc_talker_data_t *autoAmpDemo_initPcmTalker(const avtp_pcm_conf* c
     return talker;
 }
 
-void aaf_audio_task(void *args)
+void EnetApp_aafAudioTask(void *args)
 {
     /* Initialize the AVB Tick Semaphore. */
     SemaphoreP_constructBinary(&gAvbTickSem, 0);
+
     gSemInit = true;
 
     shm_handle shmRxHandle = central_createSharedMemory((void*)AVB_C7X_TO_R5_SHM_ADDR, APP_MCASP_SHM_BLOCK_SIZE, \
@@ -204,10 +202,18 @@ void aaf_audio_task(void *args)
 
     gpio_sm_init(&gTalkerGpioSm, CONFIG_GPIO_TALKER_BASE_ADDR, CONFIG_GPIO_TALKER_PIN, CONFIG_GPIO_TALKER_DIR);
 
-    (void)shmRxHandle;
     aaf_avtpc_talker_data_t* talker = autoAmpDemo_initPcmTalker(&gTxStreamConf);
 
     (void)init_aaf_pcm_listener((void*)shmTxHandle);
+
+    const uint32_t pduSize = (gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels)* \
+                             ((gTxStreamConf.pcminfo.srate)*gTxStreamConf.timeInterval_us)/UB_SEC_US;
+
+    const uint32_t samplesPerPdu = pduSize/((gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels));
+
+    int64_t gptpTime = 0;
+
+    SemaphoreP_pend(&gStartAVBTxSem, SystemP_WAIT_FOREVER);
 
     while (1)
     {
@@ -220,23 +226,18 @@ void aaf_audio_task(void *args)
         {
             gTickCounter--;
         }
+        uint16_t reqSize = pduSize;
 
-        uint64_t gptpTime = 0;
-        // uint64_t gptpTime = gptpmasterclock_getts64()/UB_USEC_NS;
-        uint8_t buffer[192];
-        uint16_t reqSize = 6*4*8;
-        (void)talker;
-        (void)gptpTime;
         /* Read from Shared Memory. */
-        shm_read(shm_core_r5f, shmRxHandle, buffer, &reqSize);
+        shm_read(shm_core_r5f, shmRxHandle, gTxCopyBuffer, &reqSize);
+
         if (reqSize != 0)
         {
-            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)buffer, 6);
-            aaf_avtpc_talker_write(talker, gptpTime , buffer, (int)reqSize);
+            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)gTxCopyBuffer, samplesPerPdu);
+            aaf_avtpc_talker_write(talker, gptpTime , gTxCopyBuffer, (int)reqSize);
         }
     }
 }
-
 
 static int autoamp_avtpRxPacketCallback(uint8_t *payload, int plsize,
                                 avbtp_rcv_cb_info_t *cbinfo, void *cbdata)
@@ -299,7 +300,7 @@ void avbTickTimer_callback(void *args)
     SemaphoreP_post(&gAvbTickSem);
 }
 
-void ipc_notify_cb(uint16_t remoteCoreId, uint16_t localClientId, uint32_t msgValue, void *args)
+void EnetApp_ipcNotifyCallback(uint16_t remoteCoreId, uint16_t localClientId, uint32_t msgValue, void *args)
 {
     /* Start Timer with counter value = 7 */
     TimerP_start(gTimerBaseAddr[CONFIG_TIMER0]);

@@ -44,6 +44,7 @@
 #include <kernel/dpl/QueueP.h>
 #include <math.h>
 #include "crf_app.h"
+#include "crf_hw_config.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -96,8 +97,11 @@ typedef struct
 
 typedef struct
 {
+    crfHwCfg_info* hwInfo;
     avtpc_crf_config_t crfConfig;
     avtpc_crf_data_t *avtpc_crf;
+
+    uint32_t correctionFlag;
 
     double nMediaClockFreq;
     double nMediaClockPeriod;
@@ -131,8 +135,6 @@ crfData_t gCrfData;
 /* ========================================================================== */
 /*                           Function Declarations                            */
 /* ========================================================================== */
-
-int32_t Board_CdceFineTuneFreq(double relPPM);
 
 static int crfApp_deqCrfSample(crfData_t* crfdata, uint64_t *timestamp);
 static int crfApp_enqCrfSample(crfData_t* crfdata, uint64_t timestamp);
@@ -182,6 +184,8 @@ int32_t crfApp_init(crfApp_crfConfig* config)
 
     if (status == SystemP_SUCCESS)
     {
+        gCrfData.hwInfo = config->hwInfo;
+        gCrfData.correctionFlag = config->correctionFlag;
         if (gCrfData.crfConfig.listener)
         {
             if (avtpc_crf_set_rxdirect(gCrfData.avtpc_crf) != 0)
@@ -403,7 +407,8 @@ static void crfApp_printStats(crfData_t *pCrfData)
     uint64_t currentTime = ClockP_getTimeUsec();
     if (currentTime - previousPrintLimitTime > 500*UB_MSEC_US)
     {
-        UB_LOG(UBL_INFO, "Crf Sync = %d, Freq Err PPM = %.3lf\r\n", pCrfData->ld.syMet.freqStableStatus, pCrfData->ld.currFreqErrPPM);
+        // UB_LOG(UBL_INFO, "Crf Sync = %d, Freq Err PPM = %.3lf\r\n", pCrfData->ld.syMet.freqStableStatus, pCrfData->ld.currFreqErrPPM);
+        UB_LOG(UBL_INFO, "CRF Lock Status = %d\r\n", pCrfData->ld.syMet.isLocked);
         previousPrintLimitTime = currentTime;
     }
     #endif
@@ -563,7 +568,7 @@ static int32_t crfApp_correctFrequency(crfData_t* pCrfData)
     {
         /* Fine Correction. */
         int polarity = (errorPPM>0)?1:-1;
-        Board_CdceFineTuneFreq(-polarity*0.05);
+        crfHwConfig_fineTuneFreq(pCrfData->hwInfo, -polarity*0.05);
         corr = 1;
     }
     else if ((errorPPM > -50) && (errorPPM < 50))
@@ -571,7 +576,7 @@ static int32_t crfApp_correctFrequency(crfData_t* pCrfData)
         pCrfData->ld.syMet.freqSyncStatus= false;
         /* Course Correction. */
         int polarity = (errorPPM>0)?1:-1;
-        Board_CdceFineTuneFreq(-polarity*1);
+        crfHwConfig_fineTuneFreq(pCrfData->hwInfo, -polarity*1);
         corr = 2;
     }
     else
@@ -606,7 +611,61 @@ static int32_t crfApp_correctFrequency(crfData_t* pCrfData)
 
 static int32_t crfApp_correctPhase(crfData_t* pCrfData, bool isErrorValid)
 {
-    /* Place holder for Phase Correction Implementation. */
+    if (isErrorValid)
+    {
+        double mediaClockPeriod = pCrfData->nMediaClockPeriod;
+
+        int64_t phaseDelta = pCrfData->ld.currPhaseErrNs;
+
+        if (phaseDelta > (int64_t)(mediaClockPeriod/2))
+        {
+            phaseDelta -= mediaClockPeriod;
+        }
+        /*
+        * Select course or Fine Correction.
+        *
+        *      Course Correction - 5 Cycles/Adjustment
+        * 7%  ---------------
+        *      Fine Correction - 1 Cycle/Adjustment
+        * 1%   ---------------
+        *      No Correction
+        * 0%   ---------------
+        *      No Correction
+        * -1%  ---------------
+        *      Fine Correction - 1 Cycle/Adjustment
+        * -7% ---------------
+        *      Course Correction - 5 Cycles/Adjustment
+        */
+
+        double percent = ((double)phaseDelta*100/(double)mediaClockPeriod);
+
+        if (crfApp_absDiff(0, percent) < 1)
+        {
+            /* No Correction Needed. */
+            pCrfData->ld.syMet.isLocked = true;
+        }
+        else if (crfApp_absDiff(0, percent) < 5)
+        {
+            /* Fine Correction. */
+            crfHwConfig_adjPhase(pCrfData->hwInfo, (percent>0)?-1:1);
+            pCrfData->ld.syMet.fineCorrCounter += 1;
+        }
+        else
+        {
+            /* Course Correction. */
+            crfHwConfig_adjPhase(pCrfData->hwInfo, (percent>0)?-5:5);
+            pCrfData->ld.syMet.courseCorrCounter += 1;
+        }
+
+        if (crfApp_absDiff(0, percent) > 5)
+        {
+            if (pCrfData->ld.syMet.isLocked == true)
+            {
+                pCrfData->ld.syMet.lockSlipCounter += 1;
+            }
+            pCrfData->ld.syMet.isLocked = false;
+        }
+    }
     return SystemP_SUCCESS;
 }
 
@@ -622,12 +681,15 @@ static void crfApp_spinListener(crfData_t* pCrfData, uint64_t mediaClockEdgeTs)
     {
         int32_t status = crfApp_CalculateError(pCrfData, crfTs, mediaClockEdgeTs);
 
-        if (status == SystemP_SUCCESS)
+        if (status == SystemP_SUCCESS && (pCrfData->correctionFlag & CRFAPP_CORRECT_FREQUENCY))
         {
             crfApp_correctFrequency(pCrfData);
         }
 
-        crfApp_correctPhase(pCrfData, status == SystemP_SUCCESS);
+        if (pCrfData->correctionFlag & CRFAPP_CORRECT_PHASE)
+        {
+            crfApp_correctPhase(pCrfData, status == SystemP_SUCCESS);
+        }
     }
 
     /* Latch the future Timestamp to compare. */
@@ -655,7 +717,7 @@ static void crfApp_spinTalker(crfData_t* pCrfData, uint64_t mediaClockEdgeTs)
     else
     {
         /* Discard the whole array, Some missing Timestamp */
-        UB_LOG(UBL_ERROR, "%s: Non Consecutive Media Clock Timestamp\n", __func__);
+        // UB_LOG(UBL_ERROR, "%s: Non Consecutive Media Clock Timestamp\n", __func__);
         pCrfData->td.currTsIndex = 0;
     }
 

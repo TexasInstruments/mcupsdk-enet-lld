@@ -32,7 +32,6 @@
 #include "tsninit.h"
 #include "ti_drivers_config.h"
 #include "ti_drivers_open_close.h"
-#include <board/ioexp/ioexp_tca6424.h>
 #include <drivers/i2c.h>
 #include <kernel/dpl/ClockP.h>
 #include <kernel/dpl/DebugP.h>
@@ -46,6 +45,8 @@
 
 #ifdef SOC_AM275X
 #define TIMESYNC_ROUTER_DEVID   (TISCI_DEV_TIMESYNC_EVENT_INTROUTER0)
+#else
+#error "Not Supported for this SOC"
 #endif
 /* ========================================================================== */
 /*                              Struct & Enums                                */
@@ -62,9 +63,10 @@ typedef struct
     tsAcquireState_e state; /* State of the statemachine. */
     SemaphoreP_Object StartSem;
     SemaphoreP_Object EndSem;
-    int lfCbCount;
-    int hfCbCount;
+    int32_t lfCbCount;
+    int32_t hfCbCount;
 } tsAcquireStateVar;
+
 /* ========================================================================== */
 /*                              Global Variables                              */
 /* ========================================================================== */
@@ -75,7 +77,24 @@ static tsAcquireStateVar gAcquireSm = {0};
    The variable name may vary from application to application.*/
 extern EnetApp_Cfg gEnetAppCfg;
 
-int32_t crfHwConfig_setTimeSyncRouter(const uint32_t src, const uint32_t dest, uint32_t set)
+int32_t Board_MuxSelPhyRefClk(void);
+
+int32_t Board_CdceConfig(void);
+
+int32_t Board_CdceFineTuneFreq(double relPPM);
+
+static void crfHwConfig_setAtlMux(const uint32_t atlBwsReg, uint32_t muxVal);
+
+static int32_t crfHwConfig_setTimeSyncRouter(const uint32_t src, const uint32_t dest, uint32_t set);
+
+static int32_t crfHwConfig_setClockAtSyncOut(uint32_t atlClkOut);
+
+static int64_t crfHwConfig_estimateEdgeDiff(int32_t atlTsSignal, int32_t atlMcSignal, \
+                                                        double mediaClockFreq, double tsSignalFreq);
+
+static int32_t crfHwConfig_attachTssToCpts(int32_t atlTsSignal, void (*tssCb)(void*));
+
+static int32_t crfHwConfig_setTimeSyncRouter(const uint32_t src, const uint32_t dest, uint32_t set)
 {
     int32_t                             retVal;
 
@@ -125,12 +144,11 @@ int32_t crfHwConfig_setTimeSyncRouter(const uint32_t src, const uint32_t dest, u
     return retVal;
 }
 
-void crfHwConfig_setAtlMux(const uint32_t atlBwsReg, uint32_t muxVal)
+static void crfHwConfig_setAtlMux(const uint32_t atlBwsReg, uint32_t muxVal)
 {
     volatile uint32_t *ctrl_mmr_addr = \
         (volatile uint32_t*)AddrTranslateP_getLocalAddr(atlBwsReg);
 
-    /* Connect McASP1_AFSX to TS Router. */
     SOC_controlModuleUnlockMMR(SOC_DOMAIN_ID_MAIN, 2);
     *ctrl_mmr_addr = muxVal;
     SOC_controlModuleLockMMR(SOC_DOMAIN_ID_MAIN, 2);
@@ -177,7 +195,7 @@ static inline uint64_t crfHwConfig_absDiff(uint64_t num1, uint64_t num2)
 }
 
 static int64_t crfHwConfig_getEdgeDiff(uint64_t* topSigArr, uint64_t* bottomSigArr, \
-                uint32_t topSigFreq, uint32_t bottomSigFreq, uint32_t maxJitter_ns)
+                    uint32_t topSigFreq, uint32_t bottomSigFreq, uint32_t maxJitter_ns)
 {
     uint64_t topPeriod_ns = 1e9/(float)topSigFreq;
     uint64_t bottomPeriod_ns = 1e9/(float)bottomSigFreq;
@@ -186,7 +204,7 @@ static int64_t crfHwConfig_getEdgeDiff(uint64_t* topSigArr, uint64_t* bottomSigA
     uint64_t goodBottomSample = 0;
 
     /* Select good samples */
-    for (int i = 0; i < 2; i++)
+    for (int32_t i = 0; i < 2; i++)
     {
         /* Calc diff */
         if (crfHwConfig_absDiff(topSigArr[i+1]-topSigArr[i], topPeriod_ns) < maxJitter_ns)
@@ -275,10 +293,16 @@ static void crfHwConfig_CptspushNotifyCb(void *hwPushNotifyCbArg, CpswCpts_HwPus
     }
 }
 
-int64_t crfHwConfig_estimateEdgeDiff(int atlTsSignal, int atlMcSignal, double mediaClockFreq, double tsSignalFreq)
+static int64_t crfHwConfig_estimateEdgeDiff(int32_t atlTsSignal, int32_t atlMcSignal, double mediaClockFreq, double tsSignalFreq)
 {
     /* Config Parameters. */
     uint32_t periodJitter   = 500;
+
+    /* Array to store Timestamping signal Edge Timestamps. */
+    uint64_t tsSignalTimestamps[3] = {0, 0, 0};
+
+    /* Array to store Media Clock Edge Timestamps. */
+    uint64_t mediaClockTimestamps[3] = {0, 0, 0};
 
     SemaphoreP_constructBinary(&gAcquireSm.StartSem, 0);
     SemaphoreP_constructBinary(&gAcquireSm.EndSem,   0);
@@ -296,21 +320,21 @@ int64_t crfHwConfig_estimateEdgeDiff(int atlTsSignal, int atlMcSignal, double me
     /* Stop Timestamping Signal Sampling. */
     crfHwConfig_setTimeSyncRouter(atlTsSignal, TS_ROUTER_OUT_CPSW_CPTS_HW_PUSH_1, 0);
 
+    /* Read Timestamping signal Timestamps*/
+    for (int32_t i = 0; i < 3; i++)
+    {
+        tsSignalTimestamps[i]   = crfHwConfig_getCptsHwPushEventTs(CPSW_CPTS_HWPUSH_1);
+    }
+
     /* Start the Media Clock Sampling. */
     crfHwConfig_setTimeSyncRouter(atlMcSignal, TS_ROUTER_OUT_CPSW_CPTS_HW_PUSH_2, 1);
     SemaphoreP_pend(&gAcquireSm.EndSem, SystemP_WAIT_FOREVER);
     /* Stop the Media Clock Sampling. */
     crfHwConfig_setTimeSyncRouter(atlMcSignal, TS_ROUTER_OUT_CPSW_CPTS_HW_PUSH_2, 0);
 
-    /* Array to store Timestamping signal Edge Timestamps. */
-    uint64_t tsSignalTimestamps[3] = {0, 0, 0};
-
-    /* Array to store Media Clock Edge Timestamps. */
-    uint64_t mediaClockTimestamps[3] = {0, 0, 0};
-
-    for (int i = 0; i < 3; i++)
+    /* Read Media Clock Timestamps */
+    for (int32_t i = 0; i < 3; i++)
     {
-        tsSignalTimestamps[i]   = crfHwConfig_getCptsHwPushEventTs(CPSW_CPTS_HWPUSH_1);
         mediaClockTimestamps[i] = crfHwConfig_getCptsHwPushEventTs(CPSW_CPTS_HWPUSH_2);
     }
 
@@ -327,40 +351,199 @@ int64_t crfHwConfig_estimateEdgeDiff(int atlTsSignal, int atlMcSignal, double me
     return edgeDifference;
 }
 
-uint64_t crfHwConfig_getMediaClockEdge(void)
-{
-    return crfHwConfig_getCptsHwPushEventTs(CPSW_CPTS_HWPUSH_1);
-}
-
-int32_t crfHwConfig_AtlMuxConfig(void)
+static int32_t crfHwConfig_AtlMuxConfig(uint32_t mediaClkSignal, uint32_t tsClkSignal)
 {
     /* Media Clock Signal */
-    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS1_SEL, ATL_BWSX_MCASP1_AFSX_IN);
+    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS1_SEL, mediaClkSignal);
+
     /* Timestamping Signal. */
-    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS2_SEL, ATL_BWSX_MCASP4_AFSX_IN);
+    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS2_SEL, tsClkSignal);
 
     return SystemP_SUCCESS;
 }
 
-int32_t crfHwConfig_setMediaClockAtSyncOut(void)
-{
-    /* Gives out AFSx on SYNC1_OUT For Probing */
-    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS0_SEL, ATL_BWSX_MCASP1_AFSX_IN);
-    crfHwConfig_setTimeSyncRouter(TS_ROUTER_IN_ATL_BWS_SEL_0, TS_ROUTER_OUT_SYNC1_OUT, 1);
-
-    return SystemP_SUCCESS;
-}
-
-void CrfHwConfig_pushCb(void *hwPushNotifyCbArg,
+static void CrfHwConfig_pushCb(void *hwPushNotifyCbArg,
                                         CpswCpts_HwPush hwPushNum)
 {
     void (*tssCb)(void*) = hwPushNotifyCbArg;
     tssCb(NULL);
 }
 
-int32_t crfHwConfig_attachTssToCpts(int atlTsSignal, void (*tssCb)(void*))
+static int32_t crfHwConfig_setClockAtSyncOut(uint32_t atlClkOut)
+{
+    crfHwConfig_setAtlMux(CTRL_MMR0_CFG0_ATL_BWS0_SEL, atlClkOut);
+
+    return crfHwConfig_setTimeSyncRouter(TS_ROUTER_IN_ATL_BWS_SEL_0, TS_ROUTER_OUT_SYNC1_OUT, 1);
+}
+
+static int32_t crfHwConfig_attachTssToCpts(int32_t atlTsSignal, void (*tssCb)(void*))
 {
     crfHwConfig_registerCptsPushEvents(CPSW_CPTS_HWPUSH_1, CrfHwConfig_pushCb, tssCb);
     crfHwConfig_setTimeSyncRouter(atlTsSignal, TS_ROUTER_OUT_CPSW_CPTS_HW_PUSH_1, 1);
     return SystemP_SUCCESS;
+}
+
+static uint64_t crfHwConfig_getPhyMediaClkEdgeTs(void)
+{
+    uint64_t retval = 0;
+    int32_t status = ENET_EFAIL;
+    Enet_IoctlPrms prms;
+    EnetPhy_GetEventTimestampOutArgs outArgs;
+    EnetPhy_GenericInArgs inArgs;
+
+    inArgs.macPort = ENET_MAC_PORT_1;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &outArgs);
+    ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId,
+            ENET_PHY_IOCTL_GET_EVENT_TIMESTAMP, &prms, status);
+
+    if (status == ENET_SOK)
+    {
+        retval = outArgs.ts64;
+    }
+
+    return retval;
+}
+
+static int32_t crfHwConfig_registerPhyTsEvent(void)
+{
+    int32_t status = ENET_EFAIL;
+    Enet_IoctlPrms prms;
+    EnetPhy_EnableEventCaptureInArgs inArgs = {
+        .macPort  = ENET_MAC_PORT_1,
+        .eventIdx = 1, /* TS SYNC OUT is connected to Event Index 1 */
+        .falling  = false,
+        .on       = true,
+    };
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId,
+            ENET_PHY_IOCTL_ENABLE_EVENT_CAPTURE, &prms, status);
+
+    return status;
+}
+
+uint64_t crfHwConfig_getMediaClockEdge(const crfHwCfg_info* info)
+{
+    uint64_t mediaClkEdge = 0;
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        mediaClkEdge = crfHwConfig_getPhyMediaClkEdgeTs();
+    }
+    else
+    {
+        mediaClkEdge = crfHwConfig_getCptsHwPushEventTs(CPSW_CPTS_HWPUSH_1);
+    }
+
+    if (mediaClkEdge != 0)
+    {
+        mediaClkEdge += info->edgeDiff;
+    }
+
+    return mediaClkEdge;
+}
+
+static int32_t crfHwConfig_NudgePhyClock(int8_t cycles)
+{
+    int32_t status = ENET_EFAIL;
+    EnetPhy_NudgeCodecClockInArgs inArgs = {
+        .macPort = ENET_MAC_PORT_1,
+        .nudgeValue = cycles,
+    };
+    Enet_IoctlPrms prms;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+    ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId,
+            ENET_PHY_IOCTL_NUDGE_CODEC_CLOCK, &prms, status);
+    return status;
+}
+
+int32_t crfHwConfig_init(const crfHwCfg_info* info)
+{
+    int32_t status = ENET_SOK;
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        /* Select Phy's Clk as AUDIO_REFCLK2 Input. */
+        status |= Board_MuxSelPhyRefClk();
+    }
+    else
+    {
+        /* Configure CDCE to Generate CLK. */
+        status |= Board_CdceConfig();
+    }
+
+    crfHwConfig_AtlMuxConfig(info->mediaClkAtlSignal, info->timestampingAtlSignal);
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        crfHwConfig_setClockAtSyncOut(info->timestampingAtlSignal);
+    }
+    else
+    {
+        crfHwConfig_setClockAtSyncOut(info->mediaClkAtlSignal);
+    }
+
+    return status;
+}
+
+int32_t crfHwConfig_setup(crfHwCfg_info* info)
+{
+    int64_t edgeDiff = crfHwConfig_estimateEdgeDiff(TS_ROUTER_IN_ATL_BWS_SEL_2, TS_ROUTER_IN_ATL_BWS_SEL_1, \
+                            info->mediaClkFreq, info->mediaClkFreq/info->timestampingInterval);
+
+    info->edgeDiff = edgeDiff;
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        crfHwConfig_registerPhyTsEvent();
+#ifdef CONFIG_CRF_TIMER
+        TimerP_start(gTimerBaseAddr[CONFIG_CRF_TIMER]);
+#endif
+    }
+    else
+    {
+        crfHwConfig_attachTssToCpts(TS_ROUTER_IN_ATL_BWS_SEL_2, CrfHwConfig_crfTsCb);
+    }
+
+    return SystemP_SUCCESS;
+}
+
+int32_t crfHwConfig_fineTuneFreq(const crfHwCfg_info* info, double relPPM)
+{
+    int32_t status = SystemP_FAILURE;
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_CDCE)
+    {
+        status = Board_CdceFineTuneFreq(relPPM);
+    }
+    else if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        DebugP_log("%s:Not Supported\r\n", __func__);
+    }
+    else
+    {
+        DebugP_log("%s:Not Supported\r\n", __func__);
+    }
+
+    return status;
+}
+
+int32_t crfHwConfig_adjPhase(const crfHwCfg_info* info, int8_t cycles)
+{
+    int32_t status = SystemP_FAILURE;
+
+    if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_CDCE)
+    {
+        DebugP_log("%s:Not Supported\r\n", __func__);
+    }
+    else if (info->clkSrc == CRF_HW_CONFIG_CLKSRC_PHY)
+    {
+        crfHwConfig_NudgePhyClock(cycles);
+    }
+    else
+    {
+        DebugP_log("%s:Not Supported\r\n", __func__);
+    }
+
+    return status;
 }
