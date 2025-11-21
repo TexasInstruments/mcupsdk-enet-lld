@@ -21,14 +21,14 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=autoamp_audio_app.$(PROFILE).out
+OUTNAME:=central_compute_audio_app.$(PROFILE).out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=autoamp_audio_app.$(PROFILE).mcelf
-BOOTIMAGE_NAME_XIP:=autoamp_audio_app.$(PROFILE).mcelf_xip
-BOOTIMAGE_NAME_SIGNED:=autoamp_audio_app.$(PROFILE).mcelf.signed
-BOOTIMAGE_NAME_HS:=autoamp_audio_app.$(PROFILE).mcelf.hs
-BOOTIMAGE_NAME_HS_FS:=autoamp_audio_app.$(PROFILE).mcelf.hs_fs
+BOOTIMAGE_NAME:=central_compute_audio_app.$(PROFILE).mcelf
+BOOTIMAGE_NAME_XIP:=central_compute_audio_app.$(PROFILE).mcelf_xip
+BOOTIMAGE_NAME_SIGNED:=central_compute_audio_app.$(PROFILE).mcelf.signed
+BOOTIMAGE_NAME_HS:=central_compute_audio_app.$(PROFILE).mcelf.hs
+BOOTIMAGE_NAME_HS_FS:=central_compute_audio_app.$(PROFILE).mcelf.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
@@ -45,13 +45,13 @@ FILES_common := \
 	default_flow_cpsw.c \
 	main.c \
 	sample_audio.c \
+	aaf_pcm_app.c \
 	board.c \
+	demo_task.c \
 	crf_hw_config.c \
 	crf_app.c \
+	central_aaf_app.c \
 	shm_cirbuf.c \
-	autoamp_avb.c \
-	demo_task.c \
-	autoamp_mcasp_audio.c \
 	gpio_sm.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
@@ -112,6 +112,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM275X \
 	-DSOC_AM275X \
+	-DCORE_R5F \
 	-DENET_ENABLE_PER_CPSW=1 \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
@@ -121,13 +122,14 @@ DEFINES_common := \
 	-DAVTP_ENABLED=1 \
 	-DAVB_AUDIO_PLAYBACK_DEMO \
 	-DAVTP_HAVE_NO_SIGNAL=1 \
-	-DAVTP_DIRECT_MODE=1 \
 	-DGPTP_ENABLED=1 \
-	-DGPTP_QUICKSYNC=1 \
-	-DGPTP_SLAVE=1 \
+	-DGPTP_MASTER=1 \
+	-DAVTP_DIRECT_MODE=1 \
 	-DMCASP_PLAYBACK=1 \
-	-DAVTP_CRF_LISTENER=1 \
-	-DCDCE_MCR=1 \
+	-DAVTP_CRF_TALKER=1 \
+	-DDEF_NODE_CENTRAL=1 \
+	-DAUTOPHY_MCR=1 \
+	-DGPTP_QUICKSYNC=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -169,6 +171,7 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/board/lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/drivers/udma/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
@@ -231,6 +234,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib \
 	${MCU_PLUS_SDK_PATH}/source/drivers/lib \
 	${MCU_PLUS_SDK_PATH}/source/board/lib \
+	${MCU_PLUS_SDK_PATH}/source/drivers/udma/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
@@ -306,7 +310,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am275x:r5fss0-0:freertos:ti-arm-clang autoamp_audio_app ...
+	@echo  Scrubing: am275x:r5fss0-0:freertos:ti-arm-clang central_compute_audio_app ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out

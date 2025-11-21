@@ -10,8 +10,8 @@
     </applicability>
 
     <project
-        title="Autoamp Audio App"
-        name = "autoamp_audio_app_am275x-evm-dp83867_am275x-evm_r5fss0-0_freertos_ti-arm-clang"
+        title="Central Compute Audio App"
+        name = "central_compute_audio_app_am275x-evm-dp83tg721_am275x-evm_r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -70,6 +70,7 @@
             --include tsn_buildconf/sitara_buildconf.h
             -DSOC_AM275X
             -DSOC_AM275X
+            -DCORE_R5F
             -DENET_ENABLE_PER_CPSW=1
             -DPRINT_FORMAT_NO_WARNING
             -DSITARA
@@ -79,25 +80,27 @@
             -DAVTP_ENABLED=1
             -DAVB_AUDIO_PLAYBACK_DEMO
             -DAVTP_HAVE_NO_SIGNAL=1
-            -DAVTP_DIRECT_MODE=1
             -DGPTP_ENABLED=1
-            -DGPTP_QUICKSYNC=1
-            -DGPTP_SLAVE=1
+            -DGPTP_MASTER=1
+            -DAVTP_DIRECT_MODE=1
             -DMCASP_PLAYBACK=1
-            -DAVTP_CRF_LISTENER=1
-            -DCDCE_MCR=1
+            -DAVTP_CRF_TALKER=1
+            -DDEF_NODE_CENTRAL=1
+            -DAUTOPHY_MCR=1
+            -DGPTP_QUICKSYNC=1
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
             -i${MCU_PLUS_SDK_PATH}/source/drivers/lib
             -i${MCU_PLUS_SDK_PATH}/source/board/lib
+            -i${MCU_PLUS_SDK_PATH}/source/drivers/udma/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib
             -i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
-            -m=autoamp_audio_app.${ConfigName}.map
+            -m=central_compute_audio_app.${ConfigName}.map
             --diag_suppress=10063
             --priority
             --ram_model
@@ -114,7 +117,7 @@
             --context r5fss0-0 --part AM2754 --package ANJ
         "
 
-        description="A Autoamp Audio App FREERTOS project">
+        description="A Central Compute Audio App FREERTOS project">
 
         <configuration name="Debug"
             compilerBuildOptions="
@@ -181,19 +184,19 @@
         </file>
         <file path="../../../../../../aafpcm_app/sample_audio.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
+        <file path="../../../../../../aafpcm_app/aaf_pcm_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
         <file path="../../../../../common_files/board.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
+        <file path="../../../../../common_files/demo_task.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/crf_hw_config.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/crf_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
+        <file path="../../../../central_aaf_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        </file>
         <file path="../../../../../common_files/shm_cirbuf.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
-        <file path="../../../../autoamp_avb.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
-        <file path="../../../../../common_files/demo_task.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
-        <file path="../../../../autoamp_mcasp_audio.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/gpio_sm.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>

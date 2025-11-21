@@ -86,6 +86,8 @@
             -DAVTP_DIRECT_MODE=1
             -DMCASP_PLAYBACK=1
             -DAVTP_CRF_TALKER=1
+            -DDEF_NODE_CENTRAL=1
+            -DCDCE_MCR=1
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
@@ -162,7 +164,7 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../common_files/gptp_config.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../../avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
@@ -186,7 +188,7 @@
         </file>
         <file path="../../../../../common_files/board.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
-        <file path="../../../../demo_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../../../common_files/demo_task.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/crf_hw_config.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
@@ -195,8 +197,6 @@
         <file path="../../../../central_aaf_app.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/shm_cirbuf.c" openOnCreation="false" excludeFromBuild="false" action="link">
-        </file>
-        <file path="../../../../../common_files/ts_mcasp_config.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>
         <file path="../../../../../common_files/gpio_sm.c" openOnCreation="false" excludeFromBuild="false" action="link">
         </file>

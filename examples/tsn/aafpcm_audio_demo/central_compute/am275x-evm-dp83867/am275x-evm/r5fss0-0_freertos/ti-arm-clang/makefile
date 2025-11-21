@@ -35,7 +35,7 @@ ifeq ($(DEVICE_TYPE), HS)
 endif
 
 FILES_common := \
-	gptp_init.c \
+	gptp_config.c \
 	avtp_init.c \
 	default_flow_cfg.c \
 	tsninit.c \
@@ -47,12 +47,11 @@ FILES_common := \
 	sample_audio.c \
 	aaf_pcm_app.c \
 	board.c \
-	demo_main.c \
+	demo_task.c \
 	crf_hw_config.c \
 	crf_app.c \
 	central_aaf_app.c \
 	shm_cirbuf.c \
-	ts_mcasp_config.c \
 	gpio_sm.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
@@ -129,6 +128,8 @@ DEFINES_common := \
 	-DAVTP_DIRECT_MODE=1 \
 	-DMCASP_PLAYBACK=1 \
 	-DAVTP_CRF_TALKER=1 \
+	-DDEF_NODE_CENTRAL=1 \
+	-DCDCE_MCR=1 \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \

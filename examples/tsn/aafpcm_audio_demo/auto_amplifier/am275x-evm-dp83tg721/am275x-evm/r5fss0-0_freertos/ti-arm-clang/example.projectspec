@@ -11,7 +11,7 @@
 
     <project
         title="Autoamp Audio App"
-        name = "autoamp_audio_app_am275x-evm-dp83867_am275x-evm_r5fss0-0_freertos_ti-arm-clang"
+        name = "autoamp_audio_app_am275x-evm-dp83tg721_am275x-evm_r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -81,11 +81,11 @@
             -DAVTP_HAVE_NO_SIGNAL=1
             -DAVTP_DIRECT_MODE=1
             -DGPTP_ENABLED=1
-            -DGPTP_QUICKSYNC=1
             -DGPTP_SLAVE=1
             -DMCASP_PLAYBACK=1
             -DAVTP_CRF_LISTENER=1
-            -DCDCE_MCR=1
+            -DAUTOPHY_MCR=1
+            -DGPTP_QUICKSYNC=1
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib
