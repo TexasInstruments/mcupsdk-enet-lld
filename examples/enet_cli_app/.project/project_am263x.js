@@ -103,10 +103,10 @@ const libs_freertos_r5f = {
         "tsn_combase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_unibase-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_gptp-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "tsn_uniconf-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",  
+        "tsn_uniconf-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
         "lwipif-cpsw-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
         "lwip-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
-        "lwip-contrib-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",      
+        "lwip-contrib-freertos.am263x.r5f.ti-arm-clang.${ConfigName}.lib",
         "yangemb-freertos.am263x.r5f.ti-arm-clang.lib",
     ],
 };
@@ -238,8 +238,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )
         {

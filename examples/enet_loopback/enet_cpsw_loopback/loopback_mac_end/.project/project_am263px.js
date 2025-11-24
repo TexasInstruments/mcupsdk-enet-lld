@@ -123,7 +123,7 @@ const templates_freertos_r5f =
             stackSize : "8192",
         },
     },
-    
+
 ];
 
 const buildOptionCombos = [
@@ -150,8 +150,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )

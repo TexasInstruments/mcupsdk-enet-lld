@@ -211,8 +211,7 @@ function getComponentBuildProperty(buildOption) {
     }
 
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )

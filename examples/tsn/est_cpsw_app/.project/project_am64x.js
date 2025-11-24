@@ -103,7 +103,7 @@ const defines_r5f = {
         'GPTP_ENABLED',
         'EST_APP_ENABLED',
         'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:66,lldp:45,avtp:45,nconf:45\\\"'
-        
+
     ],
 };
 
@@ -183,8 +183,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )

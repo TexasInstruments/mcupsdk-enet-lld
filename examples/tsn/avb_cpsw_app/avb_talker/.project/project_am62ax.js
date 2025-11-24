@@ -245,7 +245,7 @@ function getComponentProperty() {
 
 function getComponentBuildProperty(buildOption) {
     let build_property = {};
-    
+
     if(buildOption.cpu.match(/mcu-r5f*/))
     {
         build_property.files = main_files;
@@ -256,11 +256,10 @@ function getComponentBuildProperty(buildOption) {
         build_property.files = remote_files;
         build_property.filedirs = remote_filedirs;
     }
-    
+
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )
         {

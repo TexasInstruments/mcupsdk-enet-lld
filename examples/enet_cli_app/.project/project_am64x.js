@@ -156,7 +156,7 @@ const libs_freertos_r5f = {
 
 const libs_freertos_a53 = {
     common: [
-	
+
         "freertos.am64x.a53.gcc-aarch64.${ConfigName}.lib",
         "drivers.am64x.a53.gcc-aarch64.${ConfigName}.lib",
         "enet-cpsw.am64x.a53.gcc-aarch64.${ConfigName}.lib",
@@ -228,7 +228,7 @@ const lflags_r5f = {
 
 const lflags_a53 = {
     common: [
-        
+
     ],
 };
 
@@ -324,8 +324,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.files = files;
     build_property.filedirs = filedirs;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 
     if(buildOption.cpu.match(/r5f*/)) {
         build_property.lnkfiles = lnkfiles;
@@ -366,7 +365,7 @@ function getComponentBuildProperty(buildOption) {
                     if (delIndex !== -1) {
                         libdirs_freertos_cpy.common.splice(delIndex, 1);
                     }
-                    
+
                 }
                 build_property.includes = includes_freertos_a53;
                 build_property.libdirs = libdirs_freertos_cpy;

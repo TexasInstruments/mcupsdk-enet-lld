@@ -71,7 +71,7 @@ const includes_freertos_a53 = {
 
 const libs_freertos_a53 = {
     common: [
-	
+
     "freertos.am62x.a53.gcc-aarch64.${ConfigName}.lib",
         "drivers.am62x.a53.gcc-aarch64.${ConfigName}.lib",
         "enet-cpsw.am62x.a53.gcc-aarch64.${ConfigName}.lib",
@@ -113,7 +113,7 @@ const cflags_a53 = {
 
 const lflags_a53 = {
     common: [
-        
+
     ],
 };
 
@@ -152,7 +152,7 @@ const templates_freertos_a53 =
             enableDMARegion: true,
             dmaHeapSize: 0x20000,
         }
-    },    
+    },
 
 ];
 
@@ -179,9 +179,8 @@ function getComponentBuildProperty(buildOption) {
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-    build_property.projecspecFileAction = "link";
-    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
-    
+        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+
     if(buildOption.cpu.match(/a53*/)){
         if(buildOption.os.match(/freertos*/) )
             {
@@ -194,7 +193,7 @@ function getComponentBuildProperty(buildOption) {
                     if (delIndex !== -1) {
                         libdirs_freertos_cpy.common.splice(delIndex, 1);
                     }
-                    
+
                 }
                 build_property.includes = includes_freertos_a53;
                 build_property.libdirs = libdirs_freertos_cpy;
