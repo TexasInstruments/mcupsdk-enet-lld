@@ -115,15 +115,15 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../V0/l2_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../V0/l2_cpsw_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../V0/l2_cpsw_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../V0/l2_cpsw_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../V0/l2_cpsw_dataflow.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../V0/l2_cpsw_dataflow.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am64x/EXAMPLES_ENET_LAYER2_CPSW_SWITCH.html"
                 openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">
