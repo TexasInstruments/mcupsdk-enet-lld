@@ -58,7 +58,7 @@
  * The SRAM address 0x72400000 is aliased to 0x80400000 in C7X Core,
  * Same reflects in the linker.cmd as well.
  */
-#define SHARED_MEMORY_START_ADDRESS     (0x80400000)
+#define SHARED_MEMORY_START_ADDRESS     (0x72400000)
 #endif
 
 typedef struct {

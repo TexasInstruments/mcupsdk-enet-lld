@@ -55,7 +55,7 @@
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-#define AVB_AUDIO_TASK_PRIORITY (20)
+#define AVB_AUDIO_TASK_PRIORITY (16)
 
 /* Wait for Link to be stable (wait time in seconds)*10 */
 #define LINK_STABILITY_WAIT_TIME (3*10)
