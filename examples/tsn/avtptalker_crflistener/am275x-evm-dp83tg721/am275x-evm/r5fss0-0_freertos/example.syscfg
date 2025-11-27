@@ -110,7 +110,7 @@ enet_cpsw1.rxDmaChannel[2].PacketsCount   = 16;
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
 ethphy_cpsw_icssg1.phySelect      = "DP83TG721";
-ethphy_cpsw_icssg1.extendedConfig = ".isMDIMaster = true,\n.enablePTPstatusFrames = true,\n.srcMacStatusFrameType = 0,\n.clockSource = 1,\n.enableMediaClock = 1,\n.mediaClockMode = 1,";
+ethphy_cpsw_icssg1.extendedConfig = ".isMDIMaster = false,\n.enablePTPstatusFrames = true,\n.srcMacStatusFrameType = 0,\n.clockSource = 1,\n.enableMediaClock = 1,\n.mediaClockMode = 1,\n.mediaClkDiv = 5120";
 
 const udma         = scripting.addModule("/drivers/udma/udma", {}, false);
 const udma1        = udma.addInstance({}, false);

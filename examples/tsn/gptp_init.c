@@ -51,7 +51,7 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-#define GPTP_TASK_PRIORITY      (10)
+#define GPTP_TASK_PRIORITY      (2)
 #define GPTP_TASK_NAME          "gptp2d_task"
 extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
 #define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
