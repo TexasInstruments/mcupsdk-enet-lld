@@ -4,7 +4,7 @@ let device = "am275x";
 
 const main_files = {
     common: [
-        "gptp_init.c",
+        "gptp_config.c",
         "avtp_init.c",
         "default_flow_cfg.c",
         "tsninit.c",

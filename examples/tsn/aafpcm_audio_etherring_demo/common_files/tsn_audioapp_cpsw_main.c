@@ -42,7 +42,6 @@
 /* ========================================================================== */
 
 #include <kernel/dpl/DebugP.h>
-
 #include "nrt_flow/dataflow.h"
 #include "debug_log.h"
 #include "tsninit.h"
@@ -52,6 +51,14 @@
 #include "crf_app.h"
 #include <enet_apputils.h>
 #include <drivers/ipc_notify.h>
+
+/* ========================================================================== */
+/*                           Macros & Typedefs                                */
+/* ========================================================================== */
+
+#define ENETAPP_CRF_TASK_PRIORITY       (5)
+#define ENETAPP_AVB_TASK_PRIORITY      (16)
+#define ENETAPP_CONTROL_TASK_PRIORITY  (20)
 
 /* ========================================================================== */
 /*                           Global Variables                                 */
@@ -284,7 +291,7 @@ static void EnetApp_createControlDataTask(void)
         .name      = "Control_Task",
         .stack     = ctrlData_taskStack,
         .stackSize = sizeof(ctrlData_taskStack),
-        .priority  = TaskP_PRIORITY_HIGHEST,
+        .priority  = ENETAPP_CONTROL_TASK_PRIORITY,
         .taskMain  = EnetApp_configControlData,
         .args      = NULL,
     };
@@ -298,7 +305,7 @@ static void EnetApp_createAudioDataTask(void)
         .name      =  "Audio_Task",
         .stack     = audioData_taskStack,
         .stackSize = sizeof(audioData_taskStack),
-        .priority  =  16,
+        .priority  = ENETAPP_AVB_TASK_PRIORITY,
         .taskMain  = aaf_audio_task,
         .args      = NULL,
     };
@@ -312,7 +319,7 @@ static void EnetApp_createCrfTask(void)
         .name      =  "Crf_Task",
         .stack     = crf_taskStack,
         .stackSize = sizeof(crf_taskStack),
-        .priority  =  5,
+        .priority  = ENETAPP_CRF_TASK_PRIORITY,
         .taskMain  = crfApp_runTask,
         .args      = NULL,
     };

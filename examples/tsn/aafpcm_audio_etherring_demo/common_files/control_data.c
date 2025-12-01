@@ -33,6 +33,7 @@
 /* ========================================================================== */
 /*                              Include Files                                 */
 /* ========================================================================== */
+
 #include "kernel/dpl/TaskP.h"
 #include "../../tsninit.h"
 #include "../../enetapp_cpsw.h"
@@ -50,7 +51,13 @@
 #include <ti_drivers_config.h>
 #include <drivers/pinmux.h>
 
-#define ENETAPP_STREAM_VLANID                         255U
+/* ========================================================================== */
+/*                           Macros & Typedefs                                */
+/* ========================================================================== */
+
+#define ENETAPP_STREAM_VLANID                         (255U)
+#define ENETAPP_TEST_SIGNAL_FREQ_HZ                     (10)
+#define ENETAPP_CONTROL_DATA_PERIOD_NS              (250000)
 
 extern EnetApp_Cfg gEnetAppCfg;
 
@@ -62,6 +69,7 @@ typedef enum
     ROLE_NONE = 0,
     ROLE_TALKER = 1,
 }streamRole;
+
 typedef int (*ctrlData_txHook)(uint8_t *payload, int *size, node_index src, node_index dest);
 
 typedef struct
@@ -221,6 +229,11 @@ gpio_cfg gpioRemoteOutLut[NODE_TOTAL_NODES] = {
 };
 #endif
 
+TaskP_Object statsTask;
+
+uint8_t statsTaskStack[TSN_TSK_STACK_SIZE]
+                    __attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
+
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
@@ -247,20 +260,21 @@ static int32_t controlData_talkerSpin(avtpcf_data_t* avtpcfData, node_index this
 
 static void controlData_configGpio(void);
 
-TaskP_Object statsTask;
-uint8_t statsTaskStack[8*1024];
 static void controlData_statsTask(void* args);
+
 void timerPwm_configTestSignal(uint32_t freq);
+
 static void controlData_setPinMux(void);
+
 static void EnetApp_setupControlTimer(uint32_t tickPeriodNs);
 
 void EnetApp_configControlData(void* args)
 {
     controlData_setPinMux();
 
-    timerPwm_configTestSignal(10);
+    timerPwm_configTestSignal(ENETAPP_TEST_SIGNAL_FREQ_HZ);
 
-    EnetApp_setupControlTimer(250*1000);
+    EnetApp_setupControlTimer(ENETAPP_CONTROL_DATA_PERIOD_NS);
 
     TaskP_Params params = {
         .name = "stats_task",
