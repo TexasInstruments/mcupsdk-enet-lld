@@ -149,6 +149,8 @@ SemaphoreP_Object gStartAudioSem;
 
 static rxStream_cb gStreamCbArr[256] = {0};
 
+static uint8_t gTxCopyBuffer[APP_MCASP_SHM_BLOCK_SIZE];
+
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
@@ -162,6 +164,7 @@ static int pushToMcasp1(uint8_t *payload, int plsize,
                                 avbtp_rcv_cb_info_t *cbinfo, void *cbdata);
 void ipc_notify_cb(uint16_t remoteCoreId, uint16_t localClientId, uint32_t msgValue, void *args);
 void CentralAafTask_waitCrf(void);
+
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -223,10 +226,9 @@ void aaf_audio_task(void *args)
 
     // gpio_sm_init(&gTalkerGpioSm, CONFIG_GPIO_TALKER_BASE_ADDR, CONFIG_GPIO_TALKER_PIN, CONFIG_GPIO_TALKER_DIR);
 
-    (void)shmRxHandle;
     aaf_avtpc_talker_data_t* talker = autoAmpDemo_initPcmTalker(&gTxStreamConf);
 
-    (void)init_aaf_pcm_listener(NULL);
+    init_aaf_pcm_listener(NULL);
 
     /* Wait for CRF Task to Start */
     CentralAafTask_waitCrf();
@@ -242,6 +244,13 @@ void aaf_audio_task(void *args)
     int status = IpcNotify_registerClient(gClientId, ipc_notify_cb, NULL);
     DebugP_assert(status==SystemP_SUCCESS);
 
+    const uint32_t pduSize = (gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels)* \
+                             ((gTxStreamConf.pcminfo.srate)*gTxStreamConf.timeInterval_us)/UB_SEC_US;
+
+    const uint32_t samplesPerPdu = pduSize/((gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels));
+
+    uint64_t gptpTime = 0;
+
     while (1)
     {
         SemaphoreP_pend(&gAvbTickSem, SystemP_WAIT_FOREVER);
@@ -253,19 +262,14 @@ void aaf_audio_task(void *args)
         {
             gTickCounter--;
         }
+        uint16_t reqSize = pduSize;
 
-        uint64_t gptpTime = 0;
-        // uint64_t gptpTime = gptpmasterclock_getts64()/UB_USEC_NS;
-        uint8_t buffer[192];
-        uint16_t reqSize = 6*4*8;
-        (void)talker;
-        (void)gptpTime;
         /* Read from Shared Memory. */
-        shm_read(shm_core_r5f, shmRxHandle, buffer, &reqSize);
+        shm_read(shm_core_r5f, shmRxHandle, gTxCopyBuffer, &reqSize);
         if (reqSize != 0)
         {
-            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)buffer, 6);
-            aaf_avtpc_talker_write(talker, gptpTime , buffer, (int)reqSize);
+            gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)gTxCopyBuffer, samplesPerPdu);
+            aaf_avtpc_talker_write(talker, gptpTime , gTxCopyBuffer, (int)reqSize);
         }
     }
 }
@@ -342,13 +346,16 @@ static int pushToMcasp1(uint8_t *payload, int plsize,
 
     const uint32_t expectedPduSize = (gRxStreamConf.pcminfo.bit_depth/8)*gRxStreamConf.pcminfo.channels*\
                             (gRxStreamConf.pcminfo.srate*gRxStreamConf.timeInterval_us)/UB_SEC_US;
+    const uint32_t samplesPerPdu = expectedPduSize/((gTxStreamConf.pcminfo.bit_depth/8)*(gTxStreamConf.pcminfo.channels));
+
     if ((uint32_t)plsize != expectedPduSize)
     {
         UB_LOG(UBL_INFO, "Not Matching the expected Payload Size, %d\r\n", plsize);
     }
     else
     {
-        gpio_sm_spin(&gListenerGpioSm, (uint32_t*)payload, 6);
+        gpio_sm_spin(&gListenerGpioSm, (uint32_t*)payload, samplesPerPdu);
+
         /* Process the Payload, i.e. Send to C7x/McASP. */
         shm_write(shm_core_r5f, shmTxHandle, payload, plsize);
     }

@@ -1,0 +1,564 @@
+/*
+ *  Copyright (c) Texas Instruments Incorporated 2024
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/* ========================================================================== */
+/*                              Include Files                                 */
+/* ========================================================================== */
+
+#include <tsn_combase/combase.h>
+#include <tsn_unibase/unibase_binding.h>
+#include <tsn_uniconf/yangs/yang_modules.h>
+#include <tsn_gptp/gptpman.h>
+#include <tsn_gptp/tilld/lld_gptp_private.h>
+#include <tsn_gptp/gptpconf/gptpgcfg.h>
+#include <tsn_gptp/gptpconf/xl4-extmod-xl4gptp.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt_access.h>
+#include <tsn_uniconf/ucman.h>
+#include <tsn_uniconf/uc_dbal.h>
+#include <tsn_gptp/gptpclock.h>
+#include "debug_log.h"
+#include "tsninit.h"
+#include "common.h"
+
+/* ========================================================================== */
+/*                           Macros & Typedefs                                */
+/* ========================================================================== */
+
+#define GPTP_TASK_PRIORITY      (10)
+#define GPTP_TASK_NAME          "gptp2d_task"
+extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
+#define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
+
+/* ========================================================================== */
+/*                         Structure Declarations                             */
+/* ========================================================================== */
+
+typedef struct
+{
+    char *devlist;
+    const char **confFiles;
+    int domainNum;
+    int domains[GPTP_MAX_DOMAINS];
+    int instNum;
+    int numConf;
+} EnetApp_GptpOpt_t;
+
+/* ========================================================================== */
+/*                          Function Declarations                             */
+/* ========================================================================== */
+
+static void EnetApp_cfgGptpPortDs(int instance, int domain,
+        int port_index, bool dbInitFlag);
+static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag);
+static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCtx);
+static int EnetApp_gptpNonYangConfig(uint8_t instance);
+
+static void *EnetApp_gptpTask(void *arg);
+static int EnetApp_gptpDbInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs);
+
+/* ========================================================================== */
+/*                            Local Variables                                */
+/* ========================================================================== */
+
+/* gptp can support more than 2 domains but in this example we supports only 2 */
+static EnetApp_GptpOpt_t gGptpOpt =
+{
+    .confFiles = NULL,
+    .domainNum = GPTP_MAX_DOMAINS,
+#if GPTP_MAX_DOMAINS == 1
+    .domains = {0},
+#elif GPTP_MAX_DOMAINS == 2
+    .domains = {0, 1},
+#else
+    #error "Only support 2 domains"
+#endif
+    .instNum = 0,
+    .numConf = 0,
+};
+
+ /*
+  * To shorten the sync interval, configure this parameter on both the master
+  * and slave devices.
+  * Additionally, update the GPTPNET_INTERVAL_TIMEOUT_NSEC macro in the
+  * <platform>_buildconf.h file (e.g., sitara_buildconf.h
+  * #define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u) to be less than or equal
+  * the sync interval.
+  *
+  * The SYNC_LOG values adjust the sync interval as follows:
+  * SYNC_LOG = -3: 125 msec
+  * SYNC_LOG = -4: (125/2) msec
+  * SYNC_LOG = -5: (125/4) msec
+  * SYNC_LOG = -6: (125/8) msec
+  * SYNC_LOG = -7: (125/16) msec
+  */
+#ifdef GPTP_QUICKSYNC
+#define SYNC_LOG -6
+/* Accepted value is the same as SYNC_LOG */
+#define PDELAY_LOG -6
+#else /* !GPTP_QUICKSYNC */
+#define SYNC_LOG -3
+#define PDELAY_LOG 0
+#endif /* GPTP_QUICKSYNC */
+
+typedef struct EnetApp_DbKeyVal_IntItem
+{
+    uint8_t key;
+    uint32_t val;
+    uint8_t sz;   // value size 1 (bool) or 4 (uint32_t)
+    bool rw; // true: rw, false: ro
+} EnetApp_DbKeyVal_IntItem_t;
+
+static EnetApp_DbKeyVal_IntItem_t gGptpPortDsInt[] =
+{
+    // rw
+    {IEEE1588_PTP_TT_LOG_ANNOUNCE_INTERVAL, 0, sizeof(uint32_t),true},
+    {IEEE1588_PTP_TT_GPTP_CAP_RECEIPT_TIMEOUT, 3, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_ANNOUNCE_RECEIPT_TIMEOUT, 3, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT, 3, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_INITIAL_LOG_ANNOUNCE_INTERVAL, 0, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_INITIAL_LOG_SYNC_INTERVAL, SYNC_LOG, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL, PDELAY_LOG, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_INITIAL_LOG_GPTP_CAP_INTERVAL, 3, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_MGT_LOG_GPTP_CAP_INTERVAL, 3, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_ALLOWED_LOST_RESPONSES, 9, sizeof(uint32_t), true}, // 802.1 2020 default config
+    //{IEEE1588_PTP_TT_ALLOWED_LOST_RESPONSES, 3, sizeof(uint32_t), true}, // 2011-backward compatible config
+    {IEEE1588_PTP_TT_ALLOWED_FAULTS, 9, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_MEAN_LINK_DELAY_THRESH, 0x27100000, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_PORT_ENABLE, true, 1, true}, // bool
+    // ro
+    {IEEE1588_PTP_TT_LOG_SYNC_INTERVAL, SYNC_LOG, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_MINOR_VERSION_NUMBER, 1, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_CURRENT_LOG_SYNC_INTERVAL, SYNC_LOG, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL, 3, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_CURRENT_LOG_PDELAY_REQ_INTERVAL, PDELAY_LOG, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_INITIAL_ONE_STEP_TX_OPER, 1, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER, 1, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER, 1, sizeof(uint32_t), false},
+    {IEEE1588_PTP_TT_USE_MGT_LOG_GPTP_CAP_INTERVAL, false, 1, false}, // bool
+    {IEEE1588_PTP_TT_USE_MGT_ONE_STEP_TX_OPER, false, 1, false}, // bool
+
+};
+
+static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsInt[] =
+{
+    // rw
+    #if GPTP_MASTER
+    {IEEE1588_PTP_TT_PRIORITY1, 200, sizeof(uint32_t), true},
+    #else
+    {IEEE1588_PTP_TT_PRIORITY1, 248, sizeof(uint32_t), true},
+    #endif
+
+    {IEEE1588_PTP_TT_PRIORITY2, 248, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_EXTERNAL_PORT_CONFIG_ENABLE, false, 1, true},
+    // ro
+    {IEEE1588_PTP_TT_TIME_SOURCE, 0xA0, sizeof(uint32_t), false}, // "internal-oscillator"
+    {IEEE1588_PTP_TT_PTP_TIMESCALE, true, 1, false}, // "internal-oscillator"
+};
+
+static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsClkQuality[] =
+{
+    {IEEE1588_PTP_TT_CLOCK_CLASS, 248, sizeof(uint32_t), true}, // "cc-default"
+    {IEEE1588_PTP_TT_CLOCK_ACCURACY, 0x22, sizeof(uint32_t), true}, //"ca-time-accurate-to-250-ns"
+    {IEEE1588_PTP_TT_OFFSET_SCALED_LOG_VARIANCE, 0x436a, sizeof(uint32_t), true},
+};
+
+static EnetApp_DbKeyVal_IntItem_t gGptpTsCorrectionPortDs[] =
+{
+    {IEEE1588_PTP_TT_INGRESS_LATENCY, 0x00, sizeof(uint32_t), true},
+    {IEEE1588_PTP_TT_EGRESS_LATENCY, 0x00, sizeof(uint32_t), true},
+};
+
+/*
+ * To optimize sync speed, consider the following configuration:
+ * {"QUICK_SYNC_ALGO", XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO, 1},
+ * {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 500},
+ *
+ * QUICK_SYNC_ALGO: Enables the slave clock to match the master's rate before applying
+ * phase offset adjustments.
+ * This approach minimizes the interaction between frequency and phase adjustments,
+ * leading to faster synchronization.
+
+ *
+ * PHASE_OFFSET_ADJUST_BY_FREQ: Sets the phase offset adjustment threshold in
+ * nanoseconds.
+ * If the time difference with the master exceeds this threshold,
+ * the slave phase offset is adjusted.
+ * Otherwise, the phase is corrected by modifying the clock frequency.
+ * The phase offset through frequency adjustment is slower than set the phase offset.
+ *
+ * Additionally, consider configuring the SYNC_LOG and PDELAY_LOG intervals.
+ * Shorter intervals result in faster synchronization.
+ *
+ * Disabling BMCA can further improve sync time.
+ * In this case, configure STATIC_PORT_STATE_SLAVE_PORT.
+ *
+ * Adjusting NEIGHBOR_PROP_DELAY can also help reduce sync time.
+ *
+ * Adjusting following parameters can also reduce time to sync stable:
+ * CLOCK_COMPUTE_INTERVAL_MSEC, FREQ_OFFSET_UPDATE_MRATE_PPB,
+ * SKIP_FREQADJ_COUNT_MAX.
+ */
+static EnetApp_DbIntVal_t gGptpNonYangDs[] =
+{
+    {"SINGLE_CLOCK_MODE", XL4_EXTMOD_XL4GPTP_SINGLE_CLOCK_MODE, 1},
+    {"USE_HW_PHASE_ADJUSTMENT", XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT, 1},
+    {"FREQ_OFFSET_IIR_ALPHA_START_VALUE", XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_START_VALUE, 1},
+    {"FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE", XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE, 4},
+    {"PHASE_OFFSET_IIR_ALPHA_START_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_START_VALUE, 1},
+    {"PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE, 4},
+    {"MAX_DOMAIN_NUMBER", XL4_EXTMOD_XL4GPTP_MAX_DOMAIN_NUMBER, GPTP_MAX_DOMAINS},
+    {"QUICK_SYNC_ALGO", XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO, 1},
+#ifdef GPTP_QUICKSYNC
+    {"SKIP_FREQADJ_COUNT_MAX", XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX, 2},
+    {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 500},
+    {"FREQ_OFFSET_STABLE_PPB", XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_STABLE_PPB, 500},
+    {"FREQ_OFFSET_UPDATE_MRATE_PPB", XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_UPDATE_MRATE_PPB, 5},
+
+    #ifdef GPTP_MASTER
+        {"STATIC_PORT_STATE_SLAVE_PORT", XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT, 0}, // master in disable BMCA
+    #else
+        {"SUPPORT_RUNTIME_NOTICE_CHECK", XL4_EXTMOD_XL4GPTP_SUPPORT_RUNTIME_NOTICE_CHECK, 1}, // only slave can trigger signaling
+        {"STATIC_PORT_STATE_SLAVE_PORT", XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT, 1}, // slave in disable BMCA
+    #endif
+    {"CLOCK_COMPUTE_INTERVAL_MSEC", XL4_EXTMOD_XL4GPTP_CLOCK_COMPUTE_INTERVAL_MSEC, 20},
+#else
+    {"SKIP_FREQADJ_COUNT_MAX", XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX, 0},
+    {"CLOCK_COMPUTE_INTERVAL_MSEC", XL4_EXTMOD_XL4GPTP_CLOCK_COMPUTE_INTERVAL_MSEC, 100},
+    // If the phase offset between the GM and the local clock exceeds the threshold PHASE_OFFSET_ADJUST_BY_FREQ,
+    // phase offset will be applied; otherwise, the clock rate is adjusted to match the phase.
+    #ifdef ENET_ENABLE_PER_ICSSG
+    /* Increase this value to 10E6 for ICSSG because Nudge API is not supported. */
+    {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 1000000}, // in ns
+    #else
+    {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 100000}, // in ns
+    #endif
+
+#endif
+
+#if GPTP_MAX_DOMAINS == 2
+    {"CMLDS_MODE", XL4_EXTMOD_XL4GPTP_CMLDS_MODE, 1},
+    {"SECOND_DOMAIN_THIS_CLOCK", XL4_EXTMOD_XL4GPTP_SECOND_DOMAIN_THIS_CLOCK, 1}
+#endif
+};
+
+static uint8_t gGptpStackBuf[TSN_TSK_STACK_SIZE] \
+__attribute__ ((aligned(TSN_TSK_STACK_ALIGN)));
+
+/* ========================================================================== */
+/*                            Global Variables                                */
+/* ========================================================================== */
+
+extern EnetApp_Ctx_t gAppCtx;
+
+/* ========================================================================== */
+/*                          Function Definitions                              */
+/* ========================================================================== */
+
+int EnetApp_addGptpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
+{
+    EnetApp_ModuleCtx_t gptpModCtx = {
+        .enable = BTRUE,
+        .stopFlag = BTRUE,
+        .taskPriority = GPTP_TASK_PRIORITY,
+        .taskName = GPTP_TASK_NAME,
+        .stackBuffer = gGptpStackBuf,
+        .stackSize = sizeof(gGptpStackBuf),
+        .onModuleDBInit = EnetApp_gptpDbInit,
+        .onModuleRunner = EnetApp_gptpTask,
+        .appCtx = &gAppCtx
+    };
+    memcpy(&modCtxTbl[ENETAPP_GPTP_TASK_IDX], &gptpModCtx,
+           sizeof(EnetApp_ModuleCtx_t));
+    return 0;
+}
+
+static void EnetApp_cfgGptpPortDs(int instance, int domain,
+                                  int port_index, bool dbInitFlag)
+{
+    int i;
+
+    for (i = 0; i < sizeof(gGptpPortDsInt)/sizeof(gGptpPortDsInt[0]); i++)
+    {
+        if (gGptpPortDsInt[i].rw)
+        {
+            if (!dbInitFlag)
+            {
+                gptpgcfg_set_yang_port_item(instance, IEEE1588_PTP_TT_PORT_DS,
+                                        gGptpPortDsInt[i].key, port_index,
+                                        domain, YDBI_CONFIG,
+                                        &gGptpPortDsInt[i].val, gGptpPortDsInt[i].sz,
+                                        YDBI_NO_NOTICE);
+            }
+        }
+        else
+        {
+            gptpgcfg_set_yang_port_item(instance, IEEE1588_PTP_TT_PORT_DS,
+                                        gGptpPortDsInt[i].key, port_index,
+                                        domain, YDBI_STATUS,
+                                        &gGptpPortDsInt[i].val, gGptpPortDsInt[i].sz,
+                                        YDBI_NO_NOTICE);
+        }
+    }
+
+    for (i = 0; i < sizeof(gGptpTsCorrectionPortDs)/sizeof(gGptpTsCorrectionPortDs[0]); i++)
+    {
+        gptpgcfg_set_yang_port_item(instance, IEEE1588_PTP_TT_TIMESTAMP_CORRECTION_PORT_DS,
+                            gGptpTsCorrectionPortDs[i].key, port_index,
+                            domain, YDBI_CONFIG,
+                            &gGptpTsCorrectionPortDs[i].val, gGptpTsCorrectionPortDs[i].sz,
+                            YDBI_NO_NOTICE);
+    }
+}
+
+static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag)
+{
+    int i;
+    for (i = 0; i < sizeof(gGptpDefaultDsInt)/sizeof(gGptpDefaultDsInt[0]); i++)
+    {
+        if (gGptpDefaultDsInt[i].rw)
+        {
+            if (!dbInitFlag)
+            {
+                gptpgcfg_set_yang_defaultds_item(instance, gGptpDefaultDsInt[i].key,
+                                        255, domain, YDBI_CONFIG,
+                                        &gGptpDefaultDsInt[i].val, gGptpDefaultDsInt[i].sz,
+                                        YDBI_NO_NOTICE);
+            }
+        }
+        else
+        {
+            gptpgcfg_set_yang_defaultds_item(instance, gGptpDefaultDsInt[i].key,
+                                        255, domain, YDBI_STATUS,
+                                        &gGptpDefaultDsInt[i].val, gGptpDefaultDsInt[i].sz,
+                                        YDBI_NO_NOTICE);
+        }
+    }
+
+    if (!dbInitFlag)
+    {
+        for (i = 0; i < sizeof(gGptpDefaultDsClkQuality)/sizeof(gGptpDefaultDsClkQuality[0]); i++)
+        {
+            gptpgcfg_set_yang_defaultds_item(instance, IEEE1588_PTP_TT_CLOCK_QUALITY,
+                        gGptpDefaultDsClkQuality[i].key, domain, YDBI_CONFIG,
+                        &gGptpDefaultDsClkQuality[i].val, gGptpDefaultDsClkQuality[i].sz,
+                        YDBI_NO_NOTICE);
+        }
+    }
+
+}
+
+static void EnetApp_gptpUpdateDomainMap(int instance, int domain, EnetApp_Ctx_t *appCtx)
+{
+    if (!appCtx->dbInitFlag)
+    {
+        yang_db_item_access_t *ydbia=ydbi_access_handle();
+        uint16_t dmap;
+        uint8_t aps[]={IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP,
+        IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP, 255};
+        yang_db_access_para_t dbpara={((instance | domain) != 0) ? YANG_DB_ACTION_APPEND:YANG_DB_ACTION_CREATE,
+                                        YANG_DB_ONHW_NOACTION,
+                                        NULL, aps, NULL, NULL, &dmap, sizeof(uint16_t)};
+        dmap=instance<<8|domain;
+        if(yang_db_action(ydbia->dbald, NULL, &dbpara)!=0){
+            DPRINT("%s:Can't create instance|domainmap=0x%04x", __func__, dmap);
+        }
+    }
+}
+
+static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCtx)
+{
+    int i, res = 0;
+
+    // DPRINT("%s:domain=%d", __func__, domain);
+
+    do {
+        /* set for default-ds */
+        EnetApp_cfgGptpDefaultDs(instance, domain, appCtx->dbInitFlag);
+
+        // portindex starts from 1
+        for (i = 0; i < appCtx->netdevSize; i++)
+        {
+            /* skip setting of 'rw' yang configs when db is already initialized */
+            if (!appCtx->dbInitFlag)
+            {
+                gptpgcfg_set_yang_port_item(instance, IEEE1588_PTP_TT_UNDERLYING_INTERFACE,
+                        255, i+1,
+                        domain, YDBI_CONFIG,
+                        appCtx->netdev[i], strlen(appCtx->netdev[i])+1,
+                        YDBI_NO_NOTICE);
+            }
+
+            /* set for port-ds */
+            EnetApp_cfgGptpPortDs(instance, domain, i+1, appCtx->dbInitFlag);
+        }
+
+        /* skip setting of 'rw' yang configs when db is already initialized */
+        if (!appCtx->dbInitFlag)
+        {
+            /* disable performance by default */
+            bool enable=false;
+            gptpgcfg_set_yang_item(
+                    instance,
+                    IEEE1588_PTP_TT_PERFORMANCE_MONITORING_DS,
+                    IEEE1588_PTP_TT_ENABLE, 255,
+                    domain, YDBI_CONFIG,
+                    &enable, 1, YDBI_NO_NOTICE);
+        }
+    } while (0);
+
+    return res;
+}
+
+static int EnetApp_gptpNonYangConfig(uint8_t instance)
+{
+    int i;
+    int res = 0;
+
+    for (i = 0; i < sizeof(gGptpNonYangDs)/sizeof(gGptpNonYangDs[0]); i++)
+    {
+        res = gptpgcfg_set_item(instance, gGptpNonYangDs[i].item,  YDBI_CONFIG,
+                    &gGptpNonYangDs[i].val, sizeof(gGptpNonYangDs[i].val));
+        if (res == 0)
+        {
+            // Note: enable below code for debugging only, this printing will cause
+            // gptp init time longer
+            // DPRINT("%s:XL4_EXTMOD_XL4GPTP_%s=%d", __func__,
+            //        gGptpNonYangDs[i].name, gGptpNonYangDs[i].val);
+        }
+        else
+        {
+            DPRINT("%s: failed to set nonyange param: %s",
+                   __func__, gGptpNonYangDs[i].name);
+            break;
+        }
+    }
+    return res;
+}
+
+static void *EnetApp_gptpTask(void *arg)
+{
+    int i;
+    int res = 0;
+    EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
+    EnetApp_Ctx_t *appCtx = modCtx->appCtx;
+    const char *netdevs[CB_MAX_NETDEVNAME];
+
+    for (i = 0; i < appCtx->netdevSize; i++)
+    {
+        netdevs[i] = appCtx->netdev[i];
+    }
+
+
+    /* This function has a true loop inside */
+    res = gptpman_run(gGptpOpt.instNum, netdevs, appCtx->netdevSize,
+                    NULL, &modCtx->stopFlag);
+    if (res != 0)
+    {
+        DPRINT("%s: gptpman_run() error", __func__);
+    }
+
+    gptpgcfg_close(gGptpOpt.instNum);
+    return NULL;
+}
+
+static int EnetApp_gptpDbInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs)
+{
+    EnetApp_Ctx_t *appCtx = modCtx->appCtx;
+    int res = 0;
+    int i;
+
+    for (i = 0; i < gGptpOpt.domainNum; i++)
+    {
+        EnetApp_gptpUpdateDomainMap(gGptpOpt.instNum, gGptpOpt.domains[i], appCtx);
+    }
+
+    res = gptpgcfg_init(appCtx->dbName, gGptpOpt.confFiles,
+                        gGptpOpt.instNum, true, EnetApp_gptpNonYangConfig);
+
+    if (gGptpOpt.numConf == 0)
+    {
+        /* There is no config file is specified, set config file for gptp*/
+        for (i = 0; i < gGptpOpt.domainNum; i++)
+        {
+            res = EnetApp_gptpYangConfig(gGptpOpt.instNum,
+                        gGptpOpt.domains[i], appCtx);
+            if (res)
+            {
+                DPRINT("Failed to set gptp run time config");
+            }
+        }
+    }
+
+    return res;
+}
+
+bool EnetApp_isGptpSyncStable(void)
+{
+    bool retval = false;
+    gmsync_status_t gmsts = gptpclock_get_gmsync(gGptpOpt.instNum, gGptpOpt.domains[0]);
+
+    if (gmsts == GMSYNC_SYNC_STABLE)
+    {
+        retval = true;
+    }
+    return retval;
+}
+
+#ifdef GPTP_QUICKSYNC
+#ifdef GPTP_SLAVE
+int EnetApp_adjustTimeInterval()
+{
+    int di;
+    int res= -1;
+    for (di = 0; di < gGptpOpt.domainNum; di++)
+    {
+        gmsync_status_t gmsts = gptpclock_get_gmsync(gGptpOpt.instNum,
+                    gGptpOpt.domains[di]);
+        if (GMSYNC_SYNC_STABLE != gmsts) {continue;}
+        if (GMSYNC_SYNC_STABLE == gmsts)
+        {
+            UB_LOG(UBL_INFO, "di=%d, GM is stable. Adjust messages interval now\n", di);
+
+            int8_t logSync=-3; // default: 125ms
+            int8_t logAnnounce=-128; // do not change Announce
+            int8_t logPdelayReq=0; // default: 1s
+
+            gptpgcfg_trigger_msg_interval_request(gGptpOpt.instNum, logSync, logAnnounce, logPdelayReq);
+            res=0;
+            break;
+        }
+    }
+
+    return res;
+}
+#endif // GPTP_SLAVE
+#endif // GPTP_QUICKSYNC

@@ -35,7 +35,7 @@ ifeq ($(DEVICE_TYPE), HS)
 endif
 
 FILES_common := \
-	gptp_init.c \
+	gptp_config.c \
 	avtp_init.c \
 	default_flow_cfg.c \
 	tsninit.c \
