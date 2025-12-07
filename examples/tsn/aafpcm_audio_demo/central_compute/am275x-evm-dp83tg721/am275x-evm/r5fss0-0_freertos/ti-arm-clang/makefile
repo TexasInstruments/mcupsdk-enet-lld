@@ -69,12 +69,12 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../.. \
-	../../../../../common_files \
-	../../../../../.. \
-	../../../../../../nrt_flow \
-	../../../../../../aafpcm_app \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/central_compute \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app \
 	generated \
 
 INCLUDES_common := \

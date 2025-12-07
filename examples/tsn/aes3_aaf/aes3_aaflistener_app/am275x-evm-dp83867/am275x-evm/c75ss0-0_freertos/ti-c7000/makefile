@@ -48,8 +48,8 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../.. \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf/aes3_aaflistener_app \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf \
 	generated \
 
 INCLUDES_common := \

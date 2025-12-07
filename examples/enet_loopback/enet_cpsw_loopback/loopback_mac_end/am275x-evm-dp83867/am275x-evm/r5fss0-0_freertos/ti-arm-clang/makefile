@@ -55,7 +55,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../../../ \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/enet_loopback/enet_cpsw_loopback \
 	generated \
 
 INCLUDES_common := \

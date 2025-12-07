@@ -24,10 +24,10 @@ const files = {
 const filedirs = {
     common: [
         "..",
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
-        "../../../../../aafpcm_app", /* Example base */    ],
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcmlistener_app", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app", /* Example base */    ],
 };
 
 const libdirs_freertos = {

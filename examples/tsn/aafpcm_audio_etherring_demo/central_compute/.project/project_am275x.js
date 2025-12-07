@@ -45,23 +45,23 @@ const remote_files = {
 const main_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../common_files", /* Example base */
-        "../../../../../..", /* Example base */
-        // "../../../../../../nrt_flow", /* Example base */
-        "../../../../../../aafpcm_app", /* Example base */
-        "../../../../../../../../ether_ring/src/", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/central_compute", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        // "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/ether_ring/src/",
         ],
 };
-
+""
 
 const remote_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../../remote_core", /* Example base */
-        "../../../../../common_files", /* Example base */
-        "../../../../../", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/central_compute/remote_core", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo", /* Example base */
     ],
 };
 

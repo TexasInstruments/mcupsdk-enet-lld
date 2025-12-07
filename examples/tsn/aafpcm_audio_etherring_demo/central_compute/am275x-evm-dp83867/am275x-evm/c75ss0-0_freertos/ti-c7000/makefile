@@ -49,9 +49,9 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../../remote_core \
-	../../../../../common_files \
-	../../../../../ \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/central_compute/remote_core \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo \
 	generated \
 
 INCLUDES_common := \

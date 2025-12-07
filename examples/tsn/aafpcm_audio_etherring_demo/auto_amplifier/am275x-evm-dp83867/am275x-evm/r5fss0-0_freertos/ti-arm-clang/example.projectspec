@@ -200,7 +200,7 @@
         </file>
         <file path="../../../../../common_files/control_data.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../../../../../ether_ring/src//ether_ring.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../../../../ether_ring/src/ether_ring.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../../../common_files/avtpcf.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>

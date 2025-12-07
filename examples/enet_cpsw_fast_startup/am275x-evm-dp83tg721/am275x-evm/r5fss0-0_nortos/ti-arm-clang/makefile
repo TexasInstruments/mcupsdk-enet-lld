@@ -56,7 +56,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/enet_cpsw_fast_startup \
 	generated \
 
 INCLUDES_common := \
