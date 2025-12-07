@@ -17,7 +17,7 @@ const files = {
 const filedirs = {
     common: [
         "..",
-        "../../../../../", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/enet_loopback/enet_cpsw_loopback", /* Example base */
     ],
 };
 

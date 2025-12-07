@@ -171,13 +171,13 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../../..//autoamp_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../autoamp_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../../../../gptp_init.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../..//autoamp_avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../autoamp_avtp_init.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../..//default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../default_flow_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../../../../tsninit.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>

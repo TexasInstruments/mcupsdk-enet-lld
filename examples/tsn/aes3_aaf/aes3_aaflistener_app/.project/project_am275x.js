@@ -33,18 +33,18 @@ const remote_files = {
 const main_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* aes3_aaf_listener_app */
-        "../../../../..", /* aes3_aaf */
-        "../../../../../..", /* tsn */
-        "../../../../../../nrt_flow", /* nrt_flow */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf/aes3_aaflistener_app", /* aes3_aaf_listener_app */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf", /* aes3_aaf */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* tsn */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* nrt_flow */
     ],
 };
 
 const remote_filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* aes3_aaf_listener_app */
-        "../../../../..", /* aes3_aaf */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf/aes3_aaflistener_app", /* aes3_aaf_listener_app */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aes3_aaf", /* aes3_aaf */
     ],
 };
 

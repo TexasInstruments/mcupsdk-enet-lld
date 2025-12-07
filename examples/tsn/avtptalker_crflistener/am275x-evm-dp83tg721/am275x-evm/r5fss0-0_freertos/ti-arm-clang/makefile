@@ -64,11 +64,11 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../.. \
-	../../../../../enet_media_clock_ctrl \
-	../../../../../nrt_flow \
-	../../../../../aafpcm_app \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avtptalker_crflistener \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/enet_media_clock_ctrl \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app \
 	generated \
 
 INCLUDES_common := \

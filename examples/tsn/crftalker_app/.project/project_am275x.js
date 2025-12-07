@@ -24,10 +24,10 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../enet_media_clock_ctrl", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/crftalker_app", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/enet_media_clock_ctrl", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
     ],
 };
 

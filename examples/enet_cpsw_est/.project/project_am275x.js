@@ -18,7 +18,7 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../../V0", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/enet_cpsw_est/V0", /* Example base */
     ],
 };
 
