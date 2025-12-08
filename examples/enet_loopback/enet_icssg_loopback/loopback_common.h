@@ -84,7 +84,7 @@ extern "C" {
 
 
 /* Loopback test iteration count */
-#define ENETLPBK_NUM_ITERATION                     (1U)
+#define ENETLPBK_NUM_ITERATION                     (5U)
 
 #define ENETLPBK_TEST_PKT_NUM                      (1000U) /* Total number of packets transmitted in an iteration */
 

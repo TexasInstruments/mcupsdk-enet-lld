@@ -203,6 +203,8 @@ int32_t EnetApp_loopbackTest(void)
     /* Close Enet DMA driver */
     EnetApp_closeDma();
 
+    EnetApp_closePortLink(gEnetLpbk.enetType, gEnetLpbk.instId);
+
     /*Detach Core*/
     EnetApp_coreDetach(gEnetLpbk.enetType, gEnetLpbk.instId, gEnetLpbk.coreId,
                        gEnetLpbk.coreKey);
