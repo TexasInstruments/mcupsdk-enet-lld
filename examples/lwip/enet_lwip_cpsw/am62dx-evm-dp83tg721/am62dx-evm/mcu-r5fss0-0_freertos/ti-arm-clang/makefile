@@ -59,7 +59,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/lwip/enet_lwip_cpsw \
 	generated \
 
 INCLUDES_common := \

@@ -67,11 +67,11 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../../ \
-	../../../../../.. \
-	../../../../../../enet_media_clock_ctrl \
-	../../../../../../nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_autoamplifier_demo/audio_source_with_crf \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_autoamplifier_demo \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/enet_media_clock_ctrl \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
 	generated \
 
 INCLUDES_common := \
