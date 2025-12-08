@@ -33,22 +33,22 @@ const remote_files = {
 const main_filedirs = {
     common: [
         "..", /* core_os_combo base */
-        "../../..", /* Example base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../..", /* Example base */
-        "../../../../../../nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/avb_listener/am62dx-evm-dp83867", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/avb_listener", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
     ],
 };
 
 const remote_filedirs = {
     common: [
         "..", /* core_os_combo base */
-        "../../..", /* Example base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../..", /* Example base */
-        "../../../../../../nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/avb_listener/am62dx-evm-dp83867", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/avb_listener", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avb_cpsw_app/", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
     ],
 };
 

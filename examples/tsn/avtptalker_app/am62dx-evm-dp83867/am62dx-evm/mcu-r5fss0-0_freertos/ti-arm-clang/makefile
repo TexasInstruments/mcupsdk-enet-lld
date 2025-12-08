@@ -64,9 +64,9 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../.. \
-	../../../../.. \
-	../../../../../nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avtptalker_app \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
 	generated \
 
 INCLUDES_common := \

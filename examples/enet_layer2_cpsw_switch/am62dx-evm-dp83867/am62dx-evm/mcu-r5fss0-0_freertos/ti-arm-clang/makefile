@@ -58,7 +58,7 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	../../../../V0 \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/enet_layer2_cpsw_switch/V0 \
 	generated \
 
 INCLUDES_common := \

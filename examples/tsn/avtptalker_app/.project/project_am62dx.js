@@ -23,9 +23,9 @@ const files = {
 const filedirs = {
     common: [
         "..",       /* core_os_combo base */
-        "../../../..", /* Example base */
-        "../../../../..", /* Example base */
-        "../../../../../nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/avtptalker_app", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
     ],
 };
 
