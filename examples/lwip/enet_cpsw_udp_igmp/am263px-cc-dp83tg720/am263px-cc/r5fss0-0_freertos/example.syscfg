@@ -238,12 +238,12 @@ enet_cpsw1.txDmaChannel[0].$name  = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name  = "ENET_DMA_RX_CH0";
 enet_cpsw1.netifInstance.create(1);
 enet_cpsw1.netifInstance[0].$name = "NETIF_INST_ID0";
+scripting.suppress("Solution has changed,The suggested solution was invalid\\.  As such, this specific entry differs from what was suggested", enet_cpsw1.RGMII2, "$assign");
 
-const ethphy_cpsw_icssg              = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
-const ethphy_cpsw_icssg1             = ethphy_cpsw_icssg.addInstance({}, false);
-ethphy_cpsw_icssg1.enableCustomBoard = scripting.forceWrite(false);
-ethphy_cpsw_icssg1.$name             = "CONFIG_ENET_ETHPHY1";
-enet_cpsw1.ethphy2                   = ethphy_cpsw_icssg1;
+const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
+const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
+ethphy_cpsw_icssg1.$name = "CONFIG_ENET_ETHPHY1";
+enet_cpsw1.ethphy2       = ethphy_cpsw_icssg1;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
@@ -266,4 +266,3 @@ enet_cpsw1.RGMII2.TD2.$suggestSolution    = "PR0_PRU0_GPIO13";
 enet_cpsw1.RGMII2.TD3.$suggestSolution    = "PR0_PRU0_GPIO14";
 enet_cpsw1.RGMII2.TX_CTL.$suggestSolution = "PR0_PRU0_GPIO15";
 enet_cpsw1.RGMII2.TXC.$suggestSolution    = "PR0_PRU0_GPIO16";
-enet_cpsw1.RGMII2.$suggestSolution        = "RGMII1";

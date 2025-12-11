@@ -228,8 +228,9 @@ enet_cpsw1.macport1LinkDuplexity = "ENET_DUPLEX_FULL";
 enet_cpsw1.macport2LoopbackMode  = "LOOPBACK_MODE_PHY";
 enet_cpsw1.macport2LinkDuplexity = "ENET_DUPLEX_HALF";
 enet_cpsw1.macport2LinkSpeed     = "ENET_SPEED_1GBIT";
-enet_cpsw1.DisableMacPort2       = true;
 enet_cpsw1.macport1LinkSpeed     = "ENET_SPEED_100MBIT";
+enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_PHY";
+enet_cpsw1.DisableMacPort2       = true;
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
 

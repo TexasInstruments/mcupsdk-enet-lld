@@ -262,4 +262,3 @@ enet_cpsw1.RGMII2.TD2.$suggestSolution    = "PR0_PRU0_GPIO13";
 enet_cpsw1.RGMII2.TD3.$suggestSolution    = "PR0_PRU0_GPIO14";
 enet_cpsw1.RGMII2.TX_CTL.$suggestSolution = "PR0_PRU0_GPIO15";
 enet_cpsw1.RGMII2.TXC.$suggestSolution    = "PR0_PRU0_GPIO16";
-enet_cpsw1.RGMII2.$suggestSolution        = "RGMII1";
