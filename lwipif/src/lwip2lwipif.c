@@ -483,7 +483,7 @@ err_t LWIPIF_LWIP_send(struct netif *netif, struct pbuf *p)
      */
     pbuf_ref(p);
     /* Enqueue the packet */
-    pbufQ_enQ(&hTx->readyPbufQ, p);
+    pbufQ_enQ(&pInterface->readyPbufQ, p);
     LWIP2ENETSTATS_ADDONE(&hTx->stats.readyPbufPktEnq);
     /* Pass the packet to the translation layer */
     Lwip2Enet_sendTxPackets(pInterface, macPort);

@@ -147,6 +147,7 @@ static int32_t Lwip2Enet_startPollTask(Lwip2Enet_Handle hLwip2Enet);
 static void Lwip2Enet_stopRxTx(Lwip2Enet_TxObj* pTx, Lwip2Enet_RxObj* pRx);
 
 static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
+                                      pbufQ* unusedPbufQ,
                                       EnetDma_PktQ *pSubmitQ);
 
 static void Lwip2Enet_submitRxPackets(Lwip2Enet_RxObj *rx,
@@ -348,6 +349,11 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
         const uint32_t txChId = txChIdList[txChIdIndex];
         pInterface->hTx[txChIdIndex] = Lwip2Enet_allocateTxHandle(hLwip2Enet, enetType, instId, txChId);
         Lwip2Enet_initTxObj(enetType, instId, txChId, pInterface->hTx[txChIdIndex]);
+
+        /* Initialize the TX pbuf queues */
+        pbufQ_init(&pInterface->readyPbufQ);
+        pbufQ_init(&pInterface->unusedPbufQ);
+
         pInterface->hTx[txChIdIndex]->hLwip2Enet = hLwip2Enet;
         Lwip2Enet_assert(NULL != pInterface->hTx[txChIdIndex]->hCh);
         if (pInterface->hTx[txChIdIndex]->refCount == 1)
@@ -538,6 +544,14 @@ void Lwip2Enet_close(Lwip2Enet_Handle hLwip2Enet, struct netif *netif)
         Lwip2Enet_deinitTxObj(pInterface->hEnet->enetPer->enetType, pInterface->hEnet->enetPer->instId, pInterface->hTx[idx]);
         hLwip2Enet->allocPktInfo -= EnetQueue_getQCount(&pInterface->hTx[idx]->freePktInfoQ);
         pInterface->hTx[idx] = NULL;
+
+        /* Free pbuf in ready queue */
+        while (pbufQ_count(&pInterface->readyPbufQ) != 0U)
+        {
+        	struct pbuf *pbuf = pbufQ_deQ(&pInterface->readyPbufQ);
+        	Lwip2Enet_assert(NULL != pbuf);
+        	pbuf_free(pbuf);
+        }
     }
 
     for (uint32_t idx = 0; idx < pInterface->count_hTx; idx++)
@@ -631,13 +645,6 @@ static void Lwip2Enet_deinitTxObj(Enet_Type enetType, uint32_t instId, Lwip2Enet
         LwipifEnetAppCb_releaseTxHandle(&inArgs);
         hTx->hCh = NULL;
 
-        /* Free pbuf in ready queue */
-        while (pbufQ_count(&hTx->readyPbufQ) != 0U)
-        {
-            struct pbuf *pbuf = pbufQ_deQ(&hTx->readyPbufQ);
-            Lwip2Enet_assert(NULL != pbuf);
-            pbuf_free(pbuf);
-        }
     }
 }
 
@@ -666,10 +673,6 @@ static void Lwip2Enet_initTxObj(Enet_Type enetType, uint32_t instId, uint32_t ch
         pTx->disableEvent = outArgs.disableEvent;
 
         pTx->stats.freeAppPktEnq = outArgs.numPackets;
-
-        /* Initialize the TX pbuf queues */
-        pbufQ_init(&pTx->readyPbufQ);
-        pbufQ_init(&pTx->unusedPbufQ);
 
         pTx->refCount = 1U;
         pTx->chEntryIdx = chEntryIdx;
@@ -726,14 +729,14 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
         Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
         EnetQueue_initQ(&txSubmitQ);
 
-        if (pbufQ_count(&hTx->unusedPbufQ))
+        if (pbufQ_count(&pInterface->unusedPbufQ))
         {
             /* send any pending TX Q's */
-            Lwip2Enet_pbufQ2PktInfoQ(hTx, &hTx->unusedPbufQ, &txSubmitQ, macPort);
+            Lwip2Enet_pbufQ2PktInfoQ(hTx, &pInterface->unusedPbufQ, &txSubmitQ, macPort);
         }
 
         /* Check if there is anything to transmit, else simply return */
-        while (pbufQ_count(&hTx->readyPbufQ) != 0U)
+        while (pbufQ_count(&pInterface->readyPbufQ) != 0U)
         {
             /* Dequeue one free TX Eth packet */
             EnetDma_Pkt *pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&hTx->freePktInfoQ);
@@ -748,7 +751,7 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
 
             if (NULL != pCurrDmaPacket)
             {
-                struct pbuf *hPbufPkt = pbufQ_deQ(&hTx->readyPbufQ);
+                struct pbuf *hPbufPkt = pbufQ_deQ(&pInterface->readyPbufQ);
                 EnetDma_initPktInfo(pCurrDmaPacket);
                 Lwip2Enet_assert(hPbufPkt);
                 Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
@@ -770,7 +773,7 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
         }
 
         /* Submit the accumulated packets to the hardware for transmission */
-        Lwip2Enet_submitTxPackets(hTx, &txSubmitQ);
+        Lwip2Enet_submitTxPackets(hTx, &pInterface->unusedPbufQ, &txSubmitQ);
     }
 }
 
@@ -839,7 +842,6 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
     Lwip2Enet_assert(pInterface != NULL);
     Lwip2Enet_assert(pInterface->hRx != NULL);
     Lwip2Enet_assert(pInterface->hTx != NULL);
-    uint32_t prevLinkState = pInterface->isLinkUp;
 
 #if (1U == ENET_CFG_DEV_ERROR)
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
@@ -899,8 +901,8 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
         }
     }
 
-    /* If link status changed from down->up, then send any queued packets */
-    if ((prevLinkState == 0U) && (pInterface->isLinkUp))
+    /* if there are any pbufs left on readyPbufQ, sent it out here */
+    if ((pInterface->isLinkUp) && (pbufQ_count(&pInterface->readyPbufQ) != 0U))
     {
         const Enet_MacPort macPort = pInterface->macPort;
         Lwip2Enet_sendTxPackets(pInterface, macPort);
@@ -1043,6 +1045,7 @@ static void Lwip2Enet_pktInfoQ2PbufQ(EnetDma_PktQ *pDmaPktInfoQ,
 }
 
 static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
+                                      pbufQ* unusedPbufQ,
                                       EnetDma_PktQ *pSubmitQ)
 {
     int32_t retVal;
@@ -1060,7 +1063,7 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
         /* TODO: txUnUsedPBMPktQ is needed for packets that were not able to be
          *       submitted to driver.  It can be removed if stack supported any
          *       mechanism to enqueue them to the head of the queue. */
-        Lwip2Enet_pktInfoQ2PbufQ(pSubmitQ, &tx->unusedPbufQ);
+        Lwip2Enet_pktInfoQ2PbufQ(pSubmitQ, unusedPbufQ);
         EnetQueue_append(&tx->freePktInfoQ, pSubmitQ);
         LWIP2ENETSTATS_ADDNUM(&tx->stats.freeAppPktEnq, EnetQueue_getQCount(pSubmitQ));
     }

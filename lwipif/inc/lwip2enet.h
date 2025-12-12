@@ -270,12 +270,6 @@ typedef struct Lwip2Enet_TxObj_s
     /*! DMA free queue (holds free hardware packets awaiting) */
     EnetDma_PktQ freePktInfoQ;
 
-    /*! Queue that holds packets ready to be sent to the hardware */
-    pbufQ readyPbufQ;
-
-    /*! Queue that holds packets that were not sent to the hardware in previous submit */
-    pbufQ unusedPbufQ;
-
     /*! lwIP interface statistics */
     Lwip2Enet_TxStats stats;
 
@@ -304,6 +298,10 @@ typedef struct
     Lwip2Enet_TxHandle hTx[LWIPIF_MAX_TX_CHANNELS_PER_PHERIPHERAL];
     Lwip2Enet_RxHandle hRxProxyArp;
     Lwip2Enet_RxHandle hRxVepa;
+    /*! Queue that holds packets ready to be sent to the hardware */
+    pbufQ readyPbufQ;
+    /*! Queue that holds packets that were not sent to the hardware in previous submit */
+    pbufQ unusedPbufQ;
     Enet_MacPort macPort;
     uint8_t macAddr[ENET_MAC_ADDR_LEN];
     LwipifEnetAppIf_IsPhyLinkedCbFxn isPortLinkedFxn;
