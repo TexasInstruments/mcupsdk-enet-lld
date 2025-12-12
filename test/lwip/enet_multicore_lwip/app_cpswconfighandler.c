@@ -100,7 +100,7 @@ void EnetApp_initLinkArgs(Enet_Type enetType,
     ethPort.boardId  = EnetBoard_getId();
 
     /* Get the Mii config for Ethernet port */
-    EnetBoard_getMiiConfig(&ethPort.mii);
+    EnetBoard_getMiiConfig(&ethPort.mii, macPort);
 
     status = EnetBoard_setupPorts(&ethPort, 1U);
     EnetAppUtils_assert(status == ENET_SOK);

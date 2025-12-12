@@ -230,7 +230,7 @@ static const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *e
     return found ? ethPortCfg : NULL;
 }
 
-void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii)
+void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
     mii->layerType      = ENET_MAC_LAYER_GMII;

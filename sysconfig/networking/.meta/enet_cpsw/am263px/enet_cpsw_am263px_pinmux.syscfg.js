@@ -192,36 +192,53 @@ function pinmuxRequirements(inst) {
     pinmux.setPeripheralPinConfigurableDefault( mdio, "MDC", "rx", false);
     perRequirements.push(mdio);
 
-    if( inst.phyToMacInterfaceMode === "MII")
+    /* Configure Port 1 if enabled */
+    if (!inst.DisableMacPort1)
     {
-        let mii1 = getPeripheralRequirements(inst, "MII", "MII1");
-        let mii2 = getPeripheralRequirements(inst, "MII", "MII2");
-
-        return [mdio, mii1, mii2];
+        if (inst.phyToMacInterfaceMode1 === "MII")
+        {
+            let mii1 = getPeripheralRequirements(inst, "MII", "MII1");
+            perRequirements.push(mii1);
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RMII")
+        {
+            let rmii1 = getPeripheralRequirements(inst, "RMII", "RMII1");
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD0", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD1", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TX_EN", "rx", false);
+            perRequirements.push(rmii1);
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RGMII")
+        {
+            let rgmii1 = getPeripheralRequirements(inst, "RGMII", "RGMII1");
+            perRequirements.push(rgmii1);
+        }
     }
-    else if( inst.phyToMacInterfaceMode === "RMII")
+
+    /* Configure Port 2 if enabled */
+    if (!inst.DisableMacPort2)
     {
-        let rmii1 = getPeripheralRequirements(inst, "RMII", "RMII1");
-        let rmii2 = getPeripheralRequirements(inst, "RMII", "RMII2");
-
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TX_EN", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TX_EN", "rx", false);
-        perRequirements.push(rmii1);
-        perRequirements.push(rmii2);
+        if (inst.phyToMacInterfaceMode2 === "MII")
+        {
+            let mii2 = getPeripheralRequirements(inst, "MII", "MII2");
+            perRequirements.push(mii2);
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RMII")
+        {
+            let rmii2 = getPeripheralRequirements(inst, "RMII", "RMII2");
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD0", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD1", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TX_EN", "rx", false);
+            perRequirements.push(rmii2);
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RGMII")
+        {
+            let rgmii2 = getPeripheralRequirements(inst, "RGMII", "RGMII2");
+            perRequirements.push(rgmii2);
+        }
     }
-    else
-    {
-        let rgmii1 = getPeripheralRequirements(inst, "RGMII", "RGMII1");
-        let rgmii2 = getPeripheralRequirements(inst, "RGMII", "RGMII2");
 
-        perRequirements.push(rgmii1);
-        perRequirements.push(rgmii2);
-    }
-        return perRequirements;
+    return perRequirements;
 }
 
 function getInterfaceNameList(inst) {
@@ -232,21 +249,41 @@ function getInterfaceNameList(inst) {
     {
         interfaceNameList.push("CPSW_CPTS")
     }
-    if (inst.phyToMacInterfaceMode === "MII")
+
+    /* Add Port 1 interface if enabled */
+    if (!inst.DisableMacPort1)
     {
-        interfaceNameList.push(getInterfaceName(inst, "MII1"));
-        interfaceNameList.push(getInterfaceName(inst, "MII2"));
+        if (inst.phyToMacInterfaceMode1 === "MII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "MII1"));
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RMII1"));
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RGMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RGMII1"));
+        }
     }
-    else if (inst.phyToMacInterfaceMode === "RMII")
+
+    /* Add Port 2 interface if enabled */
+    if (!inst.DisableMacPort2)
     {
-        interfaceNameList.push(getInterfaceName(inst, "RMII1"));
-        interfaceNameList.push(getInterfaceName(inst, "RMII2"));
+        if (inst.phyToMacInterfaceMode2 === "MII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "MII2"));
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RMII2"));
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RGMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RGMII2"));
+        }
     }
-    else
-    {
-        interfaceNameList.push(getInterfaceName(inst, "RGMII1"));
-        interfaceNameList.push(getInterfaceName(inst, "RGMII2"));
-    }
+
     return interfaceNameList;
 }
 
@@ -258,22 +295,43 @@ function getPeripheralPinNames(inst)
       pinList = pinList.concat( "CPTS0_TS_SYNC");
     }
 
-    if(inst.phyToMacInterfaceMode === "MII")
+    /* Always add MDIO pins */
+    pinList = pinList.concat(getInterfacePinList(inst, "MDIO"));
+
+    /* Add Port 1 pins if enabled */
+    if (!inst.DisableMacPort1)
     {
-        pinList = pinList.concat( getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "MII" )
-        );
+        if (inst.phyToMacInterfaceMode1 === "MII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "MII"));
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RMII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RMII"));
+        }
+        else if (inst.phyToMacInterfaceMode1 === "RGMII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RGMII"));
+        }
     }
-    else if(inst.phyToMacInterfaceMode === "RMII")
+
+    /* Add Port 2 pins if enabled */
+    if (!inst.DisableMacPort2)
     {
-        pinList = pinList.concat(getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "RMII" ));
+        if (inst.phyToMacInterfaceMode2 === "MII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "MII"));
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RMII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RMII"));
+        }
+        else if (inst.phyToMacInterfaceMode2 === "RGMII")
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RGMII"));
+        }
     }
-    else
-    {
-        pinList = pinList.concat( getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "RGMII" ));
-    }
+
     return pinList;
 }
 
@@ -283,8 +341,24 @@ let enet_cpsw_pinmux_module = {
     longDescription: `This configures CPSW module pinmux`,
     config: [
         {
-            name: "phyToMacInterfaceMode",
-            displayName: "RMII/RGMII/MII",
+            name: "phyToMacInterfaceMode1",
+            displayName: "RMII(1)/RGMII(1)/MII(1)",
+            default: "RGMII",
+            options: [
+                {
+                    name: "RMII",
+                },
+                {
+                    name: "RGMII",
+                },
+                {
+                    name: "MII",
+                },
+            ],
+        },
+        {
+            name: "phyToMacInterfaceMode2",
+            displayName: "RMII(2)/RGMII(2)/MII(2)",
             default: "RGMII",
             options: [
                 {

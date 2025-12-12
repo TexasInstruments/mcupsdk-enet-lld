@@ -292,15 +292,18 @@ function getSocConfigTemplateInfo() {
     return socConfigTemplate.get(common.getSocName());
 }
 
-function getMiiConfig(instance) {
+function getMiiConfig(instance, port) {
     const cpswMiiConfigMap = new Map(
     [
         ["RGMII",{layerType:"ENET_MAC_LAYER_GMII", variantType:"ENET_MAC_VARIANT_FORCED", sublayerType:"ENET_MAC_SUBLAYER_REDUCED"}],
         ["RMII", {layerType:"ENET_MAC_LAYER_MII", variantType:"ENET_MAC_VARIANT_NONE", sublayerType:"ENET_MAC_SUBLAYER_REDUCED"}],
-        ["MII",  {layerType:"ENET_MAC_LAYER_MII", variantType:"ENET_MAC_VARIANT_NONE", sublayerType:"ENET_MAC_SUBLAYER_STANDARD"}],
+        ["MII", {layerType:"ENET_MAC_LAYER_MII", variantType:"ENET_MAC_VARIANT_NONE", sublayerType:"ENET_MAC_SUBLAYER_STANDARD"}],
     ],)
-    
-    return cpswMiiConfigMap.get(instance.phyToMacInterfaceMode);
+    if(port === 0){
+        return cpswMiiConfigMap.get(instance.phyToMacInterfaceMode1);
+    }else{
+        return cpswMiiConfigMap.get(instance.phyToMacInterfaceMode2);
+    }
 }
 
 function getPacketsCount(instance, channelType) {

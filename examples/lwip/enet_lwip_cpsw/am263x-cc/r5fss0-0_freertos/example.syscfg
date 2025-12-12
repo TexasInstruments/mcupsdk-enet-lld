@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263x_beta" --part "AM263x" --package "ZCZ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2631-Q1" --package "NFBGA (ZCZ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.26.0+4407"}
  */
 
 /**
@@ -235,7 +235,6 @@ enet_cpsw1.LargePoolPktCount            = 32;
 enet_cpsw1.macOnlyEn_hostPort           = true;
 enet_cpsw1.macOnlyEn_macPort1           = true;
 enet_cpsw1.macOnlyEn_macPort2           = true;
-enet_cpsw1.hostportRxCsumOffloadEn      = false;
 enet_cpsw1.cptsHostRxTsEn               = false;
 enet_cpsw1.MDIO.$assign                 = "MDIO";
 enet_cpsw1.MDIO.MDIO_MDIO.$assign       = "MDIO_MDIO";
