@@ -248,7 +248,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     {
         case ENET_MAC_PORT_1:
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
-            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII1_ID_MODE, `Number(cpsw_instance.disableRgmiiIntDelay1)`U);
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII1_ID_MODE, `Number(cpsw_instance.enableRgmiiIntDelay1)`U);
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
 % } else if (cpsw_instance.phyToMacInterfaceMode == "RMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
@@ -258,7 +258,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
             break;
         case ENET_MAC_PORT_2:
 %if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
-            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII2_ID_MODE, `Number(cpsw_instance.disableRgmiiIntDelay2)`U);
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII2_ID_MODE, `Number(cpsw_instance.enableRgmiiIntDelay2)`U);
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
 % } else if (cpsw_instance.phyToMacInterfaceMode == "RMII") {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);

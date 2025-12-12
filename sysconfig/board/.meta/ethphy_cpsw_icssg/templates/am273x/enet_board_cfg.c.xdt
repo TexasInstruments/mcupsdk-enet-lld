@@ -210,7 +210,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     {
         case ENET_MAC_PORT_1:
 %if (cpsw_instance.phyToMacInterfaceMode == "MSS_RGMII") {
-            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_CPSW_CONTROL_RGMII1_ID_MODE, `Number(cpsw_instance.disableRgmiiIntDelay1)`U);
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_CPSW_CONTROL_RGMII1_ID_MODE, `Number(cpsw_instance.enableRgmiiIntDelay1)`U);
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
 % } else {
             CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
