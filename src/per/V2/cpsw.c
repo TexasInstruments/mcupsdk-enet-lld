@@ -1863,16 +1863,9 @@ static int32_t Cpsw_registerIoctlHandler(EnetPer_Handle hPer,
             Enet_assert(portNum < EnetSoc_getMacPortMax(hCpsw->enetPer.enetType, hCpsw->enetPer.instId),
                         "Invalid Port Id: %u\r\n", portNum);
 
-            EnetPhy_Handle hPhy = hCpsw->hPhy[portNum];
-
-            if (hPhy != NULL)
-            {
-                status = EnetPhyMdioDflt_ioctl(hCpsw->hPhy[portNum], ENET_PHY_IOCTL_REGISTER_HANDLER, prms);
-            }
-            else
-            {
-                status = ENET_EFAIL;
-            }
+            /* Phy Handle is not used in EnetPhyMdioDflt_ioctl and hPhy will be NULL If only macport2 is enabled
+             * because macport is hardcoded to ENET_MAC_PORT_FIRST. So Phy Handle NULL check is not needed here */
+            status = EnetPhyMdioDflt_ioctl(hCpsw->hPhy[portNum], ENET_PHY_IOCTL_REGISTER_HANDLER, prms);
         }
         break;
 
