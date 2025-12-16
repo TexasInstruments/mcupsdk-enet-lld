@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263Px" --part "AM263P4" --package "ZCZ_S" --context "r5fss0-1" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM263P4-Q1" --package "NFBGA (ZCZ-S)" --context "r5fss0-1" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.25.0+4268"}
+ * @versions {"tool":"1.26.0+4407"}
  */
 
 /**
@@ -231,17 +231,9 @@ enet_cpsw1.BoardType             = "am263px-cc-addon-ind";
 enet_cpsw1.macport2LinkSpeed     = "ENET_SPEED_100MBIT";
 enet_cpsw1.macport2LinkDuplexity = "ENET_DUPLEX_FULL";
 enet_cpsw1.macport2LoopbackMode  = "LOOPBACK_MODE_PHY";
-enet_cpsw1.phyToMacInterfaceMode = "RMII";
+enet_cpsw1.phyToMacInterfaceMode2 = "RMII";
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
-enet_cpsw1.RMII2.RXD0.$used      = false;
-enet_cpsw1.RMII2.RXD1.$used      = false;
-enet_cpsw1.RMII2.RX_ER.$used     = false;
-enet_cpsw1.RMII2.TXD0.$used      = false;
-enet_cpsw1.RMII2.TXD1.$used      = false;
-enet_cpsw1.RMII2.CRS_DV.$used    = false;
-enet_cpsw1.RMII2.REF_CLK.$used   = false;
-enet_cpsw1.RMII2.TX_EN.$used     = false;
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
@@ -258,13 +250,13 @@ i2c2.I2C.$suggestSolution                 = "I2C2";
 enet_cpsw1.MDIO.$suggestSolution          = "MDIO";
 enet_cpsw1.MDIO.MDC.$suggestSolution      = "MDIO_MDC";
 enet_cpsw1.MDIO.MDIO.$suggestSolution     = "MDIO_MDIO";
-enet_cpsw1.RMII1.$suggestSolution         = "RMII2";
-enet_cpsw1.RMII1.RXD0.$suggestSolution    = "PR0_PRU0_GPIO0";
-enet_cpsw1.RMII1.RXD1.$suggestSolution    = "PR0_PRU0_GPIO1";
-enet_cpsw1.RMII1.RX_ER.$suggestSolution   = "PR0_PRU0_GPIO5";
-enet_cpsw1.RMII1.TXD0.$suggestSolution    = "PR0_PRU0_GPIO11";
-enet_cpsw1.RMII1.TXD1.$suggestSolution    = "PR0_PRU0_GPIO12";
-enet_cpsw1.RMII1.CRS_DV.$suggestSolution  = "PR0_PRU0_GPIO10";
-enet_cpsw1.RMII1.REF_CLK.$suggestSolution = "PR0_PRU0_GPIO6";
-enet_cpsw1.RMII1.TX_EN.$suggestSolution   = "PR0_PRU0_GPIO15";
-enet_cpsw1.RMII2.$suggestSolution         = "RMII1";
+enet_cpsw1.RMII2.$suggestSolution        = "RMII2";
+enet_cpsw1.RMII2.RXD0.$suggestSolution    = "PR0_PRU0_GPIO0";
+enet_cpsw1.RMII2.RXD1.$suggestSolution    = "PR0_PRU0_GPIO1";
+enet_cpsw1.RMII2.RX_ER.$suggestSolution   = "PR0_PRU0_GPIO5";
+enet_cpsw1.RMII2.TXD0.$suggestSolution    = "PR0_PRU0_GPIO11";
+enet_cpsw1.RMII2.TXD1.$suggestSolution    = "PR0_PRU0_GPIO12";
+enet_cpsw1.RMII2.CRS_DV.$suggestSolution  = "PR0_PRU0_GPIO10";
+enet_cpsw1.RMII2.REF_CLK.$suggestSolution = "PR0_PRU0_GPIO6";
+enet_cpsw1.RMII2.TX_EN.$suggestSolution   = "PR0_PRU0_GPIO15";
+enet_cpsw1.RMII2.$suggestSolution        = "RMII2";

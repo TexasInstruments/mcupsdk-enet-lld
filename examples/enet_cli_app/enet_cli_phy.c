@@ -81,8 +81,6 @@ static bool EnetCli_readPhyRegs(char *writeBuffer, size_t writeBufferLen,
 
 uint32_t EnetBoard_getId(void);
 
-void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort);
-
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */

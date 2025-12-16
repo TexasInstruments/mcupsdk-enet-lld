@@ -165,7 +165,7 @@ void EnetCLI_mainTask(void *args)
     /* Start of CLI application */
     UART_writeCLI("---------------------------------------\r\n");
     UART_writeCLI(
-            "\nCLI for AM243x\r\nUse 'help' to list all available commands\r\n");
+            "\r\nUse 'help' to list all available commands\r\n");
 
     /* Continuously take commands from the user and process the commands till application quits */
     while (inTerminal)

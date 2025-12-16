@@ -3,41 +3,43 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263Px" --part "AM263P4" --package "ZCZ_S" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM263P4-Q1" --package "NFBGA (ZCZ-S)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.26.0+4407"}
  */
 
 /**
  * Import the modules used in this configuration.
  */
-const eeprom     = scripting.addModule("/board/eeprom/eeprom", {}, false);
-const eeprom1    = eeprom.addInstance();
-const i2c        = scripting.addModule("/drivers/i2c/i2c", {}, false);
-const i2c1       = i2c.addInstance();
-const i2c2       = i2c.addInstance();
-const debug_log  = scripting.addModule("/kernel/dpl/debug_log");
-const dpl_cfg    = scripting.addModule("/kernel/dpl/dpl_cfg");
-const mpu_armv7  = scripting.addModule("/kernel/dpl/mpu_armv7", {}, false);
-const mpu_armv71 = mpu_armv7.addInstance();
-const mpu_armv72 = mpu_armv7.addInstance();
-const mpu_armv73 = mpu_armv7.addInstance();
-const mpu_armv74 = mpu_armv7.addInstance();
-const mpu_armv75 = mpu_armv7.addInstance();
-const general    = scripting.addModule("/memory_configurator/general", {}, false);
-const general1   = general.addInstance();
-const region     = scripting.addModule("/memory_configurator/region", {}, false);
-const region1    = region.addInstance();
-const section    = scripting.addModule("/memory_configurator/section", {}, false);
-const section1   = section.addInstance();
-const section2   = section.addInstance();
-const section3   = section.addInstance();
-const section4   = section.addInstance();
-const section5   = section.addInstance();
-const section6   = section.addInstance();
-const section7   = section.addInstance();
-const section8   = section.addInstance();
-const section9   = section.addInstance();
-const enet_cpsw  = scripting.addModule("/networking/enet_cpsw/enet_cpsw", {}, false);
-const enet_cpsw1 = enet_cpsw.addInstance();
+const eeprom             = scripting.addModule("/board/eeprom/eeprom", {}, false);
+const eeprom1            = eeprom.addInstance();
+const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
+const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance();
+const i2c                = scripting.addModule("/drivers/i2c/i2c", {}, false);
+const i2c1               = i2c.addInstance();
+const i2c2               = i2c.addInstance();
+const debug_log          = scripting.addModule("/kernel/dpl/debug_log");
+const dpl_cfg            = scripting.addModule("/kernel/dpl/dpl_cfg");
+const mpu_armv7          = scripting.addModule("/kernel/dpl/mpu_armv7", {}, false);
+const mpu_armv71         = mpu_armv7.addInstance();
+const mpu_armv72         = mpu_armv7.addInstance();
+const mpu_armv73         = mpu_armv7.addInstance();
+const mpu_armv74         = mpu_armv7.addInstance();
+const mpu_armv75         = mpu_armv7.addInstance();
+const general            = scripting.addModule("/memory_configurator/general", {}, false);
+const general1           = general.addInstance();
+const region             = scripting.addModule("/memory_configurator/region", {}, false);
+const region1            = region.addInstance();
+const section            = scripting.addModule("/memory_configurator/section", {}, false);
+const section1           = section.addInstance();
+const section2           = section.addInstance();
+const section3           = section.addInstance();
+const section4           = section.addInstance();
+const section5           = section.addInstance();
+const section6           = section.addInstance();
+const section7           = section.addInstance();
+const section8           = section.addInstance();
+const section9           = section.addInstance();
+const enet_cpsw          = scripting.addModule("/networking/enet_cpsw/enet_cpsw", {}, false);
+const enet_cpsw1         = enet_cpsw.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -216,27 +218,16 @@ enet_cpsw1.DisableMacPort1        = true;
 enet_cpsw1.LargePoolPktCount      = 32;
 enet_cpsw1.PktInfoOnlyEnable      = true;
 enet_cpsw1.cptsHostRxTsEn         = false;
-enet_cpsw1.RGMII2.RD0.$used       = false;
-enet_cpsw1.RGMII2.RD1.$used       = false;
-enet_cpsw1.RGMII2.RD2.$used       = false;
-enet_cpsw1.RGMII2.RD3.$used       = false;
-enet_cpsw1.RGMII2.RX_CTL.$used    = false;
-enet_cpsw1.RGMII2.RXC.$used       = false;
-enet_cpsw1.RGMII2.TD0.$used       = false;
-enet_cpsw1.RGMII2.TD1.$used       = false;
-enet_cpsw1.RGMII2.TD2.$used       = false;
-enet_cpsw1.RGMII2.TD3.$used       = false;
-enet_cpsw1.RGMII2.TX_CTL.$used    = false;
-enet_cpsw1.RGMII2.TXC.$used       = false;
+enet_cpsw1.phyToMacInterfaceMode2 = "RMII";
 enet_cpsw1.txDmaChannel[0].$name  = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name  = "ENET_DMA_RX_CH0";
 enet_cpsw1.netifInstance.create(1);
 enet_cpsw1.netifInstance[0].$name = "NETIF_INST_ID0";
 
-const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
-const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);
-ethphy_cpsw_icssg1.$name = "CONFIG_ENET_ETHPHY1";
-enet_cpsw1.ethphy2       = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.$name     = "CONFIG_ENET_ETHPHY1";
+enet_cpsw1.ethphy2           = ethphy_cpsw_icssg1;
+ethphy_cpsw_icssg1.phySelect = "DP83826";
+ethphy_cpsw_icssg1.phyAddr   = 1;
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
@@ -246,17 +237,12 @@ enet_cpsw1.ethphy2       = ethphy_cpsw_icssg1;
 enet_cpsw1.MDIO.$suggestSolution          = "MDIO";
 enet_cpsw1.MDIO.MDC.$suggestSolution      = "MDIO_MDC";
 enet_cpsw1.MDIO.MDIO.$suggestSolution     = "MDIO_MDIO";
-enet_cpsw1.RGMII1.$suggestSolution        = "RGMII2";
-enet_cpsw1.RGMII1.RD0.$suggestSolution    = "PR0_PRU0_GPIO0";
-enet_cpsw1.RGMII1.RD1.$suggestSolution    = "PR0_PRU0_GPIO1";
-enet_cpsw1.RGMII1.RD2.$suggestSolution    = "PR0_PRU0_GPIO2";
-enet_cpsw1.RGMII1.RD3.$suggestSolution    = "PR0_PRU0_GPIO3";
-enet_cpsw1.RGMII1.RX_CTL.$suggestSolution = "PR0_PRU0_GPIO4";
-enet_cpsw1.RGMII1.RXC.$suggestSolution    = "PR0_PRU0_GPIO6";
-enet_cpsw1.RGMII1.TD0.$suggestSolution    = "PR0_PRU0_GPIO11";
-enet_cpsw1.RGMII1.TD1.$suggestSolution    = "PR0_PRU0_GPIO12";
-enet_cpsw1.RGMII1.TD2.$suggestSolution    = "PR0_PRU0_GPIO13";
-enet_cpsw1.RGMII1.TD3.$suggestSolution    = "PR0_PRU0_GPIO14";
-enet_cpsw1.RGMII1.TX_CTL.$suggestSolution = "PR0_PRU0_GPIO15";
-enet_cpsw1.RGMII1.TXC.$suggestSolution    = "PR0_PRU0_GPIO16";
-enet_cpsw1.RGMII2.$suggestSolution        = "RGMII1";
+enet_cpsw1.RMII2.$suggestSolution         = "RMII2";
+enet_cpsw1.RMII2.RXD0.$suggestSolution    = "PR0_PRU0_GPIO0";
+enet_cpsw1.RMII2.RXD1.$suggestSolution    = "PR0_PRU0_GPIO1";
+enet_cpsw1.RMII2.RX_ER.$suggestSolution   = "PR0_PRU0_GPIO5";
+enet_cpsw1.RMII2.TXD0.$suggestSolution    = "PR0_PRU0_GPIO11";
+enet_cpsw1.RMII2.TXD1.$suggestSolution    = "PR0_PRU0_GPIO12";
+enet_cpsw1.RMII2.CRS_DV.$suggestSolution  = "PR0_PRU0_GPIO10";
+enet_cpsw1.RMII2.REF_CLK.$suggestSolution = "PR0_PRU0_GPIO6";
+enet_cpsw1.RMII2.TX_EN.$suggestSolution   = "PR0_PRU0_GPIO15";
