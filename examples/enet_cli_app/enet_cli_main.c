@@ -143,6 +143,10 @@ void EnetCLI_mainTask(void *args)
     /* Initialize UART transaction */
     UART_Transaction_init(&UART_trans);
 
+    UART_writeCLI("\r\n=======================================================\r\n");
+    UART_writeCLI("                   Enet Cli Application                \r\n");
+    UART_writeCLI("=======================================================\r\n");
+
     /* Initialize Enet Drivers */
     EnetApp_init();
 
