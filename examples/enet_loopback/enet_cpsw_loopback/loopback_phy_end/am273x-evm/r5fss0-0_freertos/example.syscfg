@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM273x" --part "Default" --package "ZCE" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2732-Q1" --package "NFBGA (ZCE)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.25.0+4268"}
  */
 
 /**
@@ -249,8 +249,8 @@ section11.output_section[0].input_section[0].$name           = " ";
 
 enet_cpsw1.$name                 = "CONFIG_ENET_CPSW0";
 enet_cpsw1.cptsHostRxTsEn        = false;
-enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_MAC";
 enet_cpsw1.phyToMacInterfaceMode = "MSS_RGMII";
+enet_cpsw1.macport1LoopbackMode  = "LOOPBACK_MODE_PHY";
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
 
