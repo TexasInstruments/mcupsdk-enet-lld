@@ -188,16 +188,32 @@ static const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *e
     return found ? ethPortCfg : NULL;
 }
 
-void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii)
+void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
-%if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
-    mii->layerType      = ENET_MAC_LAYER_GMII;
-    mii->variantType    = ENET_MAC_VARIANT_FORCED;
-% } else {
-    mii->layerType      = ENET_MAC_LAYER_MII;
-    mii->variantType  = ENET_MAC_VARIANT_NONE;
+    switch(macPort){
+%let cp_info = cpswScript.getCpswInstInfo(cpsw_instance); 
+%let macPortList = cp_info.macPortList
+%for (const macPort of macPortList){
+        case `macPort`:
 %}
-    mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+%   let interfaceMode = cpsw_instance.phyToMacInterfaceMode;
+%   if (interfaceMode == "RGMII") {
+            mii->layerType      = ENET_MAC_LAYER_GMII;
+            mii->variantType    = ENET_MAC_VARIANT_FORCED;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+%   } else if (interfaceMode == "RMII") {
+            mii->layerType      = ENET_MAC_LAYER_MII;
+            mii->variantType  = ENET_MAC_VARIANT_NONE;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+%   } else if (interfaceMode == "MII") {
+            mii->layerType      = ENET_MAC_LAYER_MII;
+            mii->variantType  = ENET_MAC_VARIANT_NONE;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_STANDARD;
+%   }
+            break;
+        default:
+            break;
+    }
 }
 
 int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,

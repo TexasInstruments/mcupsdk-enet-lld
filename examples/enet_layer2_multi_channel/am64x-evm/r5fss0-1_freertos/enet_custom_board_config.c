@@ -356,11 +356,18 @@ uint32_t EnetBoard_getId(void)
     return ENETBOARD_AM64X_AM243X_EVM;
 }
 
-void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii)
+void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
-    mii->layerType      =     ENET_MAC_LAYER_GMII;
-    mii->sublayerType   =     ENET_MAC_SUBLAYER_REDUCED;
-    mii->variantType    =     ENET_MAC_VARIANT_FORCED;
+    switch(macPort){
+        case ENET_MAC_PORT_1:
+        case ENET_MAC_PORT_2:
+            mii->layerType      =     ENET_MAC_LAYER_GMII;
+            mii->sublayerType   =     ENET_MAC_SUBLAYER_REDUCED;
+            mii->variantType    =     ENET_MAC_VARIANT_FORCED;
+            break;
+        default:
+            break;
+    }
 }
 
 #endif /* #if (ENETBOARD_SYSCFG_CUSTOM_BOARD == 1) */

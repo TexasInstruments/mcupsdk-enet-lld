@@ -664,11 +664,7 @@ static void EnetApp_initLinkArgs(const Enet_Type enetType,
     /* Set port link params */
     EnetApp_getMacPortInitConfig(pLinkArgs->macCfg, macPort);
     pLinkArgs->macPort = macPort;
-%if((device == 'am64x-evm' || device == 'am243x-lp' || device == 'am243x-evm' ||device == 'am263x-cc' || device == 'am263x-lp') || (device == 'am263px-cc' || device == 'am263px-lp' || device == 'am261x-som' || device == 'am261x-lp')){
     EnetBoard_getMiiConfig(&pLinkArgs->mii, macPort);
-%}else{
-    EnetBoard_getMiiConfig(&pLinkArgs->mii);
-%}
     EnetApp_getMacPortLinkCfg(pLinkCfg, macPort);
 
     if (pLinkArgs->macCfg != NULL)

@@ -271,7 +271,7 @@ static void EnetApp_initExtPhyArgs(Enet_Type enetType,
     ethPort.macPort  = macPort;
     ethPort.boardId  = EnetBoard_getId();
     ethPort.enetType = enetType;
-    EnetBoard_getMiiConfig(&ethPort.mii);
+    EnetBoard_getMiiConfig(&ethPort.mii, macPort);
     *mii = (EnetExtPhy_Mii) EnetUtils_macToPhyMii(&ethPort.mii);
 
     boardPhyCfg = EnetBoard_getPhyCfg(&ethPort);
