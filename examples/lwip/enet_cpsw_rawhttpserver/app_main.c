@@ -206,7 +206,10 @@ static void App_handleEvent(const uint32_t eventMask)
 
     if (AppEventId_NETIFMNGR_POLL & eventMask)
     {
-        LWIPIF_LWIP_periodic_polling(g_pNetif[ENET_SYSCFG_NETIF_COUNT - 1]);
+        for (uint32_t i = 0U; i < ENET_SYSCFG_NETIF_COUNT; i++)
+        {
+            LWIPIF_LWIP_periodic_polling(g_pNetif[NETIF_INST_ID0 + i]);
+        }
     }
 
     if ( AppEventId_NETIFMNGR_TXPKT & eventMask)
