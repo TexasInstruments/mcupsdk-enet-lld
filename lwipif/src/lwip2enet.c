@@ -1276,7 +1276,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 Lwip2Enet_assert(hPbufPacket != NULL);
                 Lwip2Enet_assert(hPbufPacket->payload != NULL);
                 struct ip_hdr* pIpPkt = (struct ip_hdr* ) LWIPIF_LWIP_getIpPktStart((uint8_t*) hPbufPacket->payload);
-                if (IPH_PROTO(pIpPkt) == IP_PROTO_UDPLITE)
+                if (LWIPIF_LWIP_isIpPkt((uint8_t*) hPbufPacket->payload) && (IPH_PROTO(pIpPkt) == IP_PROTO_UDPLITE))
                 {
                     /* As HW is can not compute checksum offload for UDP-lite packet, trigger SW checksum validation */
                     isChksumError = LWIPIF_LWIP_UdpLiteValidateChkSum(hPbufPacket);

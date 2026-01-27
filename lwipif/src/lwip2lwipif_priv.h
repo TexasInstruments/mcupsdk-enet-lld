@@ -86,6 +86,8 @@ bool LWIPIF_LWIP_UdpLiteValidateChkSum(struct pbuf *p);
 
 uint8_t* LWIPIF_LWIP_getIpPktStart(uint8_t* pEthpkt);
 
+bool LWIPIF_LWIP_isIpPkt(uint8_t* pEthpkt);
+
 /* ========================================================================== */
 /*                        Deprecated Function Declarations                    */
 /* ========================================================================== */

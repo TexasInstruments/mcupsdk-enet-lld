@@ -97,7 +97,7 @@
 
 /*---------------- */
 /* Ethernet Header */
-#define ETHHDR_SIZE     14
+#define ETHHDR_SIZE           (14U)
 
 /*---------------------------------------------------------------------------*\
  |                             Function Definitions                           |
@@ -111,6 +111,31 @@ inline uint8_t* LWIPIF_LWIP_getIpPktStart(uint8_t* pEthpkt)
                                          (SIZEOF_ETH_HDR + SIZEOF_VLAN_HDR) : (SIZEOF_ETH_HDR);
 
     return &pEthpkt[ipPacketStartOffset];
+}
+
+inline bool LWIPIF_LWIP_isIpPkt(uint8_t* pEthpkt)
+{
+    bool isIP = false;
+
+    if (pEthpkt != NULL)
+    {
+        uint16_t type = ((struct eth_hdr*)pEthpkt)->type;
+
+        if (type == PP_HTONS(ETHTYPE_VLAN))
+        {
+            /* 
+            Dst MAC + Src MAC + Vlan Tag = 16 Byte
+            Next two bytes are Ethernet type field 
+            Byte order is reversed to take care of 
+            endianness 
+            */
+            type = (pEthpkt[17] << 8) | pEthpkt[16];
+        }
+
+        isIP = (type == PP_HTONS(ETHTYPE_IP)||type == PP_HTONS(ETHTYPE_IPV6));
+    }
+
+    return isIP;
 }
 
 static inline void LWIPIF_LWIP_getSrcIp(uint8_t *pIpPkt, ip_addr_t* pIpAddr)
