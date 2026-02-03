@@ -111,7 +111,7 @@
 #endif
 #if defined(SOC_J722S)
 #define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
-#define CPSW_ALE_3G_POLICERS_MAX                (96)
+#define CPSW_ALE_3G_POLICERS_MAX                (32U)
 #else
 #define CPSW_ALE_3G_ALE_ENTRIES_MAX             (512U)
 #define CPSW_ALE_3G_POLICERS_MAX                (32U)

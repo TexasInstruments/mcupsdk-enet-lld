@@ -459,6 +459,11 @@ function getDefaultNetifCount(instance)
 
 }
 
+function getNetifPacketDequeueMode(instance){
+    let enableTimerBasedPoll = (getNetifConfig(instance, 0).packetDequeueMode === "TimerBasedPolling") ? 1 : 0;
+    return enableTimerBasedPoll;
+}
+
 function getDefaultNetifIdx(instance)
 {
     let defaultNetifIdx = -1;
@@ -649,7 +654,7 @@ function getCpuInfo() {
                                [
                                  ['CSL_CORE_ID_MCU_R5FSS0_0',{subsystem: "MCU_R5FSS",
                                   clusternum: "0", core: "0"}],
-                                 ['CSL_CORE_ID_WKUP_R5FSS0_0',{subsystem: "WKUP-R5FSS",
+                                 ['CSL_CORE_ID_WKUP_R5FSS0_0',{subsystem: "WKUP_R5FSS",
                                   clusternum: "0", core: "0"}],
                                  ['CSL_CORE_ID_MAIN_R5FSS0_0',{subsystem: "R5FSS",
                                   clusternum: "0", core: "0"}],
@@ -678,14 +683,14 @@ function getEnetCoreIntNumPrefix() {
 	console.log(coreInfo)
 
     if ((common.getSelfSysCfgCoreName().includes("mcu-r5f"))) {
-        return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_INTR_`
+        return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_CPU0_INTR_`
     }
     if ((common.getSelfSysCfgCoreName().includes("main-r5f"))) {
         return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_INTR_`
     }
 
     if(common.getSelfSysCfgCoreName().includes("wkup-r5f")) {
-        return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}INTR_`
+        return `CSLR_${coreInfo.subsystem}${coreInfo.clusternum}_CORE${coreInfo.core}_INTR_`
     }
 }
 
@@ -837,6 +842,7 @@ let enet_cpsw_module = {
     getChannelConfig,
     getNetifCount,
     getNetifConfig,
+    getNetifPacketDequeueMode,
     getDefaultNetifIdx,
     getDefaultPacketCount,
     getMiiConfig,

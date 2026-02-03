@@ -60,6 +60,7 @@
 #endif
 #include <drivers/udma.h>
 
+#include <drivers/dmautils/csl/csl_udmap.h>
 #include "enet_udma_priv.h"
 /* hack to access gUdmaTxMappedChRingAttributes */
 #include "drivers/udma/udma_priv.h"

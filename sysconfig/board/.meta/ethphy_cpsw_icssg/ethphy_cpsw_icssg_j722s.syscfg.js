@@ -78,6 +78,7 @@ function getPhyInfo(peripheral)
 			{deviceName: "am62d-evm (DP83TG721 PHY)", defaultPhy1:"DP83TG721", defaultPhyAddr1: 0, defaultPhy2:"DP83TG721", defaultPhyAddr2: 5},
             {deviceName: "am62px-sk", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
             {deviceName: "j722s-evm", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
+            {deviceName: "j722s-sk", defaultPhy1:"DP83867", defaultPhyAddr1: 0, defaultPhy2:"DP83867", defaultPhyAddr2: 1},
 		];
     if(peripheral === "am62d-evm (DP83TG721 PHY)"){
         return cpswPhyInfoMap.find(element => element.deviceName === device);

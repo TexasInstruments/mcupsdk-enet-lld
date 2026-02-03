@@ -31,32 +31,38 @@
  */
 
 /*!
- * \file  enet_utils_dflt.c
+ * \file     enet_apprm.h
  *
- * \brief This file contains a default implementation of the Enet Utils.
+ * \brief    This file contains the RM specific utility function implementations.
  */
+
+#ifndef ENETEXTPHY_PHYMDIO_DFLT_H_
+#define ENETEXTPHY_PHYMDIO_DFLT_H_
 
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
 
-#include <stdint.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <assert.h>
-#include <kernel/dpl/ClockP.h>
-#include <include/common/enet_utils_dflt.h>
-#include <drivers/soc.h>
-#include <kernel/nortos/dpl/common/printf.h>
+#include "enetextphy.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* ========================================================================== */
-/*                           Macros & Typedefs                                */
+/*                                 Macros                                     */
 /* ========================================================================== */
 
 /* None */
 
 /* ========================================================================== */
-/*                         Structure Declarations                             */
+/*                         Structures and Enums                               */
+/* ========================================================================== */
+
+/* None */
+
+/* ========================================================================== */
+/*                         Global Variables Declarations                      */
 /* ========================================================================== */
 
 /* None */
@@ -65,67 +71,31 @@
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static void EnetUtilsDflt_print(const char *fmt, ...);
+/*!
+ * \brief Get handle to the default Enet MDIO implementation.
+ *
+ * Gets a handle to the default EnetExtPhy MDIO driver implementation which is
+ * based on the Enet MDIO module.
+ *
+ * \return Handle to the Enet based MDIO default implementation.
+  */
+EnetExtPhy_MdioHandle EnetExtPhyMdioDflt_getPhyMdio(void);
 
-static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
-                                             void *appData);
-
-static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
-                                          void *appData);
 
 /* ========================================================================== */
-/*                            Global Variables                                */
+/*                        Deprecated Function Declarations                    */
 /* ========================================================================== */
 
 /* None */
 
 /* ========================================================================== */
-/*                          Function Definitions                              */
+/*                       Static Function Definitions                          */
 /* ========================================================================== */
 
-void EnetUtilsDflt_initCfg(EnetUtils_Cfg *cfg)
-{
-    cfg->print = EnetUtilsDflt_print;
-    cfg->virtToPhys = &EnetUtilsDflt_virtToPhysDflt;
-    cfg->physToVirt = &EnetUtilsDflt_physToVirtDflt;
+/* None */
+
+#ifdef __cplusplus
 }
-
-static void EnetUtilsDflt_print(const char *fmt, ...)
-{
-    char buf[ENET_CFG_PRINT_BUF_LEN];
-    va_list args;
-
-#if ENET_CFG_IS_ON(DEV_ERROR)
-    if (ENET_CFG_PRINT_BUF_LEN < strlen(fmt))
-    {
-        assert(false);
-    }
 #endif
 
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    DebugP_log("%s",buf);
-    va_end(args);
-}
-
-static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
-                                             void *appData)
-{
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX) || defined (SOC_J722S)
-    /*!TODO: have SOC_virtToPhy function for AM62AX */
-    return ((uint64_t)(virtAddr));
-#else
-    return ((uint64_t)SOC_virtToPhy((void *)virtAddr));
-#endif
-}
-
-static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
-                                          void *appData)
-{
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX) || defined (SOC_J722S)
-    /*!TODO: have SOC_phyToVirt function for AM62AX */
-    return ((void*)(phyAddr));
-#else
-    return ((void*) SOC_phyToVirt(phyAddr));
-#endif
-}
+#endif /* ENETEXTPHY_PHYMDIO_DFLT_H_ */
