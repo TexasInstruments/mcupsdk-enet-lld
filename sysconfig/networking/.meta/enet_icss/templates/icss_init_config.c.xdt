@@ -9,11 +9,6 @@
 % let soc = common.getSocName();
 % let enetutilsScript = system.getScript("./../../common/enet_cpsw_utils");
 
-
-% /* Import HSR PRP headers incase we are in HSR-PRP mode (used by ICSDK only) */
-`icsdk.importHsrHeaders(instances)`
-`icsdk.importPrpHeaders(instances)`
-
 #include <include/per/icssg.h>
 #include <include/mod/icssg_timesync.h>
 #include <include/core/enet_dma.h>
