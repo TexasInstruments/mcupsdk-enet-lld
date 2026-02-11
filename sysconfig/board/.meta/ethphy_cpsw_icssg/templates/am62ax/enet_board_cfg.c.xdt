@@ -192,7 +192,7 @@ static const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *e
 void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
     switch(macPort){
-%let cp_info = cpswScript.getCpswInstInfo(cpsw_instance); 
+%let cp_info = cpswScript.getCpswInstInfo(cpsw_instance);
 %let macPortList = cp_info.macPortList
 %for (const macPort of macPortList){
         case `macPort`:
@@ -274,6 +274,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
 {
+% if (cpsw_instance.macAddrConfig === "Auto Assign" ) {
     int32_t status = ENET_SOK;
     uint32_t macAddrCnt;
     uint32_t i;
@@ -308,6 +309,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
         EnetAppUtils_print("EnetBoard_getMacAddrList Failed - IDK not present\n");
         EnetAppUtils_assert(false);
     }
+%}
 }
 
 #define IO_EXP1_ADDR    0x22U
