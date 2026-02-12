@@ -20,6 +20,55 @@ function getDefaultNetifCount()
     }
     return defaultNetifCount;
 }
+function getNetifProxyArpRxCh()
+{
+    var ret = '{';
+    for(let i = 0; i < module.$instances.length; i++)
+     {
+        let instance = module.$instances[i];
+        for (let Idx = 0; Idx < module.getNetifCount(instance); Idx++)
+        {
+            let rxCh = module.getNetifConfig(instance,Idx).proxyArpRxDmaChNum
+
+            ret += '{';
+            if(module.getNetifConfig(instance,Idx).enableProxyArp == false)
+            {
+                ret += -1 + ',' + '},';
+            }
+            else
+            {
+            }
+            ret += module.getChannelConfig(instance, "RX", rxCh[0]).$name.toUpperCase() + '},';
+        }
+     }
+    ret += '}';
+    return ret;
+}
+
+function getNetifVepaRxCh()
+{
+    var ret = '{';
+    for(let i = 0; i < module.$instances.length; i++)
+     {
+        let instance = module.$instances[i];
+        for (let Idx = 0; Idx < module.getNetifCount(instance); Idx++)
+        {
+            let rxCh = module.getNetifConfig(instance,Idx).VepaRxDmaChNum
+
+            ret += '{';
+            if(module.getNetifConfig(instance,Idx).enableVepa == false)
+            {
+                ret += -1 + ',' + '},';
+            }
+            else
+            {
+                ret += module.getChannelConfig(instance, "RX", rxCh[0]).$name.toUpperCase() + '},';
+            }
+        }
+     }
+    ret += '}';
+    return ret;
+}
 
 function getTotalNetIfCount(instances)
 {
@@ -110,8 +159,8 @@ function validate(instance, report)
             report.logError(`DUAL MAC case should have only one default netif`, instance, "netifInstance");
         }
     }
-     for(let i = 0; i < module.$instances.length; i++)
-     {
+    for(let i = 0; i < module.$instances.length; i++)
+    {
         for (let Idx = 0; Idx < module.getNetifCount(module.$instances[i]); Idx++)
         {
             let rxCh = module.getNetifConfig(module.$instances[i],Idx).rxDmaChNum;
@@ -119,20 +168,72 @@ function validate(instance, report)
             {
                if( rxCh[j] >= module.getRxChannelCount(module.$instances[i]) )
                {
-                    report.logError(`Incorrect Rx channel`, instance);
+                    report.logError(`Selected Rx channel is not open`, instance);
                }
             }
-            
+
             let txCh = module.getNetifConfig(module.$instances[i],Idx).txDmaChNum;
             for (let j = 0; j < txCh.length; j++)
             {
                if( txCh[j] >= module.getTxChannelCount(module.$instances[i]) )
                {
-                    report.logError(`Incorrect Tx channel`, instance);
+                    report.logError(`Selected Tx channel is not open`, instance);
                }
             }
+
+            let proxyArpRxCh = module.getNetifConfig(module.$instances[i],Idx).proxyArpRxDmaChNum;
+            let isProxyArpEnabled = module.getNetifConfig(module.$instances[i],Idx).enableProxyArp;
+
+            if( (proxyArpRxCh.length == 0) &&(isProxyArpEnabled == true) )
+            {
+                report.logError(`Rx Channel is not allocated for Proxy ARP`, instance);
+            }
+
+            if( proxyArpRxCh.length > 1 )
+            {
+                report.logError(`Only one Rx Channel is to be allocated to Proxy ARP`, instance);
+            }
+
+            for (let j = 0; j < txCh.length; j++)
+            {
+                if( proxyArpRxCh[j] == 0 )
+                {
+                     report.logError(`Proxy ARP Rx channel cannot be default rx channel`, instance);
+                }
+
+                if( proxyArpRxCh[j] >= module.getRxChannelCount(module.$instances[i]) )
+                {
+                     report.logError(`Selected Proxy ARP Rx channel is not open`, instance);
+                }
+            }
+
+            let vepaRxCh = module.getNetifConfig(module.$instances[i],Idx).VepaRxDmaChNum;
+            let isVepaEnabled = module.getNetifConfig(module.$instances[i],Idx).enableVepa;
+
+            if( (vepaRxCh.length == 0) &&(isVepaEnabled == true) )
+            {
+                report.logError(`Rx Channel is not allocated for Vepa`, instance);
+            }
+
+            if( vepaRxCh.length > 1 )
+            {
+                report.logError(`Only one Rx Channel is to be allocated to Vepa`, instance);
+            }
+
+            for (let j = 0; j < txCh.length; j++)
+            {
+                if( vepaRxCh[j] == 0 )
+                {
+                     report.logError(`Vepa Rx channel cannot be default rx channel`, instance);
+                }
+
+                if( vepaRxCh[j] >= module.getRxChannelCount(module.$instances[i]) )
+                {
+                     report.logError(`Selected Vepa Rx channel is not open`, instance);
+                }
+            }
         }
-     }
+    }
 }
 
 function getNetifRxCh()
@@ -206,6 +307,65 @@ let enet_cpsw_lwipif_netif_module = {
             minSelections: 0,
             options: _.keys(Array(16)).map((index)=>({name: index})),
         },
+        {
+            name: "packetDequeueMode",
+            description: "Whether to use Timer based dequeue method or interrupt based",
+            displayName: "Packet Dequeue Mode",
+            default: "TimerBasedPolling",
+            options: [
+                {
+                    name: "TimerBasedPolling",
+                },
+                {
+                    name: "INTERRUPT",
+                },
+            ],
+            hidden: false,
+        },
+        {
+            name: "enableProxyArp",
+            description: "Enable Proxy Arp for EthFw to respond to ARP messages on behalf of remote clients",
+            displayName: "Enable Proxy Arp for EthFw",
+            default    : false,
+            onChange:function (inst, ui) {
+                if(inst.enableProxyArp === false) {
+                    ui.proxyArpRxDmaChNum.hidden = true;
+                } else {
+                    ui.proxyArpRxDmaChNum.hidden = false;
+                }
+            },
+        },
+        {
+            name: "enableVepa",
+            description: "Enable MAC-VEPA for EthFw to emulate VEPA-like behaviour using mac-loopback",
+            displayName: "Enable MAC-VEPA for EthFw",
+            default    : false,
+            onChange:function (inst, ui) {
+                if(inst.enableVepa === false) {
+                    ui.VepaRxDmaChNum.hidden = true;
+                } else {
+                    ui.VepaRxDmaChNum.hidden = false;
+                }
+            },
+        },
+        {
+            name: "proxyArpRxDmaChNum",
+            description: "Rx DMA Used By Proxy ARP",
+            displayName: "Rx DMA Used By Proxy ARP",
+            hidden     : true,
+            default: Array.from(Array().keys()).map(String),
+            minSelections: 0,
+            options: _.keys(Array(16)).map((index)=>({name: index})),
+        },
+        {
+            name: "VepaRxDmaChNum",
+            description: "Rx DMA Used By MAC-VEPA",
+            displayName: "Rx DMA Used By MAC-VEPA",
+            hidden     : true,
+            default: Array.from(Array().keys()).map(String),
+            minSelections: 0,
+            options: _.keys(Array(16)).map((index)=>({name: index})),
+        },
     ],
     getTotalNetIfCount,
     getInstanceConfig,
@@ -215,6 +375,8 @@ let enet_cpsw_lwipif_netif_module = {
     getEnet2RxChIdMap,
     getEnet2TxChIdMap,
     getNetifRxCh,
+    getNetifProxyArpRxCh,
+    getNetifVepaRxCh,
     getNetifTxCh,
     validate: validate,
 };

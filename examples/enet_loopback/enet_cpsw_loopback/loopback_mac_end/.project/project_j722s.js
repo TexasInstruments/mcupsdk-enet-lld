@@ -66,7 +66,7 @@ const libs_freertos_r5f = {
         "freertos.j722s.r5f.ti-arm-clang.${ConfigName}.lib",
         "drivers.j722s.main-r5f.ti-arm-clang.${ConfigName}.lib",
         "board.j722s.r5f.ti-arm-clang.${ConfigName}.lib",
-        "enet-cpsw.j722s.main-r5f.ti-arm-clang.${ConfigName}.lib",
+        "enet-cpsw.j722s.r5f.ti-arm-clang.${ConfigName}.lib",
     ],
 };
 

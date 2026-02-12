@@ -100,6 +100,8 @@ static int32_t EnetApp_openDma(void);
 
 static void EnetApp_closeDma(void);
 
+static void EnetApp_printPacket(const char *prefix, EnetDma_Pkt *pktInfo, uint32_t pktNum);
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -369,6 +371,9 @@ static void EnetApp_txTask(void *args)
                                       ENET_PKTSTATE_APP_WITH_FREEQ,
                                       ENET_PKTSTATE_APP_WITH_DRIVER);
 
+                /* Print packet before enqueueing to TX DMA */
+                
+
                 /* Enqueue the packet for later transmission */
                 EnetQueue_enq(&txSubmitQ, &pktInfo->node);
 
@@ -386,6 +391,13 @@ static void EnetApp_txTask(void *args)
                 uint32_t txCnt = EnetQueue_getQCount(&txSubmitQ);
                 status = EnetDma_submitTxPktQ(gEnetLpbk.hTxCh,
                                               &txSubmitQ);
+                EnetApp_printPacket("[TX-ENQUEUE]", pktInfo, pktCnt);
+
+                if (status == ENET_SOK)
+                {
+                    EnetAppUtils_print("[TX-ENQUEUE] Successfully submitted %d packets to DMA\r\n", txCnt);
+                }
+
                 SemaphoreP_pend(&gEnetLpbk.txSemObj, SystemP_WAIT_FOREVER);
 
                 /* Retrieve TX free packets */
@@ -518,85 +530,90 @@ static bool EnetLpbk_verifyRxFrame(EnetDma_Pkt *pktInfo, uint8_t rxCnt)
 
 static void EnetApp_rxTask(void *args)
 {
-    EnetDma_Pkt *pktInfo;
-    EthFrame *frame;
-    uint32_t rxReadyCnt;
-    uint32_t loopCnt, loopRxPktCnt;
-    int32_t status = ENET_SOK;
-    uint32_t rxPktCnt;
+    // EnetDma_Pkt *pktInfo;
+    // EthFrame *frame;
+    // uint32_t rxReadyCnt;
+    // uint32_t loopCnt, loopRxPktCnt;
+    // int32_t status = ENET_SOK;
+    // uint32_t rxPktCnt;
 
-    gEnetLpbk.totalRxCnt = 0U;
+    // gEnetLpbk.totalRxCnt = 0U;
 
-    for (loopCnt = 0U; loopCnt < ENETLPBK_NUM_ITERATION; loopCnt++)
-    {
-        loopRxPktCnt = 0U;
-        rxPktCnt     = 0U;
-        /* Wait for packet reception */
-        do
-        {
-            SemaphoreP_pend(&gEnetLpbk.rxSemObj, SystemP_WAIT_FOREVER);
-            /* Get the packets received so far */
-            rxReadyCnt = EnetApp_receivePkts();
-            if (rxReadyCnt > 0U)
-            {
-                /* Consume the received packets and release them */
-                pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&gEnetLpbk.rxReadyQ);
-                while (NULL != pktInfo)
-                {
-                    rxPktCnt++;
-                    EnetDma_checkPktState(&pktInfo->pktState,
-                                          ENET_PKTSTATE_MODULE_APP,
-                                          ENET_PKTSTATE_APP_WITH_READYQ,
-                                          ENET_PKTSTATE_APP_WITH_FREEQ);
+    // for (loopCnt = 0U; loopCnt < ENETLPBK_NUM_ITERATION; loopCnt++)
+    // {
+    //     loopRxPktCnt = 0U;
+    //     rxPktCnt     = 0U;
+    //     /* Wait for packet reception */
+    //     do
+    //     {
+    //         SemaphoreP_pend(&gEnetLpbk.rxSemObj, SystemP_WAIT_FOREVER);
+    //         /* Get the packets received so far */
+    //         rxReadyCnt = EnetApp_receivePkts();
+    //         if (rxReadyCnt > 0U)
+    //         {
+    //             /* Consume the received packets and release them */
+    //             pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&gEnetLpbk.rxReadyQ);
+    //             while (NULL != pktInfo)
+    //             {
+    //                 rxPktCnt++;
+    //                 EnetDma_checkPktState(&pktInfo->pktState,
+    //                                       ENET_PKTSTATE_MODULE_APP,
+    //                                       ENET_PKTSTATE_APP_WITH_READYQ,
+    //                                       ENET_PKTSTATE_APP_WITH_FREEQ);
 
-                    /* Consume the packet by just printing its content */
-                    if (gEnetLpbk.printFrame)
-                    {
-                        uint32_t packetPrintLen;
+    //                 EnetAppUtils_print("[RX-DEQUEUE] Successfully dequeued packet #%d from DMA\r\n", rxPktCnt);
 
-                        frame = (EthFrame *)pktInfo->sgList.list[0].bufPtr;
-                        packetPrintLen = pktInfo->sgList.list[0].segmentFilledLen - sizeof(EthFrameHeader);
+    //                 /* Print packet after dequeueing from RX DMA */
+    //                 EnetApp_printPacket("[RX-DEQUEUE]", pktInfo, rxPktCnt);
 
-                        EnetAppUtils_printFrame(frame,
-                                                packetPrintLen);
-                    }
-                    EnetAppUtils_assert(EnetLpbk_verifyRxFrame(pktInfo, rxPktCnt) == true);
-                    /* Release the received packet */
-                    EnetQueue_enq(&gEnetLpbk.rxFreeQ, &pktInfo->node);
-                    pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&gEnetLpbk.rxReadyQ);
-                }
+    //                 /* Consume the packet by just printing its content */
+    //                 if (gEnetLpbk.printFrame)
+    //                 {
+    //                     uint32_t packetPrintLen;
 
-                /*Submit now processed buffers */
-                if (status == ENET_SOK)
-                {
-                    EnetAppUtils_validatePacketState(&gEnetLpbk.rxFreeQ,
-                                                     ENET_PKTSTATE_APP_WITH_FREEQ,
-                                                     ENET_PKTSTATE_APP_WITH_DRIVER);
+    //                     frame = (EthFrame *)pktInfo->sgList.list[0].bufPtr;
+    //                     packetPrintLen = pktInfo->sgList.list[0].segmentFilledLen - sizeof(EthFrameHeader);
 
-                    EnetDma_submitRxPktQ(gEnetLpbk.hRxCh,
-                                         &gEnetLpbk.rxFreeQ);
-                }
-            }
+    //                     EnetAppUtils_printFrame(frame,
+    //                                             packetPrintLen);
+    //                 }
+    //                 EnetAppUtils_assert(EnetLpbk_verifyRxFrame(pktInfo, rxPktCnt) == true);
+    //                 /* Release the received packet */
+    //                 EnetQueue_enq(&gEnetLpbk.rxFreeQ, &pktInfo->node);
+    //                 pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&gEnetLpbk.rxReadyQ);
+    //             }
 
-            loopRxPktCnt += rxReadyCnt;
-        }
-        while (loopRxPktCnt < ENETLPBK_TEST_PKT_NUM);
+    //             /*Submit now processed buffers */
+    //             if (status == ENET_SOK)
+    //             {
+    //                 EnetAppUtils_validatePacketState(&gEnetLpbk.rxFreeQ,
+    //                                                  ENET_PKTSTATE_APP_WITH_FREEQ,
+    //                                                  ENET_PKTSTATE_APP_WITH_DRIVER);
 
-        gEnetLpbk.totalRxCnt += loopRxPktCnt;
-    }
+    //                 EnetDma_submitRxPktQ(gEnetLpbk.hRxCh,
+    //                                      &gEnetLpbk.rxFreeQ);
+    //             }
+    //         }
 
-    if (status != ENET_SOK)
-    {
-        EnetAppUtils_print("Failed to transmit/receive packets: %d, transmitted: %d \r\n", ENETLPBK_TEST_PKT_NUM, gEnetLpbk.totalRxCnt);
-    }
-    else
-    {
-        EnetAppUtils_print("Received %d packets\r\n", gEnetLpbk.totalRxCnt);
-    }
+    //         loopRxPktCnt += rxReadyCnt;
+    //     }
+    //     while (loopRxPktCnt < ENETLPBK_TEST_PKT_NUM);
 
-    SemaphoreP_post(&gEnetLpbk.rxDoneSemObj);
+    //     gEnetLpbk.totalRxCnt += loopRxPktCnt;
+    // }
 
-    EnetAppUtils_print("Delete EnetApp_rxTask() and exit..\r\n");
+    // if (status != ENET_SOK)
+    // {
+    //     EnetAppUtils_print("Failed to transmit/receive packets: %d, transmitted: %d \r\n", ENETLPBK_TEST_PKT_NUM, gEnetLpbk.totalRxCnt);
+    // }
+    // else
+    // {
+    //     EnetAppUtils_print("Received %d packets\r\n", gEnetLpbk.totalRxCnt);
+    // }
+
+    // SemaphoreP_post(&gEnetLpbk.rxDoneSemObj);
+
+    // EnetAppUtils_print("Delete EnetApp_rxTask() and exit..\r\n");
     TaskP_destruct(&gEnetLpbk.rxTaskObj);
     TaskP_exit();
 }
@@ -885,6 +902,11 @@ static int32_t EnetApp_openDma(void)
 
         gEnetLpbk.hTxCh   = txChInfo.hTxCh;
 
+        EnetAppUtils_print("==============================================\r\n");
+        EnetAppUtils_print("TX Channel Opened:\r\n");
+        EnetAppUtils_print("  TX Channel Number: %d\r\n", txChInfo.txChNum);
+        EnetAppUtils_print("==============================================\r\n");
+
 
         EnetApp_initTxFreePktQ();
 
@@ -918,6 +940,12 @@ static int32_t EnetApp_openDma(void)
                               &rxInArgs,
                               &rxChInfo);
         gEnetLpbk.hRxCh  = rxChInfo.hRxCh;
+
+        EnetAppUtils_print("==============================================\r\n");
+        EnetAppUtils_print("RX Channel Opened:\r\n");
+        EnetAppUtils_print("  RX Flow Start Index: %d\r\n", rxChInfo.rxFlowStartIdx);
+        EnetAppUtils_print("  RX Flow Index: %d\r\n", rxChInfo.rxFlowIdx);
+        EnetAppUtils_print("==============================================\r\n");
         EnetAppUtils_assert(rxChInfo.numValidMacAddress == 1);
         EnetUtils_copyMacAddr(gEnetLpbk.hostMacAddr, &rxChInfo.macAddr[rxChInfo.numValidMacAddress-1][0]);
         if (NULL == gEnetLpbk.hRxCh)
@@ -934,6 +962,51 @@ static int32_t EnetApp_openDma(void)
     }
 
     return status;
+}
+
+static void EnetApp_printPacket(const char *prefix, EnetDma_Pkt *pktInfo, uint32_t pktNum)
+{
+    // EthFrame *frame;
+    // uint8_t *payload;
+    // uint32_t i;
+    // uint32_t printLen;
+
+    // if (pktInfo == NULL)
+    // {
+    //     return;
+    // }
+
+    // frame = (EthFrame *)pktInfo->sgList.list[0].bufPtr;
+    // payload = frame->payload;
+    // printLen = pktInfo->sgList.list[0].segmentFilledLen - sizeof(EthFrameHeader);
+
+    // /* Limit print length to avoid flooding console */
+    // if (printLen > 64)
+    // {
+    //     printLen = 64;
+    // }
+
+    EnetAppUtils_print("\r\n%s Packet #%d:\r\n", prefix, pktNum);
+    // EnetAppUtils_print("  Dst MAC: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+    //                    frame->hdr.dstMac[0], frame->hdr.dstMac[1], frame->hdr.dstMac[2],
+    //                    frame->hdr.dstMac[3], frame->hdr.dstMac[4], frame->hdr.dstMac[5]);
+    // EnetAppUtils_print("  Src MAC: %02x:%02x:%02x:%02x:%02x:%02x\r\n",
+    //                    frame->hdr.srcMac[0], frame->hdr.srcMac[1], frame->hdr.srcMac[2],
+    //                    frame->hdr.srcMac[3], frame->hdr.srcMac[4], frame->hdr.srcMac[5]);
+    // EnetAppUtils_print("  EtherType: 0x%04x\r\n", Enet_ntohs(frame->hdr.etherType));
+    // EnetAppUtils_print("  Payload Length: %d bytes\r\n",
+    //                    pktInfo->sgList.list[0].segmentFilledLen - sizeof(EthFrameHeader));
+    // EnetAppUtils_print("  Payload (first %d bytes): ", printLen);
+
+    // for (i = 0; i < printLen; i++)
+    // {
+    //     EnetAppUtils_print("%02x ", payload[i]);
+    //     if ((i + 1) % 16 == 0)
+    //     {
+    //         EnetAppUtils_print("\r\n                                ");
+    //     }
+    // }
+    EnetAppUtils_print("\r\n");
 }
 
 static void EnetApp_closeDma(void)

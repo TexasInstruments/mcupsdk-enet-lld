@@ -231,7 +231,7 @@ Lwip2EnetIc_Handle Lwip2EnetIc_open(uint32_t instId)
 #if defined(IPC_MCU3_0)
                         (hIcObj->selfCoreId == IPC_MCU3_0) ||
 #endif
-                        (hIcObj->selfCoreId == CSL_CORE_ID_MCU_R5FSS0_0));
+                        (hIcObj->selfCoreId == CSL_CORE_ID_MAIN_R5FSS0_0));
 
     hIcObj->remoteCoreId = gIcEnetParams[instId].remoteCoreId;
     hIcObj->txQId        = gIcEnetParams[instId].txQId;

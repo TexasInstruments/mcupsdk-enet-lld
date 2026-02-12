@@ -74,6 +74,7 @@ extern "C" {
 /* ========================================================================== */
 /* Forward declaration */
 struct netif;
+struct pbuf;
 
 err_t LWIPIF_LWIP_init(struct netif *netif);
 

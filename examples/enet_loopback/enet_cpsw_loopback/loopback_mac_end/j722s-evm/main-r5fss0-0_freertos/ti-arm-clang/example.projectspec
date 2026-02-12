@@ -93,7 +93,7 @@
                 -lfreertos.j722s.r5f.ti-arm-clang.debug.lib
                 -ldrivers.j722s.main-r5f.ti-arm-clang.debug.lib
                 -lboard.j722s.r5f.ti-arm-clang.debug.lib
-                -lenet-cpsw.j722s.main-r5f.ti-arm-clang.debug.lib
+                -lenet-cpsw.j722s.r5f.ti-arm-clang.debug.lib
                 -llibc.a
                 -llibsysbm.a
             "
@@ -108,23 +108,23 @@
                 -lfreertos.j722s.r5f.ti-arm-clang.release.lib
                 -ldrivers.j722s.main-r5f.ti-arm-clang.release.lib
                 -lboard.j722s.r5f.ti-arm-clang.release.lib
-                -lenet-cpsw.j722s.main-r5f.ti-arm-clang.release.lib
+                -lenet-cpsw.j722s.r5f.ti-arm-clang.release.lib
                 -llibc.a
                 -llibsysbm.a
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../..//loopback_cfg.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../..//loopback_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../..//loopback_test.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../..//loopback_test.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../..//loopback_main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../../../..//loopback_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="link">
+        <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_j722s/EXAMPLES_ENET_CPSW_LOOPBACK.html"
                 openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">

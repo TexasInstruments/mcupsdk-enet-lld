@@ -1,4 +1,3 @@
-
 /* This is the stack that is used by code running within main()
  * In case of NORTOS,
  * - This means all the code outside of ISR uses this stack
@@ -7,8 +6,6 @@
  *   uses this stack.
  * - After vTaskStartScheduler() each task created in FreeRTOS has its own stack
  */
-#include "ti_enet_config.h"
-
 --stack_size=16384
 /* This is the heap size for malloc() API in NORTOS and FreeRTOS
  * This is also the heap used by pvPortMalloc in FreeRTOS
@@ -96,14 +93,6 @@ SECTIONS
         .init_array: {} palign(8)   /* Contains function pointers called before main */
         .fini_array: {} palign(8)   /* Contains function pointers called after main */
     } > DDR_CODE_DATA
-
-    .enet_dma_mem (NOLOAD) : {
-    *(*ENET_DMA_DESC_MEMPOOL)
-    *(*ENET_DMA_RING_MEMPOOL)
-#if (ENET_SYSCFG_PKT_POOL_ENABLE == 1)
-    *(*ENET_DMA_PKT_MEMPOOL)
-#endif
-    } > DDR_PKT_MEM
 }
 
 MEMORY
@@ -112,6 +101,5 @@ MEMORY
     R5F_TCMA  : ORIGIN = 0x00000040 , LENGTH = 0x00007FC0
     R5F_TCMB0 : ORIGIN = 0x41010000 , LENGTH = 0x00004000
 
-    DDR_CODE_DATA                 : ORIGIN = 0x00008000 LENGTH = 0x7D8000   /* Code/Data            */
-    DDR_PKT_MEM                   : ORIGIN = 0x7E0000   LENGTH = 0x20000
+    DDR_CODE_DATA                 : ORIGIN = 0xA2200000, LENGTH = 0xE00000   /* Code/Data            */
 }

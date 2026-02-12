@@ -103,14 +103,14 @@
 % if(common.getSelfSysCfgCoreName().includes("a53")){
 #define LWIPIF_RX_PACKET_TASK_STACK    (2048U)
 % } else {
-#define LWIPIF_RX_PACKET_TASK_STACK    (1024U)
+#define LWIPIF_RX_PACKET_TASK_STACK    (65536U)  /* 64KB - increased from 16KB due to stack overflow */
 %}
 
 /*! \brief TX packet task stack size */
 % if(common.getSelfSysCfgCoreName().includes("a53")) {
 #define LWIPIF_TX_PACKET_TASK_STACK    (2048U)
 % } else {
-#define LWIPIF_TX_PACKET_TASK_STACK    (1024U)
+#define LWIPIF_TX_PACKET_TASK_STACK    (65536U)  /* 64KB - increased from 16KB due to stack overflow */
 %}
 
 /*! \brief Links status poll task stack size */
@@ -120,7 +120,7 @@
 % if(common.getSelfSysCfgCoreName().includes("a53")) {
 #define LWIPIF_POLL_TASK_STACK         (2048U)
 % } else {
-#define LWIPIF_POLL_TASK_STACK         (1024U)
+#define LWIPIF_POLL_TASK_STACK         (65536U)  /* 64KB - increased from 16KB due to stack overflow */
 %}
 #endif
 
@@ -880,7 +880,7 @@ void LwipifEnetApp_getProxyArpRxChIDs(const Enet_Type enetType, const uint32_t i
 
 void LwipifEnetApp_getVepaRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL])
 {
-%if(soc == "am62px")
+%if(soc == "am62px" || soc== "j722s")
 %{
     int32_t netif2ChMap[ENET_SYSCFG_NETIF_COUNT][LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL] = `netifScript.getNetifVepaRxCh()`;
     uint32_t chCount;
