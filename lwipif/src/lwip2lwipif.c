@@ -324,15 +324,6 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p)
  *  \retval
  *      void
  */
-/* Global debug tracker - check value at crash to see where it stopped */
-volatile uint32_t gLwipDebugTracker = 0;
-
-/* Packet type tracking: 0=None, 1=ARP, 2=IPv4, 3=Other */
-volatile uint32_t gLwipPktType = 0;
-volatile uint32_t gLwipArpCount = 0;    /* Total ARP packets processed */
-volatile uint32_t gLwipIcmpCount = 0;   /* Total ICMP packets processed */
-volatile uint32_t gLwipLastPktType = 0; /* Last packet type before crash */
-
 void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
                        struct netif* netif,
                        struct pbuf *hPbufPacket)
@@ -340,61 +331,11 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
     Lwip2Enet_assert(netif != NULL);
     Lwip2Enet_assert(netif->input != NULL);
 
-    gLwipDebugTracker = 0x1000; /* Entered LWIPIF_LWIP_input */
-
-    /* Detect packet type for debugging */
-    if (hPbufPacket && hPbufPacket->payload && hPbufPacket->len >= 14)
-    {
-        uint8_t *pkt = (uint8_t *)hPbufPacket->payload;
-        uint16_t ethertype = (pkt[12] << 8) | pkt[13];
-
-        if (ethertype == 0x0806)
-        {
-            /* ARP packet */
-            gLwipPktType = 1;
-            gLwipArpCount++;
-            gLwipLastPktType = 1;
-            gLwipDebugTracker = 0x1001; /* ARP detected */
-        }
-        else if (ethertype == 0x0800 && hPbufPacket->len >= 34)
-        {
-            /* IPv4 packet - check if ICMP */
-            uint8_t ipProto = pkt[23]; /* IP protocol field */
-            if (ipProto == 1) /* ICMP */
-            {
-                gLwipPktType = 2;
-                gLwipIcmpCount++;
-                gLwipLastPktType = 2;
-                gLwipDebugTracker = 0x1002; /* ICMP detected */
-
-                /* Debug: Print ICMP details */
-                uint8_t icmpType = pkt[34]; /* ICMP type at offset 34 */
-                DebugP_log("[LWIP_INPUT] ICMP packet: Type=%d, Length=%d bytes, Dest IP=%d.%d.%d.%d\r\n",
-                           icmpType, hPbufPacket->len,
-                           pkt[30], pkt[31], pkt[32], pkt[33]);
-            }
-            else
-            {
-                gLwipPktType = 3; /* Other IP */
-                gLwipDebugTracker = 0x1003; /* Other IP */
-            }
-        }
-        else
-        {
-            gLwipPktType = 4; /* Other EtherType */
-            gLwipDebugTracker = 0x1004; /* Other packet */
-        }
-    }
-
     /* Pass the packet to the LwIP stack */
     err_t lwipErr = netif->input(hPbufPacket, netif);
     if (lwipErr != ERR_OK)
     {
         LWIP_DEBUGF(NETIF_DEBUG, ("lwipif_input: IP input error\n"));
-        if (gLwipPktType == 2)
-        {
-            DebugP_log("[LWIP_INPUT] ERROR: lwIP rejected ICMP packet! Error code: %d\r\n", lwipErr);
-        }
         if (!ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT))
         {
             Lwip2Enet_assert(FALSE);
@@ -404,10 +345,6 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
 
         LWIP2ENETSTATS_ADDONE(&rx->stats.freePbufPktEnq);
         LWIP2ENETSTATS_ADDONE(&rx->stats.rxLwipInputFail);
-    }
-    else if(gLwipPktType == 2)
-    {
-            DebugP_log("[LWIP_INPUT] SUCCESS: lwIP accepted ICMP packet\r\n");
     }
     else
     {

@@ -103,14 +103,14 @@
 % if(common.getSelfSysCfgCoreName().includes("a53")){
 #define LWIPIF_RX_PACKET_TASK_STACK    (2048U)
 % } else {
-#define LWIPIF_RX_PACKET_TASK_STACK    (65536U)  /* 64KB - increased from 16KB due to stack overflow */
+#define LWIPIF_RX_PACKET_TASK_STACK    (1024U)
 %}
 
 /*! \brief TX packet task stack size */
 % if(common.getSelfSysCfgCoreName().includes("a53")) {
 #define LWIPIF_TX_PACKET_TASK_STACK    (2048U)
 % } else {
-#define LWIPIF_TX_PACKET_TASK_STACK    (65536U)  /* 64KB - increased from 16KB due to stack overflow */
+#define LWIPIF_TX_PACKET_TASK_STACK    (1024U)
 %}
 
 /*! \brief Links status poll task stack size */

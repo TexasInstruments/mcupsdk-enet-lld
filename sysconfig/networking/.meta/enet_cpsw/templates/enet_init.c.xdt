@@ -471,7 +471,6 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
                             &tx->txChNum,
                             &tx->hTxCh,
                             &txChCfg);
-        EnetAppUtils_print("[DMA_INIT] TX Channel #%u opened (CPDMA): txChNum=%u\n", i, tx->txChNum);
 %}
     }
 
@@ -529,7 +528,6 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
                             rx->macAddr);
 
         rx->numValidMacAddress = allocMacAddrCnt;
-        EnetAppUtils_print("[DMA_INIT] RX Channel #%u opened (CPDMA): rxChNum=%u, macCnt=%u\n", i, rx->rxChNum, allocMacAddrCnt);
 %}
     }
 

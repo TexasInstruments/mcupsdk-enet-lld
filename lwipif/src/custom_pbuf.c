@@ -88,59 +88,16 @@ static void custom_pbuf_validateChain(Rx_CustomPbuf *cPbuf)
  *  \retval
  *      NONE
  */
-extern volatile uint32_t gLwipDebugTracker;
-extern volatile uint32_t gLwipPktType;
-
-/* Debug: Track pbuf free calls */
-volatile uint32_t gPbufFreeCount = 0;
-volatile uint32_t gPbufAliveAtEntry = 0;
-volatile uint32_t gPbufAliveAtExit = 0;
-volatile uint32_t gScatterSegCount = 0;
-volatile uint32_t gCustomPbufPtr = 0;
-volatile uint32_t gCustomPbufArgsPtr = 0;
-
 void custom_pbuf_free(struct pbuf *p)
 {
-    /* Track which packet type is being freed */
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3000; /* FREE: ARP */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3010; /* FREE: ICMP */
-    else
-        gLwipDebugTracker = 0x3020; /* FREE: Other */
-
-    gPbufFreeCount++;
-
     Rx_CustomPbuf *cPbuf = (Rx_CustomPbuf*)p;
     Rx_CustomPbuf *start = cPbuf;
     EnetDma_SGListEntry *list = NULL;
     uint32_t scatterSegmentIndex = 0;
 
-    /* Capture pbuf pointer values for debugging */
-    gCustomPbufPtr = (uint32_t)cPbuf;
-    if (cPbuf != NULL)
-    {
-        gCustomPbufArgsPtr = (uint32_t)cPbuf->customPbufArgs;
-        gPbufAliveAtEntry = cPbuf->alivePbufCount;
-    }
-
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3001; /* ARP: Before assert */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3011; /* ICMP: Before assert */
-    else
-        gLwipDebugTracker = 0x3021; /* Other: Before assert */
-
-    /* CRITICAL: Check customPbufArgs before using it */
     Lwip2Enet_assert(cPbuf != NULL);
     Lwip2Enet_assert(cPbuf->customPbufArgs != NULL);
 
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3002; /* ARP: After assert */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3012; /* ICMP: After assert */
-    else
-        gLwipDebugTracker = 0x3022; /* Other: After assert */
     Lwip2Enet_RxObj *rx = (Lwip2Enet_RxObj *) cPbuf->customPbufArgs;
     Rx_CustomPbuf *cPbufNext = NULL;
 
@@ -149,13 +106,6 @@ void custom_pbuf_free(struct pbuf *p)
     Lwip2Enet_assert(cPbuf->alivePbufCount != 0);
     Lwip2Enet_assert(cPbuf->next != NULL);
 #endif
-
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3003; /* ARP: Before alive decrement */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3013; /* ICMP: Before alive decrement */
-    else
-        gLwipDebugTracker = 0x3023; /* Other: Before alive decrement */
 
     /* Decrement the alivePbufCount of the every cPbuf in the chain */
     start->alivePbufCount--;
@@ -171,7 +121,6 @@ void custom_pbuf_free(struct pbuf *p)
         if (loopCount > MAX_PBUF_SEGMENTS)
         {
             /* Circular list corruption detected! */
-            gLwipDebugTracker = 0x3FFD; /* ERROR: Circular list corruption */
             Lwip2Enet_assert(false);
         }
         cPbuf->alivePbufCount--;
@@ -179,21 +128,8 @@ void custom_pbuf_free(struct pbuf *p)
     }
     Lwip2Enet_assert(start == cPbuf);
 
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3004; /* ARP: After alive decrement */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3014; /* ICMP: After alive decrement */
-    else
-        gLwipDebugTracker = 0x3024; /* Other: After alive decrement */
-
     if(cPbuf->alivePbufCount == 0)
     {
-        if (gLwipPktType == 1)
-            gLwipDebugTracker = 0x3005; /* ARP: Freeing buffers */
-        else if (gLwipPktType == 2)
-            gLwipDebugTracker = 0x3015; /* ICMP: Freeing buffers */
-        else
-            gLwipDebugTracker = 0x3025; /* Other: Freeing buffers */
         /* This pbuf chain is no longer in use. */
         /* Loop through the cPbuf chain and enq in a dmapktinfo. */
         EnetDma_Pkt *pDmaPacket =  (EnetDma_Pkt *)EnetQueue_deq(&rx->freeRxPktInfoQ);
@@ -213,14 +149,12 @@ void custom_pbuf_free(struct pbuf *p)
             if (recycleLoopCount > MAX_SG_SEGMENTS)
             {
                 /* Buffer recycling loop corruption! */
-                gLwipDebugTracker = 0x3FFC; /* ERROR: Recycle loop overflow */
                 Lwip2Enet_assert(false);
             }
 
             /* Check scatter segment index before array access */
             if (scatterSegmentIndex >= ENET_ARRAYSIZE(pDmaPacket->sgList.list))
             {
-                gLwipDebugTracker = 0x3FFB; /* ERROR: SG array overflow */
                 Lwip2Enet_assert(false);
             }
 
@@ -241,43 +175,14 @@ void custom_pbuf_free(struct pbuf *p)
         } while(start != cPbuf);
 
         pDmaPacket->sgList.numScatterSegments = scatterSegmentIndex;
-        gScatterSegCount = scatterSegmentIndex; /* Save for debugging */
 
         /* CRITICAL: Check scatter segment count before enqueueing */
         if (scatterSegmentIndex == 0 || scatterSegmentIndex > 16)
         {
             /* Invalid scatter count - memory corruption! */
-            gLwipDebugTracker = 0x3FFF; /* ERROR: Invalid scatter count */
             Lwip2Enet_assert(false);
         }
 
         EnetQueue_enq(&rx->readyRxPktQ, &pDmaPacket->node);
-
-        if (gLwipPktType == 1)
-            gLwipDebugTracker = 0x3006; /* ARP: Returned to ready queue */
-        else if (gLwipPktType == 2)
-            gLwipDebugTracker = 0x3016; /* ICMP: Returned to ready queue */
-        else
-            gLwipDebugTracker = 0x3026; /* Other: Returned to ready queue */
-    }
-
-    /* Save alive count at exit for debugging */
-    gPbufAliveAtExit = cPbuf->alivePbufCount;
-
-    if (gLwipPktType == 1)
-        gLwipDebugTracker = 0x3007; /* ARP: Exiting custom_pbuf_free */
-    else if (gLwipPktType == 2)
-        gLwipDebugTracker = 0x3017; /* ICMP: Exiting custom_pbuf_free */
-    else
-        gLwipDebugTracker = 0x3027; /* Other: Exiting custom_pbuf_free */
-
-    /* CRITICAL CHECK: Ensure stack not corrupted before return */
-    {
-        volatile uint32_t stackCheck = 0x12345678;
-        if (stackCheck != 0x12345678)
-        {
-            gLwipDebugTracker = 0x3FFE; /* ERROR: Stack corruption detected! */
-            while(1); /* Halt here */
-        }
     }
 }

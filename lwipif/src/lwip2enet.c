@@ -684,11 +684,6 @@ static void Lwip2Enet_initTxObj(Enet_Type enetType, uint32_t instId, uint32_t ch
     return;
 }
 
-/* TX SG overflow tracking */
-volatile uint32_t gTxSGSegmentCount = 0;
-volatile uint32_t gTxSGTotalLen = 0;
-volatile uint32_t gTxPbufTotLen = 0;
-
 static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, bool isRx)
 {
     struct pbuf *pbufNext = pbuf;
@@ -698,14 +693,6 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
 
     pCurrDmaPacket->sgList.numScatterSegments = 0;
 
-    /* For TX packets, capture initial state for debugging */
-    if (!isRx)
-    {
-        gTxPbufTotLen = pbuf->tot_len;
-        gTxSGSegmentCount = 0;
-        gTxSGTotalLen = 0;
-    }
-
     while (pbufNext != NULL)
     {
         EnetDma_SGListEntry *list;
@@ -714,16 +701,12 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
         loopCount++;
         if (loopCount > MAX_SG_SEGMENTS)
         {
-            extern volatile uint32_t gLwipDebugTracker;
-            gLwipDebugTracker = 0x6FFF; /* ERROR: Pbuf chain too long or circular! */
             Lwip2Enet_assert(false);
         }
 
         /* CRITICAL: Check array bounds BEFORE accessing */
         if (pCurrDmaPacket->sgList.numScatterSegments >= ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list))
         {
-            extern volatile uint32_t gLwipDebugTracker;
-            gLwipDebugTracker = 0x6FFE; /* ERROR: SG array overflow! */
             Lwip2Enet_assert(false);
         }
 
@@ -744,13 +727,6 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
         pbufNext = pbufNext->next;
     }
 
-    /* Save final counts for TX debugging */
-    if (!isRx)
-    {
-        gTxSGSegmentCount = pCurrDmaPacket->sgList.numScatterSegments;
-        gTxSGTotalLen = totalPacketFilledLen;
-    }
-
     Lwip2Enet_assert(totalPacketFilledLen == pbuf->tot_len);
 }
 /*!
@@ -766,127 +742,61 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
  */
 void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort macPort)
 {
-    extern volatile uint32_t gLwipDebugTracker;
-    extern volatile uint32_t gSendTxLR;
-    extern volatile uint32_t gLwipPktType;  /* 1=ARP, 2=ICMP, 3=Other */
-    uint32_t lr_entry;
-
-    gLwipDebugTracker = 0x5000; /* Entered sendTxPackets */
-
-    /* Capture diagnostics ONLY for ARP packets (gLwipPktType == 1) */
-    if (gLwipPktType == 1)
-    {
-        /* Capture LR at function entry */
-        __asm__ volatile ("mov %0, lr" : "=r" (lr_entry));
-        gSendTxLR = lr_entry;
-    }
-
     /* If link is not up, simply return */
     if (pInterface->isLinkUp)
     {
         EnetDma_PktQ txSubmitQ;
         Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
 
-        gLwipDebugTracker = 0x5001; /* Link is up, starting TX */
-
         EnetQueue_initQ(&txSubmitQ);
 
         if (pbufQ_count(&pInterface->unusedPbufQ))
         {
-            gLwipDebugTracker = 0x5002; /* Processing unusedPbufQ */
             /* send any pending TX Q's */
             Lwip2Enet_pbufQ2PktInfoQ(hTx, &pInterface->unusedPbufQ, &txSubmitQ, macPort);
         }
 
-        gLwipDebugTracker = 0x5003; /* Entering while loop for readyPbufQ */
-
         /* Check if there is anything to transmit, else simply return */
         while (pbufQ_count(&pInterface->readyPbufQ) != 0U)
         {
-            gLwipDebugTracker = 0x5004; /* Inside while loop iteration */
-
             /* Dequeue one free TX Eth packet */
             EnetDma_Pkt *pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&hTx->freePktInfoQ);
 
-            gLwipDebugTracker = 0x5005; /* After dequeue freePktInfoQ */
-
             if (pCurrDmaPacket == NULL)
             {
-                extern volatile uint32_t gCallerLinkReg;
-                extern volatile uint32_t gLwipPktType;
-                uint32_t lr_before_call;
-
-                gLwipDebugTracker = 0x5006; /* No free packet, retrieving from HW */
-
-                /* Capture LR before calling retrieveTxPkts - ONLY for ARP packets */
-                if (gLwipPktType == 1)
-                {
-                    __asm__ volatile ("mov %0, lr" : "=r" (lr_before_call));
-                    gCallerLinkReg = lr_before_call;
-                }
-
                 /* If we run out of packet info Q, retrieve packets from HW
                 * and try to dequeue free packet again */
-                gLwipDebugTracker = 0x5006; /* About to call retrieveTxPkts */
                 Lwip2Enet_retrieveTxPkts(hTx);
-                gLwipDebugTracker = 0x5007; /* SUCCESS: Returned from retrieveTxPkts */
                 pCurrDmaPacket = (EnetDma_Pkt *)EnetQueue_deq(&hTx->freePktInfoQ);
-                gLwipDebugTracker = 0x5008; /* After second dequeue attempt */
             }
 
             if (NULL != pCurrDmaPacket)
             {
-                gLwipDebugTracker = 0x5009; /* Have packet, processing pbuf */
                 struct pbuf *hPbufPkt = pbufQ_deQ(&pInterface->readyPbufQ);
-                gLwipDebugTracker = 0x500A; /* After dequeue pbuf */
                 EnetDma_initPktInfo(pCurrDmaPacket);
-                gLwipDebugTracker = 0x500B; /* After initPktInfo */
                 Lwip2Enet_assert(hPbufPkt);
-                gLwipDebugTracker = 0x500C; /* After assert */
                 Lwip2Enet_setSGList(pCurrDmaPacket, hPbufPkt, false);
-                gLwipDebugTracker = 0x500D; /* After setSGList */
                 pCurrDmaPacket->appPriv    = hPbufPkt;
                 pCurrDmaPacket->txPortNum  = macPort;
                 pCurrDmaPacket->node.next  = NULL;
                 pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
 
-                gLwipDebugTracker = 0x500E; /* After setting packet fields */
-
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
-
-                /* Debug: Check if this is an ARP packet */
-                {
-                }
 
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
 
-                gLwipDebugTracker = 0x500F; /* After enqueue to txSubmitQ */
-
                 LWIP2ENETSTATS_ADDONE(&hTx->stats.freeAppPktDeq);
                 LWIP2ENETSTATS_ADDONE(&hTx->stats.readyPbufPktDeq);
-
-                gLwipDebugTracker = 0x5010; /* Completed packet processing */
             }
             else
             {
-                gLwipDebugTracker = 0x5011; /* Breaking from while loop - no packets */
                 break;
             }
         }
 
-        gLwipDebugTracker = 0x5012; /* Exited while loop, calling submitTxPackets */
-
         /* Submit the accumulated packets to the hardware for transmission */
         Lwip2Enet_submitTxPackets(hTx, &pInterface->unusedPbufQ, &txSubmitQ);
-
-        gLwipDebugTracker = 0x5013; /* After submitTxPackets */
     }
-    else
-    {
-        gLwipDebugTracker = 0x5014; /* Link is down, skipping TX */
-    }
-
-    gLwipDebugTracker = 0x5015; /* Exiting sendTxPackets normally */
 }
 
 
@@ -1162,39 +1072,26 @@ static void Lwip2Enet_submitTxPackets(Lwip2Enet_TxObj *tx,
                                       pbufQ* unusedPbufQ,
                                       EnetDma_PktQ *pSubmitQ)
 {
-    extern volatile uint32_t gLwipDebugTracker;
     int32_t retVal;
-
-    gLwipDebugTracker = 0x5200; /* Entered submitTxPackets */
 
     retVal = EnetDma_submitTxPktQ(tx->hCh, pSubmitQ);
 
-    gLwipDebugTracker = 0x5201; /* After EnetDma_submitTxPktQ */
-
     if (ENET_SOK != retVal)
     {
-        gLwipDebugTracker = 0x5202; /* submitTxPktQ failed */
         Lwip2Enet_print(tx->hLwip2Enet,
                         "EnetDma_submitTxPktQ: failed to submit pkts: %d\n",
                         retVal);
     }
 
-    gLwipDebugTracker = 0x5203; /* After error check */
-
     if (EnetQueue_getQCount(pSubmitQ))
     {
-        gLwipDebugTracker = 0x5204; /* Processing remaining packets in submitQ */
         /* TODO: txUnUsedPBMPktQ is needed for packets that were not able to be
          *       submitted to driver.  It can be removed if stack supported any
          *       mechanism to enqueue them to the head of the queue. */
         Lwip2Enet_pktInfoQ2PbufQ(pSubmitQ, unusedPbufQ);
-        gLwipDebugTracker = 0x5205; /* After pktInfoQ2PbufQ */
         EnetQueue_append(&tx->freePktInfoQ, pSubmitQ);
-        gLwipDebugTracker = 0x5206; /* After append to freePktInfoQ */
         LWIP2ENETSTATS_ADDNUM(&tx->stats.freeAppPktEnq, EnetQueue_getQCount(pSubmitQ));
     }
-
-    gLwipDebugTracker = 0x5207; /* Exiting submitTxPackets */
 }
 
 static void Lwip2Enet_freePbufPackets(EnetDma_PktQ *tempQueue)
@@ -1240,18 +1137,6 @@ static void Lwip2Enet_notifyTxPackets(void *cbArg)
     }
 }
 
-/* Global counters for DMA-level packet tracking */
-extern volatile uint32_t gLwipDebugTracker;
-volatile uint32_t gDmaRxPktCount = 0;
-volatile uint32_t gDmaRxArpCount = 0;
-volatile uint32_t gDmaRxIcmpCount = 0;
-
-/* Track which flow/channel ARP and ICMP packets use */
-volatile uint32_t gArpFlowIdx = 0xFFFFFFFF;
-volatile uint32_t gArpChNum = 0xFFFFFFFF;
-volatile uint32_t gIcmpFlowIdx = 0xFFFFFFFF;
-volatile uint32_t gIcmpChNum = 0xFFFFFFFF;
-
 void Lwip2Enet_rxPktHandler(Lwip2Enet_RxHandle hRx)
 {
     EnetDma_PktQ tempQueue;
@@ -1265,12 +1150,6 @@ void Lwip2Enet_rxPktHandler(Lwip2Enet_RxHandle hRx)
         EnetQueue_initQ(&tempQueue);
         retVal = EnetDma_retrieveRxPktQ(hRx->hFlow, &tempQueue);
 
-        /* Track packets at DMA level */
-        if (tempQueue.count > 0)
-        {
-            gDmaRxPktCount += tempQueue.count;
-            gLwipDebugTracker = 0x4000 | tempQueue.count; /* DMA received packets */
-        }
         if (ENET_SOK != retVal)
         {
             Lwip2Enet_print(hRx->hLwip2Enet,
@@ -1443,41 +1322,12 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
             }
 
             /* Track packet type at DMA level before lwIP */
-            if (hPbufPacket && hPbufPacket->payload && hPbufPacket->len >= 14)
-            {
-                uint8_t *pkt = (uint8_t *)hPbufPacket->payload;
-                uint16_t ethertype = (pkt[12] << 8) | pkt[13];
-                if (ethertype == 0x0806)
-                {
-                    gDmaRxArpCount++;
-                    gLwipDebugTracker = 0x4001; /* DMA: ARP packet */
-
-                    /* Track which flow/channel ARP uses */
-                    gArpFlowIdx = rx->flowIdx;
-                    gArpChNum = rx->chEntryIdx;
-                }
-                else if (ethertype == 0x0800 && hPbufPacket->len >= 34)
-                {
-                    uint8_t ipProto = pkt[23];
-                    if (ipProto == 1) /* ICMP */
-                    {
-                        gDmaRxIcmpCount++;
-                        gLwipDebugTracker = 0x4002; /* DMA: ICMP packet */
-
-                        /* Track which flow/channel ICMP uses */
-                        gIcmpFlowIdx = rx->flowIdx;
-                        gIcmpChNum = rx->chEntryIdx;
-                    }
-                }
-            }
-
             EnetDma_initPktInfo(pCurrDmaPacket);
             EnetQueue_enq(&rx->freeRxPktInfoQ, &pCurrDmaPacket->node);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
 
             if (!isChksumError)
             {
-                gLwipDebugTracker = 0x4100; /* No checksum error, will pass to lwIP */
                 struct netif* netif = NULL;
                 /* Pass the received packet to the LwIP stack */
                 switch (rx->mode)
@@ -1510,17 +1360,11 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 bool handled = FALSE;
                 if (rx->handlePktFxn != NULL)
                 {
-                    gLwipDebugTracker = 0x4200; /* handlePktFxn exists */
                     handled = rx->handlePktFxn(netif, hPbufPacket);
-                    if (handled)
-                    {
-                        gLwipDebugTracker = 0x4201; /* Packet consumed by handlePktFxn! */
-                    }
                 }
 
                 if (!handled)
                 {
-                    gLwipDebugTracker = 0x4300; /* About to pass to lwIP */
                     /* Pass the received packet to the LwIP stack */
                     Lwip2Enet_assert(netif != NULL);
                     LWIPIF_LWIP_input(rx, netif, hPbufPacket);
@@ -1528,14 +1372,12 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                 }
                 else
                 {
-                    gLwipDebugTracker = 0x4400; /* Packet handled, freeing */
                     /* Free old pbuf, allocate a fresh new one. Can we recycle same as is? */
                     pbuf_free(hPbufPacket);
                 }
             }
             else
             {
-                gLwipDebugTracker = 0x4500; /* Checksum error! Dropping packet */
                 /* Free the pbuf as we are not submitting to the stack */
                 pbuf_free(hPbufPacket);
                 LWIP2ENETSTATS_ADDONE(&rx->stats.chkSumErr);
@@ -1753,135 +1595,45 @@ static void Lwip2Enet_freeRxPktCb(void *cbArg,
     LWIP2ENETSTATS_ADDNUM(&rx->stats.freeAppPktEnq, EnetQueue_getQCount(cqPktInfoQ));
 }
 
-/* Global for stack debugging - NOW captures for ALL packet types */
-volatile uint32_t gStackPointerEntry = 0;
-volatile uint32_t gStackPointerExit = 0;
-volatile uint32_t gReturnAddress = 0;
-volatile uint32_t gLinkRegister = 0;
-volatile uint32_t gFramePointer = 0;
-volatile uint32_t gCallerLinkReg = 0;  /* LR of sendTxPackets when calling retrieveTxPkts */
-volatile uint32_t gStackContent[8] = {0};  /* Content around SP for inspection */
-volatile uint32_t gSendTxLR = 0;  /* LR when entering sendTxPackets */
-volatile uint32_t gLRCorruption = 0;  /* XOR of expected vs actual LR */
-
-/* TX Path Debug - Track retrieveTxPkts state */
-volatile uint32_t gRetrieveTxCallCount = 0;
-volatile uint32_t gRetrieveTxPktCount = 0;
-volatile uint32_t gTxQueueCount = 0;
-volatile uint32_t gTxFreePktInfoCount = 0;
-
 uint32_t Lwip2Enet_retrieveTxPkts(Lwip2Enet_TxHandle hTx)
 {
-    extern volatile uint32_t gLwipDebugTracker;
-    extern volatile uint32_t gStackContent[8];
-    extern volatile uint32_t gLwipPktType;
-    extern volatile uint32_t gRetrieveTxCallCount;
-    extern volatile uint32_t gRetrieveTxPktCount;
-    extern volatile uint32_t gTxQueueCount;
-    extern volatile uint32_t gTxFreePktInfoCount;
-
     EnetDma_PktQ tempQueue;
     uint32_t packetCount = 0U;
     int32_t retVal;
-    uint32_t stackPtr, linkReg, framePtr;
-    uint32_t *stackAddr;
-    int i;
-
-    gLwipDebugTracker = 0x5100; /* Entered retrieveTxPkts */
-    gRetrieveTxCallCount++;
-
-    /* Capture queue counts on entry */
-    gTxFreePktInfoCount = EnetQueue_getQCount(&hTx->freePktInfoQ);
-
-    /* CRITICAL: ALWAYS capture registers on entry (don't rely on gLwipPktType) */
-    __asm__ volatile ("mov %0, sp" : "=r" (stackPtr));
-    __asm__ volatile ("mov %0, lr" : "=r" (linkReg));
-    __asm__ volatile ("mov %0, fp" : "=r" (framePtr));
-
-    gStackPointerEntry = stackPtr;
-    gLinkRegister = linkReg;  /* This is the REAL return address */
-    gFramePointer = framePtr;
-
-    /* Capture stack content around SP for debugging */
-    stackAddr = (uint32_t *)stackPtr;
-    for (i = 0; i < 8; i++)
-    {
-        gStackContent[i] = stackAddr[i];
-    }
 
     LWIP2ENETSTATS_ADDONE(&hTx->stats.pktStats.rawNotifyCnt);
-    packetCount = 0U;
 
     /* Retrieve the used (sent/empty) packets from the channel */
     {
-        gLwipDebugTracker = 0x5101; /* Before EnetQueue_initQ */
         EnetQueue_initQ(&tempQueue);
-        gLwipDebugTracker = 0x5102; /* Before EnetDma_retrieveTxPktQ */
         /* Retrieve all TX packets and keep them locally */
         retVal = EnetDma_retrieveTxPktQ(hTx->hCh, &tempQueue);
-        gLwipDebugTracker = 0x5103; /* After EnetDma_retrieveTxPktQ */
         if (ENET_SOK != retVal)
         {
-            gLwipDebugTracker = 0x5104; /* retrieveTxPktQ failed */
             Lwip2Enet_print(hTx->hLwip2Enet,
                             "Lwip2Enet_retrieveTxPkts: Failed to retrieve TX pkts: %d\n",
                             retVal);
         }
     }
 
-    gLwipDebugTracker = 0x5105; /* After retrieve block */
-
     if (tempQueue.count != 0U)
     {
-        gLwipDebugTracker = 0x5106; /* Calling prepTxPktQ */
         /*
          * Get all used Tx DMA packets from the hardware, then return those
          * buffers to the txFreePktQ so they can be used later to send with.
          */
         packetCount = Lwip2Enet_prepTxPktQ(hTx, &tempQueue);
-        gLwipDebugTracker = 0x5107; /* After prepTxPktQ */
     }
     else
     {
-        gLwipDebugTracker = 0x5108; /* No packets retrieved */
         LWIP2ENETSTATS_ADDONE(&hTx->stats.pktStats.zeroNotifyCnt);
     }
 
-    gLwipDebugTracker = 0x5109; /* Before stats update */
-
     if (packetCount != 0U)
     {
-        gLwipDebugTracker = 0x510A; /* Updating stats */
         Lwip2Enet_updateTxNotifyStats(&hTx->stats.pktStats, packetCount, 0U);
     }
 
-    /* Save packet count for debugging */
-    gRetrieveTxPktCount = packetCount;
-    gTxQueueCount = tempQueue.count;
-
-    gLwipDebugTracker = 0x510B; /* Exiting retrieveTxPkts */
-
-    /* CRITICAL: Stack corruption check before return */
-    {
-        volatile uint32_t stackCheck1 = 0xDEADBEEF;
-        volatile uint32_t stackCheck2 = 0xCAFEBABE;
-
-        if (stackCheck1 != 0xDEADBEEF || stackCheck2 != 0xCAFEBABE)
-        {
-            gLwipDebugTracker = 0x5FFE; /* ERROR: Stack corruption in retrieveTxPkts! */
-            while(1); /* Halt here for debugging */
-        }
-    }
-
-    gLwipDebugTracker = 0x510C; /* After stack check - CHECKS DISABLED */
-
-    /*
-     * REMOVED LR corruption checks - they were triggering false positives.
-     * The checks were fundamentally flawed because LR register changes
-     * during normal function execution when calling other functions.
-     */
-
-    gLwipDebugTracker = 0x5111; /* About to return normally */
     return packetCount;
 }
 
