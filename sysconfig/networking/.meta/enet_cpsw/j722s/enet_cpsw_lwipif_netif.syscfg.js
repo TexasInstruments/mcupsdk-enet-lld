@@ -37,8 +37,8 @@ function getNetifProxyArpRxCh()
             }
             else
             {
+                ret += module.getChannelConfig(instance, "RX", rxCh[0]).$name.toUpperCase() + '},';
             }
-            ret += module.getChannelConfig(instance, "RX", rxCh[0]).$name.toUpperCase() + '},';
         }
      }
     ret += '}';

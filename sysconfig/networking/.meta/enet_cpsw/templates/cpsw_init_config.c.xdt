@@ -101,7 +101,7 @@ const EnetRm_ResCfg gEnetRmResCfg =
     %let socName = common.getSocName();
     .resPartInfo =
     {
-        %if ((socName == 'am62px'|| socName == 'am62dx' || socName == 'am62ax' || socName == 'am62x')) {
+        %if ((socName == 'am62px'|| socName == 'am62dx' || socName == 'am62ax' || socName == 'am62x' || socName == 'j722s')) {
         .numCores = `module.getEnetResPartInfoNumCores(instance)`,
         .coreResInfo =
         {
