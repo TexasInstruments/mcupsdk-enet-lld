@@ -860,7 +860,7 @@ void LwipifEnetApp_getTxChIDs(const Enet_Type enetType, const uint32_t instId, u
 
 void LwipifEnetApp_getProxyArpRxChIDs(const Enet_Type enetType, const uint32_t instId, uint32_t netifIdx, uint32_t* pRxChIdCount, uint32_t rxChIdList[LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL])
 {
-%if(soc == "am62px")
+%if(soc == "am62px"||soc == "am62ax")
 %{
     int32_t netif2ChMap[ENET_SYSCFG_NETIF_COUNT][LWIPIF_MAX_RX_CHANNELS_PER_PHERIPHERAL] = `netifScript.getNetifProxyArpRxCh()`;
     uint32_t chCount;
