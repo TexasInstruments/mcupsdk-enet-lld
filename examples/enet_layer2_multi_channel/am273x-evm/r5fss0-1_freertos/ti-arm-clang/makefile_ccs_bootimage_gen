@@ -32,6 +32,7 @@ BOOTIMAGE_NAME_HS_FS:=$(BOOTIMAGE_PATH)/enet_l2_multi_channel.$(PROFILE).appimag
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
+else
 endif
 
 #

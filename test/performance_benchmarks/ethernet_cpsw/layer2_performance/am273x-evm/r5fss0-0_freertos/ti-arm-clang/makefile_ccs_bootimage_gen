@@ -32,6 +32,7 @@ BOOTIMAGE_NAME_HS_FS:=$(BOOTIMAGE_PATH)/enet_test_cpsw_layer2_performance.$(PROF
 TARGETS := $(BOOTIMAGE_NAME)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
+else
 endif
 
 #

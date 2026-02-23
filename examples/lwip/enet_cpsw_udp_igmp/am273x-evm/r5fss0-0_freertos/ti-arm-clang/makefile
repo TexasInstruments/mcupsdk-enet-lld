@@ -32,11 +32,10 @@ BOOTIMAGE_RPRC_NAME:=enet_cpsw_udp_igmp.$(PROFILE).rprc
 BOOTIMAGE_RPRC_NAME_XIP:=enet_cpsw_udp_igmp.$(PROFILE).rprc_xip
 BOOTIMAGE_RPRC_NAME_TMP:=enet_cpsw_udp_igmp.$(PROFILE).rprc_tmp
 BOOTIMAGE_NAME_HS:=enet_cpsw_udp_igmp.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=enet_cpsw_udp_igmp.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
-
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
+else
 endif
 
 FILES_common := \

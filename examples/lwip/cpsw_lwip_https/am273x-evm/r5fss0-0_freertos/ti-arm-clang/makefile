@@ -32,11 +32,10 @@ BOOTIMAGE_RPRC_NAME:=cpsw_lwip_https.$(PROFILE).rprc
 BOOTIMAGE_RPRC_NAME_XIP:=cpsw_lwip_https.$(PROFILE).rprc_xip
 BOOTIMAGE_RPRC_NAME_TMP:=cpsw_lwip_https.$(PROFILE).rprc_tmp
 BOOTIMAGE_NAME_HS:=cpsw_lwip_https.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=cpsw_lwip_https.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
-
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
+else
 endif
 
 FILES_common := \

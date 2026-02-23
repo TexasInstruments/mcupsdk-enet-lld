@@ -32,11 +32,10 @@ BOOTIMAGE_RPRC_NAME:=enet_l2_multi_channel.$(PROFILE).rprc
 BOOTIMAGE_RPRC_NAME_XIP:=enet_l2_multi_channel.$(PROFILE).rprc_xip
 BOOTIMAGE_RPRC_NAME_TMP:=enet_l2_multi_channel.$(PROFILE).rprc_tmp
 BOOTIMAGE_NAME_HS:=enet_l2_multi_channel.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=enet_l2_multi_channel.$(PROFILE).appimage.hs_fs
 TARGETS := $(BOOTIMAGE_NAME)
-
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_HS)
+else
 endif
 
 FILES_common := \
