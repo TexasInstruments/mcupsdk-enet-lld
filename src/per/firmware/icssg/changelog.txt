@@ -1,4 +1,8 @@
-Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.09 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.10
+Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.10 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.16.00
 
-- Firmware implementation of buffer pool management in ICSSG replacing the usage of ICSSG HW Buffer pool widget 
+- At 1Gbps link speed in cut-through mode, the pushing of packets from TX PRU is done from Background task instead of foreground task.
+  This fixes the low drops (<0.5% drops) seen even at lower offered loads (such as 1%).
 
+- Fix link monitor handling for 10M RGMII mode. This resolves issue where the TX PRU gets stuck during repeated link-up down in this mode.
+
+- Added a timeout handling for loops in firmware which waits for TXPRU's L2 FIFO to drain the packets.

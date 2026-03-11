@@ -4,7 +4,7 @@
  * Contains memory map for Ethernet firmware.
  * This file is used by Ethernet Switch driver.
  *
- * Copyright (C) 2020-25 Texas Instruments Incorporated - http://www.ti.com/
+ * Copyright (C) 2020-26 Texas Instruments Incorporated - http://www.ti.com/
  *
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -169,6 +169,9 @@
 
 /* RTU PRU SYNC constants */
 #define PRU_RTU_INIT_SYNC_CONST                    (0xAA)
+
+/* Max Packet Size */
+#define FW_MAX_PKT                                 (0x800)
 
 /*********************** Ethernet Switch Constants End *********************/
 
