@@ -236,6 +236,7 @@ enet_cpsw1.LargePoolPktCount            = 24;
 enet_cpsw1.PktInfoOnlyEnable            = true;
 enet_cpsw1.macport2LinkSpeed            = "ENET_SPEED_1GBIT";
 enet_cpsw1.macport2LinkDuplexity        = "ENET_DUPLEX_FULL";
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.RGMII2.$assign               = "RGMII2";
 enet_cpsw1.txDmaChannel.create(3);
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";

@@ -118,7 +118,6 @@ void EnetApp_mdioLinkStatusChange(Cpsw_MdioLinkStateChangeInfo *info,
 void EnetApp_updateCpswInitCfg(Enet_Type enetType,  uint32_t instId,   Cpsw_Cfg *cpswCfg)
 {
     EnetApp_PerCtxt *perCtxt = EnetApp_getPerCtxt(enetType, instId);
-    EnetDma_Cfg *dmaCfg;
 
     EnetAppUtils_assert(perCtxt != NULL);
     /* Prepare init configuration for all peripherals */
@@ -136,9 +135,6 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType,  uint32_t instId,   Cpsw_Cfg 
     cpswCfg->portLinkStatusChangeCb    = &EnetApp_portLinkStatusChangeCb;
     cpswCfg->portLinkStatusChangeCbArg = &gEnetApp;
 
-    /* Set the enChOverrideFlag to enable the channel override feature of CPDMA */
-    dmaCfg=(EnetDma_Cfg *)cpswCfg->dmaCfg;
-    dmaCfg->enChOverrideFlag = true;
 }
 
 int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,

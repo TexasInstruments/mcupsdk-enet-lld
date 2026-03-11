@@ -234,6 +234,7 @@ enet_cpsw1.cptsHostRxTsEn        = false;
 enet_cpsw1.RGMII2.$assign        = "RGMII2";
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
+enet_cpsw1.enChOverrideFlag             = true;
 
 const ethphy_cpsw_icssg  = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1 = ethphy_cpsw_icssg.addInstance({}, false);

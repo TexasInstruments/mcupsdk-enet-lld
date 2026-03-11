@@ -74,13 +74,16 @@ static bool EnetCli_traceLvl(char *writeBuffer, size_t writeBufferLen,
         const char *commandString);
 
 static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
-        const char *commandString);
+        const char *commandString, bool isPolicer);
 
 static int32_t EnetConfig_addClassifierEntry(
-        CpswAle_PolicerMatchParams *matchPrms, uint8_t rxCh);
+        CpswAle_PolicerMatchParams *matchPrms, uint8_t rxCh,  uint32_t cir, uint32_t pir);
 
 static int32_t EnetConfig_remClassifierEntry(
         CpswAle_PolicerMatchParams *matchPrms, int8_t rxCh);
+
+static int32_t EnetConfig_blockClassifierEntry(
+        CpswAle_PolicerMatchParams *matchPrms);
 
 /* ========================================================================== */
 /*                            Global Variables                                */
@@ -113,7 +116,11 @@ bool EnetCli_configCommandHandler(char *writeBuffer,
     }
     else if (strncmp(parameter, "classifier", paramLen) == 0)
     {
-        return EnetCli_classifier(writeBuffer, writeBufferLen, commandString);
+        return EnetCli_classifier(writeBuffer, writeBufferLen, commandString, false);
+    }
+    else if (strncmp(parameter, "policer", paramLen) == 0)
+    {
+        return EnetCli_classifier(writeBuffer, writeBufferLen, commandString, true);
     }
     else
     {
@@ -408,16 +415,19 @@ static bool EnetCli_traceLvl(char *writeBuffer, size_t writeBufferLen,
 }
 
 static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
-        const char *commandString)
+        const char *commandString, bool isPolicer)
 {
     int32_t status = 0;
     char *parameter;
     uint32_t paramLen;
     uint32_t paramCnt = 2;
+    uint32_t pir = 0;
+    uint32_t cir = 0;
     CpswAle_PolicerMatchParams args;
     memset(&args, 0, sizeof(args));
     int8_t rxCh = -1;
-    bool remove = false;
+    bool remove = false, block = false;
+    int32_t prevIPEntry = 0;
 
     parameter = (char*) EnetCli_getParameter(commandString, paramCnt,
             &paramLen);
@@ -426,6 +436,12 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
         remove = true;
         paramCnt += 1;
     }
+    else if (strncmp(parameter, "-b", paramLen) == 0)
+    {
+        block = true;
+        paramCnt += 1;
+    }
+
     parameter = (char*) EnetCli_getParameter(commandString, paramCnt,
             &paramLen);
     while (parameter != NULL)
@@ -437,6 +453,21 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
             args.etherType = (uint16_t) strtol(parameter, NULL, 16);
+        }
+        /* Classifier based on source OUI address */
+        else if (strncmp(parameter, "-oui", paramLen) == 0)
+        {
+            args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_OUI;
+            parameter = (char*) EnetCli_getParameter(commandString,
+                    paramCnt + 1, &paramLen);
+            status = EnetAppUtils_ouiAddrAtoI(parameter,
+                    args.ouiInfo.ouiAddr);
+            if (status)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Invalid OUI address\r\n");
+                return false;
+            }
         }
         /* Classifier based on source MAC address */
         else if (strncmp(parameter, "-sm", paramLen) == 0)
@@ -471,6 +502,12 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
         /* Classifier based on source IP address */
         else if (strncmp(parameter, "-sip", paramLen) == 0)
         {
+            if(prevIPEntry != 0 && prevIPEntry != 1)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Already IPv6 type is used. Choose either IPv4 or IPv6\r\n");
+                return pdFALSE;
+            }
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_IPSRC;
             args.srcIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV4;
             parameter = (char*) EnetCli_getParameter(commandString,
@@ -482,10 +519,39 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
                 snprintf(writeBuffer, writeBufferLen, "Invalid IP address\r\n");
                 return false;
             }
+            prevIPEntry = 1;
+        }
+        /* Classifier based on source IPV6 address */
+        else if (strncmp(parameter, "-sipv6", paramLen) == 0)
+        {
+            if(prevIPEntry != 0 && prevIPEntry != 2)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Already IPv4 type is used. Choose either IPv4 or IPv6\r\n");
+                return pdFALSE;
+            }
+            args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_IPSRC;
+            args.srcIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV6;
+            parameter = (char*) EnetCli_getParameter(commandString,
+                    paramCnt + 1, &paramLen);
+            status = EnetAppUtils_ipv6AddrAtoI(parameter,
+                    args.srcIpInfo.ipv6Info.ipv6Addr, paramLen);
+            if (status)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid IP address\r\n");
+                return false;
+            }
+            prevIPEntry = 2;
         }
         /* Classifier based on destination IP address */
         else if (strncmp(parameter, "-dip", paramLen) == 0)
         {
+            if(prevIPEntry != 0 && prevIPEntry != 1)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Already IPv6 type is used. Choose either IPv4 or IPv6\r\n");
+                return pdFALSE;
+            }
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_IPDST;
             args.dstIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV4;
             parameter = (char*) EnetCli_getParameter(commandString,
@@ -497,6 +563,29 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
                 snprintf(writeBuffer, writeBufferLen, "Invalid IP address\r\n");
                 return false;
             }
+            prevIPEntry = 1;
+        }
+        /* Classifier based on destination IPV6 address */
+        else if (strncmp(parameter, "-dipv6", paramLen) == 0)
+        {
+            if(prevIPEntry != 0 && prevIPEntry != 2)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Already IPv4 type is used. Choose either IPv4 or IPv6\r\n");
+                return pdFALSE;
+            }
+            args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_IPDST;
+            args.dstIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV6;
+            parameter = (char*) EnetCli_getParameter(commandString,
+                    paramCnt + 1, &paramLen);
+            status = EnetAppUtils_ipv6AddrAtoI(parameter,
+                    args.dstIpInfo.ipv6Info.ipv6Addr, paramLen);
+            if (status)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid IP address\r\n");
+                return false;
+            }
+            prevIPEntry = 2;
         }
         /* Classifier based on inner vlan id */
         else if (strncmp(parameter, "-iv", paramLen) == 0)
@@ -527,7 +616,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
         /* Classifier based on priority */
         else if (strncmp(parameter, "-pcp", paramLen) == 0)
         {
-            args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_OVLAN;
+            args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_PRIORITY;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
             if (atoi(parameter) > 7 || atoi(parameter) < 0)
@@ -567,6 +656,72 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
                 rxCh = atoi(parameter);
             }
         }
+        /* Setup Committed Information Rate*/
+        else if ((strncmp(parameter, "-cir", paramLen) == 0) && (isPolicer == true))
+        {
+            parameter = (char*) EnetCli_getParameter(commandString,
+                    paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "No cir speed specified!!!\r\n");
+                return pdFALSE;
+            }
+            else
+            {
+                cir = atoi(parameter);
+            }
+        }
+        /* Setup Committed Information Rate*/
+        else if ((strncmp(parameter, "-pir", paramLen) == 0) && (isPolicer == true))
+        {
+            parameter = (char*) EnetCli_getParameter(commandString,
+                    paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "No pir speed specified!!!\r\n");
+                return pdFALSE;
+            }
+            else
+            {
+                pir = atoi(parameter);
+            }
+        }
+        else if(strncmp(parameter, "help", paramLen) == 0)
+        {
+            if(isPolicer == true)
+            {
+                snprintf(writeBuffer, writeBufferLen, ""
+                        "\t[-e]  <ethertype>\r\n"
+                        "\t[-oui]<oui addr>\r\n"
+                        "\t[-sm] <source mac addr\r\n"
+                        "\t[-dm] <dest mac addr>\r\n"
+                        "\t[-iv] <inner vlan id>\r\n"
+                        "\t[-ov] <outer vlan id>\r\n"
+                        "\t[-sip]/[-sipv6]<source ip>\r\n"
+                        "\t[-dip]/[-dipv6]<dest ip>\r\n"
+                        "\t[-pcp]<priority id>\r\n"
+                        "\t[-p]  <port num>\r\n"
+                        "\t[-c]  <channel num>\r\n"
+                        "\t[-pir]<pir_bw>(Valid for integer multiples of (ALE_FREQ/32768))\r\n"
+                        "\t[-cir]<cir_bw>(Valid for integer multiples of (ALE_FREQ/32768))\r\n\n");
+            }
+            else
+            {
+                snprintf(writeBuffer, writeBufferLen, ""
+                        "\t[-e]  <ethertype>\r\n"
+                        "\t[-oui]<oui addr>\r\n"
+                        "\t[-sm] <source mac addr>\r\n"
+                        "\t[-dm] <dest mac addr>\r\n"
+                        "\t[-iv] <inner vlan id>\r\n"
+                        "\t[-ov] <outer vlan id>\r\n"
+                        "\t[-sip]/[-sipv6]<source ip>\r\n"
+                        "\t[-dip]/[-dipv6]<dest ip>\r\n"
+                        "\t[-pcp]<priority id>\r\n"
+                        "\t[-p]  <port num>\r\n"
+                        "\t[-c]  <channel num>\r\n\n");
+            }
+            return pdFALSE;
+        }
         else
         {
             snprintf(writeBuffer, writeBufferLen, "Invalid args\r\n");
@@ -604,10 +759,25 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
                     "Removed classifier entry(s) from ALE\r\n");
         }
     }
+    else if (block)
+    {
+        /* Block the packets through classfier */
+        status = EnetConfig_blockClassifierEntry(&args);
+        if (status)
+        {
+            snprintf(writeBuffer, writeBufferLen,
+                    "Failed to block using classifier entry from ALE\r\n");
+        }
+        else
+        {
+            snprintf(writeBuffer, writeBufferLen,
+                    "Blocking enabled using classifier entry(s) from ALE\r\n");
+        }
+    }
     else
     {
         /* Add classifier entry to ALE */
-        status = EnetConfig_addClassifierEntry(&args, rxCh);
+        status = EnetConfig_addClassifierEntry(&args, rxCh, cir, pir);
         if (status)
             snprintf(writeBuffer, writeBufferLen,
                     "Failed to add classifier entry to ALE\r\n");
@@ -619,7 +789,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
 }
 
 static int32_t EnetConfig_addClassifierEntry(
-        CpswAle_PolicerMatchParams *matchPrms, uint8_t rxCh)
+        CpswAle_PolicerMatchParams *matchPrms, uint8_t rxCh, uint32_t cir, uint32_t pir)
 {
     CpswAle_SetPolicerEntryInArgs setPolicerInArgs;
     CpswAle_SetPolicerEntryOutArgs setPolicerOutArgs;
@@ -634,9 +804,9 @@ static int32_t EnetConfig_addClassifierEntry(
     setPolicerInArgs.policerMatch = *matchPrms;
     setPolicerInArgs.threadIdEn = true;
     /* The thread ID ranges from 1 to 8, rxCh passed to this function ranges from 0 to 7 */
-    setPolicerInArgs.threadId = rxCh + 1;
-    setPolicerInArgs.peakRateInBitsPerSec = 0;
-    setPolicerInArgs.commitRateInBitsPerSec = 0;
+    setPolicerInArgs.threadId = rxCh;
+    setPolicerInArgs.peakRateInBitsPerSec = pir;
+    setPolicerInArgs.commitRateInBitsPerSec = cir;
     ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerInArgs, &setPolicerOutArgs);
     ENET_IOCTL(EnetCli_inst.hEnet, EnetCli_inst.coreId,
             CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
@@ -654,6 +824,7 @@ static int32_t EnetConfig_remClassifierEntry(
 
     /* Remove policer entry which matches the given parameters */
     inArgs.policerMatch = *matchPrms;
+    inArgs.aleEntryMask = matchPrms->policerMatchEnMask;
     ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
     ENET_IOCTL(EnetCli_inst.hEnet, EnetCli_inst.coreId,
             CPSW_ALE_IOCTL_DEL_POLICER, &prms, status);
@@ -667,6 +838,21 @@ static int32_t EnetConfig_remClassifierEntry(
         ENET_IOCTL(EnetCli_inst.hEnet, EnetCli_inst.coreId,
                 CPSW_ALE_IOCTL_DEL_ALL_POLICER_THREADID, &prms, status);
     }
+
+    return status;
+}
+
+static int32_t EnetConfig_blockClassifierEntry(
+        CpswAle_PolicerMatchParams *matchPrms)
+{
+
+    int32_t status;
+    Enet_IoctlPrms prms;
+    CpswAle_PolicerEntryOutArgs outArgs;
+
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, matchPrms, &outArgs);
+    ENET_IOCTL(EnetCli_inst.hEnet, EnetCli_inst.coreId,
+            CPSW_ALE_IOCTL_BLOCK_CLASSIFIER_HOSTPORT, &prms, status);
 
     return status;
 }

@@ -130,6 +130,14 @@ BaseType_t EnetCLI_openTxChn(char *writeBuffer, size_t writeBufferLen,
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
     chNum = atoi(parameter);
+
+    if(chNum >= ENET_SYSCFG_TX_CHANNELS_NUM)
+    {
+        snprintf(writeBuffer, writeBufferLen,
+                    "Invalid channel number - Tx channel number 0 - %d are available\r\n", ENET_SYSCFG_TX_CHANNELS_NUM-1);
+        return pdFALSE;
+    }
+
     if (EnetApp_inst.txDmaCh[chNum] != CH_CLOSE)
     {
         snprintf(writeBuffer, writeBufferLen,
@@ -158,6 +166,14 @@ BaseType_t EnetCLI_openRxChn(char *writeBuffer, size_t writeBufferLen,
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
     chNum = atoi(parameter);
+
+    if(chNum >= ENET_SYSCFG_RX_FLOWS_NUM)
+    {
+        snprintf(writeBuffer, writeBufferLen,
+                "Invalid channel number - Rx channel number 0 - %d are available\r\n", ENET_SYSCFG_RX_FLOWS_NUM-1);
+        return pdFALSE;
+    }
+
     if (EnetApp_inst.rxDmaCh[chNum] != CH_CLOSE)
     {
         snprintf(writeBuffer, writeBufferLen,
@@ -338,11 +354,16 @@ BaseType_t EnetCLI_capturePkt(char *writeBuffer, size_t writeBufferLen,
 
         status = EnetApp_createRxTask(dmaChNum);
         if (status)
+        {
             snprintf(writeBuffer, writeBufferLen,
                     "Failed to start Rx task\r\n");
+        }
         else
+        {
             snprintf(writeBuffer, writeBufferLen,
                     "Listening to packets at Rx channel %d\r\n", dmaChNum);
+        }
+
     }
     else
     {
@@ -839,7 +860,7 @@ static int32_t EnetApp_createRxTask(int8_t dmaChNum)
     taskParams.priority = 3U;
     taskParams.stack = EnetApp_rxTaskStack[dmaChNum];
     taskParams.stackSize = sizeof(EnetApp_rxTaskStack[dmaChNum]);
-    taskParams.args = (void*) &dmaChNum;
+    taskParams.args = (void*)(uintptr_t)dmaChNum;
     taskParams.name = "Rx Task";
     taskParams.taskMain = &EnetApp_recievePkt;
 
@@ -855,7 +876,7 @@ static int32_t EnetApp_createRxTask(int8_t dmaChNum)
 
 static void EnetApp_recievePkt(void *args)
 {
-    int8_t dmaChNum = *(int8_t*) args;
+    int8_t dmaChNum = (int8_t)(uintptr_t)args;
     EnetDma_Pkt *pktInfo;
     uint32_t rxReadyCnt;
     int32_t status = ENET_SOK;

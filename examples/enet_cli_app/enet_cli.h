@@ -111,8 +111,8 @@ typedef struct EnetApp_Obj_s
     emac_mode macMode; /* MAC mode (defined in board library) */
     Enet_Handle hEnet;
     uint8_t hostMacAddr[ENET_MAC_ADDR_LEN];
-    uint8_t txDmaCh[ENET_SYSCFG_TX_CHANNELS_NUM];
-    uint8_t rxDmaCh[ENET_SYSCFG_RX_FLOWS_NUM];
+    volatile uint8_t txDmaCh[ENET_SYSCFG_TX_CHANNELS_NUM];
+    volatile uint8_t rxDmaCh[ENET_SYSCFG_RX_FLOWS_NUM];
 
     /* Packet transmission */
     EnetDma_TxChHandle hTxCh[ENET_SYSCFG_TX_CHANNELS_NUM];
@@ -180,7 +180,7 @@ extern EnetCli_Obj EnetCli_inst;
 
 
 /* Enet object instance declaration */
-EnetApp_Obj EnetApp_inst;
+extern EnetApp_Obj EnetApp_inst;
 
 /* Transaction for writing to and reading from UART */
 extern UART_Transaction UART_trans;

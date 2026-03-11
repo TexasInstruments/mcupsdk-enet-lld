@@ -235,6 +235,7 @@ enet_cpsw1.MediumPoolPktCount           = 24;
 enet_cpsw1.LargePoolPktCount            = 24;
 enet_cpsw1.PktInfoOnlyEnable            = true;
 enet_cpsw1.phyToMacInterfaceMode2       = "RMII";
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.txDmaChannel.create(3);
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_cpsw1.txDmaChannel[0].PacketsCount = 8;

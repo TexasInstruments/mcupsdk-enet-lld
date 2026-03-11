@@ -66,6 +66,7 @@
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_gptp
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/FreeRTOS-Plus-CLI
             -mcpu=cortex-a53+fp+simd
@@ -166,9 +167,13 @@
         </file>
         <file path="../../../cli_ale/cli_ale_unicast.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../cli_ale/cli_ale_mcast.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="../../../cli_ale/cli_ale_vlan.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../cli_lwip/lwip_shell.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../cli_phy/cli_phy_phymode.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../cli_lwip/cli_lwip.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>

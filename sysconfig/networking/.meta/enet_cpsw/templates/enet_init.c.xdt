@@ -615,7 +615,7 @@ static void EnetApp_ConfigureDscpMapping(Enet_Type enetType,
 %}
 }
 
-void EnetApp_macMode2MacMii(emac_mode macMode, EnetMacPort_Interface *pMii)
+static void EnetApp_macMode2MacMii(emac_mode macMode, EnetMacPort_Interface *pMii)
 {
     switch (macMode)
     {

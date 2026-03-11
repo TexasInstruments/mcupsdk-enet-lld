@@ -252,6 +252,7 @@ enet_cpsw1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
 enet_cpsw1.rxDmaChannel[0].macAddrCount = 2;
 enet_cpsw1.netifInstance.create(1);
 enet_cpsw1.netifInstance[0].$name       = "NETIF_INST_ID0";
+enet_cpsw1.enChOverrideFlag             = true;
 
 const ethphy_cpsw_icssg              = scripting.addModule("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg", {}, false);
 const ethphy_cpsw_icssg1             = ethphy_cpsw_icssg.addInstance({}, false);

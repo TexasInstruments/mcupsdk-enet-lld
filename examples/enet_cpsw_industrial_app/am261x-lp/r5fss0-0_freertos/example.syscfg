@@ -248,6 +248,7 @@ enet_cpsw1.rxDmaChannel[1].macAddrCount = 0;
 enet_cpsw1.rxDmaChannel[1].PacketsCount = 8;
 enet_cpsw1.netifInstance.create(1);
 enet_cpsw1.netifInstance[0].$name       = "NETIF_INST_ID0";
+enet_cpsw1.enChOverrideFlag             = true;
 
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;

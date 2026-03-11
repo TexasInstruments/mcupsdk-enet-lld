@@ -165,7 +165,6 @@ void EnetApp_initAleConfig(CpswAle_Cfg *aleCfg)
 void EnetApp_updateCpswInitCfg(Enet_Type enetType,  uint32_t instId,   Cpsw_Cfg *cpswCfg)
 {
     EnetApp_PerCtxt *perCtxt = EnetApp_getPerCtxt(enetType, instId);
-    EnetDma_Cfg *dmaCfg;
 
     EnetAppUtils_assert(perCtxt != NULL);
     /* Prepare init configuration for all peripherals */
@@ -180,9 +179,6 @@ void EnetApp_updateCpswInitCfg(Enet_Type enetType,  uint32_t instId,   Cpsw_Cfg 
     EnetApp_initEnetLinkCbPrms(cpswCfg);
     EnetApp_initAleConfig(&cpswCfg->aleCfg);
 
-    /* Set the enChOverrideFlag to enable the channel override feature of CPDMA */
-    dmaCfg=(EnetDma_Cfg *)cpswCfg->dmaCfg;
-    dmaCfg->enChOverrideFlag = true;
 }
 
 int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,

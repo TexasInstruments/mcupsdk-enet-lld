@@ -533,6 +533,28 @@ int32_t EnetAppUtils_macAddrAtoI(const char *txt, uint8_t *addr);
  */
 int32_t EnetAppUtils_ipAddrAtoI(const char* txt, uint8_t *addr);
 
+/*!
+ * \brief Converts given IPV6 address in string format to byte array
+ *
+ * \param txt  Pointer to IPV6 address string
+ * \param addr Pointer to array of size 16 bytes to store octets of the IPv4 address
+ *
+ * \return ENET_SOK if input is a valid IPv6 address format
+ *         ENET_EFAIL if input is invalid IPv6 address format
+ */
+int32_t EnetAppUtils_ipv6AddrAtoI(const char *txt, uint8_t *addr, uint32_t len);
+
+/*!
+ * \brief Converts given OUI address in string format to byte array
+ *
+ * \param txt  Pointer to OUI address string
+ * \param addr Pointer to array of size 3 bytes to store octets of the OUI address
+ *
+ * \return ENET_SOK if input is a valid OUI address format
+ *         ENET_EFAIL if input is invalid OUI address format
+ */
+int32_t EnetAppUtils_ouiAddrAtoI(const char* txt, uint8_t *addr);
+
 /**
  *  \brief Utility function to enable CPSW module clocks via SCI_CLIENT
  */

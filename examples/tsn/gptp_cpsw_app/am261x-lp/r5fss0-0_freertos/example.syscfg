@@ -237,6 +237,7 @@ enet_cpsw1.rxDmaChannel[0].PacketsCount = 16;
 enet_cpsw1.rxDmaChannel[1].$name        = "ENET_DMA_RX_CH_PTP";
 enet_cpsw1.rxDmaChannel[1].PacketsCount = 16;
 enet_cpsw1.rxDmaChannel[1].macAddrCount = 0;
+enet_cpsw1.enChOverrideFlag             = true;
 
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;

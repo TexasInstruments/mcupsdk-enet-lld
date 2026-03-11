@@ -239,6 +239,7 @@ section9.output_section[0].alignment = 128;
 enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
 enet_cpsw1.BoardType                    = "am263x-lp";
 enet_cpsw1.LargePoolPktCount            = 96;
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.customBoardEnable            = true;
 enet_cpsw1.hostportRxCsumOffloadEn      = false;
 enet_cpsw1.cptsHostRxTsEn               = false;

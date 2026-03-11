@@ -237,6 +237,7 @@ enet_cpsw1.netifInstance.create(2);
 enet_cpsw1.netifInstance[0].$name       = "NETIF_INST_ID0";
 enet_cpsw1.netifInstance[1].$name       = "NETIF_INST_ID1";
 enet_cpsw1.netifInstance[1].isDefault   = false;
+enet_cpsw1.enChOverrideFlag             = true;
 
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;

@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263x_beta" --part "AM263x" --package "ZCZ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2631-Q1" --package "NFBGA (ZCZ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.23.0+4000"}
+ * @versions {"tool":"1.26.0+4407"}
  */
 
 /**
@@ -227,11 +227,11 @@ section9.output_section[0].$name     = ".bss:ENET_DMA_PKT_MEMPOOL";
 section9.output_section[0].alignment = 128;
 
 enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
-enet_cpsw1.hostportRxCsumOffloadEn      = false;
 enet_cpsw1.cptsHostRxTsEn               = false;
 enet_cpsw1.MediumPoolPktCount           = 24;
 enet_cpsw1.PktInfoOnlyEnable            = true;
 enet_cpsw1.LargePoolPktCount            = 24;
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.txDmaChannel.create(3);
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_cpsw1.txDmaChannel[0].PacketsCount = 8;

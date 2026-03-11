@@ -281,13 +281,7 @@ void EthCfg_addMCastEntry(Enet_Type enetType,
 void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cpswCfg)
 {
 #if defined (ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA)
-    EnetDma_Cfg * dmaCfg = (EnetDma_Cfg *)cpswCfg->dmaCfg;
-
-    EnetAppUtils_assert(dmaCfg != NULL);
     EnetAppUtils_assert(EnetAppUtils_isDescCached() == false);
-
-    /* Set the enChOverrideFlag to enable the channel override feature of CPDMA */
-    dmaCfg->enChOverrideFlag = true;
 #endif
 
 #if (ENET_SYSCFG_ENABLE_MDIO_MANUALMODE == 1U)

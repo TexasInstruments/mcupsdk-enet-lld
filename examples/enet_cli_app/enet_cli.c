@@ -77,12 +77,13 @@ static BaseType_t EnetCli_utilsCommandWrapper(char *writeBuffer,
 /* ========================================================================== */
 
 EnetCli_Obj EnetCli_inst;
+EnetApp_Obj EnetApp_inst;
 
 /* Commands for modifying ethernet configuration */
 static CLI_Command_Definition_t enetConfigCommands =
         { .pcCommand = "enet_cfg",
             .pcHelpString =
-                    "enet_cfg {help|mqprio|tracelvl|classifier}:\r\n Commands to modify ethernet configurations.\r\n\n",
+                    "enet_cfg {help|mqprio|tracelvl|classifier|policer}:\r\n Commands to modify ethernet configurations.\r\n\n",
             .pxCommandInterpreter = EnetCli_configCommandWrapper,
             .cExpectedNumberOfParameters = -1 };
 

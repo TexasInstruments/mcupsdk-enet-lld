@@ -250,6 +250,7 @@ enet_cpsw1.BoardType                    = "am263px-lp";
 enet_cpsw1.PktInfoOnlyEnable            = true;
 enet_cpsw1.PktInfoOnlyCount             = 8;
 enet_cpsw1.LargePoolPktCount            = 104;
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.RGMII1.$assign               = "RGMII1";
 enet_cpsw1.txDmaChannel.create(2);
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";

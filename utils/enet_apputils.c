@@ -1135,6 +1135,120 @@ int32_t EnetAppUtils_ipAddrAtoI(const char* txt, uint8_t *addr)
 
 }
 
+int32_t EnetAppUtils_ipv6AddrAtoI(const char *txt, uint8_t *addr, uint32_t len)
+{
+    int32_t status = ENET_SOK;
+    uint16_t words[8] = {0};
+    int32_t wordIdx = 0;
+    int32_t doubleColonIdx = -1;
+    const char *p = txt;
+    int32_t fillCount = 0;
+    int32_t writeIdx = 0;
+
+    /* Handle leading double colon "::1" */
+    if (*p == ':' && *(p + 1) == ':')
+    {
+        doubleColonIdx = 0;
+        p += 2;
+    }
+
+    while (*p != '\0' && (p-txt) != len && wordIdx < 8)
+    {
+        uint32_t val = 0;
+        int32_t digitCount = 0;
+
+        /* Parse hex characters for the current 16-bit group */
+        while (*p != '\0' && (p-txt) != len && *p != ':')
+        {
+            int8_t nibble = EnetAppUtils_hex2Num(*p++);
+            if (nibble < 0) return ENET_EFAIL;
+            val = (val << 4) | (uint8_t)nibble;
+            if (++digitCount > 4) return ENET_EFAIL; /* Group too long */
+        }
+
+        words[wordIdx++] = (uint16_t)val;
+
+        if (*p == ':')
+        {
+            p++;
+            if (*p == ':') /* Found double colon */
+            {
+                if (doubleColonIdx != -1) return ENET_EFAIL; /* Only one allowed */
+                doubleColonIdx = wordIdx;
+                p++;
+                if (*p == '\0' || (p-txt) == len) break; /* Ends with :: */
+            }
+        }
+    }
+
+    /* Expand the double colon if it exists */
+    fillCount = 8 - wordIdx;
+
+    if (doubleColonIdx != -1)
+    {
+        /* Write words before the double colon */
+        for (int32_t i = 0; i < doubleColonIdx; i++)
+        {
+            addr[writeIdx++] = (uint8_t)(words[i] >> 8);
+            addr[writeIdx++] = (uint8_t)(words[i] & 0xFF);
+        }
+        /* Fill zeros for the :: */
+        for (int32_t i = 0; i < fillCount; i++)
+        {
+            addr[writeIdx++] = 0;
+            addr[writeIdx++] = 0;
+        }
+        /* Write words after the double colon */
+        for (int32_t i = doubleColonIdx; i < wordIdx; i++)
+        {
+            addr[writeIdx++] = (uint8_t)(words[i] >> 8);
+            addr[writeIdx++] = (uint8_t)(words[i] & 0xFF);
+        }
+    }
+    else
+    {
+        if (wordIdx != 8) return ENET_EFAIL; /* Must have 8 groups if no :: */
+        for (int32_t i = 0; i < 8; i++)
+        {
+            addr[writeIdx++] = (uint8_t)(words[i] >> 8);
+            addr[writeIdx++] = (uint8_t)(words[i] & 0xFF);
+        }
+    }
+
+    return status;
+}
+
+int32_t EnetAppUtils_ouiAddrAtoI(const char *txt, uint8_t *addr)
+{
+    int32_t status = ENET_SOK;
+    int8_t a, b, i;
+
+    for (i = 0; i < 3; i++)
+    {
+        a = EnetAppUtils_hex2Num(*txt++);
+        if (a < 0)
+        {
+            status = ENET_EFAIL;
+        }
+
+        b = EnetAppUtils_hex2Num(*txt++);
+        if (b < 0)
+        {
+            status = ENET_EFAIL;
+        }
+
+        *addr++ = (a << 4) | b;
+
+        if ((i < 2) && (*txt++ != ':'))
+        {
+            status = ENET_EFAIL;
+            break;
+        }
+    }
+
+    return status;
+}
+
 #if defined (SOC_AM273X) || defined (SOC_AWR294X) || defined (SOC_AM263X) || defined (SOC_AM263PX) || defined(SOC_AM261X)
 void EnetAppUtils_enableClocks(Enet_Type enetType, uint32_t instId)
 {

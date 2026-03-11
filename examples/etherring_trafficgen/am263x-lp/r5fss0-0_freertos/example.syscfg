@@ -255,6 +255,7 @@ enet_cpsw1.hostportRxCsumOffloadEn               = false;
 enet_cpsw1.enableTsOut                           = true;
 enet_cpsw1.PktInfoOnlyEnable                     = true;
 enet_cpsw1.LargePoolPktCount                     = 110;
+enet_cpsw1.enChOverrideFlag                      = true;
 enet_cpsw1.nolearn_hostPort                      = true;
 enet_cpsw1.noSaUpdteEn_hostPort                  = true;
 enet_cpsw1.nolearn_macPort1                      = true;

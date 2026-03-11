@@ -5868,7 +5868,6 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_DEL_ALL_POLICER_THREADID(CpswAle_Ha
     return status;
 }
 
-#if ENET_CFG_IS_ON(CPSW_INTERVLAN)
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_BLOCK_CLASSIFIER_HOSTPORT(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)
 {
     const CpswAle_PolicerMatchParams *inArgs = (const CpswAle_PolicerMatchParams *)prms->inArgs;
@@ -5878,7 +5877,6 @@ int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_BLOCK_CLASSIFIER_HOSTPORT(CpswAle_H
     status = CpswAle_blockClassifierToHostPort(hAle, regs, hAle->aleFreqHz, inArgs, outArgs);
     return status;
 }
-#endif
 
 #if ENET_CFG_IS_ON(CPSW_INTERVLAN)
 int32_t CpswAle_ioctl_handler_CPSW_ALE_IOCTL_SET_INTERVLAN_CFG(CpswAle_Handle hAle, CSL_AleRegs *regs, Enet_IoctlPrms *prms)

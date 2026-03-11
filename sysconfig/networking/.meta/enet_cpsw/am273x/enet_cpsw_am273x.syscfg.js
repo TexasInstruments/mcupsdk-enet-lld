@@ -36,7 +36,26 @@ const enet_cpsw_cpdma_channel_config = {
 	longDescription: "Configuration of Tx/Rx DMA channels",
     collapsed:true,
     config: [
-
+        {
+            name: "txInterruptPerMSec",
+            description: "Number of tx Interrupts per millisecond",
+            displayName: "Tx Interrupt Per MSec",
+            default:0,
+            isInteger:true,
+        },
+        {
+            name: "rxInterruptPerMSec",
+            description: "Number of rx Interrupts per millisecond",
+            displayName: "Rx Interrupt Per MSec",
+            default:0,
+            isInteger:true,
+        },
+        {
+            name: "enChOverrideFlag",
+            description: "Flag to enable channel override feature to be used by classifier",
+            displayName: "Enable Channel Override Flag",
+            default:false,
+        },
     ],
 };
 

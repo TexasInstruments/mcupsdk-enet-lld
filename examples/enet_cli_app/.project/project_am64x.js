@@ -7,8 +7,10 @@ const files = {
             "enet_cli_wrapper.c",
             "enet_cli.c",
             "cli_ale_unicast.c",
+            "cli_ale_mcast.c",
             "cli_ale_vlan.c",
             "lwip_shell.c",
+            "cli_phy_phymode.c",
             "cli_lwip.c",
             "cli_gptp_log.c",
             "cli_gptp_app.c",
@@ -47,6 +49,7 @@ const filedirs = {
         "../../../cli_lwip", /* Example base */
         "../../../enet_cli_wrapper", /* Example base */
         "../../../cli_ale", /* Example base */
+        "../../../cli_phy", /* Example base */
     ],
 };
 
@@ -101,6 +104,7 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_gptp",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper",
     ],
 };
@@ -144,6 +148,7 @@ const includes_freertos_a53 = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_gptp",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/FreeRTOS-Plus-CLI",
     ],

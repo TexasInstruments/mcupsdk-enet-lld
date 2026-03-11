@@ -43,9 +43,11 @@
 #include "enet_cli.h"
 #include "enet_cli_layer2_datapath.h"
 #include "cli_ale_unicast.h"
+#include "cli_ale_mcast.h"
 #include "cli_ale_vlan.h"
 #include "cli_gptp_app.h"
 #include "cli_lwip.h"
+#include "cli_phy/cli_phy_phymode.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -100,13 +102,23 @@ CLI_Command_Definition_t commandList[] =
                 .cExpectedNumberOfParameters = 0 },
             { .pcCommand = "enet_adducast",
                 .pcHelpString =
-                        "enet_adducast <mac_addr> [-d]:\r\n Adds a unicast ALE entry with the given MAC address.\r\n Use the -d tag to make the MAC address as the default source address for sending packets.\r\n\n",
+                        "enet_adducast <mac_addr> {help}:\r\n Adds a unicast ALE entry with the given MAC address.\r\n Use help keyword to know more.\r\n\n",
                 .pxCommandInterpreter = EnetCLI_addUcast,
                 .cExpectedNumberOfParameters = -1 },
             { .pcCommand = "enet_remucast",
                 .pcHelpString =
                         "enet_remucast <mac_addr>:\r\n Removes unicast ALE entry with the given MAC address.\r\n\n",
                 .pxCommandInterpreter = EnetCLI_removeUcast,
+                .cExpectedNumberOfParameters = 1 },
+            { .pcCommand = "enet_addmcast",
+                .pcHelpString =
+                        "enet_addmcast <mac_addr> {help}:\r\n Adds a multicast ALE entry with the given MAC address.\r\n Use help keyword to know more.\r\n\n",
+                .pxCommandInterpreter = EnetCLI_addMcast,
+                .cExpectedNumberOfParameters = -1 },
+            { .pcCommand = "enet_remmcast",
+                .pcHelpString =
+                        "enet_remmcast <mac_addr>:\r\n Removes multicast ALE entry with the given MAC address.\r\n\n",
+                .pxCommandInterpreter = EnetCLI_removeMcast,
                 .cExpectedNumberOfParameters = 1 },
             { .pcCommand = "enet_addvlan",
                 .pcHelpString =
@@ -131,7 +143,16 @@ CLI_Command_Definition_t commandList[] =
             { .pcCommand = "lwip_shell", .pcHelpString =
                     "lwip_shell {start | stop}:\r\n Opens an LwIP shell.\r\n\n",
                 .pxCommandInterpreter = EnetCLI_lwipShell,
-                .cExpectedNumberOfParameters = 1 } };
+                .cExpectedNumberOfParameters = 1 },
+            {.pcCommand = "enet_phymode",
+                .pcHelpString =
+                    "enet_phymode -p <port number> -d <duplexity> -s <speed> [-r]:\r\n Updates the phy mode of a particular "
+                    "port. \r\n Speed can be one among 10m, 100m, 1g, 10g or auto\r\n "
+                    "Duplexity can be one among half, full or auto.\r\n "
+                    "Port can either be 1 or 2.\r\n "
+                    "Providing -r will reset the phymode of port to 1g speed and full duplexity\r\n\n",
+                .pxCommandInterpreter = EnetCli_phyMode,
+                .cExpectedNumberOfParameters = -1}};
 
 /* ========================================================================== */
 /*                          Function Definitions                              */

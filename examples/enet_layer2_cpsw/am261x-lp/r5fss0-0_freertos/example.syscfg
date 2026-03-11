@@ -231,6 +231,7 @@ enet_cpsw1.mdioMode              = "MDIO_MODE_MANUAL";
 enet_cpsw1.DisableMacPort2       = true;
 enet_cpsw1.txDmaChannel[0].$name = "ENET_DMA_TX_CH0";
 enet_cpsw1.rxDmaChannel[0].$name = "ENET_DMA_RX_CH0";
+enet_cpsw1.enChOverrideFlag             = true;
 
 ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 ethphy_cpsw_icssg1.boardType      = "am261x-lp";
