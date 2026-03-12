@@ -87,6 +87,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/apps/altcp_tls \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263x/enet \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/dpl/ \
+	-I../../.. \
+	-I../../../app_ethcfg \
 	-Igenerated \
 
 DEFINES_common := \

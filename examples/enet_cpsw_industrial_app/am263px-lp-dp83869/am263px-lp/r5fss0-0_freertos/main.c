@@ -45,11 +45,24 @@ StackType_t gMainTaskStack[MAIN_TASK_SIZE] __attribute__((aligned(32)));
 StaticTask_t gMainTaskObj;
 TaskHandle_t gMainTask;
 
-void EnetApp_mainTask(void *args);
+void EnetApp_main(void *args);
 
 void freertos_main(void *args)
 {
-    EnetApp_mainTask(NULL);
+    int32_t status = SystemP_SUCCESS;
+
+    /* Open drivers */
+    Drivers_open();
+    /* Open flash and board drivers */
+    status = Board_driversOpen();
+    DebugP_assert(status==SystemP_SUCCESS);
+
+    EnetApp_main(NULL);
+
+    /* Close board and flash drivers */
+    Board_driversClose();
+    /* Close drivers */
+    Drivers_close();
 
     vTaskDelete(NULL);
 }

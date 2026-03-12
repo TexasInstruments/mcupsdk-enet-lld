@@ -37,7 +37,7 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 #include "app_cfg.h"
-#include "app_ethcfg/app_ethcfg.h"
+#include "app_ethcfg.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

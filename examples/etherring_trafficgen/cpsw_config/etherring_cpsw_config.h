@@ -64,7 +64,7 @@ extern "C" {
 #include "ti_enet_config.h"
 #include "ti_enet_open_close.h"
 #include <ether_ring/inc/ether_ring.h>
-#include "../etherring_trafficgen_config.h"
+#include "etherring_trafficgen_config.h"
 /*============================================================================*/
 /*                           Macros and Constants                             */
 /*============================================================================*/

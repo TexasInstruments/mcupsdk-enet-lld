@@ -30,7 +30,7 @@ const filedirs = {
         "../../../back_ground_tcp_app",
         "../../../cpsw_config",
         "..",
-          ],
+    ],
 };
 
 const libdirs_freertos = {
@@ -69,6 +69,8 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263x/enet",
+        "../../../back_ground_tcp_app",
+        "../../../cpsw_config",
     ],
 };
 

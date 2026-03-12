@@ -38,7 +38,7 @@ const filedirs = {
         "../../../../can_eth_gateway", /* Example base */
         "../../../../can_trafficgen",
         "../../../../ethernet_config",
-           ],
+    ],
 };
 
 const libdirs_freertos = {
@@ -48,7 +48,6 @@ const libdirs_freertos = {
         "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
-
     ],
 };
 
@@ -71,6 +70,9 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/etherring_can/",
+        "../../../../can_eth_gateway",
+        "../../../../can_trafficgen",
+        "../../../../ethernet_config",
     ],
 };
 

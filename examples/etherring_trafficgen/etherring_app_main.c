@@ -40,9 +40,9 @@
 /* ========================================================================== */
 /*                              Include Files                                 */
 /* ========================================================================== */
-#include "cpsw_config/etherring_cpsw_config.h"
+#include "etherring_cpsw_config.h"
 #include "etherring_trafficgen_config.h"
-#include "back_ground_tcp_app/tcp_config.h"
+#include "tcp_config.h"
 /* ========================================================================== */
 /*                         Global Variables                                   */
 /* ========================================================================== */

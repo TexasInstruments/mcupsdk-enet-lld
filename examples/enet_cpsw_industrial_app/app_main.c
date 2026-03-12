@@ -40,7 +40,7 @@
 
 /* Including application header files */
 #include "app_cfg.h"
-#include "app_ethcfg/app_ethcfg.h"
+#include "app_ethcfg.h"
 #include "app_rawudp_handler.h"
 #include "app_tcpserver.h"
 

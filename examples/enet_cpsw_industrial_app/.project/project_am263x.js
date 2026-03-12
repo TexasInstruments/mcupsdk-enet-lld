@@ -68,7 +68,9 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/src/apps/altcp_tls",
         "${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263x/enet",
-        "${MCU_PLUS_SDK_PATH}/source/kernel/dpl/"
+        "${MCU_PLUS_SDK_PATH}/source/kernel/dpl/",
+        "../../..",
+        "../../../app_ethcfg",
     ],
 };
 

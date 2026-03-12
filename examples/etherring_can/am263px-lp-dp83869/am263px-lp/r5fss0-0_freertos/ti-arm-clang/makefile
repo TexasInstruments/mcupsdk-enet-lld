@@ -87,6 +87,9 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/etherring_can/ \
+	-I../../../../can_eth_gateway \
+	-I../../../../can_trafficgen \
+	-I../../../../ethernet_config \
 	-Igenerated \
 
 DEFINES_common := \

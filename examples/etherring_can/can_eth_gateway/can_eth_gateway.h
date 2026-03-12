@@ -40,7 +40,7 @@
 /* ========================================================================== */
 /*                              Include Files                                 */
 /* ========================================================================== */
-#include "../can_trafficgen/can_trafficgen.h"
+#include "can_trafficgen.h"
 
 #ifdef __cplusplus
 extern "C" {

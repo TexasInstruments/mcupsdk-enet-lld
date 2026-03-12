@@ -154,9 +154,6 @@ const defines_r5f = {
     common: [
          "ENET_ENABLE_PER_CPSW=1",
     ],
-    debug: [
-         'ENET_DEBUG_MODE',
-    ],
 };
 
 const cflags_r5f = {

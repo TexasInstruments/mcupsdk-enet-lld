@@ -86,6 +86,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/lwipif/inc \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-stack/contrib \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/lwip/lwip-config/am263px/enet \
+	-I../../../.. \
+	-I../../../../app_ethcfg \
 	-Igenerated \
 
 DEFINES_common := \

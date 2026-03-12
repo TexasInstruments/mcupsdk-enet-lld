@@ -50,9 +50,9 @@
 /*                              Include Files                                 */
 /* ========================================================================== */
 #include "etherring_can_cfg.h"
-#include "ethernet_config/ethernet_config.h"
-#include "can_trafficgen/can_trafficgen.h"
-#include "can_eth_gateway/can_eth_gateway.h"
+#include "ethernet_config.h"
+#include "can_trafficgen.h"
+#include "can_eth_gateway.h"
 
 #ifdef __cplusplus
 extern "C" {

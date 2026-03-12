@@ -60,8 +60,8 @@
 #include "ti_board_open_close.h"
 #include "ti_enet_config.h"
 #include "ti_enet_open_close.h"
-#include "../etherring_can_cfg.h"
-#include "../etherring_can_app.h"
+#include "etherring_can_cfg.h"
+#include "etherring_can_app.h"
 
 #ifdef __cplusplus
 extern "C" {

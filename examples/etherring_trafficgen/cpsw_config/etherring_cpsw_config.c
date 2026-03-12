@@ -39,7 +39,7 @@
 /*                             Include Files                                  */
 /* ========================================================================== */
 #include "etherring_cpsw_config.h"
-#include "../etherring_trafficgen_config.h"
+#include "etherring_trafficgen_config.h"
 #include <enet_appmemutils.h>
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */

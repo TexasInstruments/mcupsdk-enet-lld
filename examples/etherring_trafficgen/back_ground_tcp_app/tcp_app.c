@@ -44,7 +44,7 @@
 #include "enet_apputils.h"
 #include "lwip/priv/tcp_priv.h"
 #include "lwip/ip4_addr.h"
-#include "../cpsw_config/etherring_cpsw_config.h"
+#include "etherring_cpsw_config.h"
 #include "tcp_config.h"
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */

@@ -122,9 +122,6 @@ DEFINES_common := \
 	-DENET_ENABLE_PER_CPSW=1 \
 	-DOS_FREERTOS \
 
-DEFINES_debug := \
-	-DENET_DEBUG_MODE \
-
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
 	-mfloat-abi=hard \

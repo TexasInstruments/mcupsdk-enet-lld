@@ -115,7 +115,6 @@
         <configuration name="Debug"
             compilerBuildOptions="
                 -D_DEBUG_=1
-                ENET_DEBUG_MODE
             "
             linkerBuildOptions="
                 -lfreertos.am263px.r5f.ti-arm-clang.debug.lib

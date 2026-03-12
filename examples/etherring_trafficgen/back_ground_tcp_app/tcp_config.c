@@ -63,7 +63,7 @@
 #include "ti_enet_open_close.h"
 
 #include "ti_enet_lwipif.h"
-#include "../cpsw_config/etherring_cpsw_config.h"
+#include "etherring_cpsw_config.h"
 #include "tcp_config.h"
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
