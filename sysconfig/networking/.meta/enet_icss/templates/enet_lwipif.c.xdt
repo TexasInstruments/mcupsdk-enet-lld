@@ -80,6 +80,7 @@
 /*                            Global Variables                                */
 /* ========================================================================== */
 %if(instance.RtosVariant == "FreeRTOS"){
+
 typedef struct LwipifEnetApp_RxTaskInfo_s
 {
     TaskP_Object      task;
@@ -136,6 +137,7 @@ typedef struct LwipifEnetApp_TaskInfo_s
     LwipifEnetApp_TxTaskInfo txTask[LWIPIF_NUM_TX_PACKET_TASKS];
     LwipifEnetApp_PollTaskInfo pollTask;
 } LwipifEnetApp_TaskInfo;
+%}
 
 typedef struct LwipifEnetApp_Object_s
 {
@@ -148,8 +150,6 @@ typedef struct LwipifEnetApp_Object_s
     */
     ClockP_Object pollLinkClkObj;
 } LwipifEnetApp_Object;
-
-%}
 /*
  * Clock handle for triggering the packet Rx notify
  */
