@@ -35,9 +35,9 @@
 /* ========================================================================== */
 
 #include "kernel/dpl/TaskP.h"
-#include "../../tsninit.h"
-#include "../../enetapp_cpsw.h"
-#include "../../../../ether_ring/inc/ether_ring.h"
+#include "tsninit.h"
+#include "enetapp_cpsw.h"
+#include "ether_ring.h"
 #include "ti_enet_config.h"
 #include "enet_apputils.h"
 #include "enet_apputils_k3.h"

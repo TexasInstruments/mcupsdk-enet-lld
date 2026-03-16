@@ -43,8 +43,8 @@
 #include "ti_drivers_config.h"
 #include "ti_drivers_open_close.h"
 #include "ti_board_open_close.h"
-#include "../../common_files/shm_cirbuf.h"
-#include "../../common_files/gpio_sm.h"
+#include "shm_cirbuf.h"
+#include "gpio_sm.h"
 #include "string.h"
 
 /* ========================================================================== */

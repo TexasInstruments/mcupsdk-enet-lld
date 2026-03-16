@@ -37,9 +37,9 @@
 #include "ti_dpl_config.h"
 #include "tsn_conl2/aaf_avtpc_listener.h"
 #include "tsn_conl2/aaf_avtpc_talker.h"
-#include "../common_files/shm_cirbuf.h"
+#include "shm_cirbuf.h"
 #include "ti_drivers_open_close.h"
-#include "../common_files/gpio_sm.h"
+#include "gpio_sm.h"
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */

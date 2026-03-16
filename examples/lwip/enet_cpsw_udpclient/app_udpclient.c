@@ -33,7 +33,7 @@
 /* ========================================================================== */
 /*                             Include Files                                  */
 /* ========================================================================== */
-#include "../enet_cpsw_udpclient/app_udpclient.h"
+#include "app_udpclient.h"
 
 #include "lwip/opt.h"
 #include "lwip/sockets.h"

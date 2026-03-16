@@ -38,8 +38,8 @@
 #include <kernel/dpl/SemaphoreP.h>
 #include "ti_dpl_config.h"
 #include "ti_drivers_open_close.h"
-#include "../common_files/shm_cirbuf.h"
-#include "../common_files/gpio_sm.h"
+#include "shm_cirbuf.h"
+#include "gpio_sm.h"
 
 #define APP_MCASP_SHM_BLOCK_SIZE     (1536U)
 #define APP_MCASP_SHM_NUM_BLOCKS     (1U)
