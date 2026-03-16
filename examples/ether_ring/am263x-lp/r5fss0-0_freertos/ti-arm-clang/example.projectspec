@@ -169,6 +169,24 @@
         </file>
         <file path="../../../default_flow_cpsw.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../tsnapp_porting.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../config.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../dataflow.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../tsninit.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../debug_log.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../enetapp_cpsw.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../qosapp_misc.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../est/est_configure.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am263x/EXAMPLES_ENET_CPSW_ETHERRING.html"

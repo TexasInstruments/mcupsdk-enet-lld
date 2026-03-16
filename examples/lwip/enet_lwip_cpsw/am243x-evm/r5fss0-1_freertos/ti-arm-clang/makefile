@@ -43,11 +43,6 @@ FILES_common := \
 	test_enet_cpsw.c \
 	main.c \
 	udp_iperf.c \
-	enetextphy.c \
-	enetextphy_phymdio_dflt.c \
-	dp83867.c \
-	dp83869.c \
-	generic_phy.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -65,7 +60,6 @@ FILES_common := \
 FILES_PATH_common = \
 	.. \
 	../../.. \
-	../../../extPhyMgmt \
 	generated \
 
 INCLUDES_common := \

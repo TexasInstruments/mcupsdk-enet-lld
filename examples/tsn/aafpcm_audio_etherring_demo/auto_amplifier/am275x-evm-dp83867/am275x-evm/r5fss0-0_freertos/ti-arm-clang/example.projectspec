@@ -31,6 +31,7 @@
         compilerBuildOptions="
             -I${CG_TOOL_ROOT}/include/c
             -I${MCU_PLUS_SDK_PATH}/source
+            -I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files
             -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include
             -I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include
@@ -178,8 +179,6 @@
         </file>
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../../../aafpcm_app/sample_audio.c" openOnCreation="false" excludeFromBuild="false" action="copy">
-        </file>
         <file path="../../../../../../aafpcm_app/aaf_pcm_app.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../../../common_files/board.c" openOnCreation="false" excludeFromBuild="false" action="copy">
@@ -207,6 +206,34 @@
         <file path="../../../../../common_files/timer_pwm.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../../../common_files/cbs_config.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/Enetapp_common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../aafpcm_app/aaf_pcm_app.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/avtpcf.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/crf_app.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/crf_hw_config.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../debug_log.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../enetapp_cpsw.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/gpio_sm.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../aafpcm_app/sample_audio.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../common_files/shm_cirbuf.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../tsnapp_porting.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../tsninit.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../../../../../ether_ring/inc/ether_ring.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>

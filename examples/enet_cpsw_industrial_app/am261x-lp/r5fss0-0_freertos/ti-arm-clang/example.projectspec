@@ -138,6 +138,14 @@
         </file>
         <file path="../../..//app_tcpserver.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../..//app_cfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../app_ethcfg/app_ethcfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../..//app_rawudp_handler.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../..//app_tcpserver.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am261x/EXAMPLES_ENET_CPSW_INDUSTRIAL_APP.html"

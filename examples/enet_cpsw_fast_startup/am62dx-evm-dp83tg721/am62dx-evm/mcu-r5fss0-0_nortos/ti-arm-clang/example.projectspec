@@ -120,6 +120,14 @@
         </file>
         <file path="../../../../enet_profiler.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../../cpsw_fast_startup_common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../cpsw_fast_startup_cfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../cpsw_fast_startup_dataflow.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../../enet_profiler.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">

@@ -147,6 +147,30 @@
         </file>
         <file path="../../../extPhyMgmt/generic_phy.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../extPhyMgmt/dp83867.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/dp83867_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/dp83869.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/dp83869_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/enetextphy.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/enetextphy_phymdio_dflt.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/enetextphy_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../extPhyMgmt/generic_phy.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../lwipcfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../test_enet_extphy.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../test_enet_lwip.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../udp_iperf.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am261x/EXAMPLES_ENET_LWIP_CPSW.html"

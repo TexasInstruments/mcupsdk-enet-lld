@@ -143,6 +143,24 @@
         </file>
         <file path="../../../ptp_stack/timeSync_tools.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../V0/multi_channel_common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../V0/multi_channel_cfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../V0/multi_channel_dataflow.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync_ptp.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync_ptp_init_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync_ptp_osal_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync_ptp_priv.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../ptp_stack/timeSync_tools.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">

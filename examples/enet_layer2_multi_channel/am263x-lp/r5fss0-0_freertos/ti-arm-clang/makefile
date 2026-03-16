@@ -63,6 +63,7 @@ FILES_PATH_common = \
 	.. \
 	../../../V1 \
 	../../../ptp_stack \
+	../../../am263x \
 	generated \
 
 INCLUDES_common := \

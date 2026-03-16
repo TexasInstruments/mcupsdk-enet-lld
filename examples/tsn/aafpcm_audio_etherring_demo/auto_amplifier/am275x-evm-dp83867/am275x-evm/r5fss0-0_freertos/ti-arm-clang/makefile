@@ -44,7 +44,6 @@ FILES_common := \
 	tsn_audioapp_cpsw_main.c \
 	background_traffic.c \
 	main.c \
-	sample_audio.c \
 	aaf_pcm_app.c \
 	board.c \
 	crf_hw_config.c \
@@ -81,11 +80,13 @@ FILES_PATH_common = \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/ether_ring/src \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/ether_ring/inc \
 	generated \
 
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include/c \
 	-I${MCU_PLUS_SDK_PATH}/source \
+	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
