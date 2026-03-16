@@ -12,6 +12,15 @@ const files = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "cpsw_fast_startup_common.h",
+        "cpsw_fast_startup_cfg.h",
+        "cpsw_fast_startup_dataflow.h",
+        "enet_profiler.h",
+    ],
+};
+
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
@@ -167,6 +176,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

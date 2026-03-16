@@ -13,8 +13,6 @@ const main_files = {
         "tsn_audioapp_cpsw_main.c",
         "background_traffic.c",
         "main.c",
-        "sample_audio.c",
-        "aaf_pcm_app.c",
         "board.c",
         "crf_hw_config.c",
         "crf_app.c",
@@ -29,6 +27,23 @@ const main_files = {
         "cbs_config.c",
     ],
 };
+ 
+const main_incfiles = {
+    common: [
+        "Enetapp_common.h",
+        "avtpcf.h",
+        "common.h",
+        "crf_app.h",
+        "crf_hw_config.h",
+        "debug_log.h",
+        "enetapp_cpsw.h",
+        "gpio_sm.h",
+        "sample_audio.h",
+        "shm_cirbuf.h",
+        "tsnapp_porting.h",
+        "tsninit.h",
+    ],
+};
 
 const remote_files = {
     common: [
@@ -36,6 +51,13 @@ const remote_files = {
         "remote_mcasp_playback.c",
         "shm_cirbuf.c",
         "gpio_sm.c",
+    ],
+};
+
+const remote_incfiles = {
+    common: [
+        "gpio_sm.h",
+        "shm_cirbuf.h",
     ],
 };
 
@@ -81,6 +103,8 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
@@ -114,6 +138,7 @@ const includes_freertos_r5f = {
 
 const includes_freertos_c75 = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_CGT/DSP_C75X",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/c75x",
@@ -292,6 +317,7 @@ function getComponentBuildProperty(buildOption) {
                     libdirs_freertos_cpy.common.splice(delIndex, 1);
                 }
             }
+            build_property.incfiles = main_incfiles;
             build_property.includes = includes_freertos_r5f;
             build_property.libdirs = libdirs_freertos_cpy;
             build_property.libs = libs_freertos_r5f;
@@ -305,6 +331,7 @@ function getComponentBuildProperty(buildOption) {
     }
     else if(buildOption.cpu.match(/c75*/))
     {
+        build_property.incfiles = remote_incfiles;
         build_property.defines = defines_c75;
         build_property.includes = includes_freertos_c75;
         build_property.libdirs = libdirs_freertos;

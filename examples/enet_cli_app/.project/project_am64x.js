@@ -22,6 +22,20 @@ const files = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "enet_cli.h",
+        "enet_cli_layer2_datapath.h",
+        "enet_cli_wrapper.h",
+        "cli_ale_unicast.h",
+        "cli_ale_vlan.h",
+        "cli_lwip.h",
+        "lwip_shell.h",
+        "cli_gptp_app.h",
+        "cli_gptp_log.h",
+    ],
+};
+
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
@@ -322,6 +336,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.syscfgfile = syscfgfile;
         build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;

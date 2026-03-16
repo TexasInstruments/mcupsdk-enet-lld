@@ -50,6 +50,19 @@ const remote_filedirs = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "app_control.h",
+        "app_icssgconfighandler.h",
+        "app_netif.h",
+        "app_tcpclient.h",
+        "app_tcpserver.h",
+        "netif_common.h",
+        "ti_ic_open_close.h",
+        "udp_iperf.h",
+    ],
+};
+
 const libdirs_freertos = {
     common: [
 	    "generated",
@@ -208,6 +221,7 @@ function getComponentBuildProperty(buildOption) {
         build_property.files = remote_files;
     }
 
+    build_property.incfiles = incfiles;
     build_property.syscfgfile = syscfgfile;
         build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
 

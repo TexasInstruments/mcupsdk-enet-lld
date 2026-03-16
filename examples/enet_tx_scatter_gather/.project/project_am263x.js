@@ -12,6 +12,16 @@ const files = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "txsg_common.h",
+        "txsg_cfg.h",
+        "enet_appprofile.h",
+        "csl_arm_r5_pmu.h",
+        "csl_arm_r5.h",
+    ],
+};
+
 const asmfiles_r5f = {
     common: [
         "csl_arm_r5_pmu.S",
@@ -159,6 +169,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.projectspecfiles = projectspecfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;

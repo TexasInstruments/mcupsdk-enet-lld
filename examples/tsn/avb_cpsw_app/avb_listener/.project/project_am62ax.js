@@ -50,6 +50,13 @@ const remote_filedirs = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "ShdMemCircularBufferP_nortos.h",
+        "avb_ipc.h",
+    ],
+};
+
 const libdirs_freertos = {
     common: [
         "generated",
@@ -269,6 +276,7 @@ function getComponentBuildProperty(buildOption) {
         build_property.filedirs = remote_filedirs;
     }
 
+    build_property.incfiles = incfiles;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
         build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;

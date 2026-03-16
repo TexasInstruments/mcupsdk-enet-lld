@@ -28,6 +28,23 @@ const filedirs = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "dp83867.h",
+        "dp83867_priv.h",
+        "dp83869.h",
+        "dp83869_priv.h",
+        "enetextphy.h",
+        "enetextphy_phymdio_dflt.h",
+        "enetextphy_priv.h",
+        "generic_phy.h",
+        "lwipcfg.h",
+        "test_enet_extphy.h",
+        "test_enet_lwip.h",
+        "udp_iperf.h",
+    ],
+};
+
 const libdirs_freertos = {
     common: [
 	    "generated",
@@ -168,6 +185,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

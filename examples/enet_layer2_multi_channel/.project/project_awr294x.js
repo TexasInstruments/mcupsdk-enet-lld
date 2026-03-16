@@ -16,6 +16,21 @@ const files = {
     ],
 };
 
+const incfiles = {
+    common: [
+        "multi_channel_common.h",
+        "multi_channel_cfg.h",
+        "multi_channel_dataflow.h",
+        "multi_channel_testparams.h",
+        "timeSync.h",
+        "timeSync_ptp.h",
+        "timeSync_ptp_init_priv.h",
+        "timeSync_ptp_osal_priv.h",
+        "timeSync_ptp_priv.h",
+        "timeSync_tools.h",
+    ],
+};
+
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
@@ -24,6 +39,7 @@ const filedirs = {
         "..",       /* core_os_combo base */
         "../../../V1", /* Example base */
         "../../../ptp_stack", /* PTP sample stack */
+        "../../../awr294x", /* Test params */
     ],
 };
 
@@ -152,6 +168,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

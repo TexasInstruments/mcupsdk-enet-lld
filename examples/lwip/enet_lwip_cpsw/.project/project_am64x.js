@@ -9,11 +9,14 @@ const files = {
             "test_enet_cpsw.c",
             "main.c",
             "udp_iperf.c",
-            "enetextphy.c",
-            "enetextphy_phymdio_dflt.c",
-            "dp83867.c",
-            "dp83869.c",
-            "generic_phy.c",
+    ],
+};
+
+const incfiles = {
+    common: [
+        "lwipcfg.h",
+        "test_enet_lwip.h",
+        "udp_iperf.h",
     ],
 };
 
@@ -24,7 +27,6 @@ const filedirs = {
     common: [
         "..",       /* core_os_combo base */
         "../../..", /* Example base */
-        "../../../extPhyMgmt", /* Example base */
     ],
 };
 
@@ -243,6 +245,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

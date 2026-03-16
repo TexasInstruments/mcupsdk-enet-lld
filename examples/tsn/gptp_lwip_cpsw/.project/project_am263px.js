@@ -14,6 +14,16 @@ const files = {
     ],
 };
 
+
+const incfiles = {
+    common: [
+        "app_tcpserver.h",
+        "common.h",
+        "dataflow.h",
+        "debug_log.h",
+        "tsninit.h",
+    ],
+};
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
@@ -184,6 +194,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

@@ -13,8 +13,6 @@ const main_files = {
         "tsnapp_cpsw_main.c",
         "default_flow_cpsw.c",
         "main.c",
-        "sample_audio.c",
-        "aaf_pcm_app.c",
         "board.c",
         "demo_task.c",
         "crf_hw_config.c",
@@ -25,12 +23,34 @@ const main_files = {
     ],
 };
 
+const main_incfiles = {
+    common: [
+        "dataflow.h",
+        "common.h",
+        "crf_app.h",
+        "crf_hw_config.h",
+        "debug_log.h",
+        "enetapp_cpsw.h",
+        "gpio_sm.h",
+        "shm_cirbuf.h",
+        "tsnapp_porting.h",
+        "tsninit.h",
+    ],
+};
+
 const remote_files = {
     common: [
         "main.c",
         "remote_mcasp_playback.c",
         "shm_cirbuf.c",
         "gpio_sm.c",
+    ],
+};
+
+const remote_incfiles = {
+    common: [
+        "gpio_sm.h",
+        "shm_cirbuf.h",
     ],
 };
 
@@ -45,7 +65,6 @@ const main_filedirs = {
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
-        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app", /* Example base */
     ],
 };
 
@@ -58,6 +77,7 @@ const remote_filedirs = {
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo", /* Example base */
     ],
 };
+
 
 const libdirs_freertos = {
     common: [
@@ -75,6 +95,7 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
@@ -107,6 +128,7 @@ const includes_freertos_r5f = {
 
 const includes_freertos_c75 = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_CGT/DSP_C75X",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/c75x",
@@ -288,11 +310,13 @@ function getComponentBuildProperty(buildOption) {
     {
         build_property.files = main_files;
         build_property.filedirs = main_filedirs;
+        build_property.incfiles = main_incfiles;
     }
     else if(buildOption.cpu.match(/c75*/))
     {
         build_property.files = remote_files;
         build_property.filedirs = remote_filedirs;
+        build_property.incfiles = remote_incfiles;
     }
 
     build_property.lnkfiles = lnkfiles;

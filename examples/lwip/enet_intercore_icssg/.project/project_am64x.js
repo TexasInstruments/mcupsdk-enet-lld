@@ -50,6 +50,31 @@ const remote_filedirs = {
     ],
 };
 
+const main_incfiles = {
+    common: [
+        "app_control.h",
+        "app_icssgconfighandler.h",
+        "app_netif.h",
+        "app_tcpserver.h",
+        "netif_common.h",
+        "ti_ic_open_close.h",
+        "udp_iperf.h",
+    ],
+};
+
+
+
+const remote_incfiles = {
+    common: [
+        "app_control.h",
+        "app_netif.h",
+        "app_tcpclient.h",
+        "netif_common.h",
+        "ti_ic_open_close.h",
+        "udp_iperf.h",
+    ],
+};
+
 const libdirs_freertos = {
     common: [
 	    "generated",
@@ -233,9 +258,11 @@ function getComponentBuildProperty(buildOption) {
             build_property.templates = templates_freertos_r5f;
             if(buildOption.cpu.match(/r5fss0-0/)) {
                 build_property.filedirs = main_filedirs;
+    			build_property.incfiles = main_incfiles;
             }
             else {
                 build_property.filedirs = remote_filedirs;
+    			build_property.incfiles = remote_incfiles;
             }
             build_property.defines = defines_r5f;
             build_property.cflags = cflags_r5f;

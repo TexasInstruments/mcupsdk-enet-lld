@@ -13,7 +13,6 @@ const files = {
         "tsnapp_cpsw_main.c",
         "default_flow_cpsw.c",
         "main.c",
-        "sample_audio.c",
         "board.c",
         "crf_hw_config.c",
         "crf_app.c",
@@ -22,6 +21,22 @@ const files = {
         "demo_task.c",
         "autoamp_mcasp_audio.c",
         "gpio_sm.c",
+    ],
+};
+
+
+const incfiles = {
+    common: [
+        "common.h",
+        "crf_app.h",
+        "crf_hw_config.h",
+        "dataflow.h",
+        "debug_log.h",
+        "enetapp_cpsw.h",
+        "gpio_sm.h",
+        "shm_cirbuf.h",
+        "tsnapp_porting.h",
+        "tsninit.h",
     ],
 };
 
@@ -36,7 +51,6 @@ const filedirs = {
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
-        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app", /* Example base */
     ],
 };
 
@@ -55,6 +69,7 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
@@ -226,6 +241,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;

@@ -13,7 +13,6 @@ const files = {
         "tsn_audioapp_cpsw_main.c",
         "background_traffic.c",
         "main.c",
-        "sample_audio.c",
         "aaf_pcm_app.c",
         "board.c",
         "crf_hw_config.c",
@@ -31,6 +30,26 @@ const files = {
     ],
 };
 
+
+const incfiles = {
+    common: [
+        "Enetapp_common.h",
+        "aaf_pcm_app.h",
+        "avtpcf.h",
+        "common.h",
+        "crf_app.h",
+        "crf_hw_config.h",
+        "debug_log.h",
+        "enetapp_cpsw.h",
+        "gpio_sm.h",
+        "sample_audio.h",
+        "shm_cirbuf.h",
+        "tsnapp_porting.h",
+        "tsninit.h",
+        "ether_ring.h"
+    ],
+};
+
 /* Relative to where the makefile will be generated
  * Typically at <example_folder>/<BOARD>/<core_os_combo>/<compiler>
  */
@@ -41,9 +60,9 @@ const filedirs = {
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
-        // "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_app", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/ether_ring/src",
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/ether_ring/inc",
     ],
 };
 
@@ -62,6 +81,7 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_etherring_demo/common_files", /* Example base */
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
@@ -209,6 +229,7 @@ function getComponentBuildProperty(buildOption) {
     let build_property = {};
 
     build_property.files = files;
+    build_property.incfiles = incfiles;
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
