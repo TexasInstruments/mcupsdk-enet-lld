@@ -542,7 +542,7 @@ static void EnetApp_txPktNotifyCb(void *cbArg)
 
 static void EnetApp_rxPktNotifyCb(void *cbArg)
 {
-    /* Callback intentionally empty - handled by polling task */
+    
 }
 
 static void EnetApp_ConfigureDscpMapping(Enet_Type enetType,

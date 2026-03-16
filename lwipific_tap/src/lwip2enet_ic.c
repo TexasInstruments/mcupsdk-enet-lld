@@ -93,6 +93,8 @@
 
 #if defined (SOC_AM62DX) || defined (SOC_AM62AX)
 #define  CSL_CORE_ID_DM_R5FSS0_0     (CSL_CORE_ID_R5FSS0_0)
+#elif defined (SOC_J722S)
+#define  CSL_CORE_ID_DM_R5FSS0_0     (CSL_CORE_ID_MAIN_R5FSS0_0)
 #else
 #define  CSL_CORE_ID_DM_R5FSS0_0     (CSL_CORE_ID_WKUP_R5FSS0_0)
 #endif
@@ -231,7 +233,7 @@ Lwip2EnetIc_Handle Lwip2EnetIc_open(uint32_t instId)
 #if defined(IPC_MCU3_0)
                         (hIcObj->selfCoreId == IPC_MCU3_0) ||
 #endif
-                        (hIcObj->selfCoreId == CSL_CORE_ID_MAIN_R5FSS0_0));
+                        (hIcObj->selfCoreId == CSL_CORE_ID_MCU_R5FSS0_0));
 
     hIcObj->remoteCoreId = gIcEnetParams[instId].remoteCoreId;
     hIcObj->txQId        = gIcEnetParams[instId].txQId;

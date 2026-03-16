@@ -86,7 +86,7 @@ extern "C" {
 /* Loopback test iteration count */
 #define ENETLPBK_NUM_ITERATION                     (5U)
 
-#define ENETLPBK_TEST_PKT_NUM                      (50U)
+#define ENETLPBK_TEST_PKT_NUM                      (1000U)
 
 #define ENETLPBK_TEST_PKT_LEN                      (500U)
 

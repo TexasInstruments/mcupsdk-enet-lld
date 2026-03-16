@@ -94,10 +94,6 @@ void custom_pbuf_free(struct pbuf *p)
     Rx_CustomPbuf *start = cPbuf;
     EnetDma_SGListEntry *list = NULL;
     uint32_t scatterSegmentIndex = 0;
-
-    Lwip2Enet_assert(cPbuf != NULL);
-    Lwip2Enet_assert(cPbuf->customPbufArgs != NULL);
-
     Lwip2Enet_RxObj *rx = (Lwip2Enet_RxObj *) cPbuf->customPbufArgs;
     Rx_CustomPbuf *cPbufNext = NULL;
 
@@ -110,24 +106,12 @@ void custom_pbuf_free(struct pbuf *p)
     /* Decrement the alivePbufCount of the every cPbuf in the chain */
     start->alivePbufCount--;
     cPbuf = cPbuf->next;
-
-    /* SAFETY: Limit loop iterations to prevent infinite loop on corruption */
-    uint32_t loopCount = 0;
-    const uint32_t MAX_PBUF_SEGMENTS = 16; /* Safety limit */
-
     while(start != cPbuf)
     {
-        loopCount++;
-        if (loopCount > MAX_PBUF_SEGMENTS)
-        {
-            /* Circular list corruption detected! */
-            Lwip2Enet_assert(false);
-        }
         cPbuf->alivePbufCount--;
         cPbuf = cPbuf->next;
     }
     Lwip2Enet_assert(start == cPbuf);
-
     if(cPbuf->alivePbufCount == 0)
     {
         /* This pbuf chain is no longer in use. */
@@ -139,25 +123,7 @@ void custom_pbuf_free(struct pbuf *p)
                                ENET_PKTSTATE_MODULE_APP,
                                ENET_PKTSTATE_APP_WITH_FREEQ,
                                ENET_PKTSTATE_APP_WITH_READYQ);
-
-        /* SAFETY: Track loop iterations to prevent buffer overflow */
-        uint32_t recycleLoopCount = 0;
-        const uint32_t MAX_SG_SEGMENTS = 16; /* Must match driver limit */
-
         do {
-            recycleLoopCount++;
-            if (recycleLoopCount > MAX_SG_SEGMENTS)
-            {
-                /* Buffer recycling loop corruption! */
-                Lwip2Enet_assert(false);
-            }
-
-            /* Check scatter segment index before array access */
-            if (scatterSegmentIndex >= ENET_ARRAYSIZE(pDmaPacket->sgList.list))
-            {
-                Lwip2Enet_assert(false);
-            }
-
             list = &pDmaPacket->sgList.list[scatterSegmentIndex];
             list->bufPtr = cPbuf->orgBufPtr;
             list->origBufPtr = cPbuf->orgBufPtr;
@@ -175,14 +141,6 @@ void custom_pbuf_free(struct pbuf *p)
         } while(start != cPbuf);
 
         pDmaPacket->sgList.numScatterSegments = scatterSegmentIndex;
-
-        /* CRITICAL: Check scatter segment count before enqueueing */
-        if (scatterSegmentIndex == 0 || scatterSegmentIndex > 16)
-        {
-            /* Invalid scatter count - memory corruption! */
-            Lwip2Enet_assert(false);
-        }
-
         EnetQueue_enq(&rx->readyRxPktQ, &pDmaPacket->node);
     }
 }

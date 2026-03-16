@@ -120,7 +120,7 @@
 % if(common.getSelfSysCfgCoreName().includes("a53")) {
 #define LWIPIF_POLL_TASK_STACK         (2048U)
 % } else {
-#define LWIPIF_POLL_TASK_STACK         (65536U)  /* 64KB - increased from 16KB due to stack overflow */
+#define LWIPIF_POLL_TASK_STACK         (1024U)
 %}
 #endif
 

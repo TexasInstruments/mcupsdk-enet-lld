@@ -1,3 +1,4 @@
+
 /* This is the stack that is used by code running within main()
  * In case of NORTOS,
  * - This means all the code outside of ISR uses this stack
@@ -6,6 +7,8 @@
  *   uses this stack.
  * - After vTaskStartScheduler() each task created in FreeRTOS has its own stack
  */
+ #include "ti_enet_config.h"
+
 --stack_size=16384
 /* This is the heap size for malloc() API in NORTOS and FreeRTOS
  * This is also the heap used by pvPortMalloc in FreeRTOS
@@ -28,7 +31,7 @@ __IRQ_STACK_SIZE = 4096;
  * - In both NORTOS and FreeRTOS nesting is disabled for FIQ
  */
 __FIQ_STACK_SIZE = 256;
-__SVC_STACK_SIZE = 256; /* This is the size of stack when R5 is in SVC mode */
+__SVC_STACK_SIZE = 4096; /* This is the size of stack when R5 is in SVC mode */
 __ABORT_STACK_SIZE = 256;  /* This is the size of stack when R5 is in ABORT mode */
 __UNDEFINED_STACK_SIZE = 256;  /* This is the size of stack when R5 is in UNDEF mode */
 

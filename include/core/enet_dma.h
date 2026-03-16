@@ -56,7 +56,7 @@
 #include <include/core/enet_queue.h>
 #include <include/core/enet_dma_pktutils.h>
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)  || defined (SOC_J722S)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX)  || defined (SOC_J722S)
 #include <drivers/udma.h>
 #include <include/dma/udma/enet_udma_types.h>
 #include <include/dma/udma/enet_udma.h>

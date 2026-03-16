@@ -329,11 +329,9 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
                        struct pbuf *hPbufPacket)
 {
     Lwip2Enet_assert(netif != NULL);
-    Lwip2Enet_assert(netif->input != NULL);
 
     /* Pass the packet to the LwIP stack */
-    err_t lwipErr = netif->input(hPbufPacket, netif);
-    if (lwipErr != ERR_OK)
+    if (netif->input(hPbufPacket, netif) != ERR_OK)
     {
         LWIP_DEBUGF(NETIF_DEBUG, ("lwipif_input: IP input error\n"));
         if (!ENET_UTILS_IS_ALIGNED(hPbufPacket->payload, ENETDMA_CACHELINE_ALIGNMENT))
@@ -360,9 +358,7 @@ void LWIPIF_LWIP_periodic_polling(struct netif *netif)
         /* Periodic Function to update Link status */
         Lwip2Enet_periodicFxn(netif);
 
-        uint32_t linkFlag = (netif->flags & 0x04U) >> 2;
-
-        if (!(pInterface->isLinkUp == linkFlag))
+        if (!(pInterface->isLinkUp == (netif->flags & 0x04U) >> 2))
         {
             if (pInterface->isLinkUp)
             {
@@ -496,16 +492,27 @@ void LWIPIF_LWIP_txPktHandler(struct netif *netif)
 
 err_t LWIPIF_LWIP_send(struct netif *netif, struct pbuf *p)
 {
+     /* Get the pointer to the private data */
     Lwip2Enet_netif_t* pInterface = (Lwip2Enet_netif_t*)netif->state;
+    const Enet_MacPort macPort = pInterface->macPort;
+    Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
 
+    Lwip2Enet_assert(pInterface != NULL);
+    Lwip2Enet_assert(hTx != NULL);
+    /*
+     * When transmitting a packet, the buffer may be deleted before transmission by the
+     * stack. The stack implements a 'ref' feature within the buffers. The following happens
+     * internally:
+     *  If p->ref > 1, ref--;
+     *  If p->ref == 1, free(p);
+     * pbuf_ref(p) increments the ref.
+     */
     pbuf_ref(p);
+    /* Enqueue the packet */
     pbufQ_enQ(&pInterface->readyPbufQ, p);
-
-    if (pInterface->isLinkUp)
-    {
-        const Enet_MacPort macPort = pInterface->macPort;
-        Lwip2Enet_sendTxPackets(pInterface, macPort);
-    }
-
+    LWIP2ENETSTATS_ADDONE(&hTx->stats.readyPbufPktEnq);
+    /* Pass the packet to the translation layer */
+    Lwip2Enet_sendTxPackets(pInterface, macPort);
+    /* Packet has been successfully transmitted or enqueued to be sent when link comes up */
     return ERR_OK;
 }

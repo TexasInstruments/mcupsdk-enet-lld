@@ -460,11 +460,7 @@ Lwip2Enet_Handle Lwip2Enet_open(Enet_Type enetType, uint32_t instId, struct neti
     }
 
     /* Get initial link/interface status from the driver */
-    if (hLwip2Enet->appInfo.isPortLinkedFxn != NULL) {
-        pInterface->isLinkUp = hLwip2Enet->appInfo.isPortLinkedFxn(pInterface->hEnet);
-    } else {
-        pInterface->isLinkUp = false;
-    }
+    pInterface->isLinkUp = hLwip2Enet->appInfo.isPortLinkedFxn(pInterface->hEnet);
     pInterface->isPortLinkedFxn = hLwip2Enet->appInfo.isPortLinkedFxn;
     pInterface->pNetif   = netif;
 
@@ -688,28 +684,13 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
 {
     struct pbuf *pbufNext = pbuf;
     uint32_t totalPacketFilledLen = 0U;
-    uint32_t loopCount = 0;
-    const uint32_t MAX_SG_SEGMENTS = 16; /* Safety limit - must match driver */
 
     pCurrDmaPacket->sgList.numScatterSegments = 0;
-
     while (pbufNext != NULL)
     {
         EnetDma_SGListEntry *list;
 
-        /* CRITICAL: Prevent infinite loop on circular pbuf chain */
-        loopCount++;
-        if (loopCount > MAX_SG_SEGMENTS)
-        {
-            Lwip2Enet_assert(false);
-        }
-
-        /* CRITICAL: Check array bounds BEFORE accessing */
-        if (pCurrDmaPacket->sgList.numScatterSegments >= ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list))
-        {
-            Lwip2Enet_assert(false);
-        }
-
+        Lwip2Enet_assert(pCurrDmaPacket->sgList.numScatterSegments < ENET_ARRAYSIZE(pCurrDmaPacket->sgList.list));
         list = &pCurrDmaPacket->sgList.list[pCurrDmaPacket->sgList.numScatterSegments];
         list->bufPtr = (uint8_t*) pbufNext->payload;
         list->segmentFilledLen = (isRx == true) ? 0U : pbufNext->len;
@@ -726,7 +707,6 @@ static void Lwip2Enet_setSGList(EnetDma_Pkt *pCurrDmaPacket, struct pbuf *pbuf, 
         pCurrDmaPacket->sgList.numScatterSegments++;
         pbufNext = pbufNext->next;
     }
-
     Lwip2Enet_assert(totalPacketFilledLen == pbuf->tot_len);
 }
 /*!
@@ -747,7 +727,6 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
     {
         EnetDma_PktQ txSubmitQ;
         Lwip2Enet_TxHandle hTx = pInterface->hTx[0];
-
         EnetQueue_initQ(&txSubmitQ);
 
         if (pbufQ_count(&pInterface->unusedPbufQ))
@@ -782,7 +761,6 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
                 pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
 
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
-
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
 
                 LWIP2ENETSTATS_ADDONE(&hTx->stats.freeAppPktDeq);
@@ -911,9 +889,7 @@ int32_t Lwip2Enet_ioctl(Lwip2Enet_Handle hLwip2Enet,
     }
 
     /* Get current link status as reported by the hardware driver */
-    if (pInterface->isPortLinkedFxn != NULL) {
-        pInterface->isLinkUp = pInterface->isPortLinkedFxn(pInterface->hEnet);
-    }
+    pInterface->isLinkUp = pInterface->isPortLinkedFxn(pInterface->hEnet);
     for (uint32_t idx = 0; idx < pInterface->count_hRx; idx++)
     {
         const uint32_t prevLinkInterface = pInterface->hRx[idx]->hLwip2Enet->currLinkedIf;
@@ -1320,8 +1296,7 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                     }
                 }
             }
-
-            /* Track packet type at DMA level before lwIP */
+  
             EnetDma_initPktInfo(pCurrDmaPacket);
             EnetQueue_enq(&rx->freeRxPktInfoQ, &pCurrDmaPacket->node);
             LWIP2ENETSTATS_ADDONE(&rx->stats.freeAppPktEnq);
