@@ -1202,6 +1202,7 @@ let enet_icss_module = {
                 { name: "NONE"},
                 { name: "HSR" },
                 { name: "PRP" },
+                { name: "ETHERNETIP" },
             ],
             onChange: function(inst, ui) {
                 if (inst.derivedMode !== "NONE") {

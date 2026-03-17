@@ -37,7 +37,26 @@ function importPrpHeaders(instances)
     return "";
 }
 
-function assignHsrPrpFirmware(instance)
+function importEipHeaders(instances)
+{
+    for(let i in instances)
+    {
+        if (instances[i].derivedMode === "ETHERNETIP") {
+            return `
+#include <RX_PRU_SLICE0_bin.h>
+#include <RX_PRU_SLICE1_bin.h>
+#include <RTU0_SLICE0_bin.h>
+#include <RTU0_SLICE1_bin.h>
+#include <TX_PRU_SLICE0_bin.h>
+#include <TX_PRU_SLICE1_bin.h>
+        `;
+        }
+    }
+
+    return "";
+}
+
+function assignIcssgProtocolSpecificFirmware(instance)
 {
     if (instance.derivedMode === "HSR") {
         return `
@@ -87,8 +106,37 @@ function assignHsrPrpFirmware(instance)
     },
         `
     }
+    if (instance.derivedMode === "ETHERNETIP") {
+        return `
+    /* EtherNet/IP Adapter firmware for both slices */
+    .fw =
+    {
+        {
+            .pru       = RX_PRU_SLICE0_b00_EIP,
+            .pruSize   = sizeof(RX_PRU_SLICE0_b00_EIP),
+            .rtu       = RTU0_SLICE0_b00_EIP,
+            .rtuSize   = sizeof(RTU0_SLICE0_b00_EIP),
+            .txpru     = TX_PRU_SLICE0_b00_EIP,
+            .txpruSize = sizeof(TX_PRU_SLICE0_b00_EIP)
+        },
+        {
+            .pru       = RX_PRU_SLICE1_b00_EIP,
+            .pruSize   = sizeof(RX_PRU_SLICE1_b00_EIP),
+            .rtu       = RTU0_SLICE1_b00_EIP,
+            .rtuSize   = sizeof(RTU0_SLICE1_b00_EIP),
+            .txpru     = TX_PRU_SLICE1_b00_EIP,
+            .txpruSize = sizeof(TX_PRU_SLICE1_b00_EIP)
+        },
+    },
+        `
+    }
     return "";
 }
 
-module.exports = {importHsrHeaders, importPrpHeaders, assignHsrPrpFirmware};
+/* To add a new protocol: (1) define an importXxxHeaders(instances) function above,
+ * (2) append it to headerImportFunctions, (3) add the corresponding derivedMode
+ * branch in assignIcssgProtocolSpecificFirmware. No XDT changes needed. */
+const headerImportFunctions = [importHsrHeaders, importPrpHeaders, importEipHeaders];
+
+module.exports = { headerImportFunctions, assignIcssgProtocolSpecificFirmware };
 

@@ -107,9 +107,10 @@ function getIcssgInstName(instance)
 #include <networking/enet/core/src/per/firmware/icssg/switch/TX_PRU_SLICE0_bin.h>
 #include <networking/enet/core/src/per/firmware/icssg/switch/TX_PRU_SLICE1_bin.h>
 
-% /* Import HSR PRP headers incase we are in HSR-PRP mode (used by ICSDK only) */
-`icsdk.importHsrHeaders(instances)`
-`icsdk.importPrpHeaders(instances)`
+% /* Import protocol-specific firmware headers (used by ICSDK only) */
+% icsdk.headerImportFunctions.forEach(fn => {
+`fn(instances)`
+% });
 
 #include "ti_enet_config.h"
 #include "ti_drivers_config.h"
@@ -1047,7 +1048,7 @@ static Icssg_Obj gEnetSoc_icssg0Swt =
         },
     },
     % }
-    `icsdk.assignHsrPrpFirmware(instances[i])`
+    `icsdk.assignIcssgProtocolSpecificFirmware(instances[i])`
 
     /* TimeSync module object */
     .timeSyncObj =
@@ -1161,7 +1162,7 @@ static Icssg_Obj gEnetSoc_icssg1Swt =
         },
     },
     % }
-    `icsdk.assignHsrPrpFirmware(instances[i])`
+    `icsdk.assignIcssgProtocolSpecificFirmware(instances[i])`
 
     /* TimeSync module object */
     .timeSyncObj =
