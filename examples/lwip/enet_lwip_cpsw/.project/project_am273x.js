@@ -8,6 +8,7 @@ const files = {
             "test_enet.c",
             "test_enet_cpsw.c",
             "main.c",
+            "udp_iperf.c",
     ],
 };
 

@@ -43,6 +43,7 @@ FILES_common := \
 	test_enet.c \
 	test_enet_cpsw.c \
 	main.c \
+	udp_iperf.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \

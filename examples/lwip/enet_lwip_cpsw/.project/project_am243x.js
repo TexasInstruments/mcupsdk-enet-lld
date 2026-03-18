@@ -9,6 +9,11 @@ const files = {
             "test_enet_cpsw.c",
             "main.c",
             "udp_iperf.c",
+            "enetextphy.c",
+            "enetextphy_phymdio_dflt.c",
+            "dp83867.c",
+            "dp83869.c",
+            "generic_phy.c",
     ],
 };
 
@@ -27,6 +32,7 @@ const filedirs = {
     common: [
         "..",       /* core_os_combo base */
         "../../..", /* Example base */
+        "../../../extPhyMgmt", /* Example base */
     ],
 };
 
