@@ -246,6 +246,8 @@ const cflags_r5f = {
 const cflags_wkup_r5f = {
     common: [
         "--include tsn_buildconf/sitara_buildconf.h",
+        "-Wno-unused-but-set-variable",
+        "-Wno-unused-variable",
     ],
     release: [
         "-Oz",

@@ -66,6 +66,8 @@
             -Wno-gnu-variable-sized-type-not-at-end
             -Wno-unused-function
             --include tsn_buildconf/sitara_buildconf.h
+            -Wno-unused-but-set-variable
+            -Wno-unused-variable
             -DSOC_AM62PX
             -DENET_ENABLE_PER_CPSW=1
             -DPRINT_FORMAT_NO_WARNING

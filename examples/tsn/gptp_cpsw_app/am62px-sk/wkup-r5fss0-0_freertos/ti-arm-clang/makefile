@@ -116,6 +116,8 @@ CFLAGS_common := \
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-unused-function \
 	--include tsn_buildconf/sitara_buildconf.h \
+	-Wno-unused-but-set-variable \
+	-Wno-unused-variable \
 
 CFLAGS_release := \
 	-Os \

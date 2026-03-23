@@ -186,6 +186,8 @@ const cflags_r5f = {
 
 const cflags_wkup_r5f = {
     common: [
+        "-Wno-unused-but-set-variable",
+        "-Wno-unused-variable",
     ],
     release: [
         "-Oz",

@@ -102,6 +102,8 @@ CFLAGS_common := \
 	-g \
 	-Wno-gnu-variable-sized-type-not-at-end \
 	-Wno-unused-function \
+	-Wno-unused-but-set-variable \
+	-Wno-unused-variable \
 
 CFLAGS_release := \
 	-Os \
