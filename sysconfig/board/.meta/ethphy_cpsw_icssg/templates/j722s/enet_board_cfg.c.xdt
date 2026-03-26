@@ -28,7 +28,7 @@
 #include <board/eeprom.h>
 #include "ti_board_open_close.h"
 #include "ti_drivers_config.h"
-#include <board/ioexp/ioexp_tca6416.h>
+#include <board/ioexp/ioexp_tca6424.h>
 
 #define ENET_CTRL_MAC_ADDR_MASK     (0xF8U)
 #define ENET_GET_NUM_MAC_ADDR(num)  (((ENET_CTRL_MAC_ADDR_MASK & num)>>3)+1)
@@ -232,6 +232,8 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     /* Override the ENET control set by board lib */
     EnetBoard_setEnetControl(ethPorts->enetType, ethPorts->macPort, &ethPorts->mii);
 
+    /* Linux uses i2c0. The Ioexpander tca6424 also uses the i2c instance i2c0. The Ioexpander used to reset the PHY
+        works with Standalone Ethfw server, but not with Linux client. Hence commenting out the function call for Ioexpander */
     //EnetBoard_setMacPortIOExpanderCfg();
 
     prevLockState = EnetAppUtils_mainMmrCtrl(ENETAPPUTILS_MMR_LOCK1, ENETAPPUTILS_UNLOCK_MMR);
@@ -285,69 +287,40 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
 
 static void EnetBoard_setMacPortIOExpanderCfg(void)
 {
-    TCA6416_Config  TCA6416_Config;
-    TCA6416_Params  TCA6416Params;
+    TCA6424_Config  TCA6424_Config;
+    TCA6424_Params  TCA6424Params;
     int32_t status  = SystemP_SUCCESS;
 
-    TCA6416Params.i2cInstance = 0U;
-    TCA6416Params.i2cAddress  = IO_EXP1_ADDR;
-    status = TCA6416_open(&TCA6416_Config, &TCA6416Params);
+    TCA6424Params.i2cInstance = CONFIG_I2C0;
+    TCA6424Params.i2cAddress  = IO_EXP2_ADDR;
+    status = TCA6424_open(&TCA6424_Config, &TCA6424Params);
 
-    /* !TODO: Change this to a TCA6416 driver API */
-    const uint32_t rgmii1RstPin = 8*0 + 1; // PORT 0, PIN 1
+    /* RGMII1 Reset on TCA6424 at P14 (PORT 1, PIN 4) */
+    const uint32_t rgmii1RstPin = 8*1 + 4;
 
     if(status == SystemP_SUCCESS)
     {
-        status = TCA6416_config(&TCA6416_Config, rgmii1RstPin,
-                                    TCA6416_MODE_OUTPUT);
+        status = TCA6424_config(&TCA6424_Config, rgmii1RstPin,
+                                    TCA6424_MODE_OUTPUT);
     }
     if(status == SystemP_SUCCESS)
     {
-        status = TCA6416_setOutput(&TCA6416_Config, rgmii1RstPin,
-                                    TCA6416_OUT_STATE_LOW);
+        status = TCA6424_setOutput(&TCA6424_Config, rgmii1RstPin,
+                                    TCA6424_OUT_STATE_LOW);
     }
     /* Wait for PHY to reset */
     ClockP_usleep(10);
 
     if(status == SystemP_SUCCESS)
     {
-        status = TCA6416_setOutput(&TCA6416_Config, rgmii1RstPin,
-                                    TCA6416_OUT_STATE_HIGH);
+        status = TCA6424_setOutput(&TCA6424_Config, rgmii1RstPin,
+                                    TCA6424_OUT_STATE_HIGH);
     }
     if(status != SystemP_SUCCESS)
     {
         DebugP_logInfo("Unable to reset RGMII1 PHY \r\n");
     }
 
-
-    TCA6416Params.i2cInstance = 0U;
-    TCA6416Params.i2cAddress  = IO_EXP2_ADDR;
-    status = TCA6416_open(&TCA6416_Config, &TCA6416Params);
-
-    /* !TODO: Change this to a TCA6416 driver API */
-    const uint32_t rgmii2RstPin = 8*2 + 2; // PORT 2, PIN 2
-
-    if(status == SystemP_SUCCESS)
-    {
-        status = TCA6416_config(&TCA6416_Config, rgmii2RstPin,
-                                    TCA6416_MODE_OUTPUT);
-    }
-    if(status == SystemP_SUCCESS)
-    {
-        status = TCA6416_setOutput(&TCA6416_Config, rgmii2RstPin,
-                                    TCA6416_OUT_STATE_LOW);
-    }
-    /* Wait for PHY to reset */
-    ClockP_usleep(10);
-    if(status == SystemP_SUCCESS)
-    {
-        status = TCA6416_setOutput(&TCA6416_Config, rgmii2RstPin,
-                                    TCA6416_OUT_STATE_HIGH);
-    }
-    if(status != SystemP_SUCCESS)
-    {
-        DebugP_logInfo("Unable to reset RGMII2 PHY \r\n");
-    }
 
 }
 /*

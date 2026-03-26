@@ -194,7 +194,7 @@ function validate(instance, report)
                 report.logError(`Only one Rx Channel is to be allocated to Proxy ARP`, instance);
             }
 
-            for (let j = 0; j < txCh.length; j++)
+            for (let j = 0; j < proxyArpRxCh.length; j++)
             {
                 if( proxyArpRxCh[j] == 0 )
                 {
@@ -220,7 +220,7 @@ function validate(instance, report)
                 report.logError(`Only one Rx Channel is to be allocated to Vepa`, instance);
             }
 
-            for (let j = 0; j < txCh.length; j++)
+            for (let j = 0; j < vepaRxCh.length; j++)
             {
                 if( vepaRxCh[j] == 0 )
                 {
