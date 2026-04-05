@@ -46,6 +46,7 @@ extern "C" {
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
+#define ENETAPP_EVENTID_CPSW_PERIODIC_POLL    (1 << 3)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -80,7 +81,9 @@ void EnetApp_resetStats(EnetApp_PerCtxt *perCtxts,
 void EnetApp_showMacAddrs(EnetApp_PerCtxt *perCtxts,
                                 uint32_t numPerCtxts);
 
+#if defined (OS_FREERTOS)
 int32_t EnetApp_waitForLinkUp(EnetApp_PerCtxt *perCtxt);
+#endif
 
 /* ========================================================================== */
 /*                            Global Variables                                */

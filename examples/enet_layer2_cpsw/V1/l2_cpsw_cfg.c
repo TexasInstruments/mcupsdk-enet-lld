@@ -61,9 +61,19 @@
 static EnetApp_PerCtxt * EnetApp_getPerCtxt(Enet_Type enetType,
                                             uint32_t instId);
 
+#if defined(OS_NORTOS)
+static void EnetApp_handleEvent(const uint32_t eventMask);
+static uint32_t EnetApp_receiveEvents(EventP_Object* pEvent);
+#endif
+
+
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
+
+#if defined (OS_NORTOS)
+EventP_Object gEventP;
+#endif
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -143,6 +153,9 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
     uint32_t i;
     int32_t status = ENET_SOK;
 
+#if defined (OS_NORTOS)
+    status = EventP_construct(&gEventP);
+#endif
     /* Do peripheral dependent initalization */
     EnetAppUtils_print("\nInit all peripheral clocks\r\n");
     EnetAppUtils_print("----------------------------------------------\r\n");
@@ -188,6 +201,11 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
         perCtxt->hEnet = handleInfo.hEnet;
     }
 
+#if defined (OS_NORTOS)
+    /* Phy state handler setup */
+    EnetApp_initPhyStateHandlerTask(&gEventP);
+#endif
+
     /* Start PHY tick timer */
     if (status == ENET_SOK)
     {
@@ -222,6 +240,7 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
         }
     }
 
+#if defined (OS_FREERTOS)
     if (status == ENET_SOK)
     {
         status = EnetApp_waitForLinkUp(perCtxts);
@@ -230,6 +249,35 @@ int32_t EnetApp_open(EnetApp_PerCtxt *perCtxts,
             EnetAppUtils_print("%s: Failed to wait for link up: %d\r\n", perCtxts->name, status);
         }
     }
+#elif defined (OS_NORTOS)
+    /* Looping to wait for linkup */
+    while(1)
+    {
+        bool linkStatus = false;
+        Enet_IoctlPrms prms;
+        Enet_MacPort macPort = perCtxts->macPort;
+        const uint32_t recvdEventsMask = EnetApp_receiveEvents(&gEventP);
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &linkStatus);
+
+        ENET_IOCTL(perCtxts->hEnet, gEnetApp.coreId, ENET_PER_IOCTL_IS_PORT_LINK_UP, &prms, status);
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print("%s: Failed to get port %u link status: %d\r\n",
+                            perCtxts->name, ENET_MACPORT_ID(macPort), status);
+            EnetAppUtils_print("%s: Failed to wait for link up: %d\r\n", perCtxts->name, status);
+        }
+
+        if(true == linkStatus)
+        {
+            break;
+        }
+
+        if (recvdEventsMask != 0)
+        {
+            EnetApp_handleEvent(recvdEventsMask);
+        }
+    }
+#endif
 
     EnetAppUtils_print("%s: MAC port addr: ", perCtxts->name);
 
@@ -501,3 +549,35 @@ int32_t EnetApp_waitForLinkUp(EnetApp_PerCtxt *perCtxt)
     }
     return status;
 }
+
+#if defined (OS_NORTOS)
+
+static void EnetApp_handleEvent(const uint32_t eventMask)
+{
+    if (ENETAPP_EVENTID_CPSW_PERIODIC_POLL & eventMask)
+    {
+        EnetApp_phyStateHandler();
+    }
+}
+
+static uint32_t EnetApp_receiveEvents(EventP_Object* pEvent)
+{
+    int32_t status = SystemP_SUCCESS;
+    uint32_t recvdEventsMask = 0;
+
+    status = EventP_waitBits(pEvent,
+                             ENETAPP_EVENTID_CPSW_PERIODIC_POLL,
+                             1,
+                             0,
+                             SystemP_NO_WAIT,
+                             &recvdEventsMask);
+
+     if ((status != SystemP_SUCCESS) && (status != SystemP_TIMEOUT))
+     {
+         EnetAppUtils_print("Failed to receive Event handle\r\n");
+         EnetAppUtils_assert(false);
+     }
+
+     return recvdEventsMask;
+}
+#endif

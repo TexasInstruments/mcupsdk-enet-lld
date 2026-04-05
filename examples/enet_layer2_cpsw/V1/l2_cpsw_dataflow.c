@@ -288,7 +288,9 @@ uint32_t EnetApp_retrieveFreeTxPkts(EnetApp_PerCtxt *perCtxt)
 
 void EnetApp_createRxTask(EnetApp_PerCtxt *perCtxt)
 {
+#if defined(OS_FREERTOS)
     TaskP_Params taskParams;
+#endif
     int32_t status;
     status = SemaphoreP_constructBinary(&perCtxt->rxSemObj, 0);
     DebugP_assert(SystemP_SUCCESS == status);
@@ -296,6 +298,7 @@ void EnetApp_createRxTask(EnetApp_PerCtxt *perCtxt)
     status = SemaphoreP_constructCounting(&perCtxt->rxDoneSemObj, 0, COUNTING_SEM_COUNT);
     DebugP_assert(SystemP_SUCCESS == status);
 
+#if defined(OS_FREERTOS)
     TaskP_Params_init(&taskParams);
     taskParams.priority       = 5U;
     taskParams.stack          = gEnetAppTaskStackRx;
@@ -306,14 +309,16 @@ void EnetApp_createRxTask(EnetApp_PerCtxt *perCtxt)
 
     status = TaskP_construct(&perCtxt->rxTaskObj, &taskParams);
     DebugP_assert(SystemP_SUCCESS == status);
-
+#endif
 }
 
 void EnetApp_destroyRxTask(EnetApp_PerCtxt *perCtxt)
 {
     SemaphoreP_destruct(&perCtxt->rxSemObj);
     SemaphoreP_destruct(&perCtxt->rxDoneSemObj);
+#if defined(OS_FREERTOS)
     TaskP_destruct(&perCtxt->rxTaskObj);
+#endif
 }
 
 void EnetApp_rxTask(void *args)
@@ -451,6 +456,8 @@ void EnetApp_rxTask(void *args)
     EnetAppUtils_print("%s: Received %u packets\r\n", perCtxt->name, totalRxCnt);
 #endif
 
+#if defined(OS_FREERTOS)
     SemaphoreP_post(&perCtxt->rxDoneSemObj);
     TaskP_exit();
+#endif
 }

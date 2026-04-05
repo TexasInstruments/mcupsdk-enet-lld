@@ -31,12 +31,21 @@ const filedirs = {
 
 const libdirs_freertos = {
     common: [
-	    "generated",
+        "generated",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib",
         "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
         "${MCU_PLUS_SDK_PATH}/source/board/lib",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
 
+    ],
+};
+
+const libdirs_nortos = {
+    common: [
+        "${MCU_PLUS_SDK_PATH}/source/kernel/nortos/lib",
+        "${MCU_PLUS_SDK_PATH}/source/drivers/lib",
+        "${MCU_PLUS_SDK_PATH}/source/board/lib",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/lib",
     ],
 };
 
@@ -48,7 +57,25 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_ARM_CLANG/ARM_CR5F",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am263px/r5f",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet",
-		"${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/core",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/soc/am263px",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/hw_include/mdio/V4",
+    ],
+};
+
+const includes_nortos_r5f = {
+    common: [
+        "${MCU_PLUS_SDK_PATH}/source/kernel/dpl/",
+        "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
+        "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include",
@@ -66,6 +93,15 @@ const libs_freertos_r5f = {
         "drivers.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "enet-cpsw.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
         "board.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+    ],
+};
+
+const libs_nortos_r5f = {
+    common: [
+        "nortos.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "drivers.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "board.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
+        "enet-cpsw.am263px.r5f.ti-arm-clang.${ConfigName}.lib",
     ],
 };
 
@@ -132,14 +168,27 @@ const templates_freertos_r5f =
     },
 ];
 
+const templates_nortos_r5f =
+[
+    {
+        input: "source/networking/enet/core/sysconfig/.project/templates/nortos/main_nortos.c.xdt",
+        output: "../main.c",
+        options: {
+            entryFunction: "EnetApp_mainTask",
+        },
+    }
+];
+
 const buildOptionCombos = [
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-cc-dp83826/am263px-cc", os: "freertos"},
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-cc-dp83tg720/am263px-cc", os: "freertos"},
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-cc-dp83869/am263px-cc", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-cc-dp83869/am263px-cc", os: "nortos"},
     { device: device, cpu: "r5fss0-1", cgt: "ti-arm-clang", board: "am263px-cc-dp83826/am263px-cc", os: "freertos"},
     { device: device, cpu: "r5fss0-1", cgt: "ti-arm-clang", board: "am263px-cc-dp83tg720/am263px-cc", os: "freertos"},
     { device: device, cpu: "r5fss0-1", cgt: "ti-arm-clang", board: "am263px-cc-dp83869/am263px-cc", os: "freertos"},
     { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-lp-dp83869/am263px-lp", os: "freertos"},
+    { device: device, cpu: "r5fss0-0", cgt: "ti-arm-clang", board: "am263px-lp-dp83869/am263px-lp", os: "nortos"},
 ];
 
 function getComponentProperty() {
@@ -185,6 +234,13 @@ function getComponentBuildProperty(buildOption) {
             build_property.lflags = lflags_r5f;
             build_property.projectspecLnkPath = linker_includePath_freertos;
             build_property.loptflags = loptflags_r5f;
+        }
+        else
+        {
+            build_property.libs = libs_nortos_r5f;
+            build_property.libdirs = libdirs_nortos;
+            build_property.templates = templates_nortos_r5f;
+            build_property.includes = includes_nortos_r5f;
         }
     }
 

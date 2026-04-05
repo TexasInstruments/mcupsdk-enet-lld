@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2021
+ *  Copyright (c) Texas Instruments Incorporated 2021-26
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -71,7 +71,6 @@ static EnetApp_TestParams testParams[] =
 
 void EnetApp_mainTask(void *args)
 {
-    char option;
     uint32_t i;
     int32_t status;
     Enet_MacPort macPortList[ENET_MAC_PORT_NUM];
@@ -118,6 +117,8 @@ void EnetApp_mainTask(void *args)
 
     if (status == ENET_SOK)
     {
+#if defined(OS_FREERTOS)
+        char option;
         /* Wait for user input to exit the test */
         EnetApp_showMenu();
         while (true)
@@ -147,8 +148,12 @@ void EnetApp_mainTask(void *args)
                 EnetAppUtils_print("Invalid option, try again...\r\n");
                 EnetApp_showMenu();
             }
+
             TaskP_yield();
         }
+#elif defined (OS_NORTOS)
+        EnetApp_rxTask(&gEnetApp.perCtxt[0]);
+#endif
 
         /* Print statistics */
         EnetApp_printStats(gEnetApp.perCtxt, gEnetApp.numPerCtxts);
@@ -157,8 +162,10 @@ void EnetApp_mainTask(void *args)
         for (i = 0U; i < gEnetApp.numPerCtxts; i++)
         {
             EnetAppUtils_print("Waiting for RX task %u to exit\r\n", i+1);
+#if defined(OS_FREERTOS)
             SemaphoreP_post(&gEnetApp.perCtxt[i].rxSemObj);
             SemaphoreP_pend(&gEnetApp.perCtxt[i].rxDoneSemObj, SystemP_WAIT_FOREVER);
+#endif
         }
 
         EnetAppUtils_print("All RX tasks have exited\r\n");
