@@ -459,6 +459,7 @@ int32_t EnetApp_driverOpen(Enet_Type enetType, uint32_t instId)
 
             enetTxChCfg.cbArg     = tx;
             enetTxChCfg.notifyCb  = EnetApp_txPktNotifyCb;
+            enetTxChCfg.perMode   = g_EnetApp_dmaChParams.txChInitCfg[chIdx].perMode;
 
 
             EnetAppUtils_openTxCh(gEnetAppSysCfgObj.hEnet[hEnetIndex],

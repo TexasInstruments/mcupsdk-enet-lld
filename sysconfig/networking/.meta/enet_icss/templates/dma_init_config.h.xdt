@@ -39,6 +39,7 @@ typedef struct EnetApp_TxChInitCfg_s
     uint32_t useGlobalEvt;
     Enet_Type enetType;
     uint32_t instId;
+    uint32_t perMode;
 }EnetApp_TxChInitCfg;
 
 typedef struct EnetApp_RxChInitCfg_s
