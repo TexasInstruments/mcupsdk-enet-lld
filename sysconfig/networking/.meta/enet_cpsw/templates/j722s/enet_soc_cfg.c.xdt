@@ -103,7 +103,8 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     .physAddr   = (CSL_CPSW0_NUSS_BASE + CPSW_NU_OFFSET),        \
     .physAddr2  = (CSL_CPSW0_NUSS_BASE + CPSW_SGMII0_OFFSET(0U)),\
     .features   = (ENET_FEAT_BASE |                              \
-                    CPSW_MACPORT_FEATURE_EST |                   \
+                    CPSW_MACPORT_FEATURE_EST |                     \
+                    CPSW_MACPORT_FEATURE_SGMII |                   \
                     CPSW_MACPORT_FEATURE_INTERVLAN),             \
     .errata     = ENET_ERRATA_NONE,                              \
     .macPort = ENET_MAC_PORT_ ## n,                              \
@@ -584,6 +585,10 @@ int32_t EnetSoc_getMacPortMii(Enet_Type enetType,
                 *enetLayer    = ENET_MAC_LAYER_GMII;
                 *enetSublayer = ENET_MAC_SUBLAYER_REDUCED;
                 break;
+            case CPSW_ENET_CTRL_MODE_SGMII:
+                *enetLayer    = ENET_MAC_LAYER_GMII;
+                *enetSublayer = ENET_MAC_SUBLAYER_SERIAL;
+                break;
 
             default:
                 status = ENET_EINVALIDPARAMS;
@@ -622,6 +627,7 @@ static uint32_t EnetSoc_getMcuEnetControl(Enet_MacPort macPort,
         {
             case CPSW_ENET_CTRL_MODE_RMII:
             case CPSW_ENET_CTRL_MODE_RGMII:
+            case CPSW_ENET_CTRL_MODE_SGMII:
                 break;
 
             default:

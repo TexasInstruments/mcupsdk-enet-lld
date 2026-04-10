@@ -36,6 +36,8 @@
 
 #define MSS_CPSW_CONTROL_PORT_MODE_RMII                                   (0x1U)
 #define MSS_CPSW_CONTROL_PORT_MODE_RGMII                                  (0x2U)
+#define MSS_CPSW_CONTROL_PORT_MODE_SGMII                                  (0x3U)
+
 
 #include <drivers/i2c.h>
 
@@ -193,26 +195,17 @@ static const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *e
 
 void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
+    //Need to add syscfg support for sgmii 
     switch(macPort){
-%let cp_info = cpswScript.getCpswInstInfo(cpsw_instance); 
-%let macPortList = cp_info.macPortList
-%for (const macPort of macPortList){
-        case `macPort`:
-%}
-%   let interfaceMode = cpsw_instance.phyToMacInterfaceMode;
-%   if (interfaceMode == "RGMII") {
+        case ENET_MAC_PORT_1:
             mii->layerType      = ENET_MAC_LAYER_GMII;
             mii->variantType    = ENET_MAC_VARIANT_FORCED;
             mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
-%   } else if (interfaceMode == "RMII") {
-            mii->layerType      = ENET_MAC_LAYER_MII;
-            mii->variantType  = ENET_MAC_VARIANT_NONE;
-            mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
-%   } else if (interfaceMode == "MII") {
-            mii->layerType      = ENET_MAC_LAYER_MII;
-            mii->variantType  = ENET_MAC_VARIANT_NONE;
-            mii->sublayerType   = ENET_MAC_SUBLAYER_STANDARD;
-%   }
+            break;
+        case ENET_MAC_PORT_2:
+            mii->layerType      = ENET_MAC_LAYER_GMII;
+            mii->variantType    = ENET_MAC_VARIANT_FORCED; 
+            mii->sublayerType   = ENET_MAC_SUBLAYER_SERIAL; //Have to make this SERIAL for SGMII
             break;
         default:
             break;
@@ -226,8 +219,6 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     EnetAppUtils_MmrLockState prevLockState;
 
     DebugP_assert(numEthPorts == 1);
-    DebugP_assert(ethPorts->mii.sublayerType == ENET_MAC_SUBLAYER_REDUCED);
-
     EnetBoard_enableExternalMux();
     /* Override the ENET control set by board lib */
     EnetBoard_setEnetControl(ethPorts->enetType, ethPorts->macPort, &ethPorts->mii);
@@ -248,11 +239,8 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 %}
             break;
         case ENET_MAC_PORT_2:
-%if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
-            CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
-% } else {
-            CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
-%}
+
+            CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_SGMII);
             break;
         default:
             DebugP_assert(false);

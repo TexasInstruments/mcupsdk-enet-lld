@@ -50,6 +50,7 @@
 #endif
 #include <include/core/enet_mod_macport.h>
 #include <include/mod/cpsw_macport.h>
+#include <hw_include/cslr_cpsgmii.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -433,6 +434,28 @@ int32_t CpswMacPort_restoreCtxt(CpswMacPort_Handle hPort,
 /* ========================================================================== */
 
 /* None */
+
+/* ========================================================================== */
+/*                    SGMII Helper Function Declarations                      */
+/* ========================================================================== */
+
+#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
+
+int32_t CpswMacPort_enableSgmiiPort(CSL_Xge_cpswRegs *regs,
+                                    CSL_CpsgmiiRegs *sgmiiRegs,
+                                    Enet_MacPort macPort,
+                                    const EnetMacPort_Interface *mii,
+                                    const EnetMacPort_LinkCfg *linkCfg);
+
+int32_t CpswMacPort_checkSgmiiAutoNegStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                            Enet_MacPort macPort);
+
+bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                Enet_MacPort macPort);
+
+uint32_t Cpsw_mapPort2XgmiiId(Enet_MacPort macPort);                                
+
+#endif
 
 #ifdef __cplusplus
 }

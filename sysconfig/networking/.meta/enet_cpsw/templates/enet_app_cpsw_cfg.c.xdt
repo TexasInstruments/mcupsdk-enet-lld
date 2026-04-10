@@ -635,7 +635,11 @@ static const CpswMacPort_Cfg enetAppCpswMacPortCfg[] =
             .portVID = `instance.macport2PortVID`,
         },
         .txPriorityType = `instance.macport2TxPriorityType`,
+#if defined (SOC_J722S)
+        .sgmiiMode      = ENET_MAC_SGMIIMODE_SGMII_FORCEDLINK,
+#else
         .sgmiiMode      = ENET_MAC_SGMIIMODE_INVALID, // INVALID as SGMII is not supported in MCU+ devices
+#endif
 
     },
 % }

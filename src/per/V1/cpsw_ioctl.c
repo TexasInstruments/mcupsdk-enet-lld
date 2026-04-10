@@ -139,7 +139,7 @@ static int32_t Cpsw_handleExternalPhyLinkUp(Cpsw_Handle hCpsw,
                                              const EnetPhy_LinkCfg *phyLinkCfg);
 
 #if ENET_CFG_IS_ON(CPSW_SGMII)
-static uint32_t Cpsw_mapPort2XgmiiId(Enet_MacPort macPort);
+uint32_t Cpsw_mapPort2XgmiiId(Enet_MacPort macPort);
 
 static int32_t Cpsw_setSgmiiMode(Cpsw_Handle hCpsw,
                                  Enet_MacPort macPort,
@@ -722,7 +722,7 @@ static int32_t Cpsw_openPortLink(Cpsw_Handle hCpsw,
             /* Make sure the QSGMII ports are configured correctly */
             if (EnetMacPort_isQsgmii(mii))
             {
-                status += EnetSoc_validateQsgmiiCfg(hPer->enetType, hPer->instId);
+                status += EnetSoc_validateQsgmiiCfg(hCpsw->enetPer.enetType,hCpsw->enetPer.instId);
             }
         }
 
@@ -1248,7 +1248,7 @@ static int32_t Cpsw_handleExternalPhyLinkUp(Cpsw_Handle hCpsw,
 }
 
 #if ENET_CFG_IS_ON(CPSW_SGMII)
-static uint32_t Cpsw_mapPort2XgmiiId(Enet_MacPort macPort)
+uint32_t Cpsw_mapPort2XgmiiId(Enet_MacPort macPort)
 {
     /* TODO: Needs correct logic to translate portNum to QSGMII Id */
     return 0U;

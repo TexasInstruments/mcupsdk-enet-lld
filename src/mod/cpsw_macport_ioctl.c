@@ -571,6 +571,9 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_ENABLE(CpswMacPort_Handle h
     EnetMacPort_Interface mii;
     Enet_MacPort macPort = hPort->macPort;
     int32_t status = ENET_SOK;
+#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
+    CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
+#endif
 
     status = EnetSoc_getMacPortMii(hPort->enetType, hPort->instId, macPort, &mii);
     if (status == ENET_SOK)
@@ -705,6 +708,9 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_GET_SGMII_AUTONEG_LINK_STAT
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
     if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_SGMII))
     {
+        Enet_MacPort macPort = hPort->macPort;
+        uint32_t portId = ENET_MACPORT_ID(macPort);
+        CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
         EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;
         bool *autoNegDone = (bool *)prms->outArgs;
 
@@ -734,6 +740,10 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_GET_SGMII_LINK_STATUS(CpswM
 #if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
     if (ENET_FEAT_IS_EN(hPort->features, CPSW_MACPORT_FEATURE_SGMII))
     {
+        Enet_MacPort macPort = hPort->macPort;
+        uint32_t portId = ENET_MACPORT_ID(macPort);
+        CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
+
         EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;
         bool *linkUp = (bool *)prms->outArgs;
 

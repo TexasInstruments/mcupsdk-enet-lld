@@ -1499,6 +1499,8 @@ int32_t Cpsw_isPortLinkUp(Cpsw_Handle hCpsw,
     int32_t status = ENET_SOK;
 #if ENET_CFG_IS_ON(CPSW_SGMII)
     EnetPer_Handle hPer = (EnetPer_Handle)hCpsw;
+    CSL_CPSW_SS_RGMIISTATUS rgmiiStatus;
+    CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPer->virtAddr;
     CSL_Xge_cpsw_ss_sRegs *ssRegs = (CSL_Xge_cpsw_ss_sRegs *)hPer->virtAddr2;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
@@ -1559,6 +1561,21 @@ int32_t Cpsw_isPortLinkUp(Cpsw_Handle hCpsw,
                         ENETTRACE_WARN("Port %u: SGMII link not up\r\n", portId);
                         *linked = false;
                     }
+                }
+            }
+            else if (enetSublayer == ENET_MAC_SUBLAYER_REDUCED)
+            {
+                /* Check if MAC Port is in loopback mode, if yes, set the link directly to true,
+                 * because mac_loopback enabled port, doesn't depend on RGMII path. */
+                if (CSL_CPGMAC_SL_isLoopbackModeEnabled(regs, portNum) == BFALSE)
+                {
+                    CSL_CPSW_SS_getRGMIIStatus(ssRegs, portNum, &rgmiiStatus);
+
+                    *linked = rgmiiStatus.link;
+                }
+                else
+                {
+                    *linked = BTRUE;
                 }
             }
             else

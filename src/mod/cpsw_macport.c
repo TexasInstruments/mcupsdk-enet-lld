@@ -121,6 +121,12 @@
 #define CPSW_MACPORT_VER_REVRTL_J722S         (0x00000000U)
 #define CPSW_MACPORT_VER_ID_J722S             (0x00006BA8U)
 
+/* Supported J7x and J722S SGMII version */
+#define CPSW_MACPORT_SGMII_VER_REVMAJ_J7X     (0x00000001U)
+#define CPSW_MACPORT_SGMII_VER_REVMIN_J7X     (0x00000002U)
+#define CPSW_MACPORT_SGMII_VER_REVRTL         (0x00000002U)
+#define CPSW_MACPORT_SGMII_VER_TX_ID_J7X      (0x00004EC2U)
+
 /*! \brief Default value used for MAC port RX MTU (MRU). */
 #define CPSW_MACPORT_RX_MTU_DEFAULT           (1518U)
 
@@ -218,17 +224,17 @@ static int32_t CpswMacPort_configSgmii(CSL_CpsgmiiRegs *sgmiiRegs,
 static void CpswMacPort_mapSgmiiLinkCfg(CSL_SGMII_ADVABILITY *sgmiiAdvAbility,
                                         const EnetMacPort_LinkCfg *linkCfg);
 
-static bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
-                                       Enet_MacPort macPort);
+bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                Enet_MacPort macPort);
 
-static int32_t CpswMacPort_checkSgmiiAutoNegStatus(CSL_CpsgmiiRegs *sgmiiRegs,
-                                                   Enet_MacPort macPort);
+int32_t CpswMacPort_checkSgmiiAutoNegStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                            Enet_MacPort macPort);
 
-static int32_t CpswMacPort_enableSgmiiPort(CSL_Xge_cpswRegs *regs,
-                                           CSL_CpsgmiiRegs *sgmiiRegs,
-                                           Enet_MacPort macPort,
-                                           const EnetMacPort_Interface *mii,
-                                           const EnetMacPort_LinkCfg *linkCfg);
+int32_t CpswMacPort_enableSgmiiPort(CSL_Xge_cpswRegs *regs,
+                                    CSL_CpsgmiiRegs *sgmiiRegs,
+                                    Enet_MacPort macPort,
+                                    const EnetMacPort_Interface *mii,
+                                    const EnetMacPort_LinkCfg *linkCfg);
 #endif
 
 static int32_t CpswMacPort_ioctl_handler_default(CpswMacPort_Handle hPort, CSL_Xge_cpswRegs *regs, Enet_IoctlPrms *prms);
@@ -799,9 +805,6 @@ int32_t CpswMacPort_ioctl(CpswMacPort_Handle hPort,
     ENETTRACE_VERBOSE("%s: Do IOCTL 0x%08x prms %p\n", hPort->name, cmd, prms);
 
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hPort->virtAddr;
-#if ENET_CFG_IS_ON(CPSW_MACPORT_SGMII)
-    CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
-#endif
     Enet_MacPort macPort = hPort->macPort;
     uint32_t portId = ENET_MACPORT_ID(macPort);
 
@@ -1370,6 +1373,10 @@ static int32_t CpswMacPort_configSgmii(CSL_CpsgmiiRegs *sgmiiRegs,
         CpswMacPort_mapSgmiiLinkCfg(&sgmiiAdvAbility, linkCfg);
         sgmiiAdvAbility.bLinkUp   = 1U;
         sgmiiAdvAbility.sgmiiMode = CSL_SGMII_MODE_SGMII;
+        #if defined(SOC_J722S)
+        sgmiiAdvAbility.duplexMode = CSL_SGMII_FULL_DUPLEX;
+        sgmiiAdvAbility.linkSpeed = CSL_SGMII_1000_MBPS;
+        #endif
 
         CSL_SGMII_setAdvAbility(sgmiiRegs, portNum, &sgmiiAdvAbility);
         CSL_SGMII_enableMasterMode(sgmiiRegs, portNum);
@@ -1421,8 +1428,8 @@ static void CpswMacPort_mapSgmiiLinkCfg(CSL_SGMII_ADVABILITY *sgmiiAdvAbility,
     }
 }
 
-static bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
-                                       Enet_MacPort macPort)
+bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                Enet_MacPort macPort)
 {
     CSL_SGMII_STATUS sgmiiStatus;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
@@ -1432,8 +1439,8 @@ static bool CpswMacPort_getSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
     return (sgmiiStatus.bIsLinkUp != 0U);
 }
 
-static int32_t CpswMacPort_checkSgmiiAutoNegStatus(CSL_CpsgmiiRegs *sgmiiRegs,
-                                                   Enet_MacPort macPort)
+int32_t CpswMacPort_checkSgmiiAutoNegStatus(CSL_CpsgmiiRegs *sgmiiRegs,
+                                            Enet_MacPort macPort)
 {
     CSL_SGMII_STATUS sgmiiStatus;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
@@ -1525,11 +1532,11 @@ static int32_t CpswMacPort_checkSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
     return status;
 }
 
-static int32_t CpswMacPort_enableSgmiiPort(CSL_Xge_cpswRegs *regs,
-                                           CSL_CpsgmiiRegs *sgmiiRegs,
-                                           Enet_MacPort macPort,
-                                           const EnetMacPort_Interface *mii,
-                                           const EnetMacPort_LinkCfg *linkCfg)
+int32_t CpswMacPort_enableSgmiiPort(CSL_Xge_cpswRegs *regs,
+                                    CSL_CpsgmiiRegs *sgmiiRegs,
+                                    Enet_MacPort macPort,
+                                    const EnetMacPort_Interface *mii,
+                                    const EnetMacPort_LinkCfg *linkCfg)
 {
     uint32_t portId = ENET_MACPORT_ID(macPort);
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
