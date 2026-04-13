@@ -118,37 +118,54 @@ function pinmuxRequirements(inst) {
     pinmux.setPeripheralPinConfigurableDefault( mdio, "MDC", "rx", false);
     perRequirements.push(mdio);
 
-    if( inst.phyToMacInterfaceMode === "MII")
+    /* Configure MAC Port 1 pinmux based on its interface mode */
+    if(inst.enablexmii1 === true)
     {
-        let mii1 = getPeripheralRequirements(inst, "MII", "MII1");
-        let mii2 = getPeripheralRequirements(inst, "MII", "MII2");
-
-        return [mdio, mii1, mii2];
+        if( inst.phyToMacInterfaceMode1 === "RMII")
+        {
+            let rmii1 = getPeripheralRequirements(inst, "RMII", "RMII1");
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD0", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD1", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii1, "TX_EN", "rx", false);
+            perRequirements.push(rmii1);
+        }
+        else if( inst.phyToMacInterfaceMode1 === "SGMII")
+        {
+            /* SGMII mode - SerDes handles the pins, no additional pin mux needed */
+            /* SGMII is configured via SerDes/board initialization, not pin mux */
+        }
+        else
+        {
+            let rgmii1 = getPeripheralRequirements(inst, "RGMII", "RGMII1");
+            perRequirements.push(rgmii1);
+        }
     }
-    else if( inst.phyToMacInterfaceMode === "RMII")
-    {
-        let rmii1 = getPeripheralRequirements(inst, "RMII", "RMII1");
-        let rmii2 = getPeripheralRequirements(inst, "RMII", "RMII2");
 
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii1, "TX_EN", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD0", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD1", "rx", false);
-        pinmux.setPeripheralPinConfigurableDefault( rmii2, "TX_EN", "rx", false);
-        perRequirements.push(rmii1);
-        perRequirements.push(rmii2);
-    }
-    else
+    /* Configure MAC Port 2 pinmux based on its interface mode */
+    if(inst.enablexmii2 === true)
     {
-        let rgmii1 = getPeripheralRequirements(inst, "RGMII", "RGMII1");
-        let rgmii2 = getPeripheralRequirements(inst, "RGMII", "RGMII2");
-
-        perRequirements.push(rgmii1);
-        perRequirements.push(rgmii2);
+        if( inst.phyToMacInterfaceMode2 === "RMII")
+        {
+            let rmii2 = getPeripheralRequirements(inst, "RMII", "RMII2");
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD0", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TXD1", "rx", false);
+            pinmux.setPeripheralPinConfigurableDefault( rmii2, "TX_EN", "rx", false);
+            perRequirements.push(rmii2);
+        }
+        else if( inst.phyToMacInterfaceMode2 === "SGMII")
+        {
+            /* SGMII mode - SerDes handles the pins, no additional pin mux needed */
+            /* SGMII is configured via SerDes/board initialization, not pin mux */
+        }
+        else
+        {
+            let rgmii2 = getPeripheralRequirements(inst, "RGMII", "RGMII2");
+            perRequirements.push(rgmii2);
+        }
     }
         return perRequirements;
 }
+
 function getInterfaceNameList(inst) {
     let interfaceNameList = []
     interfaceNameList.push(getInterfaceName(inst, "MDIO"))
@@ -157,20 +174,39 @@ function getInterfaceNameList(inst) {
     {
         interfaceNameList.push("CPSW_CPTS")
     }
-    if (inst.phyToMacInterfaceMode === "MII")
+
+    /* Add interface names for MAC Port 1 */
+    if(inst.enablexmii1 === true)
     {
-        interfaceNameList.push(getInterfaceName(inst, "MII1"));
-        interfaceNameList.push(getInterfaceName(inst, "MII2"));
+        if (inst.phyToMacInterfaceMode1 === "RMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RMII1"));
+        }
+        else if (inst.phyToMacInterfaceMode1 === "SGMII")
+        {
+            /* SGMII does not require pin mux configuration */
+        }
+        else
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RGMII1"));
+        }
     }
-    else if (inst.phyToMacInterfaceMode === "RMII")
+
+    /* Add interface names for MAC Port 2 */
+    if(inst.enablexmii2 === true)
     {
-        interfaceNameList.push(getInterfaceName(inst, "RMII2"));
-        interfaceNameList.push(getInterfaceName(inst, "RMII2"));
-    }
-    else
-    {
-        interfaceNameList.push(getInterfaceName(inst, "RGMII1"));
-        interfaceNameList.push(getInterfaceName(inst, "RGMII2"));
+        if (inst.phyToMacInterfaceMode2 === "RMII")
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RMII2"));
+        }
+        else if (inst.phyToMacInterfaceMode2 === "SGMII")
+        {
+            /* SGMII does not require pin mux configuration */
+        }
+        else
+        {
+            interfaceNameList.push(getInterfaceName(inst, "RGMII2"));
+        }
     }
     return interfaceNameList;
 }
@@ -178,26 +214,53 @@ function getInterfaceNameList(inst) {
 function getPeripheralPinNames(inst)
 {
     let pinList = [];
+    let addedRmii = false;
+    let addedRgmii = false;
+
     if (inst.enableTsOut === true)
     {
       pinList = pinList.concat( "CPTS0_TS_SYNC");
     }
 
-    if(inst.phyToMacInterfaceMode === "MII")
+    /* Add MDIO pins */
+    pinList = pinList.concat(getInterfacePinList(inst, "MDIO"));
+
+    /* Add pins for MAC Port 1 based on interface mode */
+    if(inst.enablexmii1 === true)
     {
-        pinList = pinList.concat( getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "MII" )
-        );
+        if(inst.phyToMacInterfaceMode1 === "RMII" && !addedRmii)
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RMII"));
+            addedRmii = true;
+        }
+        else if(inst.phyToMacInterfaceMode1 === "SGMII")
+        {
+            /* SGMII mode - no pin mux pins needed, configured via SerDes */
+        }
+        else if(!addedRgmii)
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RGMII"));
+            addedRgmii = true;
+        }
     }
-    else if(inst.phyToMacInterfaceMode === "RMII")
+
+    /* Add pins for MAC Port 2 based on interface mode */
+    if(inst.enablexmii2 === true)
     {
-        pinList = pinList.concat(getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "RMII" ));
-    }
-    else
-    {
-        pinList = pinList.concat( getInterfacePinList(inst, "MDIO"),
-                        getInterfacePinList(inst, "RGMII" ));
+        if(inst.phyToMacInterfaceMode2 === "RMII" && !addedRmii)
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RMII"));
+            addedRmii = true;
+        }
+        else if(inst.phyToMacInterfaceMode2 === "SGMII")
+        {
+            /* SGMII mode - no pin mux pins needed, configured via SerDes */
+        }
+        else if(!addedRgmii)
+        {
+            pinList = pinList.concat(getInterfacePinList(inst, "RGMII"));
+            addedRgmii = true;
+        }
     }
     return pinList;
 }
@@ -207,8 +270,8 @@ let enet_cpsw_pinmux_module = {
     longDescription: `This configures CPSW module pinmux`,
     config: [
         {
-            name: "phyToMacInterfaceMode",
-            displayName: "RMII/RGMII",
+            name: "phyToMacInterfaceMode1",
+            displayName: "MAC Port 1 Interface Mode",
             default: "RGMII",
             options: [
                 {
@@ -216,6 +279,25 @@ let enet_cpsw_pinmux_module = {
                 },
                 {
                     name: "RGMII",
+                },
+                {
+                    name: "SGMII",
+                },
+            ],
+        },
+        {
+            name: "phyToMacInterfaceMode2",
+            displayName: "MAC Port 2 Interface Mode",
+            default: "RGMII",
+            options: [
+                {
+                    name: "RMII",
+                },
+                {
+                    name: "RGMII",
+                },
+                {
+                    name: "SGMII",
                 },
             ],
         },
@@ -227,16 +309,16 @@ let enet_cpsw_pinmux_module = {
         },
         {
             name: "enablexmii1",
-            description: "Enable port 1 specific RGMII/RMII/MII.Change 'Disable MAC Port' status in 'MAC Port Config' to change this",
-            displayName: "Enable Port1 R/G/MII For CPSW",
+            description: "Enable port 1 specific RGMII/RMII/MII/SGMII. Change 'Disable MAC Port' status in 'MAC Port Config' to change this",
+            displayName: "Enable Port1 Interface For CPSW",
             default: true,
             hidden: false,
             readOnly: true,
         },
         {
             name: "enablexmii2",
-            description: "Enable port 2 specific RGMII/RMII/MII.Change 'Disable MAC Port' status in 'MAC Port Config' to change this",
-            displayName: "Enable Port1 R/G/MII For CPSW",
+            description: "Enable port 2 specific RGMII/RMII/MII/SGMII. Change 'Disable MAC Port' status in 'MAC Port Config' to change this",
+            displayName: "Enable Port2 Interface For CPSW",
             default: true,
             hidden: false,
             readOnly: true,

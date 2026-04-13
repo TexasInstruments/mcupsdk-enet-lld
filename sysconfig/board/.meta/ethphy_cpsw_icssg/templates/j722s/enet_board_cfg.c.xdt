@@ -2,6 +2,41 @@
     let cpsw_instance = system.modules["/networking/enet_cpsw/enet_cpsw"].$instances[0];
     let cpswScript = system.getScript("/networking/enet_cpsw/enet_cpsw");
     let ethphyScript = system.getScript("/board/ethphy_cpsw_icssg/ethphy_cpsw_icssg");
+
+    /* Helper function to map interface mode to MII configuration */
+    function getInterfaceMiiConfig(interfaceMode) {
+        if (interfaceMode === "RMII") {
+            return { layer: "ENET_MAC_LAYER_MII", sublayer: "ENET_MAC_SUBLAYER_REDUCED" };
+        } else if (interfaceMode === "RGMII") {
+            return { layer: "ENET_MAC_LAYER_GMII", sublayer: "ENET_MAC_SUBLAYER_REDUCED" };
+        } else if (interfaceMode === "SGMII") {
+            return { layer: "ENET_MAC_LAYER_GMII", sublayer: "ENET_MAC_SUBLAYER_SERIAL" };
+        } else {
+            /* Default to GMII/REDUCED for unknown modes */
+            return { layer: "ENET_MAC_LAYER_GMII", sublayer: "ENET_MAC_SUBLAYER_REDUCED" };
+        }
+    }
+
+    /* Get the MAC port for a given PHY instance */
+    function getMacPortForPhyInstance(phyInstance) {
+        /* Map peripheral name (CPSW1, CPSW2) to MAC port */
+        if (phyInstance.peripheral === "CPSW1") {
+            return "ENET_MAC_PORT_1";
+        } else if (phyInstance.peripheral === "CPSW2") {
+            return "ENET_MAC_PORT_2";
+        }
+        return null;
+    }
+
+    /* Get interface mode for a given MAC port from SysConfig */
+    function getInterfaceModeForPort(macPort) {
+        if (macPort === "ENET_MAC_PORT_1") {
+            return cpsw_instance.phyToMacInterfaceMode1;
+        } else if (macPort === "ENET_MAC_PORT_2") {
+            return cpsw_instance.phyToMacInterfaceMode2;
+        }
+        return "RGMII"; /* Default */
+    }
 %%}
 % let common = system.getScript("/common");
 % let device = common.getDeviceName();
@@ -117,11 +152,14 @@ static const `common.camelSentence(phyName)`_Cfg gEnetCpbBoard_`common.camelSent
 static const EnetBoard_PortCfg gEnetCpbBoard_`device.replace('-','_')`_EthPort[] =
 {
 % for (let idx of linkedInstances) {
+%     let macPort = instances[idx].peripheral.replace("CPSW", "ENET");
+%     let interfaceMode = getInterfaceModeForPort(macPort);
+%     let miiConfig = getInterfaceMiiConfig(interfaceMode);
     {    /* "CPSW3G" */
         .enetType = ENET_CPSW_3G,
         .instId   = 0U,
-        .macPort  = `instances[idx].peripheral.replace("CPSW", "ENET")`,
-        .mii      = {`cpswScript.getMiiConfig(cpsw_instance).layerType`, `cpswScript.getMiiConfig(cpsw_instance).sublayerType`},
+        .macPort  = `macPort`,
+        .mii      = {`miiConfig.layer`, `miiConfig.sublayer`},  /* Interface: `interfaceMode` */
         .phyCfg   =
         {
             .phyAddr         = `instances[idx].phyAddr`,
@@ -195,18 +233,37 @@ static const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *e
 
 void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
 {
-    //Need to add syscfg support for sgmii 
+    //Need to add syscfg support for sgmii
     switch(macPort){
-        case ENET_MAC_PORT_1:
+%let cp_info = cpswScript.getCpswInstInfo(cpsw_instance);
+%let macPortList = cp_info.macPortList
+%for (const macPort of macPortList){
+        case `macPort`:
+%       let interfaceMode;
+%       if (macPort === 'ENET_MAC_PORT_1') {
+%           interfaceMode = cpsw_instance.phyToMacInterfaceMode1;
+%       } else if (macPort === 'ENET_MAC_PORT_2') {
+%           interfaceMode = cpsw_instance.phyToMacInterfaceMode2;
+%       }
+%       if (interfaceMode == "RGMII") {
             mii->layerType      = ENET_MAC_LAYER_GMII;
             mii->variantType    = ENET_MAC_VARIANT_FORCED;
             mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
-            break;
-        case ENET_MAC_PORT_2:
+%       } else if (interfaceMode == "RMII") {
+            mii->layerType      = ENET_MAC_LAYER_MII;
+            mii->variantType  = ENET_MAC_VARIANT_NONE;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+%       } else if (interfaceMode == "SGMII") {
             mii->layerType      = ENET_MAC_LAYER_GMII;
-            mii->variantType    = ENET_MAC_VARIANT_FORCED; 
-            mii->sublayerType   = ENET_MAC_SUBLAYER_SERIAL; //Have to make this SERIAL for SGMII
+            mii->variantType    = ENET_MAC_VARIANT_FORCED;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_SERIAL;
+%       } else if (interfaceMode == "MII") {
+            mii->layerType      = ENET_MAC_LAYER_MII;
+            mii->variantType  = ENET_MAC_VARIANT_NONE;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_STANDARD;
+%       }
             break;
+%}
         default:
             break;
     }
@@ -232,15 +289,22 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     switch(ethPorts->macPort)
     {
         case ENET_MAC_PORT_1:
-%if (cpsw_instance.phyToMacInterfaceMode == "RGMII") {
+%if (cpsw_instance.phyToMacInterfaceMode1 == "RGMII") {
             CSL_FINS (regs->ENET1_CTRL, MAIN_CTRL_MMR_CFG0_ENET1_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
-% } else {
+% } else if (cpsw_instance.phyToMacInterfaceMode1 == "RMII") {
             CSL_FINS (regs->ENET1_CTRL, MAIN_CTRL_MMR_CFG0_ENET1_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
+% } else if (cpsw_instance.phyToMacInterfaceMode1 == "SGMII") {
+            CSL_FINS (regs->ENET1_CTRL, MAIN_CTRL_MMR_CFG0_ENET1_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_SGMII);
 %}
             break;
         case ENET_MAC_PORT_2:
-
+%if (cpsw_instance.phyToMacInterfaceMode2 == "RGMII") {
+            CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
+% } else if (cpsw_instance.phyToMacInterfaceMode2 == "RMII") {
+            CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RMII);
+% } else if (cpsw_instance.phyToMacInterfaceMode2 == "SGMII") {
             CSL_FINS (regs->ENET2_CTRL, MAIN_CTRL_MMR_CFG0_ENET2_CTRL_PORT_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_SGMII);
+%}
             break;
         default:
             DebugP_assert(false);
