@@ -66,7 +66,7 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/threadx/threadx_src/common/inc \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/threadx/ports/ti_arm_gcc_clang_cortex_r5/inc \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/filex/filex_src/common/inc \
-	-I${MCU_PLUS_SDK_PATH}/source/kernel/filex/filex_src/ports/generic/inc \
+	-I${MCU_PLUS_SDK_PATH}/source/fs/filex/ports/generic \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/common/inc \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_enet \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/netxduo/netxduo_src/ports/cortex_r5/gnu/inc/ \
