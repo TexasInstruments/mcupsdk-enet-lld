@@ -12,13 +12,13 @@ const cpswPhyExtendedConfig = new Map([
 .txFifoDepth          = 4U,
 .impedanceInMilliOhms = 35000,  /* 35 ohms */
 .idleCntThresh        = 4U,     /* Improves short cable performance */
-.gpio0Mode            = DP83869_GPIO0_RX_SFD,
+.gpio0Mode            = DP83869_GPIO0_LED_2,
 .gpio1Mode            = DP83869_GPIO1_COL, /* Unused */
 .ledMode              =
 {
-	DP83869_LED_LINKED,         /* Unused */
-	DP83869_LED_RXERR,
+	DP83869_LED_LINKED_100BTX,         /* Unused */
 	DP83869_LED_RXTXACT,
+	DP83869_LED_LINKED,
 	DP83869_LED_LINKED_1000BT,
 },`}],
 
