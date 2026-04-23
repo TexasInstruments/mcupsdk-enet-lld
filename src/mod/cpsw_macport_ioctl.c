@@ -710,6 +710,7 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_GET_SGMII_AUTONEG_LINK_STAT
     {
         Enet_MacPort macPort = hPort->macPort;
         uint32_t portId = ENET_MACPORT_ID(macPort);
+        ENETTRACE_VAR(portId);
         CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
         EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;
         bool *autoNegDone = (bool *)prms->outArgs;
@@ -742,6 +743,7 @@ int32_t CpswMacPort_ioctl_handler_CPSW_MACPORT_IOCTL_GET_SGMII_LINK_STATUS(CpswM
     {
         Enet_MacPort macPort = hPort->macPort;
         uint32_t portId = ENET_MACPORT_ID(macPort);
+        ENETTRACE_VAR(portId);
         CSL_CpsgmiiRegs *sgmiiRegs = (CSL_CpsgmiiRegs *)hPort->virtAddr2;
 
         EnetMacPort_GenericInArgs *inArgs = (EnetMacPort_GenericInArgs *)prms->inArgs;

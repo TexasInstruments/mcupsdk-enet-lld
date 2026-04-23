@@ -1507,6 +1507,8 @@ static int32_t CpswMacPort_checkSgmiiStatus(CSL_CpsgmiiRegs *sgmiiRegs,
                 /* Get link partner speed/duplexity */
                 CSL_SGMII_getLinkPartnerAdvAbility(sgmiiRegs, portNum, &sgmiiAdvAbility);
             }
+            ENETTRACE_VAR(*CpswMacPort_gSgmiiSpeedNames);
+            ENETTRACE_VAR(*CpswMacPort_gSgmiiDuplexNames);
 
             ENETTRACE_INFO("MAC %u: SGMII link parter config port: link %s: %s %s\n",
                            portId, sgmiiAdvAbility.bLinkUp ? "up" : "down",
