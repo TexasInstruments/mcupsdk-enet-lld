@@ -8,7 +8,7 @@
 #define NUM_CLASSA_STREAMS NUM_CLASSA_STREAM_TASKS
 
 /* Total ClassD Stream Count */
-#define NUM_CLASSD_STREAMS (3*NUM_CLASSD_STREAM_TASKS)
+#define NUM_CLASSD_STREAMS (1*NUM_CLASSD_STREAM_TASKS)
 
 /* Maximum Class-A Streams supported in the Application */
 #define MAX_CLASSA_STREAMS 3
@@ -45,5 +45,5 @@
 
 #ifdef ETHERRING_PROFILING
 /*! \brief Value of Maximum Rx TimeStamps stored in the EtherRing RxTs object */
-#define ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED                                    30U
+#define ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED                                    10000U
 #endif

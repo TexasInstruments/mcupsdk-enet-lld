@@ -3,49 +3,49 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM263x_beta" --part "AM263x" --package "ZCZ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2631-Q1" --package "NFBGA (ZCZ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.21.2+3837"}
+ * @versions {"tool":"1.26.0+4407"}
  */
 
 /**
  * Import the modules used in this configuration.
  */
-const eeprom          = scripting.addModule("/board/eeprom/eeprom", {}, false);
-const eeprom1         = eeprom.addInstance();
-const gpio            = scripting.addModule("/drivers/gpio/gpio", {}, false);
-const gpio1           = gpio.addInstance();
-const gpio2           = gpio.addInstance();
-const i2c             = scripting.addModule("/drivers/i2c/i2c", {}, false);
-const i2c1            = i2c.addInstance();
-const debug_log       = scripting.addModule("/kernel/dpl/debug_log");
-const dpl_cfg         = scripting.addModule("/kernel/dpl/dpl_cfg");
-const mpu_armv7       = scripting.addModule("/kernel/dpl/mpu_armv7", {}, false);
-const mpu_armv71      = mpu_armv7.addInstance();
-const mpu_armv72      = mpu_armv7.addInstance();
-const mpu_armv73      = mpu_armv7.addInstance();
-const mpu_armv74      = mpu_armv7.addInstance();
-const mpu_armv75      = mpu_armv7.addInstance();
-const profile         = scripting.addModule("/kernel/dpl/profile", {}, false);
-const profile1        = profile.addInstance();
-const timer           = scripting.addModule("/kernel/dpl/timer", {}, false);
-const timer1          = timer.addInstance();
-const default_linker  = scripting.addModule("/memory_configurator/default_linker", {}, false);
-const default_linker1 = default_linker.addInstance();
-const general         = scripting.addModule("/memory_configurator/general", {}, false);
-const general1        = general.addInstance();
-const region          = scripting.addModule("/memory_configurator/region", {}, false);
-const region1         = region.addInstance();
-const section         = scripting.addModule("/memory_configurator/section", {}, false);
-const section1        = section.addInstance();
-const section2        = section.addInstance();
-const section3        = section.addInstance();
-const section4        = section.addInstance();
-const section5        = section.addInstance();
-const section6        = section.addInstance();
-const section7        = section.addInstance();
-const section8        = section.addInstance();
-const section9        = section.addInstance();
-const enet_cpsw       = scripting.addModule("/networking/enet_cpsw/enet_cpsw", {}, false);
-const enet_cpsw1      = enet_cpsw.addInstance();
+const eeprom              = scripting.addModule("/board/eeprom/eeprom", {}, false);
+const eeprom1             = eeprom.addInstance();
+const gpio                = scripting.addModule("/drivers/gpio/gpio", {}, false);
+const gpio1               = gpio.addInstance();
+const gpio2               = gpio.addInstance();
+const i2c                 = scripting.addModule("/drivers/i2c/i2c", {}, false);
+const i2c1                = i2c.addInstance();
+const debug_log           = scripting.addModule("/kernel/dpl/debug_log");
+const dpl_cfg             = scripting.addModule("/kernel/dpl/dpl_cfg");
+const mpu_armv7           = scripting.addModule("/kernel/dpl/mpu_armv7", {}, false);
+const mpu_armv71          = mpu_armv7.addInstance();
+const mpu_armv72          = mpu_armv7.addInstance();
+const mpu_armv73          = mpu_armv7.addInstance();
+const mpu_armv74          = mpu_armv7.addInstance();
+const mpu_armv75          = mpu_armv7.addInstance();
+const profile             = scripting.addModule("/kernel/dpl/profile", {}, false);
+const profile1            = profile.addInstance();
+const default_linker      = scripting.addModule("/memory_configurator/default_linker", {}, false);
+const default_linker1     = default_linker.addInstance();
+const general             = scripting.addModule("/memory_configurator/general", {}, false);
+const general1            = general.addInstance();
+const region              = scripting.addModule("/memory_configurator/region", {}, false);
+const region1             = region.addInstance();
+const section             = scripting.addModule("/memory_configurator/section", {}, false);
+const section1            = section.addInstance();
+const section2            = section.addInstance();
+const section3            = section.addInstance();
+const section4            = section.addInstance();
+const section5            = section.addInstance();
+const section6            = section.addInstance();
+const section7            = section.addInstance();
+const section8            = section.addInstance();
+const section9            = section.addInstance();
+const enet_cpsw           = scripting.addModule("/networking/enet_cpsw/enet_cpsw", {}, false);
+const enet_cpsw1          = enet_cpsw.addInstance();
+const soc_timesync_xbar1  = scripting.addModule("/xbar/soc_timesync_xbar1/soc_timesync_xbar1", {}, false);
+const soc_timesync_xbar11 = soc_timesync_xbar1.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -106,10 +106,6 @@ mpu_armv75.baseAddr   = 0x70040000;
 
 profile1.$name      = "CONFIG_PROFILE_INTR0";
 profile1.profEnable = false;
-
-timer1.$name         = "CONFIG_TIMER0";
-timer1.usecPerTick   = 125;
-timer1.timerCallback = "timerIsrClassA";
 
 default_linker1.$name = "memory_configurator_default_linker0";
 
@@ -250,9 +246,9 @@ section9.output_section[0].alignment = 128;
 
 enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
 enet_cpsw1.BoardType                    = "am263x-lp";
-enet_cpsw1.hostportRxCsumOffloadEn      = false;
 enet_cpsw1.enableTsOut                  = true;
-enet_cpsw1.LargePoolPktCount            = 96;
+enet_cpsw1.LargePoolPktCount            = 192;
+enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.MDIO.$assign                 = "MDIO";
 enet_cpsw1.MDIO.MDIO_MDIO.$assign       = "MDIO_MDIO";
 enet_cpsw1.MDIO.MDIO_MDC.$assign        = "MDIO_MDC";
@@ -262,9 +258,10 @@ enet_cpsw1.txDmaChannel.create(2);
 enet_cpsw1.txDmaChannel[0].$name        = "ENET_DMA_TX_CH0";
 enet_cpsw1.txDmaChannel[0].PacketsCount = 4;
 enet_cpsw1.txDmaChannel[1].$name        = "ENET_DMA_TX_CH_PTP";
-enet_cpsw1.txDmaChannel[1].PacketsCount = 4;
+enet_cpsw1.txDmaChannel[1].PacketsCount = 8;
 enet_cpsw1.rxDmaChannel.create(2);
 enet_cpsw1.rxDmaChannel[0].$name        = "ENET_DMA_RX_CH0";
+enet_cpsw1.rxDmaChannel[0].PacketsCount = 96;
 enet_cpsw1.rxDmaChannel[1].$name        = "ENET_DMA_RX_CH_PTP";
 enet_cpsw1.rxDmaChannel[1].macAddrCount = 0;
 enet_cpsw1.rxDmaChannel[1].PacketsCount = 4;
@@ -278,12 +275,15 @@ const ethphy_cpsw_icssg2 = ethphy_cpsw_icssg.addInstance({}, false);
 ethphy_cpsw_icssg2.$name = "CONFIG_ENET_ETHPHY1";
 enet_cpsw1.ethphy2       = ethphy_cpsw_icssg2;
 
+soc_timesync_xbar11.$name      = "CONFIG_SOC_TIMESYNC_XBAR1_0";
+soc_timesync_xbar11.xbarOutput = "SOC_TIMESYNC_XBAR1_CPTS_GENF1";
+soc_timesync_xbar11.instance   = "SOC_TIMESYNC_XBAR1_CPSW_MODULE_0";
+
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-timer1.RTI.$suggestSolution                         = "RTI1";
 enet_cpsw1.RGMII1.RD0.$suggestSolution              = "RGMII1_RD0";
 enet_cpsw1.RGMII1.RD1.$suggestSolution              = "RGMII1_RD1";
 enet_cpsw1.RGMII1.RD2.$suggestSolution              = "RGMII1_RD2";

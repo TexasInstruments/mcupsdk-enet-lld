@@ -221,6 +221,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
     const EnetTimeSync_TimestampAdj *tsAdj = (const EnetTimeSync_TimestampAdj *)prms->inArgs;
     CSL_CPTS_TS_PPM_DIR ppmDir;
     CSL_CPTS_ESTF_PPM_DIR estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_DECREASE;
+    CSL_CPTS_GENF_PPM_DIR genfPpmDir = CSL_CPTS_GENF_PPM_DIR_DECREASE;
     uint32_t adjOffset;
     uint64_t adjVal;
     uint32_t tsPpmValHi;
@@ -231,6 +232,10 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
     uint64_t estfAdjVal = 0U;
     uint32_t estfPpmValHi = 0U;
     uint32_t estfPpmValLo = 0U;
+    uint32_t genfIdxMask = 0U;
+    uint64_t genfAdjVal = 0U;
+    uint32_t genfPpmValHi = 0U;
+    uint32_t genfPpmValLo = 0U;
 
     if (tsAdj->intervalInNsecs == 0U)
     {
@@ -239,6 +244,8 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
     }
 
     estfIdxMask = hCpts->activeEstfIdxMask;
+    genfIdxMask = hCpts->activeGenfIdxMask;
+    
     if (status == ENET_SOK)
     {
         if (tsAdj->adjValInNsecs == 0)
@@ -251,6 +258,13 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
                     CSL_CPTS_setESTFnPpm(regs, idx, 0U, 0U, 0U);
                 }
             }
+            for(idx = 0U; idx < (sizeof(regs->TS_GENF)/sizeof(CSL_cptsRegs_TS_GENF)); idx++)
+            {
+                if ((genfIdxMask & ENET_BIT(idx)) != 0U)
+                {
+                    CSL_CPTS_setGENFnPpm(regs, idx, 0U, 0U, 0U);
+                }
+            }
         }
         else
         {
@@ -258,12 +272,14 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
             {
                 ppmDir = CSL_CPTS_TS_PPM_DIR_INCREASE;
                 estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_INCREASE;
+                genfPpmDir = CSL_CPTS_GENF_PPM_DIR_INCREASE;
                 adjOffset = tsAdj->adjValInNsecs;
             }
             else
             {
                 ppmDir = CSL_CPTS_TS_PPM_DIR_DECREASE;
                 estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_DECREASE;
+                genfPpmDir = CSL_CPTS_GENF_PPM_DIR_DECREASE;
                 adjOffset = (uint64_t)(-1 * tsAdj->adjValInNsecs);
             }
 
@@ -288,6 +304,18 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
                 estfPpmValHi = (uint32_t)(estfAdjVal >> 32U);
                 estfPpmValLo = (uint32_t)(estfAdjVal & 0xFFFFFFFFU);
             }
+            
+            if(genfIdxMask != 0U)
+            {
+                /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
+                 * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
+                 * need to be corrected.
+                 */
+                genfAdjVal = adjVal * (hCpts->tsAddVal + 1);
+                genfPpmValHi = (uint32_t)(genfAdjVal >> 32U);
+                genfPpmValLo = (uint32_t)(genfAdjVal & 0xFFFFFFFFU);
+            }
+            
             CSL_CPTS_setTSPpm(regs, tsPpmValLo, tsPpmValHi, ppmDir);
             if (estfIdxMask != 0U)
             {
@@ -296,6 +324,17 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
                    if ((estfIdxMask & ENET_BIT(idx)) != 0U)
                    {
                        CSL_CPTS_setESTFnPpm(regs, idx, estfPpmValLo, estfPpmValHi, estfPpmDir);
+                   }
+               }
+            }
+            
+            if (genfIdxMask != 0U)
+            {
+               for(idx = 0U; idx < ENET_CFG_CPSW_GENF_NUM; idx++)
+               {
+                   if ((genfIdxMask & ENET_BIT(idx)) != 0U)
+                   {
+                       CSL_CPTS_setGENFnPpm(regs, idx, genfPpmValLo, genfPpmValHi, genfPpmDir);
                    }
                }
             }

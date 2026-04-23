@@ -81,14 +81,7 @@ void EnetApp_mainTask(void *args)
 
     ghEnetDma = Enet_getDmaHandle(gEnetAppCfg.hEnet);
 
-    /* Creates Rx Task for Redundancy packets received on DMA channel 0 */
     EnetApp_createRxTask();
-
-    /* Task to clear Ether-Ring Look-up table entries periodically */
-    EnetApp_createEtherRingClearTask();
-
-    /* Starts Hardware Timer for periodic callback for every 125us */
-    EnetApp_startHwTimer();
 
     /* Initialize TSN and EST Configuration */
     if (EnetApp_initTsn())
@@ -100,7 +93,6 @@ void EnetApp_mainTask(void *args)
         /* Update PortMask for Ptp Mcast ALE Entry */
         EnetApp_updatePtpMcastAddress(gEnetAppCfg.hEnet, gEnetAppCfg.coreId);
 
-        /* Create Real-time task for traffic generation */
         EnetApp_createStreamTask();
 
         while (true)

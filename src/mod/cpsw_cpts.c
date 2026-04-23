@@ -368,6 +368,8 @@ int32_t CpswCpts_open(CpswCpts_Handle hCpts,
         control.seqEn        = FALSE;
         control.tsCompToggle = FALSE;
 
+         hCpts->hwPushCnt = ENET_CFG_CPSW_HWPUSH_NUM;
+        
         for (i = 0U; i < hCpts->hwPushCnt; i++)
         {
             control.tsHwPushEn[i] = TRUE;

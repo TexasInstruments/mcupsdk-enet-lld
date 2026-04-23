@@ -54,8 +54,8 @@
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
-#define CLASSA_INTERVAL_OPEN_TIME_NS 20000
-#define MAX_BASE_TIME_US   20000000
+#define CLASSA_INTERVAL_OPEN_TIME_NS 30000
+#define MAX_BASE_TIME_US   30000000
 
 extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
 #define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
@@ -132,7 +132,7 @@ UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 static EnetEstAppCtx_t gEnetEstAppCtx;
 SemaphoreP_Object gEstFinishedSem;
 extern EnetApp_Cfg gEnetAppCfg;
-
+uint64_t gbaseTime =  30000000000;
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
@@ -441,25 +441,6 @@ static bool EnetEstApp_isPTPClockStateSync(EnetQoSApp_AppCtx_t *ctx,
     return syncFlag;
 }
 
-static int EnetEstApp_getAdminBaseTime(uint64_t *time)
-{
-    int res = 0;
-    int64_t ts;
-    // Since we are disabling gptpmasterclock_getts64 due to CPU load
-    // temporarily using this API
-    // TODO: replace by int64_t ts = gptpmasterclock_getts64();
-    gptpmasterclock_get_domain_ts64(&ts, 0);
-    if (ts < 0)
-    {
-        res = -1;
-    }
-    else
-    {
-        *time = ts;
-    }
-    return res;
-}
-
 static int EnetCbsApp_registerCbsEnableToUniconf(uc_dbald *dbald, uc_notice_data_t *ucntd,
                                                 char *ifname)
 {
@@ -553,18 +534,8 @@ static int EnetEstApp_runSchedule(EnetQoSApp_AppCtx_t *ctx,
             break;
         }
 
-        if (EnetEstApp_getAdminBaseTime(&adminList->baseTime) == 0)
-        {
-            /* Add a delay time to allow the admin list scheduled in the future 
-            * the offset should be large enough to have  both EST schedules from
-            * talker and listener started at the same time
-            */
-            int64_t offset = ADMIN_DELAY_OFFSET_FACTOR*adminList->cycleTime;
-            adminList->baseTime = ((adminList->baseTime+offset)/offset)*offset;
-            adminList->baseTime = (adminList->baseTime > (uint64_t)((uint64_t)MAX_BASE_TIME_US*1000)) ? (uint64_t)((uint64_t)MAX_BASE_TIME_US*1000) : adminList->baseTime;
-            ctx->adminDelayOffset = offset/1000; /* Convert to microsecond */
-            ctx->adminDelayOffset = (ctx->adminDelayOffset > MAX_BASE_TIME_US) ? MAX_BASE_TIME_US : ctx->adminDelayOffset;
-        }
+        adminList->baseTime = gbaseTime;
+
         err = EnetEstApp_setAdminControlList(adminList,
                                              netdev,
                                              dbarg.ucntd);
@@ -619,6 +590,10 @@ void est_schedule(EnetApp_ModuleCtx_t *modCtx)
     err = EnetEstApp_runSchedule(ctx,
                                  &gEnetEstAppTestLists[schedIdx].list,
                                  ctx->netdev[1]);
+
+    EnetApp_registerHwPushEvent0Cb();
+    EnetApp_configGenf0(gEnetAppCfg.hEnet, gEnetAppCfg.coreId);
+	EnetApp_configGenf1(gEnetAppCfg.hEnet, gEnetAppCfg.coreId);
 #else
     (void) gEnetEstAppTestLists;
     err = 0;

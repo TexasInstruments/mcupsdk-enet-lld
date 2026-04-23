@@ -61,7 +61,7 @@
                                                       (((dei) & ENETAPP_VLAN_DEI_MASK) << ENETAPP_VLAN_DEI_OFFSET) | \
                                                       (((vid) & ENETAPP_VLAN_VID_MASK)))
 #define ENETAPP_STREAM_VLANID                         255U
-#define SEND_PACKETS_PER_STREAM                       30000
+#define SEND_PACKETS_PER_STREAM                       10000
 #define TX_TASK_PRIORITY                              14U
 #define RX_TASK_PRIORIY                               TX_TASK_PRIORITY + 1U
 
@@ -80,7 +80,6 @@ const uint16_t gEthVlanHdrSize = sizeof(EthVlanFrameHeader);
 static TaskP_Params taskParamsStreamGen;
 static uint8_t gEnetAppTaskStackRx[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static uint8_t gEnetAppStreamTaskStack[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS][ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
-static uint8_t gEnetAppEtherRingTaskStack[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static int8_t gEtherRingStreamIdpool[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {0,1,2,3,4,5};
 
 static uint8_t gEtherRingStreamToMcast[NODES_COUNT_IN_ETHERRING - 1];
@@ -88,9 +87,10 @@ static EtherRing_Cfg gEtherRingCfg;
 
 static uint32_t payLoadLength = 100;
 
-static uint32_t gSendPacketsClassStream[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,
+static uint32_t gSendMaxPktCnt[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,SEND_PACKETS_PER_STREAM,
                                               SEND_PACKETS_PER_STREAM/8,SEND_PACKETS_PER_STREAM/8,SEND_PACKETS_PER_STREAM/8};
-static uint32_t gPacketCountClassStream[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {0,0,0,0,0,0};
+static uint32_t gPktCntSentEr[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {0,0,0,0,0,0};
+static uint32_t gPktCntRxEr[MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS] = {0};
 
 volatile uint32_t isStreamsEnabled = 0;
 extern EnetDma_Handle ghEnetDma;
@@ -180,12 +180,6 @@ int32_t EnetApp_etherRingInit()
     return status;
 }
 
-
-void EnetApp_startHwTimer()
-{
-    TimerP_start(gTimerBaseAddr[CONFIG_TIMER0]);
-}
-
 /* Rx Isr for non-gPTP traffic */
 static void EnetApp_rxIsrFxn(void *appData)
 {
@@ -197,14 +191,7 @@ static void EnetApp_mapMcastAndStreamId(int8_t nodeId)
     uint32_t streamIndex = 0;
     for (streamIndex = 0; streamIndex < NODES_COUNT_IN_ETHERRING-1 ; streamIndex++)
     {
-        if (nodeId != NODES_COUNT_IN_ETHERRING - 1)
-        {
-            gEtherRingStreamToMcast[streamIndex] = nodeId + 1;
-        }
-        else
-        {
-            gEtherRingStreamToMcast[streamIndex] = 0;
-        }
+        gEtherRingStreamToMcast[streamIndex] = (nodeId+1)%NODES_COUNT_IN_ETHERRING;
     }
 }
 
@@ -576,6 +563,22 @@ static void EnetApp_dmaRxIsr()
     EnetOsal_restoreAllIntr(key);
 }
 
+static void EnetApp_getPacketCountRx(uint32_t streamIdx)
+{
+    if (streamIdx < (MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS))
+    {
+        EnetAppUtils_print("[RX] Packet Count of stream%u: %u \r\n", streamIdx, gPktCntRxEr[streamIdx]);
+    }
+}
+
+static void EnetApp_getPacketCountTx(uint32_t streamIdx)
+{
+    if (streamIdx < (MAX_CLASSA_STREAMS + MAX_CLASSD_STREAMS))
+    {
+        EnetAppUtils_print("[TX] Packet Count of stream%u: %u \r\n", streamIdx, gPktCntSentEr[streamIdx]);
+    }
+}
+
 /* Rx Task for stream traffic received on RX Channel 0 */
 static void EnetApp_rxTask(void *args)
 {
@@ -608,7 +611,6 @@ static void EnetApp_rxTask(void *args)
         /* All peripherals have single hardware RX channel, so we only need to retrieve
          * packets from a single flow.*/
         EnetQueue_initQ(&rxReadyQ);
-        EnetQueue_initQ(&rxSubmitQ);
 
         /* Get the packets received so far */
         status = EtherRing_retrieveRxPktQ(gEnetAppCfg.hEtherRing, &rxReadyQ);
@@ -625,6 +627,16 @@ static void EnetApp_rxTask(void *args)
         pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxReadyQ);
         while(pktInfo)
         {
+            /* Taking Packet Stats*/
+            EthVlanFrame *frame = (EthVlanFrame *)pktInfo->sgList.list[0].bufPtr;
+            uint32_t classATci = (uint32_t)Enet_htons(ENETAPP_VLAN_TCI(3, 0, 255));
+            uint32_t stream = frame->payload[8U];
+            if(frame->hdr.tci == classATci)
+            {
+                gPktCntRxEr[stream]++;
+            }
+            
+            EnetQueue_initQ(&rxSubmitQ);
 #ifdef ETHERRING_PROFILING
             /* capturing the rx timestamps and currentTimeStamp for received original packets for a stream */
             if (pktInfo->tsInfo.rxPktTs)
@@ -649,7 +661,15 @@ static void EnetApp_rxTask(void *args)
             }
 #endif
             EnetQueue_enq(&rxSubmitQ, &pktInfo->node);
+            EtherRing_submitRxPktQ(gEnetAppCfg.hEtherRing, &rxSubmitQ);
             pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&rxReadyQ);
+            /* Submit now processed buffers */
+    
+            if (status != ENET_SOK)
+            {
+                EnetAppUtils_print("Failed to submit RX pkt queue: %d\r\n", status);
+                Enet_assert(false);
+            }
         }
 
         if (status != ENET_SOK)
@@ -658,15 +678,6 @@ static void EnetApp_rxTask(void *args)
             EnetAppUtils_print("Failed to retrieve RX pkt queue: %d\r\n", status);
             Enet_assert(false);
             continue;
-        }
-
-        /* Submit now processed buffers */
-        EtherRing_submitRxPktQ(gEnetAppCfg.hEtherRing, &rxSubmitQ);
-
-        if (status != ENET_SOK)
-        {
-            EnetAppUtils_print("Failed to submit RX pkt queue: %d\r\n", status);
-            Enet_assert(false);
         }
     }
 
@@ -683,7 +694,7 @@ void EnetApp_createRxTask()
     status = SemaphoreP_constructBinary(&gEnetAppCfg.rxSemObj, 0);
     DebugP_assert(SystemP_SUCCESS == status);
     TaskP_Params_init(&taskParams);
-    taskParams.priority       = 13;
+    taskParams.priority       = 15;
     taskParams.stack          = gEnetAppTaskStackRx;
     taskParams.stackSize      = sizeof(gEnetAppTaskStackRx);
     taskParams.args           = (void*)&gEnetAppCfg;
@@ -730,7 +741,7 @@ static void EnetApp_scheduleClassAStream(void *stream_id)
         SemaphoreP_pend(&gEnetAppCfg.streamSemObj[streamId], SystemP_WAIT_FOREVER);
         key = EnetOsal_disableAllIntr();
 
-        if (gPacketCountClassStream[streamId] < gSendPacketsClassStream[streamId])
+        if (gPktCntSentEr[streamId] < gSendMaxPktCnt[streamId])
         {
             EnetQueue_initQ(&txSubmitQ);
 
@@ -776,7 +787,7 @@ static void EnetApp_scheduleClassAStream(void *stream_id)
 
                      retVal = EtherRing_submitTxPktQ(gEnetAppCfg.hEtherRing, &txSubmitQ);
 
-                     gPacketCountClassStream[streamId]++;
+                     gPktCntSentEr[streamId]++;
 
                      retVal = EtherRing_retrieveTxPktQ(gEnetAppCfg.hEtherRing, &txFreeQ);
 
@@ -825,6 +836,11 @@ static void EnetApp_scheduleClassAStream(void *stream_id)
 #ifdef ETHERRING_PROFILING
             if (gIsLatencyPrintDone == 0 && streamId == 0)
             {
+                ClockP_sleep(5);
+                gIsLatencyPrintDone = 1;
+                EnetAppUtils_print("\r\n\n");
+                EnetAppUtils_print("----------ETHERRING DEMONSTRATION COMPLETED----------\r\n");
+                EnetAppUtils_print("\r\n\n");
                 EnetAppUtils_print("RxTs and CurrentTs values stored\r\n");
                 ClockP_sleep(10);
                 int16_t timeStampIndex;
@@ -837,14 +853,12 @@ static void EnetApp_scheduleClassAStream(void *stream_id)
                 for (timeStampIndex=10; timeStampIndex < ETHERRINGAPP_MAX_RX_TIMESTAMPS_STORED; timeStampIndex++)
                 {
                     EnetAppUtils_print("[LAT]: %llu\r\n",
-                            gEtherRingRxTs.currentTimeStamps[timeStampIndex]);
-                    ClockP_usleep(990);
+                        gEtherRingRxTs.currentTimeStamps[timeStampIndex]);
+                        ClockP_usleep(990);
                 }
+                EnetApp_getPacketCountRx(0);
+                EnetApp_getPacketCountTx(0);
                 ClockP_usleep(990);
-                gIsLatencyPrintDone = 1;
-                EnetAppUtils_print("\r\n\n");
-                EnetAppUtils_print("----------ETHERRING DEMONSTRATION COMPLETED----------\r\n");
-                EnetAppUtils_print("\r\n\n");
             }
 #endif
         }
@@ -890,8 +904,8 @@ void EnetApp_scheduleClassDStream(void *stream_id)
             uint32_t classDstreamIndex = 0;
             for(classDstreamIndex = 0; classDstreamIndex < NUM_CLASSD_STREAMS ;classDstreamIndex++)
             {
-                if (gPacketCountClassStream[classDstreamIndex + MAX_CLASSA_STREAMS]
-                    < gSendPacketsClassStream[MAX_CLASSA_STREAMS + classDstreamIndex])
+                if (gPktCntSentEr[classDstreamIndex + MAX_CLASSA_STREAMS]
+                    < gSendMaxPktCnt[MAX_CLASSA_STREAMS + classDstreamIndex])
                 {
                     multicastAddr[ENET_MAC_ADDR_LEN -1 ] = gEtherRingStreamToMcast[classDstreamIndex];
                     EnetDma_Pkt *pktInfo = (EnetDma_Pkt*) EnetQueue_deq(&gEnetAppCfg.txFreePktInfoQ);
@@ -931,7 +945,7 @@ void EnetApp_scheduleClassDStream(void *stream_id)
 
                         /* Enqueue the packet for later transmission */
                         EnetQueue_enq(&txSubmitQ, &pktInfo->node);
-                       gPacketCountClassStream[3 + classDstreamIndex]++;
+                       gPktCntSentEr[3 + classDstreamIndex]++;
                     }
                 }
              }
@@ -1010,40 +1024,10 @@ void EnetApp_createStreamTask()
     }
 }
 
-void EnetApp_clearLookupTable()
-{
-    while(true)
-    {
-        SemaphoreP_pend(&gEnetAppCfg.etherringSemObj, SystemP_WAIT_FOREVER);
-        EtherRing_periodicTick(gEnetAppCfg.hEtherRing);
-    }
-}
-
-void EnetApp_createEtherRingClearTask()
-{
-    TaskP_Params taskParams;
-    int32_t status = ENET_SOK;
-
-    status = SemaphoreP_constructBinary(&gEnetAppCfg.etherringSemObj, 0);
-    DebugP_assert(SystemP_SUCCESS == status);
-    TaskP_Params_init(&taskParams);
-    taskParams.priority       = 1;
-    taskParams.stack          = gEnetAppEtherRingTaskStack;
-    taskParams.stackSize      = sizeof(gEnetAppEtherRingTaskStack);
-    taskParams.args           = (void*)&gEnetAppCfg;
-    taskParams.name           = "Etherring Task";
-    taskParams.taskMain       = &EnetApp_clearLookupTable;
-
-    status = TaskP_construct(&gEnetAppCfg.etherringTaskObj, &taskParams);
-
-    DebugP_assert(SystemP_SUCCESS == status);
-}
-
 void timerIsrClassA(void)
 {
     /* This Timer Callback is called at the periodicity of 125us as configured in syscfg */
     static int counter = 0;
-    static uint32_t etherRingCounter  = 0;
     int32_t stream_id;
     if(isStreamsEnabled)
     {
@@ -1054,7 +1038,6 @@ void timerIsrClassA(void)
             }
 
             counter++;
-            etherRingCounter++;
             if (counter % 8 == 0)
             {
                 for(stream_id = 3 ;stream_id<(3 + NUM_CLASSD_STREAM_TASKS); stream_id++)
@@ -1063,12 +1046,6 @@ void timerIsrClassA(void)
                 }
                 counter=0;
             }
-
-            if(etherRingCounter % 256 == 0)
-            {
-                SemaphoreP_post(&gEnetAppCfg.etherringSemObj);
-                etherRingCounter = 0;
-            }
-    }
+        }
     EnetApp_dmaRxIsr();
 }

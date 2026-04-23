@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2024
+ *  Copyright (c) Texas Instruments Incorporated 2026
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -98,6 +98,12 @@ static void EtherRing_addEtherringHeader(EnetDma_Pkt *pktInfo,
                                          uint16_t seqNumber);
 static void EtherRing_removeEtherringHeader(EnetDma_Pkt *pktInfo);
 static void EtherRing_calculateEthHeaderSize(EnetDma_Pkt *pktInfo, uint32_t *ethHeaderSize);
+static bool EtherRing_sequenceChecker(EtherRing_Handle pRingHandle,
+                                         uint8_t lastMacByte,
+                                         uint8_t seqNum,
+                                         bool *outOfOrder);
+static int16_t EtherRing_seqNumDiff(uint8_t seq1, uint8_t seq2);
+static void EtherRing_initWindowState(EtherRing_State *state);
 /* ========================================================================== */
 /*                            Global Variables                                */
 /* ========================================================================== */
@@ -107,8 +113,8 @@ EtherRing_Obj EtherRing_ObjectList[ETHERRING_MAX_ETHERRING_INSTANCES] =
     {
         .isAllocated = false,
         .prevSequenceNumber = 0,
-        .etherRingStats.etherRingNonDuplicatedPktCount = 0,
-        .etherRingStats.etherRingDuplicatedRxPacketCount = 0,
+        .etherRingStats.etherRingOriginalPktCount = 0,
+        .etherRingStats.etherRingDupRejectPktCount = 0,
     },
 };
 
@@ -128,6 +134,7 @@ EtherRing_Handle EtherRing_open(Enet_Handle hEnet,
                                 const void *pEtherRingCfg)
 {
     int32_t etherRingIndex;
+    uint16_t nodeIdx;
     EtherRing_Handle hEtherRing = NULL;
 
     Enet_assert(hEnet != NULL);
@@ -146,6 +153,12 @@ EtherRing_Handle EtherRing_open(Enet_Handle hEnet,
             hEtherRing = &EtherRing_ObjectList[etherRingIndex];
             hEtherRing->hEnet = hEnet;
             EtherRing_ObjectList[etherRingIndex].isAllocated = true;
+
+            for (nodeIdx = 0; nodeIdx < 256U; nodeIdx++)
+            {
+                hEtherRing->etherRingStats.erState[nodeIdx].initialized = false;
+            }
+
             break;
         }
     }
@@ -288,11 +301,12 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
 
     EtherRing_Handle pRingHandle = (EtherRing_Handle) hEtherRing;
     EnetDma_Pkt *pktInfo = NULL;
-    uint8_t lastByteMac;
+    uint8_t lastMacByte;
     uint8_t seqNumber;
-    uint16_t lookupIndex;
     uint32_t ethHeaderSize = 0U;
     uint16_t etherringEtherType = 0U;
+    bool outOfOrder = false;
+    bool acceptPacket = false;
 
     EtherRing_pktQ rxRetrieveQ;
     EtherRing_pktQ rxDupPktQ;
@@ -307,41 +321,36 @@ int32_t EtherRing_retrieveRxPktQ(void *hEtherRing,
         EtherRing_calculateEthHeaderSize(pktInfo, &ethHeaderSize);
         memcpy(&etherringEtherType, &(pktInfo->sgList.list[0].bufPtr[ethHeaderSize]), sizeof(uint16_t));
 
-        /* look-up process for only EtherRing packets */
+        /* Process only EtherRing packets with custom header */
         if (etherringEtherType == Enet_htons(ETHERRING_ETHERTYPE_IN_ETHERRING_HEADER))
         {
-            lastByteMac = pktInfo->sgList.list[0].bufPtr[ETHERRING_HOSTMAC_LASTBYTE_INDEX];
+            /* Extract stream ID (MAC last byte) and sequence number */
+            lastMacByte = pktInfo->sgList.list[0].bufPtr[ETHERRING_HOSTMAC_LASTBYTE_INDEX];
             seqNumber = pktInfo->sgList.list[0].bufPtr[ETHERRING_SEQUENCE_NUMBER_INDEX];
 
-            lookupIndex = (uint16_t) (((uint16_t) lastByteMac << 8) | seqNumber);
-            if (pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] == 0)
+            acceptPacket = EtherRing_sequenceChecker(pRingHandle, lastMacByte, seqNumber, &outOfOrder);
+
+            if (acceptPacket)
             {
-                /* remove the EtherRing header and updating the bufPtr before giving to application */
+                /* Accept packet - remove EtherRing header and pass to application */
                 memmove(pktInfo->sgList.list[0].bufPtr + ETHERRING_HEADER_SIZE,
                         pktInfo->sgList.list[0].bufPtr, ethHeaderSize);
                 pktInfo->sgList.list[0].bufPtr += ETHERRING_HEADER_SIZE;
 
-                pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex]++;
-                pRingHandle->etherRingStats.etherRingNonDuplicatedPktCount++;
-                pRingHandle->etherRingStats.etherRingDuplicatedRxPacketCount++;
+                pRingHandle->etherRingStats.etherRingOriginalPktCount++;
                 EnetQueue_enq(pRetrieveQ, &pktInfo->node);
-            }
-            else if (pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] == 1)
-            {
-                /* Submitting the duplicate EtherRing packets back to the Hardware(CPDMA) */
-                pRingHandle->etherRingStats.etherRingSeqLookUp[lookupIndex] = 0;
-                pRingHandle->etherRingStats.etherRingDuplicatedRxPacketCount++;
-                EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
-                EnetDma_submitRxPktQ(pRingHandle->hRxCh, &rxDupPktQ);
             }
             else
             {
-                EnetQueue_enq(pRetrieveQ, &pktInfo->node);
+                /* Duplicate packet - submit back to hardware */
+                pRingHandle->etherRingStats.etherRingDupRejectPktCount++;
+                EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
+                EnetDma_submitRxPktQ(pRingHandle->hRxCh, &rxDupPktQ);
             }
         }
         else
         {
-            /* Submitting the non-Etherring packets back to the Hardware(CPDMA) */
+            /* Non-EtherRing packets - resubmitcycle back to hardware */
             EnetQueue_enq(&rxDupPktQ, &pktInfo->node);
             EnetDma_submitRxPktQ(pRingHandle->hRxCh, &rxDupPktQ);
         }
@@ -436,13 +445,119 @@ static void EtherRing_removeEtherringHeader(EnetDma_Pkt *pktInfo)
     pktInfo->sgList.numScatterSegments = 1;
 }
 
-void EtherRing_periodicTick(void *hEtherRing)
+static void EtherRing_initWindowState(EtherRing_State *state)
 {
-    /* This API needs to be called from application with periodicity of 1ms */
-    Enet_assert(hEtherRing != NULL);
+    Enet_assert(state != NULL);
 
-    EtherRing_Handle pRingHandle = (EtherRing_Handle) hEtherRing;
-    EtherRingStats* etherRingStats = &pRingHandle->etherRingStats;
+    state->recSeqNum = 0;
+    state->seqHistory = 0;
+    state->initialized = true;
+}
 
-    memset(etherRingStats->etherRingSeqLookUp, 0, ETHERRING_LOOKUP_TABLE_SIZE);
+static int16_t EtherRing_seqNumDiff(uint8_t seq1, uint8_t seq2)
+{
+    int16_t diff = (int16_t)seq1 - (int16_t)seq2;
+
+    /* Handle wraparound for 8-bit sequence numbers */
+    if (diff > 127)
+    {
+        diff -= 256;
+    }
+    else if (diff < -128)
+    {
+        diff += 256;
+    }
+
+    return diff;
+}
+
+static bool EtherRing_sequenceChecker(EtherRing_Handle pRingHandle,
+                                         uint8_t lastMacByte,
+                                         uint8_t seqNum,
+                                         bool *outOfOrder)
+{
+    Enet_assert(pRingHandle != NULL);
+    Enet_assert(outOfOrder != NULL);
+
+    EtherRing_State *erState = &pRingHandle->etherRingStats.erState[lastMacByte];
+    *outOfOrder = false;
+
+    /* Initialize state if this is the first packet for this stream */
+    if (!erState->initialized)
+    {
+        EtherRing_initWindowState(erState);
+    }
+
+    /* Calculate sequence number difference with wraparound handling */
+    int16_t seqDiff = EtherRing_seqNumDiff(seqNum, erState->recSeqNum);
+
+    /* Case 1: New packet with higher sequence number (in-order or future packet)
+     * Accept if: seqNum > recSeqNum (within reasonable range)
+     */
+    if ((seqDiff > 0) && (seqDiff < (ETHERRING_SEQ_HISTORY_LENGTH * 2)))
+    {
+        /* Shift history window forward by seqDiff positions */
+        if (seqDiff < 64)
+        {
+            erState->seqHistory = (erState->seqHistory << seqDiff) | 0x1ULL;
+        }
+        else
+        {
+            /* Large gap - reset history */
+            erState->seqHistory = 0x1ULL;
+        }
+
+        erState->recSeqNum = seqNum;
+        return true;
+    }
+
+    /* Case 2: Old packet within history window
+     * Check if: (recSeqNum - seqNum) < HistoryLength
+     */
+    if ((seqDiff < 0) && (seqDiff >= -((int16_t)ETHERRING_SEQ_HISTORY_LENGTH)))
+    {
+        /* Calculate position in history bit vector */
+        uint8_t historyBitPos = (uint8_t)(-seqDiff);
+        uint64_t historyMask = (1ULL << historyBitPos);
+
+        /* Check if this sequence number was already received */
+        if (erState->seqHistory & historyMask)
+        {
+            /* Duplicate packet */
+            return false;
+        }
+        else
+        {
+            /* Out-of-order packet, but within acceptable window */
+            erState->seqHistory |= historyMask;
+            *outOfOrder = true;
+            pRingHandle->etherRingStats.etherRingOutOfOrderPktCount++;
+            return true;
+        }
+    }
+
+    /* Case 3: Packet is too old (beyond history window)
+     * If: (recSeqNum - seqNum) >= HistoryLength
+     * This is likely a very old duplicate or severe reordering
+     */
+    if (seqDiff < -((int16_t)ETHERRING_SEQ_HISTORY_LENGTH))
+    {
+        /* Treat as duplicate - too old to be valid */
+        return false;
+    }
+
+    /* Case 4: seqNum == recSeqNum (duplicate of most recent) */
+    if (seqDiff == 0)
+    {
+        /* Exact duplicate of most recently accepted packet */
+        return false;
+    }
+
+    /* Case 5: Very large forward gap - reject as potential desynchronization */
+    if (seqDiff >= (ETHERRING_SEQ_HISTORY_LENGTH * 2))
+    {
+        /* Reject - lost synchronization, wait for reinitialization */
+        return false;
+    }
+    return true;
 }

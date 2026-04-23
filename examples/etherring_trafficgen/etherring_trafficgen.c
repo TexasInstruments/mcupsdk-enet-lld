@@ -93,7 +93,6 @@ const uint16_t gEthVlanHdrSize = sizeof(EthVlanFrameHeader);
 
 /* Stack for the Ether-Ring Tx,Rx Tasks */
 static uint8_t gEnetAppStreamTaskStack[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
-static uint8_t gEnetAppEtherRingTaskStack[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 static uint8_t gEnetAppTaskStackRx[ENETAPP_TASK_STACK_SZ] __attribute__ ((aligned(32)));
 
 EtherRing_Cfg gEtherRingCfg;
@@ -527,39 +526,8 @@ void EnetApp_createPeriodicTrafficTask()
     EnetAppUtils_print("Redundancy Traffic Task Creation \r\n");
 }
 
-
-void EnetApp_clearLookupTable()
-{
-    while(true)
-    {
-        SemaphoreP_pend(&gEnetAppCfg.etherringSemObj, SystemP_WAIT_FOREVER);
-        EtherRing_periodicTick(gEnetAppCfg.hEtherRing);
-    }
-}
-
-void EnetApp_createEtherRingClearTask()
-{
-    TaskP_Params taskParams;
-    int32_t status = ENET_SOK;
-
-    status = SemaphoreP_constructBinary(&gEnetAppCfg.etherringSemObj, 0);
-    DebugP_assert(SystemP_SUCCESS == status);
-    TaskP_Params_init(&taskParams);
-    taskParams.priority       = 3;
-    taskParams.stack          = gEnetAppEtherRingTaskStack;
-    taskParams.stackSize      = sizeof(gEnetAppEtherRingTaskStack);
-    taskParams.args           = (void*)&gEnetAppCfg;
-    taskParams.name           = "ER Clear Task";
-    taskParams.taskMain       = &EnetApp_clearLookupTable;
-
-    status = TaskP_construct(&gEnetAppCfg.etherringTaskObj, &taskParams);
-
-    DebugP_assert(SystemP_SUCCESS == status);
-}
-
 void EnetApp_hwTimerISR(void)
 {
-    static uint32_t etherRingCounter  = 0;
 #ifdef ENETAPP_ENABLE_TCP_BG_TRAFFIC
     static uint32_t lwipCounter  = 0;
 #endif
@@ -568,13 +536,6 @@ void EnetApp_hwTimerISR(void)
     {
         SemaphoreP_post(&gEnetAppCfg.streamSemObj[0U]);
 
-        etherRingCounter++;
-        if(etherRingCounter % 256 == 0)
-        {
-            /* Clears Ether-Ring Look-up table periodically to support the Single point of Failure */
-            SemaphoreP_post(&gEnetAppCfg.etherringSemObj);
-            etherRingCounter = 0;
-        }
 #ifdef ENETAPP_ENABLE_TCP_BG_TRAFFIC
         lwipCounter++;
         /* Sends BackGround TCP packet periodically */

@@ -73,7 +73,6 @@ int32_t EnetApp_open();
 int32_t EnetApp_createTxRetrievePollTask();
 void EnetApp_destroyRxTask();
 void EnetApp_createRxTask();
-void EnetApp_createEtherRingClearTask();
 void EnetApp_createStreamTask();
 void EnetApp_startHwTimer();
 

@@ -148,9 +148,6 @@ typedef struct EnetApp_Cfg_s
     /* Semaphore posted from RX callback when Regular packets have arrived */
     SemaphoreP_Object rxSemObj;
 
-    /* Semaphore posted every 32ms to clear the task for lookup table */
-    SemaphoreP_Object etherringSemObj;
-
     /* Semaphore used to synchronize all Regular RX tasks exits */
     SemaphoreP_Object rxDoneSemObj;
 
@@ -274,15 +271,6 @@ int32_t EnetApp_open();
  * \return \ref Void
  */
 void EnetApp_createRxTrafficTask();
-
-/*!
- * \brief Creates FreeRTOS Task to periodically clear the Ether-Ring Driver Look-up table.
- *
- * \param Void  [IN] Void
- *
- * \return \ref Void
- */
-void EnetApp_createEtherRingClearTask();
 
 /*!
  * \brief Creates FreeRTOS Task to send periodic redundancy traffic.

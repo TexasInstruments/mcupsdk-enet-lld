@@ -132,9 +132,6 @@ typedef struct EnetApp_Cfg_s
     /* Semaphore posted from RX callback when Regular packets have arrived */
     SemaphoreP_Object rxSemObj;
 
-    /* Semaphore posted every 32ms to clear the task for lookup table */
-    SemaphoreP_Object etherringSemObj;
-
     /* Peripheral's MAC ports to use */
     Enet_MacPort macPorts[2];
 

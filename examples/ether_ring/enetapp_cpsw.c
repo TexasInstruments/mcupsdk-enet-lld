@@ -52,6 +52,18 @@
 /* ========================================================================== */
 /*                              Global Variables                              */
 /* ========================================================================== */
+#define TIMER_ARRAY_SIZE 2000U
+
+#define CONFIG_TIMER0_CLOCK_SRC_MUX_ADDR_ER (0x53208118u)
+#define CONFIG_TIMER0_CLOCK_SRC_CTPS_GENF0_ER (0x777u)
+#define CONFIG_TIMER0_BASE_ADDR_ER        (0x52181000u)
+#define INT_NUM 91u
+#define TIMER_NUM_INSTANCES_ER 1
+
+static HwiP_Object gTimerHwiObjER[TIMER_NUM_INSTANCES_ER];
+static uint32_t gTimerBaseAddrER[TIMER_NUM_INSTANCES_ER];
+static volatile bool isTimerInitDone = false;
+
 EnetApp_Cfg gEnetAppCfg =
 {
     .name = ENETAPP_DEFAULT_CFG_NAME,
@@ -66,6 +78,8 @@ static char g_netdevices[MAX_NUM_MAC_PORTS][CB_MAX_NETDEVNAME] = {0};
 /* ========================================================================== */
 /*                           Function Declarations                            */
 /* ========================================================================== */
+static void EnetApp_unregisterHwPushEvent0Cb();
+static void EnetApp_initRti0();
 
 static void EnetApp_updateCfg(EnetApp_Cfg *enet_cfg)
 {
@@ -438,6 +452,161 @@ static void EnetApp_initEnetLinkCbPrms(Cpsw_Cfg *cpswCfg)
 
     cpswCfg->portLinkStatusChangeCb    = &EnetApp_portLinkStatusChangeCb;
     cpswCfg->portLinkStatusChangeCbArg = NULL;
+}
+
+static void EnetApp_cptsHwPushCb(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum)
+{
+    (void)hwPushNum;
+    if (isTimerInitDone == false)
+    {
+            isTimerInitDone = true;
+            EnetApp_initRti0();
+            TimerP_start(gTimerBaseAddrER[0u]);
+            // EnetApp_unregisterHwPushEvent0Cb();
+    }
+}
+static void EnetApp_rti0Isr(void *args)
+{
+    void timerIsrClassA(void);
+
+    timerIsrClassA();
+    TimerP_clearOverflowInt(CONFIG_TIMER0_BASE_ADDR_ER);
+    HwiP_clearInt(INT_NUM);
+}
+static void EnetApp_initRti0()
+{
+    TimerP_Params timerParams;
+    HwiP_Params timerHwiParams;
+    int32_t status;
+
+    /* set timer clock source */
+    SOC_controlModuleUnlockMMR(0u, 4);
+    *(volatile uint32_t*)AddrTranslateP_getLocalAddr(CONFIG_TIMER0_CLOCK_SRC_MUX_ADDR_ER) = CONFIG_TIMER0_CLOCK_SRC_CTPS_GENF0_ER; //CPU clock as input
+    SOC_controlModuleLockMMR(0u, 4);
+
+    gTimerBaseAddrER[0u] = (uint32_t)AddrTranslateP_getLocalAddr(CONFIG_TIMER0_BASE_ADDR_ER);
+
+    TimerP_Params_init(&timerParams);
+    timerParams.inputPreScaler = 1u;
+    timerParams.inputClkHz     = 50000000u;
+    timerParams.periodInNsec   = 125000u;
+    timerParams.oneshotMode    = 0;
+    timerParams.enableOverflowInt = 1;
+    timerParams.enableDmaTrigger  = 0;
+    TimerP_setup(CONFIG_TIMER0_BASE_ADDR_ER, &timerParams);
+
+    HwiP_Params_init(&timerHwiParams);
+    timerHwiParams.intNum = INT_NUM;
+    timerHwiParams.callback = EnetApp_rti0Isr;
+    timerHwiParams.isPulse = 0;
+    timerHwiParams.priority = 5;
+    status = HwiP_construct(&gTimerHwiObjER[0u], &timerHwiParams);
+    DebugP_assertNoLog(status==SystemP_SUCCESS);
+
+    TimerP_start(gTimerBaseAddrER[0u]);
+}
+
+static void EnetApp_deInitRti0()
+{
+    TimerP_stop(gTimerBaseAddrER[0u]);
+    HwiP_destruct(&gTimerHwiObjER[0u]);
+
+}
+
+void EnetApp_registerHwPushEvent0Cb()
+{
+    CpswCpts_RegisterHwPushCbInArgs cptsInArgs;
+    cptsInArgs.hwPushNum = CPSW_CPTS_HWPUSH_FIRST;
+    cptsInArgs.hwPushNotifyCb = EnetApp_cptsHwPushCb;
+    cptsInArgs.hwPushNotifyCbArg = NULL;
+    Enet_IoctlPrms prms;
+    int32_t status;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &cptsInArgs);
+    ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId, CPSW_CPTS_IOCTL_REGISTER_HWPUSH_CALLBACK, &prms, status);
+}
+
+static void EnetApp_unregisterHwPushEvent0Cb()
+{
+    CpswCpts_RegisterHwPushCbInArgs cptsInArgs;
+    cptsInArgs.hwPushNum = CPSW_CPTS_HWPUSH_FIRST;
+    Enet_IoctlPrms prms;
+    int32_t status;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &cptsInArgs);
+    ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId, CPSW_CPTS_IOCTL_UNREGISTER_HWPUSH_CALLBACK, &prms, status);
+}
+
+extern uint64_t gbaseTime;
+void EnetApp_configGenf0(Enet_Handle hEnet, uint32_t coreId)
+{
+    if (hEnet == NULL)
+    {
+        EnetAppUtils_assert(BFALSE);
+    }
+    CpswCpts_SetFxnGenInArgs setGenFInArgs;
+    Enet_IoctlPrms prms;
+    int32_t status;
+
+    /* Configure GENF0 to generate pulse signal */
+    /* Length should be same for both master and slave */
+    setGenFInArgs.index  = 0U;
+    setGenFInArgs.length = 4; //50MHz
+
+    /* Add compare value 20 secs in the future to ensure GENF compare happens
+     * and PPS gets generated after the master and slave gets synchronized and reaches
+     * stable state */
+    setGenFInArgs.compare = 0;
+    setGenFInArgs.polarityInv = BTRUE;
+    setGenFInArgs.ppmVal  = 0U;
+    setGenFInArgs.ppmDir  = CPSW_CPTS_GENF_PPM_ADJDIR_INCREASE;
+    setGenFInArgs.ppmMode = ENET_TIMESYNC_ADJMODE_DISABLE;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &setGenFInArgs);
+    ENET_IOCTL(hEnet,
+                coreId,
+                CPSW_CPTS_IOCTL_SET_GENF,
+                &prms, status);
+
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("GENF0 Config failed");
+    }
+}
+
+void EnetApp_configGenf1(Enet_Handle hEnet, uint32_t coreId)
+{
+    if (hEnet == NULL)
+    {
+        EnetAppUtils_assert(BFALSE);
+    }
+    CpswCpts_SetFxnGenInArgs setGenFInArgs;
+    Enet_IoctlPrms prms;
+    int32_t status;
+
+    /* Configure GENF0 to generate pulse signal */
+    /* Length should be same for both master and slave */
+    setGenFInArgs.index  = 1U;
+    setGenFInArgs.length = 25000*2; //25000is for 125us
+
+
+    /* A fixed base time of 30 sec is kept.
+       20us is subtracted to align the interrupt at start of Clas A Band.
+    */
+    setGenFInArgs.compare = gbaseTime - 20000;
+    setGenFInArgs.polarityInv = BFALSE;
+    setGenFInArgs.ppmVal  = 0U;
+    setGenFInArgs.ppmDir  = CPSW_CPTS_GENF_PPM_ADJDIR_INCREASE;
+    setGenFInArgs.ppmMode = ENET_TIMESYNC_ADJMODE_DISABLE;
+
+    ENET_IOCTL_SET_IN_ARGS(&prms, &setGenFInArgs);
+    ENET_IOCTL(hEnet,
+                coreId,
+                CPSW_CPTS_IOCTL_SET_GENF,
+                &prms, status);
+
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("GENF1 Config failed");
+    }
 }
 
 void EnetApp_updateCpswInitCfg(Enet_Type enetType, uint32_t instId, Cpsw_Cfg *cpswCfg)

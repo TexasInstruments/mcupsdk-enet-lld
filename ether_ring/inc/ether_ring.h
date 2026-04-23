@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) Texas Instruments Incorporated 2024
+ *  Copyright (c) Texas Instruments Incorporated 2026
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -67,8 +67,8 @@ extern "C" {
 /*! \brief Size of Ether-Ring Header */
 #define ETHERRING_HEADER_SIZE                                           (4U)
 
-/*! \brief Size of Lookup table for Duplicate packet rejection */
-#define ETHERRING_LOOKUP_TABLE_SIZE                                     (256U*256U)
+/*! \brief History length for sequence recovery */
+#define ETHERRING_SEQ_HISTORY_LENGTH                                    (64U)
 
 /* ========================================================================== */
 /*                         Structures and Enums                               */
@@ -85,8 +85,22 @@ typedef struct EtherRing_Cfg_s
 
     /*! Is ether-ring configured */
     bool isCfg;
-
 } EtherRing_Cfg;
+
+/*!
+ * \brief Sequence Recovery state
+ */
+typedef struct
+{
+    /*! Most recently accepted sequence number */
+    uint16_t recSeqNum;
+
+    /*! Bit vector history of received sequence numbers (64-bit for HistoryLength=64) */
+    uint64_t seqHistory;
+
+    /*! Stream initialized flag */
+    bool initialized;
+}EtherRing_State;
 
 /*!
  * \brief This structure stores the Ether Ring Stats
@@ -95,18 +109,20 @@ typedef struct EtherRing_Cfg_s
  */
 typedef struct
 {
-    /*! EtherRing Lookup table for Duplicate packets */
-    int8_t etherRingSeqLookUp[ETHERRING_LOOKUP_TABLE_SIZE];
+    /*! Etherring redundancy State per unique node (indexed by MAC last byte) */
+    EtherRing_State erState[256U];
 
     /*! Original packet count */
-    uint64_t etherRingNonDuplicatedPktCount;
+    uint64_t etherRingOriginalPktCount;
 
     /*! Duplicated packet count */
-    uint64_t etherRingDuplicatedRxPacketCount;
+    uint64_t etherRingDupRejectPktCount;
 
     /*! Count of submitted packets via EtherRing */
     uint64_t etherRingSubmittedPacketCount;
 
+    /*! Out of order packets accepted */
+    uint64_t etherRingOutOfOrderPktCount;
 }EtherRingStats;
 
 /**

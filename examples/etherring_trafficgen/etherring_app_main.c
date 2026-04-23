@@ -86,9 +86,6 @@ void EnetApp_mainTask(void *args)
     /* Creates FreeRTOS Rx Task to receive Redundancy Packets */
     EnetApp_createRxTrafficTask();
 
-    /* Creates FreeRTOS Task to clear Look-up table */
-    EnetApp_createEtherRingClearTask();
-
     /* Initialize all the streams(Class-A) */
     EnetApp_initAllTrafficObj();
 

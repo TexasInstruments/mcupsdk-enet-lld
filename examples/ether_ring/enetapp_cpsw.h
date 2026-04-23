@@ -106,9 +106,6 @@ typedef struct EnetApp_Cfg_s
     /* Semaphore posted from RX callback when Regular packets have arrived */
     SemaphoreP_Object rxSemObj;
 
-    /* Semaphore posted every 32ms to clear the task for lookup table */
-    SemaphoreP_Object etherringSemObj;
-
     /* Semaphore used to synchronize all Regular RX tasks exits */
     SemaphoreP_Object rxDoneSemObj;
 
@@ -203,13 +200,8 @@ void EnetApp_addBroadcastEntry(void);
  */
 void EnetApp_printCpuLoad(void);
 
-/*!
- * \brief Prints CPU Load
- *
- * \param hEnet    [IN] Enet Handle
- * \param coreId   [IN] Application core Id
- *
- * \return \ref Enet_ErrorCodes
- */
 int32_t EnetApp_updatePtpMcastAddress(Enet_Handle hEnet, uint32_t coreId);
+void EnetApp_registerHwPushEvent0Cb();
+void EnetApp_configGenf0(Enet_Handle hEnet, uint32_t coreId);
+void EnetApp_configGenf1(Enet_Handle hEnet, uint32_t coreId);
 #endif //_ENETAPP_H_
