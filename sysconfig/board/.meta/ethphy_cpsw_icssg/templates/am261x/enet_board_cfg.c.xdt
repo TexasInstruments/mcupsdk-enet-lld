@@ -247,6 +247,7 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
 
     EnetBoard_enableExternalMux();
 
+    SOC_controlModuleUnlockMMR(SOC_DOMAIN_ID_MAIN, MSS_CTRL_PARTITION0);
     switch(ethPorts->macPort)
     {
         case ENET_MAC_PORT_1:
@@ -278,7 +279,8 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
         default:
             DebugP_assert(false);
     }
-
+    SOC_controlModuleLockMMR(SOC_DOMAIN_ID_MAIN, MSS_CTRL_PARTITION0);
+    
     /* Nothing else to do */
     return ENET_SOK;
 }
