@@ -25,6 +25,7 @@ const mpu_armv72         = mpu_armv7.addInstance();
 const mpu_armv73         = mpu_armv7.addInstance();
 const mpu_armv74         = mpu_armv7.addInstance();
 const mpu_armv75         = mpu_armv7.addInstance();
+const mpu_armv76         = mpu_armv7.addInstance();
 const general            = scripting.addModule("/memory_configurator/general", {}, false);
 const general1           = general.addInstance();
 const region             = scripting.addModule("/memory_configurator/region", {}, false);
