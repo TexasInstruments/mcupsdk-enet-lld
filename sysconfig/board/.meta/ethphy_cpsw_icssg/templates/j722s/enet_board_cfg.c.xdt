@@ -343,7 +343,7 @@ static void EnetBoard_setMacPortIOExpanderCfg(void)
     TCA6424_Params  TCA6424Params;
     int32_t status  = SystemP_SUCCESS;
 
-    TCA6424Params.i2cInstance = CONFIG_I2C0;
+    TCA6424Params.i2cInstance = 0;
     TCA6424Params.i2cAddress  = IO_EXP2_ADDR;
     status = TCA6424_open(&TCA6424_Config, &TCA6424Params);
 
