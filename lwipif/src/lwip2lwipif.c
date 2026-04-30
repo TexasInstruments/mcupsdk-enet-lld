@@ -189,8 +189,8 @@ bool LWIPIF_LWIP_UdpLiteValidateChkSum(struct pbuf *p)
     struct ip_hdr *pIpPkt   = (struct ip_hdr *)LWIPIF_LWIP_getIpPktStart((uint8_t*) p->payload);
     uint8_t *pIpPayload     = (uint8_t*)pIpPkt + (IPH_HL(pIpPkt) << 2);
     struct udp_hdr* pUdpHdr = (struct udp_hdr*)pIpPayload;
-    ip_addr_t srcIp;
-    ip_addr_t dstIp;
+    ip_addr_t srcIp = {0};
+    ip_addr_t dstIp = {0};
 
     LWIPIF_LWIP_getSrcIp((uint8_t *)pIpPkt, &srcIp);
     LWIPIF_LWIP_getDstIp((uint8_t *)pIpPkt, &dstIp);
@@ -230,8 +230,8 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p)
     const uint32_t ipPktHdrLen     = (IPH_HL(pIpPkt) << 2)  /* multiply by 4 */;
     const uint32_t ipPktPayloadLen = lwip_ntohs(IPH_LEN(pIpPkt)) - ipPktHdrLen;
     const uint32_t protocolType    = IPH_PROTO(pIpPkt);
-    ip_addr_t srcIp;
-    ip_addr_t dstIp;
+    ip_addr_t srcIp = {0};
+    ip_addr_t dstIp = {0};
 
     uint8_t *pIpPayload   = (uint8_t*)pIpPkt + ipPktHdrLen;
 

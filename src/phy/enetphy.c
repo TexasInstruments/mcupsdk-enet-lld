@@ -1502,8 +1502,8 @@ static void EnetPhy_isolateState (EnetPhy_Handle hPhy)
 static void EnetPhy_nwayStartState(EnetPhy_Handle hPhy)
 {
     EnetPhy_State *state = &hPhy->state;
-    uint16_t mode;
-    uint16_t val;
+    uint16_t mode = 0;
+    uint16_t val = 0;
 
     Enet_devAssert(!hPhy->phyCfg.isStrapped,
                    "PHY %u: unexpected state for strapped PHY\r\n", hPhy->addr);
@@ -1530,7 +1530,7 @@ static void EnetPhy_nwayWaitState(EnetPhy_Handle hPhy)
 {
     EnetPhy_State *state = &hPhy->state;
     uint32_t nwayCaps;
-    uint16_t status;
+    uint16_t status = 0;
 
     Enet_devAssert(!hPhy->phyCfg.isStrapped,
                    "PHY %u: unexpected state for strapped PHY\r\n", hPhy->addr);
@@ -1569,8 +1569,8 @@ static void EnetPhy_linkWaitState(EnetPhy_Handle hPhy)
 {
     EnetPhy_State *state = &hPhy->state;
     uint32_t nwayCaps;
-    uint16_t control;
-    uint16_t status;
+    uint16_t control = 0;
+    uint16_t status = 0;
 
     EnetPhy_readReg(hPhy, PHY_BMSR, &status);
 
@@ -1789,7 +1789,7 @@ static uint32_t EnetPhy_findCommon1000Caps(EnetPhy_Handle hPhy)
 {
     uint32_t localCaps = 0U;
     uint32_t partnerCaps = 0U;
-    uint16_t val;
+    uint16_t val = 0;
 
     /* Get local device capabilities */
     EnetPhy_readReg(hPhy, PHY_GIGCR, &val);
