@@ -10,8 +10,8 @@
     </applicability>
 
     <project
-        title="Enet Lwip Cpsw"
-        name = "enet_lwip_cpsw_am261x-som_r5fss0-0_freertos_ti-arm-clang"
+        title="Enet Lwip Cpsw Xip"
+        name = "enet_lwip_cpsw_xip_am261x-som_r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Release,
@@ -73,7 +73,7 @@
             -i${MCU_PLUS_SDK_PATH}/source/networking/lwip/lib
             -i${CG_TOOL_ROOT}/lib
             -i${PROJECT_BUILD_DIR}/syscfg
-            -m=enet_lwip_cpsw.${ConfigName}.map
+            -m=enet_lwip_cpsw_xip.${ConfigName}.map
             --diag_suppress=10063
             --ram_model
             --reread_libs
@@ -90,7 +90,7 @@
             --context r5fss0-0 --part AM2611 --package ZCZ
         "
 
-        description="A Enet Lwip Cpsw FREERTOS project">
+        description="A Enet Lwip Cpsw Xip FREERTOS project">
 
         <configuration name="Debug"
             compilerBuildOptions="
@@ -173,7 +173,7 @@
         </file>
         <file path="../example.syscfg" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am261x/EXAMPLES_ENET_LWIP_CPSW.html"
+        <file path="${MCU_PLUS_SDK_PATH}/docs/api_guide_am261x/EXAMPLES_ENET_LWIP_CPSW_XIP.html"
                 openOnCreation="false" excludeFromBuild="false" targetName="README.html" action="link">
         </file>
         <file path="syscfg_c.rov.xs" openOnCreation="false" excludeFromBuild="false" action="copy">

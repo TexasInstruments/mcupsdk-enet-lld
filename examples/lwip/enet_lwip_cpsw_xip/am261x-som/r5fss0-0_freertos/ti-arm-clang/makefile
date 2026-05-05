@@ -21,14 +21,14 @@ endif
 PROFILE?=release
 ConfigName:=$(PROFILE)
 
-OUTNAME:=enet_lwip_cpsw.$(PROFILE).out
-COREOUTNAME:=enet_lwip_cpsw.$(PROFILE).optishare.out
+OUTNAME:=enet_lwip_cpsw_xip.$(PROFILE).out
+COREOUTNAME:=enet_lwip_cpsw_xip.$(PROFILE).optishare.out
 
 BOOTIMAGE_PATH=$(abspath .)
 oeconfig?=None
 
-BOOTIMAGE_NAME_MCELF:=enet_lwip_cpsw.$(PROFILE).mcelf
-BOOTIMAGE_NAME_MCELF_HS:=enet_lwip_cpsw.$(PROFILE).mcelf.hs
+BOOTIMAGE_NAME_MCELF:=enet_lwip_cpsw_xip.$(PROFILE).mcelf
+BOOTIMAGE_NAME_MCELF_HS:=enet_lwip_cpsw_xip.$(PROFILE).mcelf.hs
 TARGETS := $(BOOTIMAGE_NAME_MCELF)
 ifeq ($(DEVICE_TYPE), HS)
    TARGETS += $(BOOTIMAGE_NAME_MCELF_HS)
@@ -274,7 +274,7 @@ clean:
 	$(RMDIR) generated/
 
 scrub:
-	@echo  Scrubing: am261x:r5fss0-0:freertos:ti-arm-clang enet_lwip_cpsw ...
+	@echo  Scrubing: am261x:r5fss0-0:freertos:ti-arm-clang enet_lwip_cpsw_xip ...
 	$(RMDIR) obj
 ifeq ($(OS),Windows_NT)
 	$(RM) \*.out
@@ -349,7 +349,7 @@ SBL_RUN_ADDRESS=0x70002000
 SBL_DEV_ID=55
 
 APP_IMAGE_SIGN_CMD = $(MCU_PLUS_SDK_PATH)/source/security/security_common/tools/boot/signing/mcu_appimage_x509_cert_gen.py
-MCELF_IMAGE_GEN = $(MCU_PLUS_SDK_PATH)/tools/boot/multicore-elf/genimage_am26x.py
+MCELF_IMAGE_GEN = $(MCU_PLUS_SDK_PATH)/tools/boot/multicore-elf/genimage.py
 
 ifeq ($(OS),Windows_NT)
   XIPGEN_CMD=$(MCU_PLUS_SDK_PATH)/tools/boot/xipGen/xipGen.exe
@@ -404,12 +404,12 @@ endif
 
 .PHONY: coverage
 coverage:
-	@echo Creating Coverage Report for enet_lwip_cpsw.$(PROFILE) ...
+	@echo Creating Coverage Report for enet_lwip_cpsw_xip.$(PROFILE) ...
 	$(MKDIR) coverage
-	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o enet_lwip_cpsw.$(PROFILE).profdata
-	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=enet_lwip_cpsw.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
-	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=enet_lwip_cpsw.$(PROFILE).profdata > coverage/enet_lwip_cpsw.$(PROFILE).profdata.json
-	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/enet_lwip_cpsw.$(PROFILE).profdata.json --output-json=coverage/enet_lwip_cpsw.$(PROFILE).analysis.json --output=../enet_lwip_cpsw.annotations.$(PROFILE).S --top-function-count=500
+	$(PROFDATA) merge -sparse -obj-file=$(OUTNAME) $(OUTNAME).cnt -o enet_lwip_cpsw_xip.$(PROFILE).profdata
+	$(COV) show --format=html --show-expansions --show-instantiations --show-branches=count --object=$(OUTNAME) -instr-profile=enet_lwip_cpsw_xip.$(PROFILE).profdata --output-dir=$(COVERAGE_PATH)/coverage --ignore-filename-regex=build_jenkins
+	$(COV) export --format=text --object=$(OUTNAME) --instr-profile=enet_lwip_cpsw_xip.$(PROFILE).profdata > coverage/enet_lwip_cpsw_xip.$(PROFILE).profdata.json
+	node $(MCU_PLUS_SDK_PATH)/tools/smart_placement/clang_coverage_analyse.js --input=coverage/enet_lwip_cpsw_xip.$(PROFILE).profdata.json --output-json=coverage/enet_lwip_cpsw_xip.$(PROFILE).analysis.json --output=../enet_lwip_cpsw_xip.annotations.$(PROFILE).S --top-function-count=500
 	@echo Coverage Report Generated at $(COVERAGE_PATH)/coverage folder !!!
 
 -include $(addprefix $(OBJDIR)/, $(DEPS))
