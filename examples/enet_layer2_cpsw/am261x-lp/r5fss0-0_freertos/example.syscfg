@@ -237,7 +237,6 @@ ethphy_cpsw_icssg1.$name          = "CONFIG_ENET_ETHPHY0";
 ethphy_cpsw_icssg1.boardType      = "am261x-lp";
 ethphy_cpsw_icssg1.peripheral     = "CPSW_MAC_PORT_1";
 enet_cpsw1.ethphy1                = ethphy_cpsw_icssg1;
-ethphy_cpsw_icssg1.extendedConfig = "/* Extended PHY configuration for DP83869 */\n.txClkShiftEn         = true,\n.rxClkShiftEn         = true,\n.txDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_RX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.rxDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_TX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */\n.txFifoDepth          = 4U,\n.impedanceInMilliOhms = 35000,  /* 35 ohms */\n.idleCntThresh        = 4U,     /* Improves short cable performance */\n.gpio0Mode            = DP83869_GPIO0_COL,\n.gpio1Mode            = DP83869_GPIO1_CONSTANT0, /* Unused */\n.ledMode              =\n{\n\tDP83869_LED_LINKED,         /* Unused */\n\tDP83869_LED_RXERR,\n\tDP83869_LED_COLLDET,\n\tDP83869_LED_LINKED_1000BT,\n},";
 
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future

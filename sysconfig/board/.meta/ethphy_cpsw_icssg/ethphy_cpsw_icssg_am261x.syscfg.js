@@ -16,8 +16,8 @@ const cpswPhyExtendedConfig = new Map([
 .gpio1Mode            = DP83869_GPIO1_COL, /* Unused */
 .ledMode              =
 {
-	DP83869_LED_LINKED_100BTX,         /* Unused */
 	DP83869_LED_RXTXACT,
+	DP83869_LED_LINKED_100BTX,
 	DP83869_LED_LINKED,
 	DP83869_LED_LINKED_1000BT,
 },`}],
