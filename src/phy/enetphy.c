@@ -1153,7 +1153,7 @@ static void EnetPhy_resetWaitState(EnetPhy_Handle hPhy)
                    "PHY %u: unexpected state for strapped PHY\r\n", hPhy->addr);
 
     /* Wait for PHY reset to complete */
-    complete = hPhy->hDrvIf.fxn.isResetComplete(hPhy->hDrvIf.hDrv);
+    hPhy->hDrvIf.fxn.isResetComplete(hPhy->hDrvIf.hDrv,&complete);
     if (complete)
     {
         if (state->residenceTime != 0U)

@@ -245,8 +245,8 @@ static bool Dp83tg721_isPhyDevSupported(EthPhyDrv_Handle hPhy,
 static bool Dp83tg721_isMacModeSupported(EthPhyDrv_Handle hPhy, Phy_Mii mii);
 
 static int32_t Dp83tg721_config(uint8_t *phphy, const void *pExtCfg, const uint32_t extCfgSize, Phy_Mii mii, bool loopbackEn);
-static void Dp83tg721_reset(EthPhyDrv_Handle hPhy);
-static bool Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_reset(EthPhyDrv_Handle hPhy);
+static int32_t Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy, bool * pComplete);
 static int32_t Dp83tg721_readExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t *val);
 static int32_t Dp83tg721_writeExtReg(EthPhyDrv_Handle hPhy, uint32_t reg, uint16_t val);
 void Dp83tg721_bind(EthPhyDrv_Handle* hPhy,uint8_t phyAddr,Phy_RegAccessCb_t* pRegAccessCb);
@@ -576,7 +576,7 @@ static void Dp83tg721_setLoopbackCfg(EthPhyDrv_Handle hPhy, bool enable)
 
         do
         {
-            complete = Dp83tg721_isResetComplete(hPhy);
+            Dp83tg721_isResetComplete(hPhy,&complete);
         } while (complete == false);
     }
 }
@@ -670,11 +670,13 @@ static int32_t Dp83tg721_config(EthPhyDrv_Handle hPhy, const void *pExtCfg, cons
     return status;
 }
 
-static void Dp83tg721_reset(EthPhyDrv_Handle hPhy)
+static int32_t Dp83tg721_reset(EthPhyDrv_Handle hPhy)
 {
+    int32_t status;
     Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
     /* Global software reset */
-    pRegAccessApi->EnetPhy_rmwReg(pRegAccessApi->pArgs, MII_REG_1F, SW_RESET, SW_RESET);
+    status = pRegAccessApi->EnetPhy_rmwReg(pRegAccessApi->pArgs, MII_REG_1F, SW_RESET, SW_RESET);
+    return status;
 }
 
 static void Dp83tg721_resetHw(EthPhyDrv_Handle hPhy)
@@ -684,21 +686,21 @@ static void Dp83tg721_resetHw(EthPhyDrv_Handle hPhy)
     pRegAccessApi->EnetPhy_rmwReg(pRegAccessApi->pArgs, MII_REG_1F, HW_RESET, HW_RESET);
 }
 
-static bool Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy)
+static int32_t Dp83tg721_isResetComplete(EthPhyDrv_Handle hPhy, bool * pComplete)
 {
     int32_t status;
     uint16_t val;
-    bool complete = false;
+    *pComplete = false;
 
     Phy_RegAccessCb_t* pRegAccessApi = PhyPriv_getRegAccessApi(hPhy);
     /* Reset is complete when RESET bits have self-cleared */
     status = pRegAccessApi->EnetPhy_readReg(pRegAccessApi->pArgs, MII_REG_1F, &val);
     if (status == ENETPHY_SOK)
     {
-        complete = ((val & (SW_RESET | HW_RESET)) == 0U);
+        *pComplete = ((val & (SW_RESET | HW_RESET)) == 0U);
     }
 
-    return complete;
+    return status;
 }
 
 static int32_t Dp83tg721_ExtRegToDevad(uint16_t reg, uint16_t *accessReg, uint16_t *devad)
@@ -907,7 +909,7 @@ static void Dp83tg721_chipInit(EthPhyDrv_Handle hPhy, Dp83tg721Priv *priv)
     Dp83tg721_reset(hPhy);
     do
     {
-        complete = Dp83tg721_isResetComplete(hPhy);
+        Dp83tg721_isResetComplete(hPhy,&complete);
     } while (complete == false);
 
     /* Let the PHY start link-up procedure */
@@ -1814,7 +1816,7 @@ static int32_t Dp83tg721_configPTP_PLLClock(EthPhyDrv_Handle hPhy)
     Dp83tg721_reset(hPhy);
     do
     {
-        complete = Dp83tg721_isResetComplete(hPhy);
+        Dp83tg721_isResetComplete(hPhy,&complete);
     } while (complete == false);
 
     return 0;
