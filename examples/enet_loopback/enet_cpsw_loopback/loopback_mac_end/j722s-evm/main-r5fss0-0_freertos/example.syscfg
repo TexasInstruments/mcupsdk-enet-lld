@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "J722S_TDA4VEN_TDA4AEN_AM67" --part "Default" --package "AMW" --context "main-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "TDA4VEN-Q1" --package "FCBGA (AMW)" --context "main-r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.24.2+4234"}
+ * @versions {"tool":"1.26.2+4477"}
  */
 
 /**
@@ -97,16 +97,3 @@ enet_cpsw1.RGMII1.TD2.$suggestSolution      = "RGMII1_TD2";
 enet_cpsw1.RGMII1.TD3.$suggestSolution      = "RGMII1_TD3";
 enet_cpsw1.RGMII1.TX_CTL.$suggestSolution   = "RGMII1_TX_CTL";
 enet_cpsw1.RGMII1.TXC.$suggestSolution      = "RGMII1_TXC";
-enet_cpsw1.RGMII2.$suggestSolution          = "RGMII2";
-enet_cpsw1.RGMII2.RD0.$suggestSolution      = "VOUT0_HSYNC";
-enet_cpsw1.RGMII2.RD1.$suggestSolution      = "VOUT0_DE";
-enet_cpsw1.RGMII2.RD2.$suggestSolution      = "VOUT0_VSYNC";
-enet_cpsw1.RGMII2.RD3.$suggestSolution      = "VOUT0_PCLK";
-enet_cpsw1.RGMII2.RX_CTL.$suggestSolution   = "VOUT0_DATA14";
-enet_cpsw1.RGMII2.RXC.$suggestSolution      = "VOUT0_DATA15";
-enet_cpsw1.RGMII2.TD0.$suggestSolution      = "VOUT0_DATA10";
-enet_cpsw1.RGMII2.TD1.$suggestSolution      = "VOUT0_DATA11";
-enet_cpsw1.RGMII2.TD2.$suggestSolution      = "VOUT0_DATA12";
-enet_cpsw1.RGMII2.TD3.$suggestSolution      = "VOUT0_DATA13";
-enet_cpsw1.RGMII2.TX_CTL.$suggestSolution   = "VOUT0_DATA8";
-enet_cpsw1.RGMII2.TXC.$suggestSolution      = "VOUT0_DATA9";
