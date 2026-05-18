@@ -167,7 +167,7 @@ const templates_freertos_main_r5f =
 ];
 
 const buildOptionCombos = [
-   { device: device, cpu: "main-r5fss0-0", cgt: "ti-arm-clang", board: "j722s-evm", os: "freertos", isPartOfSystemProject: true},
+   { device: device, cpu: "main-r5fss0-0", cgt: "ti-arm-clang", board: "j722s-evm", os: "freertos"},
 ];
 
 function getComponentProperty() {

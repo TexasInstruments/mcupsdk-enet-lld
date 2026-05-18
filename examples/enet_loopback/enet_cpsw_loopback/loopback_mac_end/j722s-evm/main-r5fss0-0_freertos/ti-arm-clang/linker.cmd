@@ -96,6 +96,14 @@ SECTIONS
         .init_array: {} palign(8)   /* Contains function pointers called before main */
         .fini_array: {} palign(8)   /* Contains function pointers called after main */
     } > DDR_CODE_DATA
+     
+    enet_dma_mem (NOLOAD) : {
+    *(*ENET_DMA_DESC_MEMPOOL)
+    *(*ENET_DMA_RING_MEMPOOL)
+#if (ENET_SYSCFG_PKT_POOL_ENABLE == 1)
+    *(*ENET_DMA_PKT_MEMPOOL)
+#endif
+    } > DDR_CODE_DATA
 }
 
 MEMORY
