@@ -47,7 +47,8 @@
 #include "cli_ale_vlan.h"
 #include "cli_gptp_app.h"
 #include "cli_lwip.h"
-#include "cli_phy/cli_phy_phymode.h"
+#include "cli_phy_phymode.h"
+#include "cli_timesync.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -96,7 +97,8 @@ CLI_Command_Definition_t commandList[] =
                 .pcHelpString =
                         "enet_capturedump <rx_ch_num>:\r\n Returns the last 4 packets recieved at the specified channel.\r\n\n",
                 .pxCommandInterpreter = EnetCLI_dumpRxBuffer,
-                .cExpectedNumberOfParameters = 1 }, { .pcCommand = "quit",
+                .cExpectedNumberOfParameters = 1 },
+            { .pcCommand = "quit",
                 .pcHelpString = "quit:\r\n Closes the CLI application.\r\n\n",
                 .pxCommandInterpreter = EnetCLI_quitTerminal,
                 .cExpectedNumberOfParameters = 0 },
@@ -152,7 +154,11 @@ CLI_Command_Definition_t commandList[] =
                     "Port can either be 1 or 2.\r\n "
                     "Providing -r will reset the phymode of port to 1g speed and full duplexity\r\n\n",
                 .pxCommandInterpreter = EnetCli_phyMode,
-                .cExpectedNumberOfParameters = -1}};
+                .cExpectedNumberOfParameters = -1},
+            { .pcCommand = "enet_timesync", .pcHelpString =
+                    "enet_timesync {help}:\r\n Timesync related commands.\r\n\n",
+                .pxCommandInterpreter = EnetCLI_timesyncCommands,
+                .cExpectedNumberOfParameters = -1 }};
 
 /* ========================================================================== */
 /*                          Function Definitions                              */

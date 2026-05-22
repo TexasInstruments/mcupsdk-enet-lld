@@ -67,6 +67,7 @@
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy
+            -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_cpts
             -I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper
             -mcpu=cortex-r5
             -mfloat-abi=hard
@@ -179,6 +180,8 @@
         </file>
         <file path="../../../cli_lwip/cli_lwip.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
+        <file path="../../../cli_cpts/cli_timesync.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
         <file path="../../../cli_gptp/cli_gptp_log.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../cli_gptp/cli_gptp_app.c" openOnCreation="false" excludeFromBuild="false" action="copy">
@@ -208,6 +211,8 @@
         <file path="../../../cli_ale/cli_ale_vlan.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../cli_lwip/cli_lwip.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        </file>
+        <file path="../../../cli_cpts/cli_timesync.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../../../cli_lwip/lwip_shell.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>

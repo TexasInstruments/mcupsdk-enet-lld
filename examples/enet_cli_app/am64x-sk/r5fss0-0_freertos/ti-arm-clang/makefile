@@ -46,6 +46,7 @@ FILES_common := \
 	lwip_shell.c \
 	cli_phy_phymode.c \
 	cli_lwip.c \
+	cli_timesync.c \
 	cli_gptp_log.c \
 	cli_gptp_app.c \
 	enet_cli_config.c \
@@ -77,6 +78,7 @@ FILES_PATH_common = \
 	../../../enet_cli_wrapper \
 	../../../cli_ale \
 	../../../cli_phy \
+	../../../cli_cpts \
 	generated \
 
 INCLUDES_common := \
@@ -118,6 +120,7 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_cpts \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper \
 	-Igenerated \
 

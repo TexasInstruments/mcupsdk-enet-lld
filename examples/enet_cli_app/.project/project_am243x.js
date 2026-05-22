@@ -12,6 +12,7 @@ const files = {
             "lwip_shell.c",
             "cli_phy_phymode.c",
             "cli_lwip.c",
+            "cli_timesync.c",
             "cli_gptp_log.c",
             "cli_gptp_app.c",
             "enet_cli_config.c",
@@ -32,6 +33,7 @@ const incfiles = {
         "cli_ale_unicast.h",
         "cli_ale_vlan.h",
         "cli_lwip.h",
+        "cli_timesync.h",
         "lwip_shell.h",
         "cli_gptp_app.h",
         "cli_gptp_log.h",
@@ -50,6 +52,7 @@ const filedirs = {
         "../../../enet_cli_wrapper", /* Example base */
         "../../../cli_ale", /* Example base */
         "../../../cli_phy", /* Example base */
+        "../../../cli_cpts", /* Example base */
     ],
 };
 
@@ -106,6 +109,7 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_lwip",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_ale",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_phy",
+        "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/cli_cpts",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/examples/enet_cli_app/enet_cli_wrapper",
     ],
 };
