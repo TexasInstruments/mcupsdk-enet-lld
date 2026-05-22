@@ -441,7 +441,7 @@ static Icssg_FwPoolMem gEnetSoc_Icssg0_Swt_FwPoolMem[] =
 % } else {
             .hostEgressPreQueueMem  = NULL,
 % }
-            .hostEgressPreQueueSize = ICSSG0_PRE_QUEUE_TOTAL_SIZE,
+            .hostEgressPreQueueSize = ICSSG_SWITCH_HOST_QUEUE_SIZE,
             .hostEgressQueueNum  = ICSSG_SWITCH_HOST_EGRESS_QUEUE_NUM,
 
             .scratchBufferMem    = gEnetSoc_icssg0ScratchMem_0,
@@ -464,7 +464,7 @@ static Icssg_FwPoolMem gEnetSoc_Icssg0_Swt_FwPoolMem[] =
 % } else {
             .hostEgressPreQueueMem  = NULL,
 % }
-            .hostEgressPreQueueSize = ICSSG0_PRE_QUEUE_TOTAL_SIZE,
+            .hostEgressPreQueueSize = ICSSG_SWITCH_HOST_QUEUE_SIZE,
             .hostEgressQueueNum  = ICSSG_SWITCH_HOST_EGRESS_QUEUE_NUM,
 
             .scratchBufferMem    = gEnetSoc_icssg0ScratchMem_1,
@@ -493,7 +493,7 @@ static Icssg_FwPoolMem gEnetSoc_Icssg1_Swt_FwPoolMem[] =
 % } else {
             .hostEgressPreQueueMem  = NULL,
 % }
-            .hostEgressPreQueueSize = ICSSG1_PRE_QUEUE_TOTAL_SIZE,
+            .hostEgressPreQueueSize = ICSSG_SWITCH_HOST_QUEUE_SIZE,
             .hostEgressQueueNum  = ICSSG_SWITCH_HOST_EGRESS_QUEUE_NUM,
 
             .scratchBufferMem    = gEnetSoc_icssg1ScratchMem_0,
@@ -516,7 +516,7 @@ static Icssg_FwPoolMem gEnetSoc_Icssg1_Swt_FwPoolMem[] =
 % } else {
             .hostEgressPreQueueMem  = NULL,
 % }
-            .hostEgressPreQueueSize = ICSSG1_PRE_QUEUE_TOTAL_SIZE,
+            .hostEgressPreQueueSize = ICSSG_SWITCH_HOST_QUEUE_SIZE,
             .hostEgressQueueNum  = ICSSG_SWITCH_HOST_EGRESS_QUEUE_NUM,
 
             .scratchBufferMem    = gEnetSoc_icssg1ScratchMem_1,
