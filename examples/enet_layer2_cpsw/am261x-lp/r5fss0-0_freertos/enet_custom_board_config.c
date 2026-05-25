@@ -1,0 +1,346 @@
+/*
+ *  Copyright (C) 2026 Texas Instruments Incorporated
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
+ *
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+#include "ti_board_config.h"
+
+/* ========================================================================== */
+/*                             Include Files                                  */
+/* ========================================================================== */
+
+#include <stdint.h>
+#include <enet.h>
+#include "dp83869.h"
+#include <enet_apputils.h>
+#include <enet_appboardutils.h>
+#include <drivers/hw_include/cslr_soc.h>
+#include <networking/enet/core/src/phy/enetphy_priv.h>
+#include <generic_phy.h>
+#include "ti_board_open_close.h"
+#include <kernel/dpl/AddrTranslateP.h>
+#include <board/ioexp/ioexp_tca6408.h>
+
+/* PHY drivers */
+extern Phy_DrvObj_t gEnetPhyDrvDp83869;
+
+/*! \brief All the registered PHY specific drivers. */
+static const EthPhyDrv_If gEnetPhyDrvs[] =
+{
+    &gEnetPhyDrvDp83869,    /* DP83869 */
+};
+
+const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
+{
+    .numHandles = ENET_ARRAYSIZE(gEnetPhyDrvs),
+    .hPhyDrvList = gEnetPhyDrvs,
+};
+
+/* ========================================================================== */
+/*                           Macros & Typedefs                                */
+/* ========================================================================== */
+
+/**
+     MSS_CTRL:CPSW_CONTROL
+
+    Instance          MSS_CTRL
+    CPSW_CONTROL_RGMII1_ID_MODE     16  Writing 1'b1 would disable the internal clock delays. And those delays need to be handled on board.
+    CPSW_CONTROL_RMII_REF_CLK_OE_N  8   To select the rmii_ref_clk from PAD or from MSS_RCM. 0: clock will be from mss_rcm through IO internal loopback 1: will be from
+    CPSW_CONTROL_PORT1_MODE_SEL     2:0 Port 1 Interface
+                                            00 = GMII/MII
+                                            01 = RMII
+                                            10 = RGMII
+                                            11 = Not Supported
+*/
+
+#define MSS_CPSW_CONTROL_PORT_MODE_MII                                    (0x0U)
+#define MSS_CPSW_CONTROL_PORT_MODE_RMII                                   (0x1U)
+#define MSS_CPSW_CONTROL_PORT_MODE_RGMII                                  (0x2U)
+
+#define I2C_ADDRESS_IO_EXPANDER0_TCA6408                                  (0x20U)
+#define I2C_ADDRESS_IO_EXPANDER1_TCA6408                                  (0x21U)
+/* ========================================================================== */
+/*                         Structure Declarations                             */
+/* ========================================================================== */
+
+/* None */
+
+/* ========================================================================== */
+/*                          Function Declarations                             */
+/* ========================================================================== */
+
+/* None */
+
+/* ========================================================================== */
+/*                            Global Variables                                */
+/* ========================================================================== */
+
+/*!
+ * \brief Common Processor Board (CPB) board's DP83869 PHY configuration.
+ */
+static const Dp83869_Cfg gEnetCpbBoard_ConfigEnetEthphy0PhyCfg =
+{
+    /* Extended PHY configuration for DP83869 */
+    .txClkShiftEn         = true,
+    .rxClkShiftEn         = true,
+    .txDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_RX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */
+    .rxDelayInPs          = 2000U,   /* Value in pecosec. Refer to DLL_TX_DELAY_CTRL_SL field in ANA_RGMII_DLL_CTRL register of DP83869 PHY datasheet */
+    .txFifoDepth          = 4U,
+    .impedanceInMilliOhms = 35000,  /* 35 ohms */
+    .idleCntThresh        = 4U,     /* Improves short cable performance */
+    .gpio0Mode            = DP83869_GPIO0_LED_2,
+    .gpio1Mode            = DP83869_GPIO1_COL, /* Unused */
+    .ledMode              =
+    {
+        DP83869_LED_RXTXACT,
+        DP83869_LED_LINKED_100BTX,
+        DP83869_LED_LINKED,
+        DP83869_LED_LINKED_1000BT,
+    },
+};
+
+/*
+ * am261x-lp board configuration.
+ *
+ * RMII/RGMII PHY connected to am261x-lp CPSW_3G MAC port.
+ */
+static const EnetBoard_PortCfg gEnetCpbBoard_am261x_lp_EthPort[] =
+{
+    {
+        /* "CPSW3G" */
+        .enetType = ENET_CPSW_3G,
+        .instId   = 0U,
+        .macPort  = ENET_MAC_PORT_1,
+        .mii      = {ENET_MAC_LAYER_GMII, ENET_MAC_SUBLAYER_REDUCED},
+        .phyCfg   =
+        {
+            .phyAddr         = 12,
+            .isStrapped      = false,
+            .skipExtendedCfg = false,
+            .extendedCfg     = &gEnetCpbBoard_ConfigEnetEthphy0PhyCfg,
+            .extendedCfgSize = sizeof(gEnetCpbBoard_ConfigEnetEthphy0PhyCfg)
+        },
+        .flags    = 0U,
+    },
+};
+
+/* ========================================================================== */
+/*                          Function Definitions                              */
+/* ========================================================================== */
+
+const EnetBoard_PhyCfg *EnetBoard_getPhyCfg(const EnetBoard_EthPort *ethPort)
+{
+    const EnetBoard_PortCfg *portCfg;
+
+    portCfg = EnetBoard_getPortCfg(ethPort);
+
+    return (portCfg != NULL) ? &portCfg->phyCfg : NULL;
+}
+
+const EnetBoard_PortCfg *EnetBoard_getPortCfg(const EnetBoard_EthPort *ethPort)
+{
+    const EnetBoard_PortCfg *portCfg = NULL;
+
+    if (ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_CPB_ID) ||
+    ((portCfg == NULL) && ENET_NOT_ZERO(ethPort->boardId & ENETBOARD_LOOPBACK_ID)))
+    {
+        portCfg = EnetBoard_findPortCfg(ethPort,
+                                        gEnetCpbBoard_am261x_lp_EthPort,
+                                        ENETPHY_ARRAYSIZE(gEnetCpbBoard_am261x_lp_EthPort));
+    }
+
+    return portCfg;
+}
+
+const EnetBoard_PortCfg *EnetBoard_findPortCfg(const EnetBoard_EthPort *ethPort,
+                                                      const EnetBoard_PortCfg *ethPortCfgs,
+                                                      uint32_t numEthPorts)
+{
+    const EnetBoard_PortCfg *ethPortCfg = NULL;
+    bool found = false;
+    uint32_t idx;
+
+    for (idx = 0U; idx < numEthPorts; idx++)
+    {
+        ethPortCfg = &ethPortCfgs[idx];
+
+        if ((ethPortCfg->enetType == ethPort->enetType) &&
+            (ethPortCfg->instId == ethPort->instId) &&
+            (ethPortCfg->macPort == ethPort->macPort) &&
+            (ethPortCfg->mii.layerType == ethPort->mii.layerType) &&
+            (ethPortCfg->mii.sublayerType == ethPort->mii.sublayerType))
+        {
+            found = true;
+            break;
+        }
+    }
+
+    return found ? ethPortCfg : NULL;
+}
+
+void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPort)
+{
+    switch(macPort){
+        case ENET_MAC_PORT_1:
+            mii->layerType      = ENET_MAC_LAYER_GMII;
+            mii->variantType    = ENET_MAC_VARIANT_FORCED;
+            mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
+            break;
+        default:
+            break;
+    }
+}
+
+int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
+                             uint32_t numEthPorts)
+{
+    CSL_mss_ctrlRegs *mssCtrlRegs = (CSL_mss_ctrlRegs *)CSL_MSS_CTRL_U_BASE;
+
+    DebugP_assert(numEthPorts == 1);
+
+    SOC_controlModuleUnlockMMR(SOC_DOMAIN_ID_MAIN, MSS_CTRL_PARTITION0);
+    switch(ethPorts->macPort)
+    {
+        case ENET_MAC_PORT_1:
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII1_ID_MODE, 0U);
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT1_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
+            EnetBoard_setMacPort1IOExpanderCfg();
+            break;
+        case ENET_MAC_PORT_2:
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_RGMII2_ID_MODE, 0U);
+            CSL_FINS( mssCtrlRegs->CPSW_CONTROL,MSS_CTRL_CPSW_CONTROL_PORT2_MODE_SEL, MSS_CPSW_CONTROL_PORT_MODE_RGMII);
+            EnetBoard_setMacPort2IOExpanderCfg();
+            break;
+        default:
+            DebugP_assert(false);
+    }
+    SOC_controlModuleLockMMR(SOC_DOMAIN_ID_MAIN, MSS_CTRL_PARTITION0);
+    
+    /* Nothing else to do */
+    return ENET_SOK;
+}
+
+static void EnetBoard_enableLevelTranslator(void)
+{
+    TCA6408_Config tca6408Config;
+    TCA6408_Params tca6408Params;
+    int32_t status = ENET_SOK;
+    TCA6408_Params_init(&tca6408Params);
+
+    tca6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER0_TCA6408;
+
+    status = TCA6408_open(&tca6408Config, &tca6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    if (status == ENET_SOK)
+    {
+        /* Configure as output  */
+        status = TCA6408_config(&tca6408Config,
+                                4,
+                                TCA6408_MODE_OUTPUT);
+       EnetAppUtils_assert(status == ENET_SOK);
+    }
+
+    if (status == ENET_SOK)
+    {
+        status =  TCA6408_setOutput(&tca6408Config, 4, TCA6408_OUT_STATE_HIGH);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+}
+
+void EnetBoard_setMacPort1IOExpanderCfg(void)
+{
+    TCA6408_Config tca6408Config;
+    TCA6408_Params tca6408Params;
+    int32_t status    = ENET_SOK;
+
+    /* board version is E2 or Rev-A */
+    EnetBoard_enableLevelTranslator();
+
+    TCA6408_Params_init(&tca6408Params);
+    tca6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER1_TCA6408;
+
+    status = TCA6408_open(&tca6408Config, &tca6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    if (status == ENET_SOK)
+    {
+        /* Configure as output  */
+        status = TCA6408_config(&tca6408Config,
+                                4,
+                                TCA6408_MODE_OUTPUT);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+
+    if (status == ENET_SOK)
+    {
+        /* board Version is Rev-A */
+        status =  TCA6408_setOutput(&tca6408Config, 3, TCA6408_OUT_STATE_LOW);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+}
+
+void EnetBoard_setMacPort2IOExpanderCfg(void)
+{
+    TCA6408_Config tca6408Config;
+    TCA6408_Params tca6408Params;
+    int32_t status    = ENET_SOK;
+
+    /* board Version is E2 or Rev-A */
+    EnetBoard_enableLevelTranslator();
+
+    TCA6408_Params_init(&tca6408Params);
+    tca6408Params.i2cAddress  = I2C_ADDRESS_IO_EXPANDER1_TCA6408;
+
+    status = TCA6408_open(&tca6408Config, &tca6408Params);
+    EnetAppUtils_assert(status == ENET_SOK);
+
+    if (status == ENET_SOK)
+    {
+        /* Configure as output  */
+        status = TCA6408_config(&tca6408Config,
+                                3,
+                                TCA6408_MODE_OUTPUT);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+
+    if (status == ENET_SOK)
+    {
+        status =  TCA6408_setOutput(&tca6408Config, 3, TCA6408_OUT_STATE_LOW);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
+}
+
+/*
+ * Get ethernet board id
+ */
+uint32_t EnetBoard_getId(void)
+{
+    return ENETBOARD_AM261X_EVM;
+}

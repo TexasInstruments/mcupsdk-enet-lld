@@ -44,7 +44,6 @@ static void EnetBoard_setMacPort2IOExpanderCfg(void);
 % for (let phyDevice of uniqueDevices){
 extern Phy_DrvObj_t gEnetPhyDrv`common.camelSentence(phyDevice)`;
 %}
-extern Phy_DrvObj_t gEnetPhyDrvGeneric;
 %}
 
 /*! \brief All the registered PHY specific drivers. */
@@ -54,7 +53,6 @@ static const EthPhyDrv_If gEnetPhyDrvs[] =
 % for (let phyDevice of uniqueDevices){
     &gEnetPhyDrv`common.camelSentence(phyDevice)`,    /* `phyDevice` */
 %}
-    &gEnetPhyDrvGeneric,    /* Generic PHY - must be last */
 %}
 };
 
@@ -69,18 +67,16 @@ const EnetPhy_DrvInfoTbl gEnetPhyDrvTbl =
 /* ========================================================================== */
 
 /**
-   TPR:MSS_CTRL:CPSW_CONTROL
+    MSS_CTRL:CPSW_CONTROL
 
-   Address offset    0x0000016C
-   Physical address  0x0212016C
-   Instance          MSS_CTRL
-   CPSW_CONTROL_RGMII1_ID_MODE     16  Writing 1'b1 would disable the internal clock delays. And those delays need to be handled on board.
-   CPSW_CONTROL_RMII_REF_CLK_OE_N  8   To select the rmii_ref_clk from PAD or from MSS_RCM. 0: clock will be from mss_rcm through IO internal loopback 1: will be from
-   CPSW_CONTROL_PORT1_MODE_SEL     2:0 Port 1 Interface
-                                         00 = GMII/MII
-                                         01 = RMII
-                                         10 = RGMII
-                                         11 = Not Supported
+    Instance          MSS_CTRL
+    CPSW_CONTROL_RGMII1_ID_MODE     16  Writing 1'b1 would disable the internal clock delays. And those delays need to be handled on board.
+    CPSW_CONTROL_RMII_REF_CLK_OE_N  8   To select the rmii_ref_clk from PAD or from MSS_RCM. 0: clock will be from mss_rcm through IO internal loopback 1: will be from
+    CPSW_CONTROL_PORT1_MODE_SEL     2:0 Port 1 Interface
+                                            00 = GMII/MII
+                                            01 = RMII
+                                            10 = RGMII
+                                            11 = Not Supported
 */
 
 #define MSS_CPSW_CONTROL_PORT_MODE_MII                                   (0x0U)
@@ -348,6 +344,7 @@ static void EnetBoard_setMacPort2IOExpanderCfg(void)
 }
 %}
 
+% if (cpsw_instance.macAddrConfig === "Auto Assign" ) {
 void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
@@ -387,6 +384,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
         EnetAppUtils_assert(false);
     }
 }
+% }
 
 /*
  * Get ethernet board id

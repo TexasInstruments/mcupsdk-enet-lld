@@ -104,7 +104,7 @@ const enet_cpsw_system_config = {
         },
         {
             name: "macAddrConfig",
-            description: "MAC address to set in the driver. 'Auto Assign shall select the address automatiically from EEPROM and/or EFUSES. 'Manual Entry' will allow to input MAC address",
+            description: "MAC address to set in the driver. 'Auto Assign shall select the address automatically from EEPROM and/or EFUSES. 'Manual Entry' will allow to input MAC address from sysconfig",
             displayName: "MAC Address Assignment Method",
             onChange:function (inst, ui) {
                 if(inst.macAddrConfig === "Auto Assign") {
@@ -125,7 +125,7 @@ const enet_cpsw_system_config = {
         },
         {
             name: "macAddrList",
-            description: "MAC address to set in the driver. Enter MAC address. Seperate multiple MAC address with comma. Eg.: aa:bb:bb:cc:dd:ee,01:22:33:aa:bb:ee",
+            description: "MAC address to set in the driver. Enter MAC address. Seperate multiple MAC address with comma. Eg.: aa:bb:bb:cc:dd:ee,01:22:33:aa:bb:ee. Note: Each device on the network must have a unique MAC address. Duplicate MAC addresses will cause network conflicts.",
             displayName: "MAC Address List",
             default: "70:ff:76:1d:ec:f2,70:ff:76:1d:ec:e3",
             hidden: true,

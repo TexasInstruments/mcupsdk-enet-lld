@@ -235,6 +235,7 @@ bool EnetApp_isPortLinked(Enet_Handle hEnet)
 }
 %}
 
+% if (instance.macAddrConfig === "Auto Assign" ) {
 int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                                    uint32_t maxMacEntries,
                                    uint32_t *pAvailMacEntries)
@@ -263,6 +264,7 @@ int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
 
     return status;
 }
+% }
 
 static void EnetApp_initializeMacAddrPool()
 {
@@ -281,13 +283,13 @@ static void EnetApp_initializeMacAddrPool()
 %       console.log(macAddrList)
 %       for (let macAddrIdx = 0; macAddrIdx < macAddrList.length; macAddrIdx++) {
 %           let macAddr = macAddrList[macAddrIdx].split(':');
-       macAddrList[filledMacEntries][0] = 0x`macAddr[0]`;
-       macAddrList[filledMacEntries][1] = 0x`macAddr[1]`;
-       macAddrList[filledMacEntries][2] = 0x`macAddr[2]`;
-       macAddrList[filledMacEntries][3] = 0x`macAddr[3]`;
-       macAddrList[filledMacEntries][4] = 0x`macAddr[4]`;
-       macAddrList[filledMacEntries][5] = 0x`macAddr[5]`;
-       filledMacEntries++;
+        macAddrList[filledMacEntries][0] = 0x`macAddr[0]`;
+        macAddrList[filledMacEntries][1] = 0x`macAddr[1]`;
+        macAddrList[filledMacEntries][2] = 0x`macAddr[2]`;
+        macAddrList[filledMacEntries][3] = 0x`macAddr[3]`;
+        macAddrList[filledMacEntries][4] = 0x`macAddr[4]`;
+        macAddrList[filledMacEntries][5] = 0x`macAddr[5]`;
+        filledMacEntries++;
 
 %       }
 % }
