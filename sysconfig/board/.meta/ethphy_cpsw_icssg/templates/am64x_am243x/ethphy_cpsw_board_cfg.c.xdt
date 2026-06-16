@@ -26,7 +26,9 @@
 #include <networking/enet/core/src/phy/enetphy_priv.h>
 #include <generic_phy.h>
 #include <drivers/gpio.h>
+%if (cpsw_instance.macAddrConfig  !== "Manual Entry"){
 #include <board/eeprom.h>
+%}
 #include "ti_board_open_close.h"
 #include "ti_drivers_open_close.h"
 #include "ti_drivers_config.h"
@@ -316,7 +318,8 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
 {
-%if (cpsw_instance.disableOnboardMAC == false) {
+    *pAvailMacEntries = 0;
+%if (cpsw_instance.macAddrConfig !== "Manual Entry" && cpsw_instance.disableOnboardMAC == false) {
     int32_t status = ENET_SOK;
     uint32_t macAddrCnt;
     uint32_t i;

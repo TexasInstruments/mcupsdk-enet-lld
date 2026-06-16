@@ -25,7 +25,6 @@
 #include <kernel/dpl/AddrTranslateP.h>
 #include <networking/enet/core/src/phy/enetphy_priv.h>
 #include <drivers/gpio.h>
-#include <board/eeprom.h>
 #include "ti_board_open_close.h"
 #include "ti_drivers_config.h"
 #include <board/ioexp/ioexp_tca6424.h>
@@ -43,8 +42,12 @@
 #define IO_EXPANDER_PORT0_DIR_REG (0x0CU)
 #define IO_EXPANDER_I2C_ADDR (0x22U)
 #define ENET_BOARD_NUM_MACADDR_MAX (4U)
+
+%if (cpsw_instance.macAddrConfig  !== "Manual Entry"){
+#include <board/eeprom.h>
 #define I2C_EEPROM_MAC_CTRL_OFFSET (0x40)
 #define I2C_EEPROM_MAC_DATA_OFFSET (0x42)
+%}
 
 static void EnetBoard_setMacPortIOExpanderCfg(void);
 
@@ -275,6 +278,8 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
 {
+    *pAvailMacEntries = 0;
+%if (cpsw_instance.macAddrConfig  !== "Manual Entry"){
     int32_t status = ENET_SOK;
     uint32_t macAddrCnt;
     uint32_t i;
@@ -309,6 +314,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
         EnetAppUtils_print("EnetBoard_getMacAddrList Failed - IDK not present\n");
         EnetAppUtils_assert(false);
     }
+%}
 }
 
 #define IO_EXP1_ADDR    0x22U

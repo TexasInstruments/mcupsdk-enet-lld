@@ -26,7 +26,6 @@
 #include <networking/enet/core/src/phy/enetphy_priv.h>
 #include <generic_phy.h>
 #include <drivers/gpio.h>
-#include <board/eeprom.h>
 #include "ti_board_open_close.h"
 #include "ti_drivers_config.h"
 #include <board/ioexp/ioexp_tca6424.h>
@@ -52,12 +51,17 @@
 #define IO_EXPANDER_PHY1_RST_IO_IDX    (8*0 + 1)
 #define IO_EXPANDER_PHY2_RST_IO_IDX    (8*0 + 0)
 #define ENET_BOARD_NUM_MACADDR_MAX (4U)
+
+%if (cpsw_instance.macAddrConfig  !== "Manual Entry"){
+#include <board/eeprom.h>
 #define I2C_EEPROM_MAC_CTRL_OFFSET (0x40)
 #define I2C_EEPROM_MAC_DATA_OFFSET (0x42)
 
 #define EEPROM_DATATYPE_MAC_OFFSET    (0x38)
 #define EEPROM_DATATYPE_MAC           (0x13)
 #define EEPROM_MAC_ADDR_START         (EEPROM_DATATYPE_MAC_OFFSET+5)
+%}
+
 #define IS_MAC_ADDR_VALID(mac)        (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
 
 static void EnetBoard_setMacPortIOExpanderCfg(void);
@@ -290,6 +294,8 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                               uint32_t maxMacEntries,
                               uint32_t *pAvailMacEntries)
 {
+    *pAvailMacEntries = 0;
+%if (cpsw_instance.macAddrConfig  !== "Manual Entry"){
     /* For AM62D-EVM, the MAC Addresses are programmed on the Addon cards.
        Check if the EEPROM Instances are added, if yes, read from those instances. */
     int32_t status;
@@ -361,6 +367,7 @@ void EnetBoard_getMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
     }
 
     *pAvailMacEntries = macFilledCount;
+%}
 }
 
 static void EnetBoard_setMacPortIOExpanderCfg(void)
