@@ -30,7 +30,7 @@
 #define ENET_SYSCFG_TX_CHANNELS_NUM       (`Number(module.getTxChannelCount(instance))`U)
 #define ENET_SYSCFG_RING_MON_NUM          (3U) /*Not appicable for LCDMA devices*/
 /* Time stamp source config */
-%if (common.getSocName() === "am62dx" || common.getSocName() === "am275x")
+%if (common.getSocName() === "am62dx" || common.getSocName() === "am275x" || common.getSocName() === "am283x")
 %{
 #define ENET_SYSCFG_TIMESTAMP_SOURCE       (`instance.TimestampSource`)
 %}
