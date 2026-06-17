@@ -266,7 +266,7 @@ int32_t EnetUdma_retrievePkts(EnetPer_Handle hPer,
 
     EnetQueue_initQ(pFromHwQueue);
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
 
@@ -407,7 +407,7 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62X)  || defined (SOC_J722S) || defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X)  || defined (SOC_J722S) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -744,7 +744,7 @@ int32_t EnetUdma_submitSingleRxPkt(EnetPer_Handle hPer,
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -890,7 +890,7 @@ int32_t EnetUdma_submitSingleTxPkt(EnetPer_Handle hPer,
     EnetUdma_SGListEntry *sgList;
 
     isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
     isExposedRing = 0U;
 #endif
     if (isExposedRing == true)
@@ -1869,7 +1869,7 @@ int32_t EnetUdma_ringEnqueue(Udma_RingHandle hUdmaRing,
         EnetUdma_CpswHpdDesc *pHpdDesc = (EnetUdma_CpswHpdDesc *)pDmaDesc;
         CSL_UdmapCppi5HMPD *pHDesc = &pHpdDesc->hostDesc;
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X) || defined (SOC_J722S) || defined(SOC_AM62LX)
         isExposedRing = 0U;
 #endif
         physDescPtr = (uint64_t)EnetUtils_virtToPhys((void *)&pHpdDesc->hostDesc, NULL);
@@ -1962,7 +1962,7 @@ int32_t EnetUdma_ringDequeue(Udma_RingHandle hUdmaRing,
     if ((pDmaDesc != NULL) && (hUdmaRing != NULL))
     {
         isExposedRing = (Udma_ringGetMode(hUdmaRing) == ENET_UDMA_RING_MODE_RING);
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X)|| defined(SOC_AM62X) || defined (SOC_J722S) ||defined(SOC_AM62LX)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62X) || defined (SOC_J722S) ||defined(SOC_AM62LX)
         isExposedRing = 0U;
 #endif
         if (isExposedRing == true)
@@ -2371,7 +2371,7 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
 #if (ENET_SCICLIENT_AVAILABLE == 1)
     /* Global event can be used when number of events is too large
      * (i.e. large number of RX flows and/or TX channels) */
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S)
+#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined (SOC_J722S)
         evtPrms.masterEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL ;
 #else
         evtPrms.controllerEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL;

@@ -2660,7 +2660,7 @@ uint32_t EnetUdma_getMappedRxChStartIdx(EnetUdma_RxChObj *pRxCh)
 #if (defined(SOC_AM62AX)) || (defined(SOC_AM62PX)) || (defined(SOC_AM62DX))|| defined(SOC_AM62X)
     /*TODO!: Remove hard coding of numbers */
     chStartIdx = (gUdmaRxMappedChRingAttributes[index].startFreeRing - 99U);
-#elif (defined(SOC_AM275X)) || defined(SOC_AM62LX) || defined(SOC_J722S)
+#elif (defined(SOC_AM275X)) || defined(SOC_AM283X) || defined(SOC_AM62LX) || defined(SOC_J722S)
     chStartIdx = CSL_DMSS_PKTDMA_RX_CHANS_CPSW_START + 1;
 #else
     chStartIdx = (gUdmaRxMappedChRingAttributes[index].startFreeRing - 112U);
