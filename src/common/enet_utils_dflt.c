@@ -111,7 +111,7 @@ static void EnetUtilsDflt_print(const char *fmt, ...)
 static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
                                              void *appData)
 {
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined (SOC_J722S)
+#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined (SOC_J722S)
     /*!TODO: have SOC_virtToPhy function for AM62AX */
     return ((uint64_t)(virtAddr));
 #else
@@ -122,7 +122,7 @@ static uint64_t EnetUtilsDflt_virtToPhysDflt(const void *virtAddr,
 static void *EnetUtilsDflt_physToVirtDflt(uint64_t phyAddr,
                                           void *appData)
 {
-#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined (SOC_J722S)
+#if defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined (SOC_J722S)
     /*!TODO: have SOC_phyToVirt function for AM62AX */
     return ((void*)(phyAddr));
 #else
