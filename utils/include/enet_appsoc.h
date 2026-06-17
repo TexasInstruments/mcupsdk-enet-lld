@@ -48,7 +48,7 @@
 
 #if defined(SOC_AM273X)|| defined(SOC_AWR294X) || defined (SOC_AM263X) || defined (SOC_AM263PX) || defined(SOC_AM261X)
 /* Nothing to include */
-#elif defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined (SOC_J722S) || defined(SOC_AM62LX)
+#elif defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined (SOC_J722S) || defined(SOC_AM62LX)
 #include <utils/V3/enet_appsoc.h>
 #else
 #error "Unsupported platform"

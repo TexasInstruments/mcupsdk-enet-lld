@@ -172,7 +172,7 @@ int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint
 {
     int32_t  status = ENET_SOK;
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined(SOC_AM275X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM62LX) || defined(SOC_AM275X) || defined(SOC_AM283X)
     EnetAppUtils_assert(enetType == ENET_CPSW_3G);
 #endif
 
