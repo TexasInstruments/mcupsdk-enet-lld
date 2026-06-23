@@ -195,18 +195,14 @@ void EnetBoard_getMiiConfig(EnetMacPort_Interface *mii, const Enet_MacPort macPo
         case `macPort`:
 %}
 %   let interfaceMode = cpsw_instance.phyToMacInterfaceMode;
-%   if (interfaceMode == "RGMII") {
+%   if (interfaceMode == "MSS_RGMII") {
             mii->layerType      = ENET_MAC_LAYER_GMII;
             mii->variantType    = ENET_MAC_VARIANT_FORCED;
             mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
-%   } else if (interfaceMode == "RMII") {
+%   } else if (interfaceMode == "MSS_RMII") {
             mii->layerType      = ENET_MAC_LAYER_MII;
             mii->variantType  = ENET_MAC_VARIANT_NONE;
             mii->sublayerType   = ENET_MAC_SUBLAYER_REDUCED;
-%   } else if (interfaceMode == "MII") {
-            mii->layerType      = ENET_MAC_LAYER_MII;
-            mii->variantType  = ENET_MAC_VARIANT_NONE;
-            mii->sublayerType   = ENET_MAC_SUBLAYER_STANDARD;
 %   }
             break;
         default:
