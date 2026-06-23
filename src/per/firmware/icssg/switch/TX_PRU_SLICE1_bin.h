@@ -2,7 +2,7 @@
  * TX_PRU_SLICE1_bin.h
  * 
  * 
- * Copyright (c) 2024-26, Texas Instruments Incorporated
+ * Copyright (c) 2017-2026, Texas Instruments Incorporated
  * All rights reserved not granted herein.
  *
  * Limited License.
@@ -54,7 +54,7 @@
  *
  */
 
-const uint32_t TX_PRU_SLICE1_b00_Swt[]= {
+const unsigned int TX_PRU_SLICE1_b00_Swt[]= {
 0x32000000,
 0x2effbd80,
 0x2f140192,
@@ -1294,4 +1294,4 @@ const uint32_t TX_PRU_SLICE1_b00_Swt[]= {
 0x48435449,
 0x2e32305f,
 0x312e3230,
-0x30302e36 };
+0x31302e36 };

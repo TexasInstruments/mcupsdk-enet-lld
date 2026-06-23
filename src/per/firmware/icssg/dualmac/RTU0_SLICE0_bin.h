@@ -2,7 +2,7 @@
  * RTU0_SLICE0_bin.h
  * 
  * 
- * Copyright (c) 2024-26, Texas Instruments Incorporated
+ * Copyright (c) 2017-2026, Texas Instruments Incorporated
  * All rights reserved not granted herein.
  *
  * Limited License.
@@ -54,7 +54,7 @@
  *
  */
 
-const uint32_t RTU0_SLICE0_b00_DMac[]= {
+const unsigned int RTU0_SLICE0_b00_DMac[]= {
 0x32000000,
 0x2effbd80,
 0x2f310094,
@@ -103,7 +103,7 @@ const uint32_t RTU0_SLICE0_b00_DMac[]= {
 0x240000c0,
 0x24040880,
 0x248302c1,
-0x24007681,
+0x24007881,
 0x240019c2,
 0x24830682,
 0x2eff898d,
@@ -882,4 +882,4 @@ const uint32_t RTU0_SLICE0_b00_DMac[]= {
 0x48435449,
 0x2e32305f,
 0x312e3230,
-0x30302e36 };
+0x31302e36 };
