@@ -218,6 +218,8 @@ int32_t EnetBoard_setupPorts(EnetBoard_EthPort *ethPorts,
     DebugP_assert(numEthPorts == 1);
     DebugP_assert(ethPorts->mii.sublayerType == ENET_MAC_SUBLAYER_REDUCED);
 
+    ClockP_sleep(1);
+    
     switch(ethPorts->macPort)
     {
         case ENET_MAC_PORT_1:
