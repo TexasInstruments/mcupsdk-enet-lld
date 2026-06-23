@@ -164,7 +164,7 @@ typedef struct EnetApp_Obj_s
     bool usingDfltSched;
 
     /* Number of MAC ports being used */
-    uint32_t macPortNum;
+    uint8_t macPortNum;
 
     /* This core's id */
     uint32_t coreId;

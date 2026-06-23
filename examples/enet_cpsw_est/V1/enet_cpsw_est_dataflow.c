@@ -64,7 +64,7 @@
 #define ENETAPP_TEST_TX_ETHERTYPE                    (0x88B5U)
 
 /* TX test packet length (total length including L2 header is 64) */
-#define ENETAPP_TEST_TX_PKT_PAYLOAD_LEN              (42U)
+#define ENETAPP_TEST_TX_PKT_PAYLOAD_LEN              (64U)
 
 /* ========================================================================== */
 /*                         Structure Declarations                             */

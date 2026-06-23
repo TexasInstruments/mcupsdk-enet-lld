@@ -70,8 +70,6 @@ static void EnetApp_showMenu(void);
 /* Use this array to select the ports that will be used in the test */
 static EnetApp_TestParams testParams =
 {
-    .enetType = ENET_CPSW_3G,
-    .instId   = 0U,
     .portTestParams =
     {
         {
@@ -107,7 +105,7 @@ static EnetApp_TestParams testParams =
             },
         },
     },
-    .macPortNum = 1U,
+    .macPortNum = 2U,
 };
 
 static EnetTas_ControlList testLists[] =
@@ -246,33 +244,40 @@ void EnetApp_mainTask(void *args)
     uint64_t tsVal;
     uint32_t i;
     int32_t status = ENET_SOK;
-    Enet_Type enetType;
-    uint32_t instId;
+    bool macPortFound = false;
 
     DebugP_log("==========================\r\n");
     DebugP_log("       CPSW EST Test      \r\n");
     DebugP_log("==========================\r\n");
-
-    EnetApp_getEnetInstInfo(CONFIG_ENET_CPSW0, &enetType,
-                            &instId);
 
     /* Initialize test config */
     memset(&gEnetApp, 0, sizeof(gEnetApp));
     gEnetApp.run = true;
     gEnetApp.enableTs = false;
 
-    /* Copy test params */
-    gEnetApp.enetType    = testParams.enetType;
-    gEnetApp.instId      = testParams.instId;
-    gEnetApp.macPortNum  = testParams.macPortNum;
+    EnetApp_getEnetInstInfo(CONFIG_ENET_CPSW0, &gEnetApp.enetType,
+                            &gEnetApp.instId);
 
-    for (i = 0U; i < gEnetApp.macPortNum; i++)
+    EnetApp_getEnetInstMacInfo(gEnetApp.enetType,
+                                gEnetApp.instId,
+                                &gEnetApp.macPort[0],
+                                &gEnetApp.macPortNum);
+
+    EnetAppUtils_assert(gEnetApp.macPortNum == 1);
+
+    for (i=0;i<testParams.macPortNum;i++)
     {
-        gEnetApp.macPort[i] = testParams.portTestParams[i].macPort;
-        memcpy(&gEnetApp.tasControlList[i],
-               &testParams.portTestParams[i].tasControlList,
-               sizeof(EnetTas_ControlList));
+        if(testParams.portTestParams[i].macPort == gEnetApp.macPort[0])
+        {
+            macPortFound = true;
+            memcpy(&gEnetApp.tasControlList[0],
+                &testParams.portTestParams[i].tasControlList,
+                sizeof(EnetTas_ControlList));
+            break;
+        }
     }
+
+    EnetAppUtils_assert(macPortFound == true);
 
     /* Init driver */
     EnetApp_init();
