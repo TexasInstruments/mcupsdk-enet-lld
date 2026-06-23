@@ -11,14 +11,14 @@ function enet_cpsw_macport_validate(inst, report) {
 
     if (inst.macport1LinkSpeed != "ENET_SPEED_AUTO")
     {
-        if (inst.macport1LinkDuplexity != "ENET_DUPLEX_AUTO")
+        if (inst.macport1LinkDuplexity == "ENET_DUPLEX_AUTO")
         {
             report.logError("MAC port 1 Duplexity should be AUTO if Speed is set so", inst);
         }
     }
     if (inst.macport1LinkDuplexity != "ENET_DUPLEX_AUTO")
     {
-        if (inst.macport1LinkSpeed != "ENET_SPEED_AUTO")
+        if (inst.macport1LinkSpeed == "ENET_SPEED_AUTO")
         {
             report.logError("MAC port 1 Speed should be AUTO if Duplexity is set so", inst);
         }
