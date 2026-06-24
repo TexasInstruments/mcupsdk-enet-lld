@@ -49,10 +49,10 @@
 #include "ti_enet_dma_init.h"
 #include <utils/include/enet_appsoc.h>
 
-#if defined(SOC_AM275X) || defined(SOC_AM283X)
+%if (soc == "am275x" || soc == "am283x"){
 #include <drivers/pinmux.h>
 void EnetApp_fixPinmux();
-#endif
+%}
 
 #define ENETAPP_PHY_STATEHANDLER_TASK_PRIORITY        (7U)
 #define ENETAPP_PHY_STATEHANDLER_TASK_STACK           (3 * 1024)
@@ -311,9 +311,9 @@ void EnetApp_driverInit()
 
     status = EnetMem_init();
     EnetAppUtils_assert(ENET_SOK == status);
-    #if defined(SOC_AM275X) || defined(SOC_AM283X)
+%if (soc == "am275x" || soc == "am283x"){
     EnetApp_fixPinmux();
-    #endif
+%}
 }
 
 void EnetApp_driverDeInit()
@@ -1114,7 +1114,8 @@ void EnetApp_initPhyStateHandlerTask(EventP_Object *pEvent)
 `system.getTemplate('./enet_init_udma.c.xdt')()`
 %}
 
-#if defined(SOC_AM275X) || defined(SOC_AM283X) /* This is a workaround, will be removed. */
+%if (soc == "am275x" || soc == "am283x"){
+/* This is a workaround, will be removed. */
 void EnetApp_fixPinmux()
 {
     Pinmux_PerCfg_t gPinMuxRGMII[] = {
@@ -1275,4 +1276,4 @@ void EnetApp_fixPinmux()
     Pinmux_config(gPinMuxRGMII, PINMUX_DOMAIN_ID_MAIN);
     Pinmux_config(i2cPinmuxConfig, PINMUX_DOMAIN_ID_MAIN);
 }
-#endif
+%}
