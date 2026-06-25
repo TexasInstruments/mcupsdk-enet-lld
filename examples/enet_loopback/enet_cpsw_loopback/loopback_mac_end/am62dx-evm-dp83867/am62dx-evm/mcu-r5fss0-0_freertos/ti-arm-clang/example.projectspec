@@ -11,7 +11,7 @@
 
     <project
         title="Enet Cpsw Loopback Mac End"
-        name = "enet_cpsw_loopback_mac_end_am62dx-evm-dp83867_mcu-r5fss0-0_freertos_ti-arm-clang"
+        name = "enet_cpsw_loopback_mac_end_am62dx-evm-dp83867_am62dx-evm_mcu-r5fss0-0_freertos_ti-arm-clang"
         products="sysconfig;com.ti.MCU_PLUS_SDK_AMXXX"
         configurations="
             Debug,
@@ -113,17 +113,17 @@
             "
         ></configuration>
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
-        <file path="../../../../loopback_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../loopback_cfg.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../loopback_test.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../loopback_test.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../loopback_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../loopback_main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../loopback_common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../loopback_common.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../loopback_cfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../loopback_cfg.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
