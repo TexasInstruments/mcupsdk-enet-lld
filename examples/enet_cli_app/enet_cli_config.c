@@ -803,8 +803,14 @@ static int32_t EnetConfig_addClassifierEntry(
      */
     setPolicerInArgs.policerMatch = *matchPrms;
     setPolicerInArgs.threadIdEn = true;
+#if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
     /* The thread ID ranges from 1 to 8, rxCh passed to this function ranges from 0 to 7 */
+    setPolicerInArgs.threadId = rxCh+1;
+#elif defined (ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA)
     setPolicerInArgs.threadId = rxCh;
+#else
+#error "Hostport DMA Type Undefined"
+#endif
     setPolicerInArgs.peakRateInBitsPerSec = pir;
     setPolicerInArgs.commitRateInBitsPerSec = cir;
     ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerInArgs, &setPolicerOutArgs);
@@ -832,8 +838,15 @@ static int32_t EnetConfig_remClassifierEntry(
     /* If rxCh is specified, remove all classifier associated to the channel */
     if (rxCh != -1 && status == ENET_SOK)
     {
+        uint32_t threadId;
+#if defined (ENET_SOC_HOSTPORT_DMA_TYPE_UDMA)
         /* The thread ID ranges from 1 to 8, rxCh passed to this function ranges from 0 to 7 */
-        uint32_t threadId = rxCh + 1;
+        threadId = rxCh+1;
+#elif defined (ENET_SOC_HOSTPORT_DMA_TYPE_CPDMA)
+        threadId = rxCh;
+#else
+#error "Hostport DMA Type Undefined"
+#endif
         ENET_IOCTL_SET_IN_ARGS(&prms, &threadId);
         ENET_IOCTL(EnetCli_inst.hEnet, EnetCli_inst.coreId,
                 CPSW_ALE_IOCTL_DEL_ALL_POLICER_THREADID, &prms, status);
