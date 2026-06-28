@@ -671,6 +671,7 @@ static void Lwip2Enet_initTxObj(Enet_Type enetType, uint32_t instId, uint32_t ch
         pTx->hCh = outArgs.hTxChannel;
         Lwip2Enet_assert(pTx->hCh != NULL);
         pTx->disableEvent = outArgs.disableEvent;
+        Lwip2Enet_setTxCsumOffloadTarget(pTx, ENET_CSUM_OFFLOAD_TARGET_CPSW_DMA);
 
         pTx->stats.freeAppPktEnq = outArgs.numPackets;
 
@@ -758,7 +759,7 @@ void Lwip2Enet_sendTxPackets(Lwip2Enet_netif_t* pInterface, const Enet_MacPort m
                 pCurrDmaPacket->appPriv    = hPbufPkt;
                 pCurrDmaPacket->txPortNum  = macPort;
                 pCurrDmaPacket->node.next  = NULL;
-                pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
+                pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt, hTx->csumOffloadTarget);
 
                 ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
                 EnetQueue_enq(&txSubmitQ, &(pCurrDmaPacket->node));
@@ -1013,7 +1014,7 @@ static void Lwip2Enet_pbufQ2PktInfoQ(Lwip2Enet_TxObj *tx,
 
             pCurrDmaPacket->node.next = NULL;
             pCurrDmaPacket->txPortNum  = macPort;
-            pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt);
+            pCurrDmaPacket->chkSumInfo = LWIPIF_LWIP_getChkSumInfo(hPbufPkt, tx->csumOffloadTarget);
 
             ENET_UTILS_COMPILETIME_ASSERT(offsetof(EnetDma_Pkt, node) == 0U);
             EnetQueue_enq(pDmaPktInfoQ, &(pCurrDmaPacket->node));
@@ -1717,4 +1718,9 @@ void Lwip2Enet_setRxNotifyCallback(Lwip2Enet_RxHandle hRx, Enet_notify_t *pRxPkt
 void Lwip2Enet_setTxNotifyCallback(Lwip2Enet_TxHandle hTx, Enet_notify_t *pTxPktNotify)
 {
     hTx->txPktNotify = *pTxPktNotify;
+}
+
+void Lwip2Enet_setTxCsumOffloadTarget(Lwip2Enet_TxHandle hTx, uint32_t target)
+{
+    hTx->csumOffloadTarget = target;
 }

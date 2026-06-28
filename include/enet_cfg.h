@@ -120,6 +120,18 @@ extern "C" {
 #define ENET_CFG_TRACE_DISABLE_INFOSTRING           (ENET_ON)
 #endif
 
+/* --------------------------------------------------------------------------*/
+/*                     Checksum Offload Target constants                     */
+/* --------------------------------------------------------------------------*/
+
+/*! \brief TX checksum offload target: CPSW DMA hardware.
+ *  Pass to Lwip2Enet_setTxCsumOffloadTarget() to use CPSW DMA descriptor-based offload. */
+#define ENET_CSUM_OFFLOAD_TARGET_CPSW_DMA           (0U)
+
+/*! \brief TX checksum offload target: PRU firmware.
+ *  Pass to Lwip2Enet_setTxCsumOffloadTarget() to delegate checksum computation to PRU FW. */
+#define ENET_CSUM_OFFLOAD_TARGET_PRU_FW             (1U)
+
 /* ========================================================================== */
 /*                         Structures and Enums                               */
 /* ========================================================================== */

@@ -491,7 +491,9 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                         WORD_0       = txTsId - TX Timestamp Cookie
                         WORD_1[31]   = TX Timestamp enable
                         WORD_1[30]   = HSR Tag Insertion Enable
-                        WORD_1[29:0] = Unused
+                        WORD_1[29]   = Transport (TCP/UDP) Checksum Offload Enable (PRU FW)
+                        WORD_1[28]   = IP Header Checksum Offload Enable (PRU FW)
+                        WORD_1[27:0] = Unused
                         WORD_2       = Unused
                         WORD_3       = Unused
                     */
@@ -520,6 +522,26 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
                     else
                     {
                         ENETUDMA_CPPIPSI_SET_LRE_TAGEN(*dmaExtendedPktInfo, 0U);
+                    }
+
+                    /* Propagate PRU FW transport (TCP/UDP) checksum offload flag into WORD_1 */
+                    if (dmaPkt->chkSumInfo & ENETDMA_TXCSUMINFO_PRU_CSUM_OFFLOAD_MASK)
+                    {
+                        ENETUDMA_CPPIPSI_SET_CSUM_OFFLOAD(*dmaExtendedPktInfo, 1U);
+                    }
+                    else
+                    {
+                        ENETUDMA_CPPIPSI_SET_CSUM_OFFLOAD(*dmaExtendedPktInfo, 0U);
+                    }
+
+                    /* Propagate PRU FW IP header checksum offload flag into WORD_1 */
+                    if (dmaPkt->chkSumInfo & ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_MASK)
+                    {
+                        ENETUDMA_CPPIPSI_SET_IP_CSUM_OFFLOAD(*dmaExtendedPktInfo, 1U);
+                    }
+                    else
+                    {
+                        ENETUDMA_CPPIPSI_SET_IP_CSUM_OFFLOAD(*dmaExtendedPktInfo, 0U);
                     }
                 }
                 else    /* CPSW specific: */

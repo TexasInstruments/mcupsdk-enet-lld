@@ -192,6 +192,22 @@ extern "C" {
 #define ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, val) \
                 ENET_FINS(chkSumInfo, ENETDMA_TXCSUMINFO_CHKSUM_BYTECNT, val)
 
+/* PRU FW checksum offload flags used in dmaPkt->chkSumInfo when the runtime
+ * offload target is ENET_CSUM_OFFLOAD_TARGET_PRU_FW (set via Lwip2Enet_setTxCsumOffloadTarget).
+ * These are distinct from the CPSW FHOST encoding above. */
+
+/*! \brief PRU FW TX checksum offload - transport (TCP/UDP) flag bit shift. */
+#define ENETDMA_TXCSUMINFO_PRU_CSUM_OFFLOAD_SHIFT       (0U)
+
+/*! \brief PRU FW TX checksum offload - transport (TCP/UDP) flag bit mask. */
+#define ENETDMA_TXCSUMINFO_PRU_CSUM_OFFLOAD_MASK        (((uint32_t)0x1U) << ENETDMA_TXCSUMINFO_PRU_CSUM_OFFLOAD_SHIFT)
+
+/*! \brief PRU FW TX checksum offload - IP header flag bit shift. */
+#define ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_SHIFT    (1U)
+
+/*! \brief PRU FW TX checksum offload - IP header flag bit mask. */
+#define ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_MASK     (((uint32_t)0x1U) << ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_SHIFT)
+
 /*!
  * \brief Enet DMA statistics configuration.
  *

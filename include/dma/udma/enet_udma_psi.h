@@ -201,6 +201,18 @@ extern "C" {
 /*! \brief CPPI RX Control Word 1 - LRE Tagging Enable bit mask. */
 #define ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN_MASK            (((uint32_t) 0x1U) << ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN_SHIFT)
 
+/*! \brief CPPI RX Control Word 1 - Transport (TCP/UDP) Checksum Offload Enable bit shift (PRU FW). */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_CSUM_OFFLOAD_SHIFT        (29U)
+
+/*! \brief CPPI RX Control Word 1 - Transport (TCP/UDP) Checksum Offload Enable bit mask (PRU FW). */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_CSUM_OFFLOAD_MASK         (((uint32_t)0x1U) << ENETUDMA_CPPI_RXCTRL_WORD1_CSUM_OFFLOAD_SHIFT)
+
+/*! \brief CPPI RX Control Word 1 - IP Header Checksum Offload Enable bit shift (PRU FW). */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_IP_CSUM_OFFLOAD_SHIFT     (28U)
+
+/*! \brief CPPI RX Control Word 1 - IP Header Checksum Offload Enable bit mask (PRU FW). */
+#define ENETUDMA_CPPI_RXCTRL_WORD1_IP_CSUM_OFFLOAD_MASK      (((uint32_t)0x1U) << ENETUDMA_CPPI_RXCTRL_WORD1_IP_CSUM_OFFLOAD_SHIFT)
+
 /* -------------------- CPPI RX Control Word 2 definitions --------------------- */
 
 /*! \brief CPPI RX Control Word 2 - Checksum Byte Count bit shift. */
@@ -280,6 +292,14 @@ extern "C" {
 /*! \brief Set LRE Tagging enable bit into CPPI RX Control Word. 1 */
 #define ENETUDMA_CPPIPSI_SET_LRE_TAGEN(tsInfo, val) \
                 ENET_FINS(tsInfo, ENETUDMA_CPPI_RXCTRL_WORD1_LRE_TAGEN, val)
+
+/*! \brief Set Transport (TCP/UDP) Checksum Offload enable bit into CPPI RX Control Word 1 (PRU FW). */
+#define ENETUDMA_CPPIPSI_SET_CSUM_OFFLOAD(word1, val) \
+                ENET_FINS(word1, ENETUDMA_CPPI_RXCTRL_WORD1_CSUM_OFFLOAD, val)
+
+/*! \brief Set IP Header Checksum Offload enable bit into CPPI RX Control Word 1 (PRU FW). */
+#define ENETUDMA_CPPIPSI_SET_IP_CSUM_OFFLOAD(word1, val) \
+                ENET_FINS(word1, ENETUDMA_CPPI_RXCTRL_WORD1_IP_CSUM_OFFLOAD, val)
 
 /*! \brief Set domain value into CPPI RX Control Word 1. */
 #define ENETUDMA_CPPIPSI_SET_DOMAIN(tsInfo, val) \

@@ -80,7 +80,7 @@ void LWIPIF_LWIP_input(Lwip2Enet_RxObj *rx,
                         struct pbuf *hPbufPacket);
 
 
-uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p);
+uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p, uint32_t csumOffloadTarget);
 
 bool LWIPIF_LWIP_UdpLiteValidateChkSum(struct pbuf *p);
 
