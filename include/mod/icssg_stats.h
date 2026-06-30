@@ -274,141 +274,217 @@ typedef struct IcssgStats_MacPort_s
  */
 typedef struct IcssgStats_Pa_s
 {
-    /*! Number of valid bytes sent by RX PRU to Host on PSI. Valid only for Switch mode */
+    /*! Number of valid bytes sent by RX PRU to host via PSI.
+     *  Valid in Switch mode only.
+     */
     uint64_t hostRxByteCnt;
 
-    /*! Number of valid bytes copied by RTU0 to TX queues. Valid only for Switch mode */
+    /*! Number of valid bytes copied by RTU to TX queues.
+     *  Valid in Switch mode only.
+     */
     uint64_t hostTxByteCnt;
 
-    /*! Number of valid bytes sent by Rx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid bytes sent by RX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 0. */
     uint64_t hostRxByteCntMacSlice0;
 
-    /*! Number of valid bytes sent by Rx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid bytes sent by RX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 1. */
     uint64_t hostRxByteCntMacSlice1;
 
-    /*! Number of valid bytes sent by Tx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid bytes sent by TX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 0. */
     uint64_t hostTxByteCntMacSlice0;
 
-    /*! Number of valid bytes sent by Tx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid bytes sent by TX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 1. */
     uint64_t hostTxByteCntMacSlice1;
 
-    /*! Number of valid packets sent by RX PRU to Host on PSI. Valid only for Switch mode */
+    /*! Number of valid packets sent by RX PRU to host via PSI.
+     *  Valid in Switch mode only. */
     uint32_t hostRxPktCnt;
 
-    /*! Number of valid packets copied by RTU0 to TX queues. Valid only for Switch mode */
+    /*! Number of valid packets copied by RTU to TX queues.
+     *  Valid in Switch mode only. */
     uint32_t hostTxPktCnt;
 
-    /*! Number of valid packets sent by Rx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid packets sent by RX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 0. */
     uint32_t hostRxPktCntMacSlice0;
 
-    /*! Number of valid packets sent by Rx PRU to Host on PSI. Valid only for Dualmac mode */
+    /*! Number of valid packets sent by RX PRU to host via PSI.
+     *  Valid in DualMAC mode only. Port 1. */
     uint32_t hostRxPktCntMacSlice1;
 
-    /*! Number of valid packets copied by RTU0 to Tx queues. Valid only for Dualmac mode */
+    /*! Number of valid packets copied by RTU to TX queues.
+     *  Valid in DualMAC mode only. Port 0. */
     uint32_t hostTxPktCntMacSlice0;
 
-    /*! Number of valid packets copied by RTU1 to Tx queues. Valid only for Dualmac mode */
+    /*! Number of valid packets copied by RTU to TX queues.
+     *  Valid in DualMAC mode only. Port 1. */
     uint32_t hostTxPktCntMacSlice1;
 
-    /*! PRU diagnostic error counter which increments when RTU0 drops a locally
-     *  injected packet due to port disabled or rule violation */
+    /*! Diagnostic error counter — increments when RTU drops a locally injected packet
+     *  due to port being disabled or a rule violation. Port 0. */
     uint32_t rtu0PktDroppedSlice0;
 
-    /*! PRU diagnostic error counter which increments when RTU1 drops a locally
-     *  injected packet due to port disabled or rule violation */
+    /*! Diagnostic error counter — increments when RTU drops a locally injected packet
+     *  due to port being disabled or a rule violation. Port 1. */
     uint32_t rtu0PktDroppedSlice1;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 0 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q0Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 1 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q1Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 2 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q2Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 3 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q3Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 4 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q4Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 5 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q5Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 6 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q6Overflow;
 
-    /*! Port1 TX Q Overflow Counter */
+    /*! TX queue 7 overflow counter for Port 1.
+     *  Valid in Switch mode only.
+     */
     uint32_t port1Q7Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 0 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q0Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 1 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q1Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 2 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q2Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 3 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q3Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 4 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q4Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 5 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q5Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 6 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q6Overflow;
 
-    /*! Port2 TX Q Overflow Counter */
+    /*! TX queue 7 overflow counter for Port 2.
+     *  Valid in Switch mode only.
+     */
     uint32_t port2Q7Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 0 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ0Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 1 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ1Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 2 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ2Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 3 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ3Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 4 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ4Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 5 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ5Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 6 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ6Overflow;
 
-    /*! Host TX Q Overflow Counter */
+    /*! Host egress queue 7 overflow counter.
+     *  Reserved, not currently used.
+     */
     uint32_t hostQ7Overflow;
 
-    /*! Host Egress Q (Pre-emptible) Overflow Counter */
+    /*! Host RX pre-emptible egress queue overflow counter.
+     *  Valid in Switch mode only.
+     */
     uint32_t hostEgressQPreOverflow;
 
-    /*! Incremented if a packet is dropped at PRU0 because of a rule violation */
+    /*! Increments when a packet is dropped at PRU due to a rule violation.
+     *  Port 0.
+     */
     uint32_t droppedPktSlice0;
 
-    /*! Incremented if a packet is dropped at PRU1 because of a rule violation */
+    /*! Increments when a packet is dropped at PRU due to a rule violation.
+     *  Port 1.
+     */
     uint32_t droppedPktSlice1;
 
-    /*! Incremented if there was a CRC error or Min/Max frame error at PRU0 */
+    /*! Increments when a CRC error or Min/Max frame size error is detected.
+     *  Port 0.
+     */
     uint32_t rxErrorSlice0;
 
-    /*! Incremented if there was a CRC error or Min/Max frame error at PRU1 */
+    /*! Increments when a CRC error or Min/Max frame size error is detected.
+     *  Port 1.
+     */
     uint32_t rxErrorSlice1;
 
-    /*! RTU0 diagnostic counter increments when RTU detects Data Status invalid condition */
+    /*! RTU diagnostic counter — increments when RTU detects a Data Status invalid condition.
+     *  Port 0.
+     */
     uint32_t rxEofRtuDsInvalidSlice0;
 
-    /*! RTU1 diagnostic counter increments when RTU detects Data Status invalid condition */
+    /*! RTU diagnostic counter — increments when RTU detects a Data Status invalid condition.
+     *  Port 1.
+     */
     uint32_t rxEofRtuDsInvalidSlice1;
 
     /*! Counter for packets dropped via NRT TX Port1 */
@@ -423,157 +499,169 @@ typedef struct IcssgStats_Pa_s
     /*! Counter for packets with TS flag dropped via NRT TX Port2 */
     uint32_t txPort2TsDroppedPkt;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      * due to port is disabled */
     uint32_t infPortDisabledSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      * due to port is disabled */
     uint32_t infPortDisabledSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to SA violation */
     uint32_t infSavSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to SA violation */
     uint32_t infSavSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to SA black listed */
     uint32_t infSaBlSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to SA black listed */
     uint32_t infSaBlSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to port blocked and not a special frame */
     uint32_t infPortBlockedSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to port blocked and not a special frame */
     uint32_t infPortBlockedSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to tagged */
     uint32_t infAftDropTaggedSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to tagged */
     uint32_t infAftDropTaggedSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to priority tagged */
     uint32_t infAftDropPrioTaggedSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      * due to priority tagged */
     uint32_t infAftDropPrioTaggedSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to untagged */
     uint32_t infAftDropNoTagSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to untagged */
     uint32_t infAftDropNoTagSlice1;
 
-    /*! PRU0 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 0 diagnostic error counter which increments when RX frame is dropped
      *  due to port not member of VLAN */
     uint32_t infAftDropNotMemberSlice0;
 
-    /*! PRU1 diagnostic error counter which increments when RX frame is dropped
+    /*! Port 1 diagnostic error counter which increments when RX frame is dropped
      *  due to port not member of VLAN */
     uint32_t infAftDropNotMemberSlice1;
 
     /*! PRU diagnostic error counter which increments when an entry couldn't be learned */
     uint32_t fdbNoSpaceToLearn;
 
-    /*! PRU0 Bad fragment Error Counter */
+    /*! Port 0 bad fragment error counter */
     uint32_t preemptBadFragSlice0;
 
-    /*! PRU1 Bad fragment Error Counter */
+    /*! Port 1 bad fragment error counter */
     uint32_t preemptBadFragSlice1;
 
-    /*! PRU0 Fragment assembly Error Counter */
+    /*! Port 0 fragment assembly error counter */
     uint32_t preemptAsmErrSlice0;
 
-    /*! PRU1 Fragment assembly Error Counter */
+    /*! Port 1 fragment assembly error counter */
     uint32_t preemptAsmErrSlice1;
 
-    /*! PRU0 Fragment count in TX */
+    /*! Port 0 fragment count in TX */
     uint32_t preemptFragCntTxSlice0;
 
-    /*! PRU1 Fragment count in TX */
+    /*! Port 1 fragment count in TX */
     uint32_t preemptFragCntTxSlice1;
 
-    /*! PRU0 Assembly Completed */
+    /*! Port 0 assembly completed */
     uint32_t preemptAsmOkSlice0;
 
-    /*! PRU1 Assembly Completed */
+    /*! Port 1 assembly completed */
     uint32_t preemptAsmOkSlice1;
 
-    /*! PRU0 Fragments received */
+    /*! Port 0 fragments received */
     uint32_t preemptFragCntRxSlice0;
 
-    /*! PRU1 Fragments received */
+    /*! Port 1 fragments received */
     uint32_t preemptFragCntRxSlice1;
 
-    /*! PRU0 diagnostic error counter which increments if EOF task is scheduled
-     *  without seeing RX_B1 */
+    /*! PRU diagnostic error counter — increments if EOF task is scheduled
+     *  without receiving RX_B1. Port 0.
+     */
     uint32_t rxEofShortFrameErrSlice0;
 
-    /*! PRU1 diagnostic error counter which increments if EOF task is scheduled
-     *  without seeing RX_B1 */
+    /*! PRU diagnostic error counter — increments if EOF task is scheduled
+     *  without receiving RX_B1. Port 1.
+     */
     uint32_t rxEofShortFrameErrSlice1;
 
-    /*! PRU0 diagnostic counter which increments when frame if droped due to
-     *  Early EOF received in B0 */
+    /*! Diagnostic counter — increments when a frame is dropped
+     *  due to early EOF received in the B0 buffer. Port 0.
+     */
     uint32_t rxB0DropEarlyEoFSlice0;
 
-    /*! PRU1 diagnostic counter which increments when frame if droped due to
-     *  Early EOF received in B0 */
+    /*! Diagnostic counter — increments when a frame is dropped
+     *  due to early EOF received in the B0 buffer. Port 1.
+     */
     uint32_t rxB0DropEarlyEoFSlice1;
 
-    /*! Tx PRU0 diagnostic counter which increments when frame is cut off to
-     *  prevent packet size > 2000B */
+    /*! TX diagnostic counter — increments when a frame is cut off
+     *  to prevent packet size exceeding 2000 bytes. Port 0.
+     */
     uint32_t txJumboFrameCutoffSlice0;
 
-    /*! Tx PRU1 diagnostic counter which increments when frame is cut off to
-     *  prevent packet size > 2000B */
+    /*! TX diagnostic counter — increments when a frame is cut off
+     *  to prevent packet size exceeding 2000 bytes. Port 1.
+     */
     uint32_t txJumboFrameCutoffSlice1;
 
-    /*! Rx PRU0 diagnostic counter which increments when express frame is received
-     *  in same queue as previous fragment */
+    /*! Diagnostic counter — increments when an express frame is received
+     *  in the same queue as a previous fragment. Port 0.
+     */
     uint32_t rxExpFragQDropSlice0;
 
-    /*! Rx PRU1 diagnostic counter which increments when express frame is received
-     *  in same queue as previous fragment */
+    /*! Diagnostic counter — increments when an express frame is received
+     *  in the same queue as a previous fragment. Port 1.
+     */
     uint32_t rxExpFragQDropSlice1;
 
-    /*! RX fifo overrun for slice 0 */
+    /*! RX FIFO overrun — increments when the L1 receive FIFO is full because firmware
+     *  cannot process frames fast enough; the arriving frame is dropped. Port 0.
+     */
     uint32_t rxFifoOverRunSlice0;
 
-    /*! RX fifo overrun for slice 1 */
+    /*! RX FIFO overrun — increments when the L1 receive FIFO is full because firmware
+     *  cannot process frames fast enough; the arriving frame is dropped. Port 1.
+     */
     uint32_t rxFifoOverRunSlice1;
 
-    /*! Host Egress Q (Pre-emptible) Overflow Counter */
+    /*! Host RX pre-emptible egress queue overflow counter — DualMAC mode only Port 0 */
     uint32_t hostEgrsQPreOvrFloMacSlice0;
 
-    /*! Host Egress Q (Pre-emptible) Overflow Counter */
+    /*! Host RX pre-emptible egress queue overflow counter — DualMAC mode only Port 1 */
     uint32_t hostEgrsQPreOvrFloMacSlice1;
 
-    /*! Host Egress Q (Express) Overflow Counter */
+    /*! Host RX express egress queue overflow counter — DualMAC mode only Port 0 */
     uint32_t hostEgrsQExpOvrFloMacSlice0;
 
-    /*! Host Egress Q (Express) Overflow Counter */
+    /*! Host RX express egress queue overflow counter — DualMAC mode only Port 1 */
     uint32_t hostEgrsQExpOvrFloMacSlice1;
 
-    /*! Cut-through packet Counter for slice 0 */
+    /*! Cut-through packet counter for port 0 */
     uint32_t cutThroughPacketSlice0;
 
-    /*! Cut-through packet Counter for slice 1 */
+    /*! Cut-through packet counter for port 1 */
     uint32_t cutThroughPacketSlice1;
 } IcssgStats_Pa;
 

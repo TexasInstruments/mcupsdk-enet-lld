@@ -107,30 +107,77 @@ extern "C" {
 /*                         Structures and Enums                               */
 /* ========================================================================== */
 
-/* Command types to program ICSSG R30 register, internal to enet driver */
+/*!
+ * \brief R30 command types used to program the ICSSG firmware via DMEM.
+ */
 typedef enum IcssgUtils_ioctlR30Cmd_e
 {
+    /*! Disable port — all ingress and egress traffic dropped */
     ICSSG_UTILS_R30_CMD_DISABLE = 0,
+
+    /*! Block port — STP blocking state, ingress and egress data traffic dropped.
+     *  Special/management frames (e.g. PTP, LLDP) whose MAC address has the FDB block bit set are
+     *  still accepted and forwarded to the host. */
     ICSSG_UTILS_R30_CMD_BLOCK,
+
+    /*! Forward port — STP forwarding state, ingress and egress traffic forwarded with MAC learning enabled */
     ICSSG_UTILS_R30_CMD_FORWARD,
+
+    /*! Forward port without MAC learning — traffic forwarded but source MAC addresses are not learned into FDB */
     ICSSG_UTILS_R30_CMD_FORWARD_WO_LEARNING,
+
+    /*! Accept all frames — equivalent to promiscuous mode */
     ICSSG_UTILS_R30_CMD_ACCEPT_ALL,
+
+    /*! Accept 802.1Q VLAN-tagged frames only — priority-tagged (VID=0) and untagged frames are dropped. */
     ICSSG_UTILS_R30_CMD_ACCEPT_TAGGED,
+
+    /*! Accept untagged (no 802.1Q header) and priority-tagged (802.1Q header with VID=0) frames only */
     ICSSG_UTILS_R30_CMD_ACCEPT_UNTAGGED_N_PRIO,
+
+    /*! Trigger TAS gate list switchover — from ICSS shared RAM to ICSS BSRAM and activates the new list */
     ICSSG_UTILS_R30_CMD_TAS_TRIGGER,
+
+    /*! Enable TAS gate scheduling */
     ICSSG_UTILS_R30_CMD_TAS_ENABLE,
+
+    /*! Reset TAS gate list state */
     ICSSG_UTILS_R30_CMD_TAS_RESET,
+
+    /*! Disable TAS gate scheduling */
     ICSSG_UTILS_R30_CMD_TAS_DISABLE,
+
+    /*! Enable unicast flooding — unknown unicast frames are sent to the host and forwarded out the other port */
     ICSSG_UTILS_R30_CMD_UC_FLOODING_ENABLE,
+
+    /*! Disable unicast flooding */
     ICSSG_UTILS_R30_CMD_UC_FLOODING_DISABLE,
+
+    /*! Enable multicast flooding — unknown unicast frames are sent to the host and forwarded out the other port */
     ICSSG_UTILS_R30_CMD_MC_FLOODING_ENABLE,
+
+    /*! Disable multicast flooding */
     ICSSG_UTILS_R30_CMD_MC_FLOODING_DISABLE,
+
+    /*! Enable frame preemption on TX — note: preemption is enabled by default on RX */
     ICSSG_UTILS_R30_CMD_PREMPT_TX_ENABLE,
+
+    /*! Disable frame preemption on TX */
     ICSSG_UTILS_R30_CMD_PREMPT_TX_DISABLE,
+
+    /*! Enable VLAN-aware mode — switch respects VLAN FDB flags (FID_C1) for ingress/egress decisions */
     ICSSG_UTILS_R30_CMD_VLAN_AWARE_ENABLE,
+
+    /*! Disable VLAN-aware mode */
     ICSSG_UTILS_R30_CMD_VLAN_AWARE_DISABLE,
+
+    /*! Enable HSR tag removal and host duplicate discard offload — not applicable for Dual EMAC or Generic Switch mode. */
     ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_ENABLE,
+
+    /*! Disable HSR tag removal and host duplicate discard offload — not applicable for Dual EMAC or Generic Switch mode. */
     ICSSG_UTILS_R30_CMD_HSR_TAG_REM_AND_HOST_DD_DISABLE,
+
+    /*! Total number of R30 commands */
     ICSSG_UTILS_MAX_COMMANDS
 } IcssgUtils_ioctlR30Cmd;
 
