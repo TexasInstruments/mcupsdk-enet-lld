@@ -59,9 +59,6 @@ mmu_armv84.vAddr     = 0x82060000;
 mmu_armv84.pAddr     = 0x82060000;
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
-enet_cpsw1.macOnlyEn_hostPort             = true;
-enet_cpsw1.macOnlyEn_macPort1             = true;
-enet_cpsw1.macOnlyEn_macPort2             = true;
 enet_cpsw1.LargePoolPktCount              = 40;
 enet_cpsw1.PktInfoOnlyEnable              = true;
 enet_cpsw1.PktInfoOnlyCount               = 8;

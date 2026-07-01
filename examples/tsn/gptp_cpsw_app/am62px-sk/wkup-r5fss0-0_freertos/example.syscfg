@@ -100,9 +100,6 @@ mpu_armv76.attributes   = "Device";
 mpu_armv76.allowExecute = false;
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
-enet_cpsw1.macOnlyEn_hostPort             = true;
-enet_cpsw1.macOnlyEn_macPort1             = true;
-enet_cpsw1.macOnlyEn_macPort2             = true;
 enet_cpsw1.enableTsOut                    = true;
 enet_cpsw1.macAddrConfig                  = "Manual Entry";
 enet_cpsw1.macAddrList                    = "70:ff:76:1d:ec:f2,70:ff:76:1d:ec:e3,70:ff:76:1d:ec:d4,70:ff:76:1d:ec:c5";

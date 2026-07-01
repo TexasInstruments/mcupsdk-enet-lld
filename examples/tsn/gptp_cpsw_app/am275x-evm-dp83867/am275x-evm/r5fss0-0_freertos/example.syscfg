@@ -76,9 +76,6 @@ mpu_armv75.baseAddr = 0x72400000;
 mpu_armv75.size     = 21;
 
 enet_cpsw1.$name                          = "CONFIG_ENET_CPSW0";
-enet_cpsw1.macOnlyEn_hostPort             = true;
-enet_cpsw1.macOnlyEn_macPort1             = true;
-enet_cpsw1.macOnlyEn_macPort2             = true;
 enet_cpsw1.mdioPollEnMask                 = [];
 enet_cpsw1.hostportRxMtu                  = 1522;
 enet_cpsw1.macport1RxMtu                  = 1522;
