@@ -249,7 +249,7 @@ function getTxDmaCfgInitArray(module, instances, indent) {
                                     "\n\t\t.hUdmaDrv        = " + "NULL" + "," +
                                     "\n\t\t.enetType        = " + matchInstId.enetType + "," +
                                     "\n\t\t.instId          = " + matchInstId.instId + "," +
-                                    "\n\t\t.perMode         = " + (instances[i].derivedMode === "NONE" ? "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE" : "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_ENABLE") + "," +
+                                    "\n\t\t.perMode         = " + ((instances[i].derivedMode === "HSR" || instances[i].derivedMode === "PRP") ? "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_ENABLE" : "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE") + "," +
                                  "\n\t}";
             const numSpaces = 4 + indent;
             let txChCfgInitStrFormat = txChCfgInitStr.replace(/\t/g, ' '.repeat(numSpaces));

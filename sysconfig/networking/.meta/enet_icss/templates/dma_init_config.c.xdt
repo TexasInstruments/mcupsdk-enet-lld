@@ -27,7 +27,7 @@ const EnetApp_DmaCfg g_EnetApp_dmaChParams =
             .useGlobalEvt = `(module.getChannelConfig(instances[i], "TX", j)).useGlobalEvt`,
             .enetType        = `module.getInstId(instances[i]).enetType`,
             .instId          = `module.getInstId(instances[i]).instId`,
-            .perMode         = `instances[i].derivedMode === "NONE" ? "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE" : "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_ENABLE"`
+            .perMode         = `(instances[i].derivedMode === "HSR" || instances[i].derivedMode === "PRP") ? "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_ENABLE" : "ENET_UDMA_ICSSG_LRE_TX_OFFLOAD_DISABLE"`
         },
     %arrIndex = arrIndex + 1;
 %}
