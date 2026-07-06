@@ -616,6 +616,12 @@ void EnetApp_getTxDmaHandle(uint32_t enetTxDmaChId,
 int32_t EnetAppUtils_addAllPortMcastMembership(Enet_Handle hEnet,
                                                uint8_t *mcastMacAddr);
 
+int32_t EnetAppUtils_addHostPortMcastMembership(Enet_Handle hEnet,
+                                                uint8_t *mcastMacAddr);
+
+int32_t EnetAppUtils_delHostPortMcastMembership(Enet_Handle hEnet,
+                                                uint8_t *mcastMacAddr);
+
 int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet,
                                                uint8_t *mcastMacAddr);
 

@@ -849,6 +849,7 @@ static int AddVlan(Enet_Handle hEnet, uint32_t coreId, uint32_t vlanId)
     return status;
 }
 
+/* Called by the PTP stack to set up the ALE classifier for multicast receive. */
 int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr,
                                 uint32_t vlanId, uint32_t ethType, uint32_t rxFlowIdx)
 {
@@ -859,10 +860,13 @@ int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dst
 
     if (IsMacAddrSet(dstMacAddr) == true)
     {
-        status = EnetAppUtils_addAllPortMcastMembership(hEnet, dstMacAddr);
+        /* PTP packets are sent as directed packets to both ports; incoming gPTP multicast frames
+         * (01:80:C2:00:00:0E) from neighbours must not be L2-forwarded to switching ports, so
+         * only the host port is added to the ALE multicast group. */
+        status = EnetAppUtils_addHostPortMcastMembership(hEnet, dstMacAddr);
         if (status != ENET_SOK)
         {
-            EnetAppUtils_print("%s:EnetAppUtils_addAllPortMcastMembership failed: %d\r\n",
+            EnetAppUtils_print("%s:EnetAppUtils_addHostPortMcastMembership failed: %d\r\n",
                                "sitara-cpsw", status);
         }
     }

@@ -1303,6 +1303,49 @@ int32_t EnetAppUtils_addAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcast
     return status;
 }
 
+int32_t EnetAppUtils_addHostPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacAddr)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    CpswAle_SetMcastEntryInArgs setMcastInArgs;
+    uint32_t setMcastOutArgs;
+    uint32_t coreId = EnetSoc_getCoreId();
+
+    memset(&setMcastInArgs, 0, sizeof(setMcastInArgs));
+    memcpy(&(setMcastInArgs.addr.addr[0U]), &(mcastMacAddr[0U]), sizeof(setMcastInArgs.addr.addr));
+    setMcastInArgs.info.super = false;
+    setMcastInArgs.info.numIgnBits = 0U;
+    setMcastInArgs.info.fwdState = CPSW_ALE_FWDSTLVL_FWD;
+    setMcastInArgs.info.portMask = CPSW_ALE_HOST_PORT_MASK;
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &setMcastInArgs, &setMcastOutArgs);
+    ENET_IOCTL(hEnet, coreId, CPSW_ALE_IOCTL_ADD_MCAST, &prms, status);
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("failed to add host-port mcast entry to ALE table: %d\n", status);
+    }
+    return status;
+}
+
+int32_t EnetAppUtils_delHostPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacAddr)
+{
+    int32_t status = ENET_SOK;
+    Enet_IoctlPrms prms;
+    CpswAle_MacAddrInfo delMcastInArgs;
+    uint32_t coreId = EnetSoc_getCoreId();
+
+    memset(&delMcastInArgs, 0, sizeof(delMcastInArgs));
+    memcpy(&(delMcastInArgs.addr[0U]), &(mcastMacAddr[0U]), sizeof(delMcastInArgs.addr));
+    delMcastInArgs.vlanId = 0U;
+    ENET_IOCTL_SET_IN_ARGS(&prms, &delMcastInArgs);
+    ENET_IOCTL(hEnet, coreId, CPSW_ALE_IOCTL_REMOVE_ADDR, &prms, status);
+    if (status != ENET_SOK)
+    {
+        EnetAppUtils_print("failed to remove host-port mcast entry from ALE table: %d\n", status);
+    }
+
+    return status;
+}
+
 int32_t EnetAppUtils_delAllPortMcastMembership(Enet_Handle hEnet, uint8_t *mcastMacAddr)
 {
     int32_t status = ENET_SOK;
