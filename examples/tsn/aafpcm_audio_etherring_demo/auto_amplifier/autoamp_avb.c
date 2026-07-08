@@ -115,6 +115,7 @@ gpioStateMachine gTalkerGpioSm = {
 };
 
 SemaphoreP_Object gStartAudioSem;
+static uint32_t gRxPduBuf[APP_MCASP_SHM_BLOCK_SIZE / sizeof(uint32_t)];
 
 /* ========================================================================== */
 /*                          Function Declerations                             */
@@ -131,6 +132,7 @@ void CentralAafTask_waitCrf(void);
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
+
 static void init_conl2_params(const avtp_pcm_conf* conf, conl2_basic_conparas_t *bcp)
 {
     bcp->vid       = conf->vlanID;
@@ -207,17 +209,16 @@ void aaf_audio_task(void *args)
 
         uint64_t gptpTime = 0;
         // uint64_t gptpTime = gptpmasterclock_getts64()/UB_USEC_NS;
-        uint8_t buffer[192];
+        uint8_t buffer[192] __attribute__((aligned(4)));
         uint16_t reqSize = 6*4*8;
         (void)talker;
         (void)gptpTime;
-        /* Read from Shared Memory. */
-        shm_read(shm_core_r5f, shmRxHandle, buffer, &reqSize);
+        /* Read from SHM, swapping little-endian McASP samples to big-endian per IEEE 1722. */
+        shm_bswap_read(shm_core_r5f, shmRxHandle, buffer, &reqSize, SHM_BSWAP_32BIT);
         if (reqSize != 0)
         {
             uint32_t sampleSize = 6;
             gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)buffer, sampleSize);
-
             aaf_avtpc_talker_write(talker, gptpTime , buffer, (int)reqSize);
         }
     }
@@ -247,9 +248,11 @@ static int autoamp_avtpRxPacketCallback(uint8_t *payload, int plsize,
         {
             // DebugP_log("Receiving Stream Idx %d\r\n", cbinfo->u.rsdinfo.stream_id[7]);
             uint32_t sampleSize = 6;
-            gpio_sm_spin(&gListenerGpioSm, (uint32_t*)payload, sampleSize);
-            /* Process the Payload, i.e. Send to C7x/McASP. */
-            shm_write(shm_core_r5f, shmTxHandle, payload, plsize);
+            /* payload is not guaranteed 4-byte aligned; copy to aligned buffer for gpio. */
+            memcpy(gRxPduBuf, payload, plsize);
+            gpio_sm_spin(&gListenerGpioSm, gRxPduBuf, sampleSize);
+            /* Write to SHM, swapping big-endian IEEE 1722 samples to little-endian for McASP. */
+            shm_bswap_write(shm_core_r5f, shmTxHandle, gRxPduBuf, plsize, SHM_BSWAP_32BIT);
         }
     }
     return status;

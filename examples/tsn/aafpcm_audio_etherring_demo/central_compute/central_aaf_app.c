@@ -149,7 +149,8 @@ SemaphoreP_Object gStartAudioSem;
 
 static rxStream_cb gStreamCbArr[256] = {0};
 
-static uint8_t gTxCopyBuffer[APP_MCASP_SHM_BLOCK_SIZE];
+static uint8_t gTxCopyBuffer[APP_MCASP_SHM_BLOCK_SIZE] __attribute__((aligned(4)));
+static uint32_t gRxPduBuf[APP_MCASP_SHM_BLOCK_SIZE / sizeof(uint32_t)];
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
@@ -168,6 +169,7 @@ void CentralAafTask_waitCrf(void);
 /* ========================================================================== */
 /*                          Function Definitions                              */
 /* ========================================================================== */
+
 static void init_conl2_params(const avtp_pcm_conf* conf, conl2_basic_conparas_t *bcp)
 {
     bcp->vid       = conf->vlanID;
@@ -264,8 +266,8 @@ void aaf_audio_task(void *args)
         }
         uint16_t reqSize = pduSize;
 
-        /* Read from Shared Memory. */
-        shm_read(shm_core_r5f, shmRxHandle, gTxCopyBuffer, &reqSize);
+        /* Read from SHM, swapping little-endian McASP samples to big-endian per IEEE 1722. */
+        shm_bswap_read(shm_core_r5f, shmRxHandle, gTxCopyBuffer, &reqSize, SHM_BSWAP_32BIT);
         if (reqSize != 0)
         {
             gpio_sm_spin(&gTalkerGpioSm, (uint32_t*)gTxCopyBuffer, samplesPerPdu);
@@ -354,10 +356,11 @@ static int pushToMcasp1(uint8_t *payload, int plsize,
     }
     else
     {
-        gpio_sm_spin(&gListenerGpioSm, (uint32_t*)payload, samplesPerPdu);
-
-        /* Process the Payload, i.e. Send to C7x/McASP. */
-        shm_write(shm_core_r5f, shmTxHandle, payload, plsize);
+        /* payload is not guaranteed 4-byte aligned; copy to aligned buffer for gpio. */
+        memcpy(gRxPduBuf, payload, plsize);
+        gpio_sm_spin(&gListenerGpioSm, gRxPduBuf, samplesPerPdu);
+        /* Write to SHM, swapping big-endian IEEE 1722 samples to little-endian for McASP. */
+        shm_bswap_write(shm_core_r5f, shmTxHandle, gRxPduBuf, plsize, SHM_BSWAP_32BIT);
     }
 
     return status;

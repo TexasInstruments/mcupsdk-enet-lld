@@ -38,6 +38,10 @@
 #include <kernel/dpl/CacheP.h>
 #include "shm_cirbuf.h"
 
+#if defined(__ARM_ARCH_7R__)
+#include "arm_acle.h"
+#endif
+
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
@@ -71,7 +75,31 @@ typedef struct ShdMemObj_t
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-/*! None */
+#if defined(__ARM_ARCH_7R__)
+/* Use single-cycle ARM REV / REV16 instructions on R5F */
+static inline uint32_t shm_swap32(uint32_t v)
+{
+    return __rev(v);
+}
+
+static inline uint16_t shm_swap16(uint16_t v)
+{
+    return (uint16_t)__rev16(v);
+}
+#else
+static inline uint32_t shm_swap32(uint32_t v)
+{
+	return ((v & 0x000000FFU) << 24U) |
+	       ((v & 0x0000FF00U) <<  8U) |
+	       ((v & 0x00FF0000U) >>  8U) |
+	       ((v & 0xFF000000U) >> 24U);
+}
+
+static inline uint16_t shm_swap16(uint16_t v)
+{
+	return (uint16_t)(((v & 0x00FFU) << 8U) | ((v & 0xFF00U) >> 8U));
+}
+#endif
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -204,6 +232,134 @@ ShdMemStatus shm_write(shm_core coreId, shm_handle hShmMem, void* pData, uint32_
 		} else {
 			obj->writeErrorFull++;
 		}
+	}
+
+	return status;
+}
+
+ShdMemStatus shm_bswap_write(shm_core coreId, shm_handle hShmMem, const void *pData, uint32_t dataLen, shm_bswap_width width)
+{
+	ShdMemStatus    status  = SHDMEM_STATUS_OK;
+	ShdMemObj      *obj     = (ShdMemObj *)hShmMem;
+	uint32_t        wrtAddr = obj->writeAddr;
+	uint32_t        endAddr = obj->endAddr;
+
+	if ((dataLen % (uint32_t)width) != 0U)
+	{
+		return SHDMEM_STATUS_ERR_BAD_PKT;
+	}
+
+	if (obj->header == SHDMEM_MAGIC)
+	{
+		if (wrtAddr + dataLen <= endAddr)
+		{
+			uint8_t       *dst   = (uint8_t *)shm_PhysicalToLocalAddr(coreId, wrtAddr);
+			const uint8_t *src   = (const uint8_t *)pData;
+			uint32_t       count = dataLen / (uint32_t)width;
+			uint32_t       i;
+			for (i = 0U; i < count; i++)
+			{
+				if (width == SHM_BSWAP_32BIT)
+				{
+					uint32_t v;
+					memcpy(&v, src + i * 4U, 4U);
+					v = shm_swap32(v);
+					memcpy(dst + i * 4U, &v, 4U);
+				}
+				else
+				{
+					uint16_t v;
+					memcpy(&v, src + i * 2U, 2U);
+					v = shm_swap16(v);
+					memcpy(dst + i * 2U, &v, 2U);
+				}
+			}
+			CacheP_wb((void *)dst, dataLen, CacheP_TYPE_ALL);
+			wrtAddr += dataLen;
+			if (wrtAddr == endAddr)
+			{
+				wrtAddr = obj->startAddr;
+			}
+			obj->writeAddr = wrtAddr;
+			CacheP_wb((void *)&obj->writeAddr, sizeof(wrtAddr), CacheP_TYPE_ALL);
+		}
+		else
+		{
+			obj->writeErrorFull++;
+		}
+	}
+
+	return status;
+}
+
+ShdMemStatus shm_bswap_read(shm_core coreId, shm_handle hShmMem, uint8_t *pData, uint16_t *pDataLen, shm_bswap_width width)
+{
+	ShdMemStatus    status    = SHDMEM_STATUS_OK;
+	ShdMemObj      *obj       = (ShdMemObj *)hShmMem;
+	uint32_t        rqtSize   = *pDataLen;
+	uint32_t        readAddr  = obj->readAddr;
+	uint32_t        wrtAddr   = obj->writeAddr;
+	uint32_t        endAddr   = obj->endAddr;
+	uint32_t        dataSize  = obj->totalBufSize;
+	uint32_t        dataAvail = 0U;
+
+	if ((rqtSize % (uint32_t)width) != 0U)
+	{
+		*pDataLen = 0;
+		return SHDMEM_STATUS_ERR_BAD_PKT;
+	}
+
+	if (wrtAddr >= readAddr)
+	{
+		dataAvail = wrtAddr - readAddr;
+	}
+	else
+	{
+		dataAvail = dataSize - readAddr - wrtAddr;
+	}
+
+	if ((obj->header == SHDMEM_MAGIC) && (dataAvail >= rqtSize))
+	{
+		if ((readAddr + rqtSize) <= endAddr)
+		{
+			const uint8_t *src   = (const uint8_t *)shm_PhysicalToLocalAddr(coreId, readAddr);
+			uint32_t       count = rqtSize / (uint32_t)width;
+			uint32_t       i;
+			for (i = 0U; i < count; i++)
+			{
+				if (width == SHM_BSWAP_32BIT)
+				{
+					uint32_t v;
+					memcpy(&v, src + i * 4U, 4U);
+					v = shm_swap32(v);
+					memcpy(pData + i * 4U, &v, 4U);
+				}
+				else
+				{
+					uint16_t v;
+					memcpy(&v, src + i * 2U, 2U);
+					v = shm_swap16(v);
+					memcpy(pData + i * 2U, &v, 2U);
+				}
+			}
+			readAddr  += rqtSize;
+			*pDataLen  = (uint16_t)rqtSize;
+			if (readAddr == endAddr)
+			{
+				readAddr = obj->startAddr;
+			}
+			obj->readAddr = readAddr;
+			CacheP_wb((void *)&obj->readAddr, sizeof(readAddr), CacheP_TYPE_ALL);
+		}
+		else
+		{
+			obj->readErrorEmpty++;
+		}
+	}
+	else
+	{
+		*pDataLen = 0;
+		obj->readErrCnt++;
 	}
 
 	return status;

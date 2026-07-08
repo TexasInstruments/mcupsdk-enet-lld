@@ -107,6 +107,38 @@ uint32_t shm_metadata_overhead();
  */
 ShdMemStatus shm_write(shm_core coreId, shm_handle hBuff, void* pData, uint32_t dataLen);
 
+/**
+ * \brief  Element width selector for shm_bswap_read / shm_bswap_write.
+ */
+typedef enum shm_bswap_width_t
+{
+    SHM_BSWAP_16BIT = 2U, /*!< Byte-swap each 16-bit element */
+    SHM_BSWAP_32BIT = 4U, /*!< Byte-swap each 32-bit element */
+} shm_bswap_width;
+
+/**
+ * \brief  Write data to shared memory, byte-swapping each element.
+ *         The source pointer pData may be unaligned.
+ *
+ * \param  coreId   Core identifier (shm_core_r5f or shm_core_c7x)
+ * \param  hBuff    Handle of shared memory object
+ * \param  pData    Source data (may be unaligned)
+ * \param  dataLen  Bytes to write; must be a multiple of width
+ * \param  width    Element width: SHM_BSWAP_16BIT or SHM_BSWAP_32BIT
+ */
+ShdMemStatus shm_bswap_write(shm_core coreId, shm_handle hBuff, const void *pData, uint32_t dataLen, shm_bswap_width width);
+
+/**
+ * \brief  Read data from shared memory, byte-swapping each element.
+ *
+ * \param  coreId    Core identifier (shm_core_r5f or shm_core_c7x)
+ * \param  hBuff     Handle of shared memory object
+ * \param  pData     Destination buffer
+ * \param  pDataLen  In: requested size in bytes; out: bytes actually read
+ * \param  width     Element width: SHM_BSWAP_16BIT or SHM_BSWAP_32BIT
+ */
+ShdMemStatus shm_bswap_read(shm_core coreId, shm_handle hBuff, uint8_t *pData, uint16_t *pDataLen, shm_bswap_width width);
+
 
 #ifdef __cplusplus
 }
