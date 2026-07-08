@@ -1,34 +1,35 @@
 /*
- * Copyright (c) 2017 Simon Goldschmidt
- * All rights reserved.
+ *  Copyright (c) Texas Instruments Incorporated 2026
  *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
  *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
+ *    Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ *    Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the
+ *    distribution.
  *
- * This file is part of the lwIP TCP/IP stack.
+ *    Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
  *
- * Author: Simon Goldschmidt <goldsimon@gmx.de>
- *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 
 /* ========================================================================== */
 /*                             Include Files                                  */
@@ -57,8 +58,6 @@
 #define MAX_IPV4_STRING_LEN (16U)
 
 static const uint8_t APP_CLIENT_TX_MSG1[] = "Greetings from Texas Instruments!";
-
-static const uint8_t APP_CLIENT_TX_MSG2[] = "This is a sample message";
 
 #if !LWIP_SOCKET
 #error "LWIP_SOCKET is not set! enable socket support in LwIP"
@@ -118,7 +117,7 @@ static void AppSocket_simpleClient(void* pArg)
     struct sockaddr* pAddr = pArg;
     int32_t sock = -1, ret = 0;
     struct timeval opt = {0}, tv = {0};
-    fd_set readset = {0}, writeset = {0}, errset = {0};
+    fd_set readset = {0}, errset = {0};
 
     for (uint32_t i = 0; i < APP_SOCKET_NUM_ITERATIONS; i++)
     {
@@ -165,18 +164,24 @@ static void AppSocket_simpleClient(void* pArg)
         EnetAppUtils_print("Message to host: %s\r\n", APP_CLIENT_TX_MSG1);
 
         FD_ZERO(&readset);
-        FD_ZERO(&writeset);
         FD_ZERO(&errset);
         FD_SET(sock, &readset);
-        FD_SET(sock, &writeset);
         FD_SET(sock, &errset);
         tv.tv_sec = 1;
         tv.tv_usec = 0;
-        ret = lwip_select(sock + 1, &readset, &writeset, &errset, &tv);
-        if (ret <= 0)
+        ret = lwip_select(sock + 1, &readset, NULL, &errset, &tv);
+        if (ret < 0)
         {
             ret = lwip_close(sock);
             EnetAppUtils_print("ERR: socket select failed\r\n");
+            continue;
+        }
+
+        if (ret == 0)
+        {
+            /* Timeout */
+            ret = lwip_close(sock);
+            EnetAppUtils_print("ERR: Socket Timeout \r\n");
             continue;
         }
         EnetAppUtils_assert(!FD_ISSET(sock, &errset));
@@ -193,18 +198,6 @@ static void AppSocket_simpleClient(void* pArg)
             gRxDataBuff[ret] = '\0';
             EnetAppUtils_print("Message from host: %s\r\n", gRxDataBuff);
         }
-        if (FD_ISSET(sock, &writeset))
-        {
-            ret = lwip_write(sock, APP_CLIENT_TX_MSG2, sizeof(APP_CLIENT_TX_MSG2));
-            if (ret != sizeof(APP_CLIENT_TX_MSG2))
-            {
-                 ret = lwip_close(sock);
-                 EnetAppUtils_print("ERR: socket write failed!\r\n");
-                 continue;
-            }
-            EnetAppUtils_assert(ret ==  sizeof(APP_CLIENT_TX_MSG2));
-            EnetAppUtils_print("Message to host: %s\r\n", APP_CLIENT_TX_MSG2);
-        }
         /* close */
         ret = lwip_close(sock);
         EnetAppUtils_print("Closed Socket connection\r\n");
@@ -217,7 +210,7 @@ void AppSocket_showMenu(void)
 {
     ip_addr_t ipAddr;
     int32_t addr_ok = 0;
-    EnetAppUtils_print(" UDP socket Menu: \r\n");
+    EnetAppUtils_print(" TCP socket Menu: \r\n");
 
     do
     {
@@ -232,5 +225,6 @@ void AppSocket_startClient(void)
 {
     AppSocket_showMenu();
     Appsocket_fillHostSocketInfo(&gHostInfo);
-    sys_thread_new("AppSocket_simpleClient", AppSocket_simpleClient, &gHostInfo.socketAddr, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);
+    sys_thread_new("AppSocket_simpleClient", AppSocket_simpleClient,\
+                 &gHostInfo.socketAddr, DEFAULT_THREAD_STACKSIZE, DEFAULT_THREAD_PRIO);
 }
