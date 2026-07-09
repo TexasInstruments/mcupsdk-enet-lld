@@ -210,7 +210,7 @@ int32_t TestApp_waitForLinkUp(void)
 void TestApp_showCpswStats(void)
 {
     Enet_IoctlPrms prms;
-    CpswStats_PortStats portStats;
+    const CpswStats_PortStats *portStats;
     int32_t status;
 
     /* Show host port statistics */
@@ -220,7 +220,7 @@ void TestApp_showCpswStats(void)
     {
         EnetAppUtils_print("\r\n Port 0 Statistics\r\n");
         EnetAppUtils_print("-----------------------------------------\r\n");
-        EnetAppUtils_printHostPortStats2G((CpswStats_HostPort_2g *)&portStats);
+        EnetAppUtils_printHostPortStats2G((const CpswStats_HostPort_2g *)portStats);
         EnetAppUtils_print("\r\n");
     }
     else
@@ -237,7 +237,7 @@ void TestApp_showCpswStats(void)
         {
             EnetAppUtils_print("\r\n Port 1 Statistics\r\n");
             EnetAppUtils_print("-----------------------------------------\r\n");
-            EnetAppUtils_printMacPortStats2G((CpswStats_MacPort_2g *)&portStats);
+            EnetAppUtils_printMacPortStats2G((const CpswStats_MacPort_2g *)portStats);
             EnetAppUtils_print("\r\n");
         }
         else

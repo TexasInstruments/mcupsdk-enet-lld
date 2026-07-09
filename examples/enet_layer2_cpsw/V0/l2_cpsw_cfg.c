@@ -275,34 +275,40 @@ void EnetApp_printStats(EnetApp_PerCtxt *perCtxt)
 {
     Enet_IoctlPrms prms;
     Enet_MacPort macPort;
+    const CpswStats_PortStats *pCpswStats;
     int32_t status;
 
     EnetAppUtils_print("\nPrint statistics\r\n");
     EnetAppUtils_print("----------------------------------------------\r\n");
 
-    ENET_IOCTL_SET_OUT_ARGS(&prms, &gEnetApp_cpswStats);
+    ENET_IOCTL_SET_OUT_ARGS(&prms, &pCpswStats);
 
     ENET_IOCTL(perCtxt->hEnet, gEnetApp.coreId, ENET_STATS_IOCTL_GET_HOSTPORT_STATS, &prms, status);
-    if (status != ENET_SOK)
+    if (status == ENET_SOK)
+    {
+        EnetAppUtils_printHostPortStats9G((const CpswStats_HostPort_Ng *)pCpswStats);
+    }
+    else
     {
         EnetAppUtils_print("Failed to get port stats\r\n");
     }
-    EnetAppUtils_printHostPortStats9G((CpswStats_HostPort_Ng *)&gEnetApp_cpswStats);
 
     macPort = perCtxt->macPort;
 
     EnetAppUtils_print("\n - Port %u statistics\r\n", ENET_MACPORT_ID(macPort));
     EnetAppUtils_print("--------------------------------\r\n");
 
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &gEnetApp_cpswStats);
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &pCpswStats);
 
     ENET_IOCTL(perCtxt->hEnet, gEnetApp.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
-    if (status != ENET_SOK)
+    if (status == ENET_SOK)
     {
-        EnetAppUtils_print("%s: Failed to get port %u stats\r\n", ENET_MACPORT_ID(macPort));
+        EnetAppUtils_printMacPortStats9G((const CpswStats_MacPort_Ng *)pCpswStats);
     }
-
-    EnetAppUtils_printMacPortStats9G((CpswStats_MacPort_Ng *)&gEnetApp_cpswStats);
+    else
+    {
+        EnetAppUtils_print("Failed to get port %u stats\r\n", ENET_MACPORT_ID(macPort));
+    }
 
     EnetAppUtils_print("\n");
 }

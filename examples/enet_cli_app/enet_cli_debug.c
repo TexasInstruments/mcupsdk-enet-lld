@@ -170,7 +170,7 @@ static bool EnetCli_showCpswStats(char *writeBuffer,
 static void EnetDebug_showCpswStats(uint8_t portNum, bool reset)
 {
     Enet_IoctlPrms prms;
-    CpswStats_PortStats portStats;
+    const CpswStats_PortStats *portStats;
     int32_t status;
 
     /* Show host port statistics */
@@ -184,7 +184,7 @@ static void EnetDebug_showCpswStats(uint8_t portNum, bool reset)
             EnetAppUtils_print("\r\n Host Port Statistics\r\n");
             EnetAppUtils_print("-----------------------------------------\r\n");
             EnetAppUtils_printHostPortStats2G(
-                    (CpswStats_HostPort_2g*) &portStats);
+                    (const CpswStats_HostPort_2g*)portStats);
             EnetAppUtils_print("\r\n");
         }
         else
@@ -213,7 +213,7 @@ static void EnetDebug_showCpswStats(uint8_t portNum, bool reset)
             EnetAppUtils_print("\r\n Port %d Statistics\r\n", portNum);
             EnetAppUtils_print("-----------------------------------------\r\n");
             EnetAppUtils_printMacPortStats2G(
-                    (CpswStats_MacPort_2g*) &portStats);
+                    (const CpswStats_MacPort_2g*)portStats);
             EnetAppUtils_print("\r\n");
         }
         else

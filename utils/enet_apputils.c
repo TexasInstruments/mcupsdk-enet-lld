@@ -613,7 +613,7 @@ void EnetAppUtils_printIcssgPaStats(IcssgStats_Pa *st)
 }
 #endif
 
-void EnetAppUtils_printHostPortStats2G(CpswStats_HostPort_2g *st)
+void EnetAppUtils_printHostPortStats2G(const CpswStats_HostPort_2g *st)
 {
     uint32_t i;
 
@@ -685,7 +685,7 @@ void EnetAppUtils_printHostPortStats2G(CpswStats_HostPort_2g *st)
     }
 }
 
-void EnetAppUtils_printMacPortStats2G(CpswStats_MacPort_2g *st)
+void EnetAppUtils_printMacPortStats2G(const CpswStats_MacPort_2g *st)
 {
     uint32_t i;
 
@@ -774,7 +774,7 @@ void EnetAppUtils_printMacPortStats2G(CpswStats_MacPort_2g *st)
     }
 }
 
-void EnetAppUtils_printHostPortStats9G(CpswStats_HostPort_Ng *st)
+void EnetAppUtils_printHostPortStats9G(const CpswStats_HostPort_Ng *st)
 {
     uint_fast32_t i;
 
@@ -846,7 +846,7 @@ void EnetAppUtils_printHostPortStats9G(CpswStats_HostPort_Ng *st)
     }
 }
 
-void EnetAppUtils_printMacPortStats9G(CpswStats_MacPort_Ng *st)
+void EnetAppUtils_printMacPortStats9G(const CpswStats_MacPort_Ng *st)
 {
     uint_fast32_t i;
 

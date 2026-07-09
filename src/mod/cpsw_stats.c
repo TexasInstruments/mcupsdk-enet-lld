@@ -228,11 +228,11 @@ static Enet_IoctlValidate gCpswStats_ioctlValidate[] =
 {
     ENET_IOCTL_VALID_PRMS(ENET_STATS_IOCTL_GET_HOSTPORT_STATS,
                           0U,
-                          sizeof(CpswStats_PortStats)),
+                          sizeof(CpswStats_PortStats *)),
 
     ENET_IOCTL_VALID_PRMS(ENET_STATS_IOCTL_GET_MACPORT_STATS,
                           sizeof(Enet_MacPort),
-                          sizeof(CpswStats_PortStats)),
+                          sizeof(CpswStats_PortStats *)),
 
     ENET_IOCTL_VALID_PRMS(ENET_STATS_IOCTL_RESET_HOSTPORT_STATS,
                           0U,

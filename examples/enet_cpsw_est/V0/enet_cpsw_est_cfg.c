@@ -308,6 +308,7 @@ void EnetApp_printStats(void)
 {
     Enet_IoctlPrms prms;
     Enet_MacPort macPort;
+    const CpswStats_PortStats *pCpswStats;
     uint32_t i;
     int32_t status;
 
@@ -315,7 +316,7 @@ void EnetApp_printStats(void)
     EnetAppUtils_print("\n   Host Port statistics\r\n");
     EnetAppUtils_print("--------------------------------\r\n");
 
-    ENET_IOCTL_SET_OUT_ARGS(&prms, &gEnetApp_cpswStats);
+    ENET_IOCTL_SET_OUT_ARGS(&prms, &pCpswStats);
     ENET_IOCTL(gEnetApp.hEnet, gEnetApp.coreId, ENET_STATS_IOCTL_GET_HOSTPORT_STATS, &prms, status);
     if (status != ENET_SOK)
     {
@@ -323,7 +324,7 @@ void EnetApp_printStats(void)
     }
     else
     {
-        EnetAppUtils_printHostPortStats9G((CpswStats_HostPort_Ng *)&gEnetApp_cpswStats);
+        EnetAppUtils_printHostPortStats9G((const CpswStats_HostPort_Ng *)pCpswStats);
         EnetAppUtils_print("\n");
     }
 
@@ -335,7 +336,7 @@ void EnetApp_printStats(void)
         EnetAppUtils_print("   MAC Port %u statistics\r\n", ENET_MACPORT_ID(macPort));
         EnetAppUtils_print("--------------------------------\r\n");
 
-        ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &gEnetApp_cpswStats);
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &pCpswStats);
         ENET_IOCTL(gEnetApp.hEnet, gEnetApp.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
         if (status != ENET_SOK)
         {
@@ -343,7 +344,7 @@ void EnetApp_printStats(void)
             continue;
         }
 
-        EnetAppUtils_printMacPortStats9G((CpswStats_MacPort_Ng *)&gEnetApp_cpswStats);
+        EnetAppUtils_printMacPortStats9G((const CpswStats_MacPort_Ng *)pCpswStats);
         EnetAppUtils_print("\n");
     }
 }

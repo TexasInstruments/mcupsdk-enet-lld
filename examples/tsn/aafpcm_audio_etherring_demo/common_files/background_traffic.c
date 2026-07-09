@@ -451,7 +451,6 @@ void EnetApp_destroyRxTask()
     EnetApp_closeDma();
 }
 
-CpswStats_PortStats gEnetApp_cpswStats;
 uint64_t prevBytes;
 uint64_t prevStatsTime = 0;
 
@@ -459,29 +458,32 @@ void EnetApp_printStats(uint64_t currentTime)
 {
     Enet_IoctlPrms prms;
     Enet_MacPort macPort;
+    const CpswStats_PortStats *pCpswStats;
     int32_t status;
 
     macPort = ENET_MAC_PORT_2;
 
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &gEnetApp_cpswStats);
+    ENET_IOCTL_SET_INOUT_ARGS(&prms, &macPort, &pCpswStats);
 
     ENET_IOCTL(gEnetAppCfg.hEnet, gEnetAppCfg.coreId, ENET_STATS_IOCTL_GET_MACPORT_STATS, &prms, status);
     if (status != ENET_SOK)
     {
         EnetAppUtils_print("%s: Failed to get port %u stats\r\n", ENET_MACPORT_ID(macPort));
     }
-    CpswStats_MacPort_Ng *stats = (CpswStats_MacPort_Ng *)&gEnetApp_cpswStats;
-
-    uint64_t currentBytes = stats->txPriBcnt[0];
-
-    if (prevStatsTime != 0)
+    else
     {
-        double bitrate = ((currentBytes-prevBytes)*8)/(double)(currentTime-prevStatsTime);
-        DebugP_log("prevBytes = %llu, currentBytes %llu, diff %lld, bitrate %0.2lf\r\n", prevBytes, currentBytes, currentBytes-prevBytes, bitrate);
-    }
+        const CpswStats_MacPort_Ng *stats = (const CpswStats_MacPort_Ng *)pCpswStats;
+        uint64_t currentBytes = stats->txPriBcnt[0];
 
-    prevBytes = currentBytes;
-    prevStatsTime = currentTime;
+        if (prevStatsTime != 0)
+        {
+            double bitrate = ((currentBytes-prevBytes)*8)/(double)(currentTime-prevStatsTime);
+            DebugP_log("prevBytes = %llu, currentBytes %llu, diff %lld, bitrate %0.2lf\r\n", prevBytes, currentBytes, currentBytes-prevBytes, bitrate);
+        }
+
+        prevBytes = currentBytes;
+        prevStatsTime = currentTime;
+    }
 }
 
 static int32_t backgroundTraffic_addVlanEntries(Enet_Handle hEnet, uint32_t coreId, uint32_t vlan)

@@ -108,13 +108,13 @@ int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_HOSTPORT_STATS(CpswStats_Ha
 {
     int32_t status = ENET_SOK;
 
-    status = Enet_checkOutArgs(prms, sizeof(CpswStats_PortStats));
+    status = Enet_checkOutArgs(prms, sizeof(CpswStats_PortStats *));
     if (status == ENET_SOK)
     {
-        CpswStats_PortStats *portStats = (CpswStats_PortStats *)prms->outArgs;
+        const CpswStats_PortStats **pPortStats = (const CpswStats_PortStats **)prms->outArgs;
 
         CpswStats_readHostStats(hStats);
-        memcpy(portStats, hStats->hostPortStats, sizeof(CpswStats_PortStats));
+        *pPortStats = hStats->hostPortStats;
     }
     else
     {
@@ -127,15 +127,15 @@ int32_t CpswStats_ioctl_handler_ENET_STATS_IOCTL_GET_MACPORT_STATS(CpswStats_Han
 {
     int32_t status = ENET_SOK;
 
-    status = Enet_checkInOutArgs(prms, sizeof(Enet_MacPort), sizeof(CpswStats_PortStats));
+    status = Enet_checkInOutArgs(prms, sizeof(Enet_MacPort), sizeof(CpswStats_PortStats *));
     if (status == ENET_SOK)
     {
         Enet_MacPort *macPort = (Enet_MacPort *)prms->inArgs;
-        CpswStats_PortStats *portStats = (CpswStats_PortStats *)prms->outArgs;
+        const CpswStats_PortStats **pPortStats = (const CpswStats_PortStats **)prms->outArgs;
         uint32_t portNum = ENET_MACPORT_NORM(*macPort);
 
         CpswStats_readMacStats(hStats, *macPort);
-        memcpy(portStats, &hStats->macPortStats[portNum], sizeof(CpswStats_PortStats));
+        *pPortStats = &hStats->macPortStats[portNum];
     }
     else
     {
@@ -186,23 +186,12 @@ int32_t CpswStats_ioctl_handler_CPSW_STATS_IOCTL_SYNC(CpswStats_Handle hStats, C
 static void CpswStats_readHostStats(CpswStats_Handle hStats)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
-    union CSL_CPSW_STATS portStats;
     uint64_t *stats64;
-    uint32_t *stats32 = (uint32_t *)&portStats;
-    uint32_t i;
 
     Enet_devAssert(hStats->hostPortStats != NULL, "Invalid host port stats memory address\n");
 
-    /* CSL blindly reads all registers in the statistics block regardless
-     * of whether they are applicable or not to a CPSW instance type */
-    memset(&portStats.p0_stats, 0, sizeof(portStats.p0_stats));
-    CSL_CPSW_getPortStats(regs, 0U, &portStats);
-
-    stats64 = &hStats->hostPortStats->val[0U];
-    for (i = 0U; i < CPSW_STATS_BLOCK_ELEM_NUM; i++)
-    {
-        stats64[i] += stats32[i];
-    }
+    stats64 = (uint64_t*)hStats->hostPortStats;
+    CSL_CPSW_accPortStats(regs, 0U, (Uint32*)stats64);
 
     /* Clear reserved fields */
     switch (hStats->enetType)
@@ -250,12 +239,9 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
                                    Enet_MacPort macPort)
 {
     CSL_Xge_cpswRegs *regs = (CSL_Xge_cpswRegs *)hStats->virtAddr;
-    union CSL_CPSW_STATS portStats;
     uint32_t portNum = ENET_MACPORT_NORM(macPort);
     uint32_t portId = ENET_MACPORT_ID(macPort);
     uint64_t *stats64;
-    uint32_t *stats32 = (uint32_t *)&portStats;
-    uint32_t i;
 
     ENETTRACE_VAR(portId);
     Enet_devAssert(portNum < hStats->macPortNum, "Invalid MAC port %u\n", portId);
@@ -263,14 +249,8 @@ static void CpswStats_readMacStats(CpswStats_Handle hStats,
 
     /* CSL blindly reads all registers in the statistics block regardless
      * of whether they are applicable or not to a CPSW instance type */
-    memset(&portStats.pn_stats, 0, sizeof(portStats.pn_stats));
-    CSL_CPSW_getPortStats(regs, portNum + 1, &portStats);
-
-    stats64 = &hStats->macPortStats[portNum].val[0U];
-    for (i = 0U; i < CPSW_STATS_BLOCK_ELEM_NUM; i++)
-    {
-        stats64[i] += stats32[i];
-    }
+    stats64 = (uint64_t*)&hStats->macPortStats[portNum].val[0U];
+    CSL_CPSW_accPortStats(regs, portNum + 1, (Uint32*)stats64);
 
     /* Clear reserved fields */
     switch (hStats->enetType)

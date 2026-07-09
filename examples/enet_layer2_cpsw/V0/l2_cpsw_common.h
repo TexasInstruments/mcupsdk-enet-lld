@@ -178,9 +178,6 @@ void EnetApp_mainTask(void *args);
 /* Enet l2 cpsw test object */
 EnetApp_Obj gEnetApp;
 
-/* Statistics */
-CpswStats_PortStats gEnetApp_cpswStats;
-
 /* Test application stack */
 uint8_t gEnetAppTaskStackTick[ENETAPP_TASK_STACK_SZ] __attribute__((aligned(32)));
 uint8_t gEnetAppTaskStackRx[ENETAPP_TASK_STACK_SZ] __attribute__((aligned(32)));
