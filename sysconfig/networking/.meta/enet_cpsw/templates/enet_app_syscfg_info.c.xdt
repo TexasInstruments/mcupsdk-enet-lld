@@ -5,6 +5,7 @@
 % let instances = module.$instances;
 % let common = system.getScript("/common");
 % let device = common.getDeviceName();
+% let soc = common.getSocName();
 /*
  * Enet DMA memory allocation utility functions.
  */
@@ -235,7 +236,8 @@ bool EnetApp_isPortLinked(Enet_Handle hEnet)
 }
 %}
 
-% if (instance.macAddrConfig === "Auto Assign" ) {
+
+% if(!((instance.macAddrConfig !== "Auto Assign" ) && ((soc === "am263x") || (soc === "am263px") || (soc === "am261x")))) {
 int32_t EnetAppSoc_fillMacAddrList(uint8_t macAddr[][ENET_MAC_ADDR_LEN],
                                    uint32_t maxMacEntries,
                                    uint32_t *pAvailMacEntries)
