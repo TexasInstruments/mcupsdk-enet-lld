@@ -162,7 +162,6 @@ typedef struct EnetPort_MaxLen_s
     uint32_t mru;
 } EnetPort_MaxLen;
 
-#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
 typedef struct EnetPort_CutThruParams_s
 {
     /*! Port Speed */
@@ -174,7 +173,6 @@ typedef struct EnetPort_CutThruParams_s
     /*! TX Priority for Cut-thru */
     uint32_t txPriCutThruEn;
 } EnetPort_CutThruParams;
-#endif
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */

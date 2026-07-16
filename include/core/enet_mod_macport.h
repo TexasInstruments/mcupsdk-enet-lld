@@ -343,7 +343,6 @@ typedef enum EnetMacPort_Ioctl_e
      */
     ENET_MACPORT_IOCTL_ENABLE_PREEMPTION = ENET_MACPORT_PUBLIC_IOCTL(27U),
 
-#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
     /*!
      * \brief Set Cut thru Params on MAC Port.
      *
@@ -361,7 +360,6 @@ typedef enum EnetMacPort_Ioctl_e
      * - outArgs: #EnetMacPort_CutThruParams
      */
     ENET_MACPORT_IOCTL_GET_CUT_THRU_PARAMS = ENET_MACPORT_PUBLIC_IOCTL(29U),
-#endif
 } EnetMacPort_Ioctl;
 
 /*!
@@ -637,7 +635,6 @@ typedef struct EnetMacPort_SetPreemptQueueInArgs_s
     EnetMacPort_QueuePreemptCfg queuePreemptCfg;
 } EnetMacPort_SetPreemptQueueInArgs;
 
-#if ENET_CFG_IS_ON(CPSW_CUTTHRU)
 /*!
  * \brief Input args for #ENET_MACPORT_IOCTL_SET_CUT_THRU_PARAMS command.
  */
@@ -649,7 +646,6 @@ typedef struct EnetMacPort_CutThruParams_s
     /*! Cut Thru Switching configuration */
     EnetPort_CutThruParams cutThruCfg;
 } EnetMacPort_CutThruParams;
-#endif
 
 /* ========================================================================== */
 /*                         Global Variables Declarations                      */
