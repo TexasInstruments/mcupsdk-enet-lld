@@ -148,7 +148,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_LLDP";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_LOOPBACK";
 
 const templates_freertos_r5f =
 [
@@ -187,7 +187,7 @@ function getComponentBuildProperty(buildOption) {
     build_property.filedirs = filedirs;
     build_property.lnkfiles = lnkfiles;
     build_property.syscfgfile = syscfgfile;
-        build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
+    build_property.readmeDoxygenPageTag = readmeDoxygenPageTag;
     if(buildOption.cpu.match(/r5f*/)) {
         if(buildOption.os.match(/freertos*/) )
         {
