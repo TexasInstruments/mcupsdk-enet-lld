@@ -147,7 +147,7 @@ const lnkfiles = {
 
 const syscfgfile = "../example.syscfg";
 
-const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_LLDP";
+const readmeDoxygenPageTag = "EXAMPLES_ENET_CPSW_LOOPBACK";
 
 const templates_freertos_r5f =
 [
@@ -173,7 +173,7 @@ function getComponentProperty() {
     property.dirPath = path.resolve(__dirname, "..");
     property.type = "executable";
     property.name = "lldp_app";
-    property.isInternal = false;
+    property.isInternal = true;
     property.buildOptionCombos = buildOptionCombos;
 
     return property;
