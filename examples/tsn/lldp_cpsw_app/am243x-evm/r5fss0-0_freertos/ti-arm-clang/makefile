@@ -25,16 +25,17 @@ OUTNAME:=lldp_app.$(PROFILE).out
 COREOUTNAME:=lldp_app.$(PROFILE).optishare.out
 
 BOOTIMAGE_PATH=$(abspath .)
-BOOTIMAGE_NAME:=lldp_app.$(PROFILE).appimage
-BOOTIMAGE_NAME_XIP:=lldp_app.$(PROFILE).appimage_xip
-BOOTIMAGE_NAME_SIGNED:=lldp_app.$(PROFILE).appimage.signed
-BOOTIMAGE_RPRC_NAME:=lldp_app.$(PROFILE).rprc
-BOOTIMAGE_RPRC_NAME_XIP:=lldp_app.$(PROFILE).rprc_xip
-BOOTIMAGE_RPRC_NAME_TMP:=lldp_app.$(PROFILE).rprc_tmp
-BOOTIMAGE_NAME_HS:=lldp_app.$(PROFILE).appimage.hs
-BOOTIMAGE_NAME_HS_FS:=lldp_app.$(PROFILE).appimage.hs_fs
-TARGETS := $(BOOTIMAGE_NAME)
+oeconfig?=None
 
+BOOTIMAGE_NAME_MCELF:=lldp_app.$(PROFILE).mcelf
+BOOTIMAGE_NAME_MCELF_HS:=lldp_app.$(PROFILE).mcelf.hs
+BOOTIMAGE_NAME_HS_FS:=lldp_app.$(PROFILE).mcelf.hs_fs
+TARGETS := $(BOOTIMAGE_NAME_MCELF)
+ifeq ($(DEVICE_TYPE), HS)
+   TARGETS += $(BOOTIMAGE_NAME_MCELF_HS)
+else
+   TARGETS += $(BOOTIMAGE_NAME_HS_FS)
+endif
 
 FILES_common := \
 	lldp_init.c \
@@ -53,6 +54,8 @@ FILES_common := \
 	ti_pinmux_config.c \
 	ti_power_clock_config.c \
 	ti_enet_config.c \
+	ti_enet_dma_init.c \
+	ti_enet_init.c \
 	ti_enet_open_close.c \
 	ti_enet_soc.c \
 	ti_enet_lwipif.c \
@@ -97,6 +100,7 @@ DEFINES_common := \
 	-DPRINT_FORMAT_NO_WARNING \
 	-DSITARA \
 	-DLLDP_ENABLED \
+	-DOS_FREERTOS \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \
@@ -142,19 +146,21 @@ LIBS_PATH_common = \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
+	-Wl,-i${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	-Wl,-i${CG_TOOL_ROOT}/lib \
 
 LIBS_common = \
 	-lfreertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-ldrivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lenet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	-lboard.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-ldrivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lenet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	-lboard.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 	-ltsn_combase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_unibase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_lldp-freertos.am243x.r5f.ti-arm-clang.lib \
 	-ltsn_uniconf-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	-lyangemb-freertos.am243x.r5f.ti-arm-clang.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -177,15 +183,16 @@ LNKOPTFLAGS_release = \
 
 LIBS_NAME = \
 	freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	drivers.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	enet-cpsw.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
-	board.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	drivers.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	enet-cpsw.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
+	board.am243x.r5f.ti-arm-clang.freertos.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 	tsn_combase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_unibase-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_lldp-freertos.am243x.r5f.ti-arm-clang.lib \
 	tsn_uniconf-freertos.am243x.r5f.ti-arm-clang.${ConfigName}.lib \
+	yangemb-freertos.am243x.r5f.ti-arm-clang.lib \
 	libc.a \
 	libsysbm.a \
 
@@ -197,6 +204,7 @@ LIBS_PATH_NAME = \
 	${MCU_PLUS_SDK_PATH}/source/networking/enet/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/lib \
 	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/eval_lib \
+	${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/license_lib \
 	${CG_TOOL_ROOT}/lib \
 
 FILES := $(FILES_common) $(FILES_$(PROFILE))
@@ -231,7 +239,7 @@ $(OBJDIR)/%.obj %.obj: %.c
 
 $(OBJDIR)/%.obj %.obj: %.S
 	@echo  Compiling: am243x:r5fss0-0:freertos:ti-arm-clang $(LIBNAME): $<
-	$(CC) -c $(CFLAGS) -o $(OBJDIR)/$@ $<
+	$(CC) -c $(CFLAGS) $(INCLUDES) $(DEFINES) -o $(OBJDIR)/$@ $<
 
 all: $(TARGETS)
 
@@ -242,6 +250,8 @@ SYSCFG_GEN_FILES+=generated/ti_pinmux_config.c generated/ti_power_clock_config.c
 SYSCFG_GEN_FILES+=generated/ti_board_config.c generated/ti_board_config.h
 SYSCFG_GEN_FILES+=generated/ti_board_open_close.c generated/ti_board_open_close.h
 SYSCFG_GEN_FILES+=generated/ti_enet_config.c generated/ti_enet_config.h
+SYSCFG_GEN_FILES+=generated/ti_enet_dma_init.c generated/ti_enet_dma_init.h
+SYSCFG_GEN_FILES+=generated/ti_enet_init.c
 SYSCFG_GEN_FILES+=generated/ti_enet_open_close.c generated/ti_enet_open_close.h
 SYSCFG_GEN_FILES+=generated/ti_enet_soc.c
 SYSCFG_GEN_FILES+=generated/ti_enet_lwipif.c generated/ti_enet_lwipif.h
@@ -266,7 +276,7 @@ $(COREOUTNAME):  $(SYSTEM_COMMAND)
 	@echo  .
 	@echo  Relinking Linking: am243x:r5fss0-0:freertos:ti-arm-clang $@ with OptiShare SSO..
 	$(LNK) $(LNKOPTFLAGS) $(LFLAGS) $(LIBS_PATH) -Wl,-m=$(basename $@).map -o $@ $(addprefix $(OBJDIR), $(OBJS)) $(LIBS) $(LNK_FILES) -Wl,--xml_link_info=$(basename $@).lnkxml -Wl,--import_sso=$(SSO_PATH)
-	@echo  Relinking with optishare: am263px:r5fss0-0:freertos:ti-arm-clang $@ Done !!!
+	@echo  Relinking with optishare: am243x:r5fss0-0:freertos:ti-arm-clang $@ Done !!!
 	@echo  .
 
 clean:
@@ -276,10 +286,11 @@ clean:
 	$(RM) $(BOOTIMAGE_NAME)
 	$(RM) $(BOOTIMAGE_NAME_XIP)
 	$(RM) $(BOOTIMAGE_NAME_SIGNED)
-	$(RM) $(BOOTIMAGE_NAME_HS)
-	$(RM) $(BOOTIMAGE_NAME_HS_FS)
 	$(RM) $(BOOTIMAGE_RPRC_NAME)
 	$(RM) $(BOOTIMAGE_RPRC_NAME_XIP)
+	$(RM) $(BOOTIMAGE_NAME_MCELF)
+	$(RM) $(BOOTIMAGE_NAME_HS_FS)
+	$(RM) $(BOOTIMAGE_NAME_MCELF_HS)
 	$(RMDIR) generated/
 
 scrub:
@@ -294,6 +305,11 @@ ifeq ($(OS),Windows_NT)
 	$(RM) \*.bin
 	$(RM) \*.lnkxml
 	$(RM) \*.ossr
+	$(RM) \*.mcelf
+	$(RM) \*.mcelf_xip
+	$(RM) \*.mcelf-enc
+	$(RM) \*.mcelf.hs
+	$(RM) \*.mcelf.hs_fs
 else
 	$(RM) *.out
 	$(RM) *.map
@@ -303,6 +319,11 @@ else
 	$(RM) *.bin
 	$(RM) *.lnkxml
 	$(RM) *.ossr
+	$(RM) *.mcelf
+	$(RM) *.mcelf_xip
+	$(RM) *.mcelf-enc
+	$(RM) *.mcelf.hs
+	$(RM) *.mcelf.hs_fs
 endif
 	$(RMDIR) generated
 
@@ -324,7 +345,7 @@ syscfg: ../example.syscfg
 endif
 
 syscfg-gui:
-	$(SYSCFG_NWJS) $(SYSCFG_PATH) --product $(SYSCFG_SDKPRODUCT) --device AM243x_ALV_beta --context r5fss0-0 --part ALV --package ALV --output generated/  ../example.syscfg
+	$(SYSCFG_GUI_SCRIPT) --product $(SYSCFG_SDKPRODUCT) --device AM243x_ALV_beta --context r5fss0-0 --part ALV --package ALV --output generated/  ../example.syscfg
 
 #
 # Generation of boot image which can be loaded by Secondary Boot Loader (SBL)
@@ -349,9 +370,8 @@ BOOTIMAGE_CORE_ID_m4fss0-0 = 14
 SBL_RUN_ADDRESS=0x70000000
 SBL_DEV_ID=55
 
-MULTI_CORE_IMAGE_GEN = $(SYSCFG_NODE) $(MCU_PLUS_SDK_PATH)/tools/boot/multicoreImageGen/multicoreImageGen.js
-OUTRPRC_CMD = $(SYSCFG_NODE) $(MCU_PLUS_SDK_PATH)/tools/boot/out2rprc/elf2rprc.js
 APP_IMAGE_SIGN_CMD = $(MCU_PLUS_SDK_PATH)/source/security/security_common/tools/boot/signing/appimage_x509_cert_gen.py
+MCELF_IMAGE_GEN = $(MCU_PLUS_SDK_PATH)/tools/boot/multicore-elf/genimage_am64x.py
 
 ifeq ($(OS),Windows_NT)
   XIPGEN_CMD=$(MCU_PLUS_SDK_PATH)/tools/boot/xipGen/xipGen.exe
@@ -370,36 +390,29 @@ MULTI_CORE_IMAGE_PARAMS = \
 MULTI_CORE_IMAGE_PARAMS_XIP = \
 	$(BOOTIMAGE_RPRC_NAME_XIP)@$(BOOTIMAGE_CORE_ID_r5fss0-0) \
 
-$(BOOTIMAGE_NAME): $(OUTNAME)
-	@echo  Boot image: am243x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$@ ...
-ifneq ($(OS),Windows_NT)
-	$(CHMOD) a+x $(XIPGEN_CMD)
-endif
-	$(OUTRPRC_CMD) $(OUTNAME) >> $(BOOTIMAGE_TEMP_OUT_FILE)
-	$(COPY) $(BOOTIMAGE_RPRC_NAME) $(BOOTIMAGE_RPRC_NAME_TMP)
-	$(RM) $(BOOTIMAGE_RPRC_NAME)
-	$(XIPGEN_CMD) -i $(BOOTIMAGE_RPRC_NAME_TMP) -o $(BOOTIMAGE_RPRC_NAME) -x $(BOOTIMAGE_RPRC_NAME_XIP) --flash-start-addr 0x60000000 -v > $(BOOTIMAGE_TEMP_OUT_FILE)
-	$(MULTI_CORE_IMAGE_GEN) --devID $(SBL_DEV_ID) --out $(BOOTIMAGE_NAME) $(MULTI_CORE_IMAGE_PARAMS) >> $(BOOTIMAGE_TEMP_OUT_FILE)
-	$(MULTI_CORE_IMAGE_GEN) --devID $(SBL_DEV_ID) --out $(BOOTIMAGE_NAME_XIP) $(MULTI_CORE_IMAGE_PARAMS_XIP) >> $(BOOTIMAGE_TEMP_OUT_FILE)
-	$(RM) $(BOOTIMAGE_RPRC_NAME_TMP)
-	$(RM) $(BOOTIMAGE_TEMP_OUT_FILE)
+$(BOOTIMAGE_NAME_MCELF): $(OUTNAME)
+	@echo  Boot MulticoreELF image: $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_MCELF) ...
+	$(PYTHON) $(MCELF_IMAGE_GEN) --core-img=$(BOOTIMAGE_CORE_ID_r5fss0-0):$(OUTNAME) --output=$(BOOTIMAGE_NAME_MCELF) --xip=$(MCELF_XIP_RANGE)
+	@echo  Boot MulticoreELF ELF image: $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_MCELF) Done !!!
+	@echo  .
+
 ifeq ($(DEVICE_TYPE), HS)
 # Sign the appimage using appimage signing script
 ifeq ($(ENC_ENABLED),no)
 	@echo Boot image signing: Encryption is disabled.
-	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 1 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME_HS)
+	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME_MCELF) --authtype 1 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME_MCELF_HS)
 else
 	@echo Boot image signing: Encryption is enabled.
-	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 1 --key $(APP_SIGNING_KEY) --enc y --enckey $(APP_ENCRYPTION_KEY) --output $(BOOTIMAGE_NAME_HS)
-	$(RM) $(BOOTIMAGE_NAME)-enc
+	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME_MCELF) --authtype 1 --key $(APP_SIGNING_KEY) --enc y --enckey $(APP_ENCRYPTION_KEY) --output $(BOOTIMAGE_NAME_MCELF_HS)
+	$(RM) $(BOOTIMAGE_NAME_MCELF)-enc
 endif
-	$(RM) $(BOOTIMAGE_NAME)
-	@echo  Boot image: am243x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS) Done !!!
+	$(RM) $(BOOTIMAGE_NAME_MCELF)
+	@echo  Boot image: am243x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_MCELF_HS) Done !!!
 	@echo  .
 else
 # Sign the appimage for HS-FS using appimage signing script
-	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME) --authtype 1 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME_HS_FS)
-	$(RM) $(BOOTIMAGE_NAME)
+	$(PYTHON) $(APP_IMAGE_SIGN_CMD) --bin $(BOOTIMAGE_NAME_MCELF) --authtype 1 --key $(APP_SIGNING_KEY) --output $(BOOTIMAGE_NAME_HS_FS)
+	$(RM) $(BOOTIMAGE_NAME_MCELF)
 	@echo  Boot image: am243x:r5fss0-0:freertos:ti-arm-clang $(BOOTIMAGE_PATH)/$(BOOTIMAGE_NAME_HS_FS) Done !!!
 	@echo  .
 endif
