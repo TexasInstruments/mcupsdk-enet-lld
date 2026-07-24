@@ -174,7 +174,7 @@ function getComponentProperty() {
     property.dirPath = path.resolve(__dirname, "..");
     property.type = "executable";
     property.name = "lldp_app";
-    property.isInternal = true;
+    property.isInternal = false;
     property.buildOptionCombos = buildOptionCombos;
 
     return property;
