@@ -173,6 +173,11 @@ const ip_addr_t gStaticIPNetmask[IP_ADDR_POOL_COUNT] =  { IPADDR4_INIT_BYTES(255
  */
 #define UDP_IPERF_THREAD_PRIO  (14U)
 
+/* NOTE: Macro defined for documentation/printing only. LwIP udpecho.c binds
+   to port 7 by default; updating this macro's value does not affect actual
+   functionality. */
+#define UDPECHO_PORT           (7U)
+
 /* Handle to the Applciation interface for the LwIPIf Layer
  */
 LwipifEnetApp_Handle hlwipIfApp = NULL;
@@ -621,6 +626,7 @@ apps_init(void)
 #endif /* LWIP_TCPECHO_APP && LWIP_NETCONN */
 #if LWIP_UDPECHO_APP && LWIP_NETCONN
   udpecho_init();
+  DebugP_log("UDP echo server listening on port %u\r\n", UDPECHO_PORT);
 #endif /* LWIP_UDPECHO_APP && LWIP_NETCONN */
 #if LWIP_SOCKET_EXAMPLES_APP && LWIP_SOCKET
   socket_examples_init();

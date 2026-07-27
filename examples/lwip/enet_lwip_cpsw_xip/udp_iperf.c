@@ -69,7 +69,7 @@ const char udperf_kLabel[] =
 
 void print_app_header(void)
 {
-	DebugP_log("UDP server listening on port %d\r\n", UDP_CONN_PORT);
+	DebugP_log("UDP IPERF server listening on port %d\r\n", UDP_CONN_PORT);
 }
 
 static void print_udp_conn_stats(struct sockaddr_in from)
