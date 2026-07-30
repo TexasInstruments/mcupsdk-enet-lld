@@ -321,7 +321,10 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING(
 
     status = (inArgs->queueNum < ENET_PRI_NUM) ? ENET_SOK : ENET_EINVALIDPARAMS;
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
-    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
+    {
+        status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    }
     if (status == ENET_SOK)
     {
         status = CpswHostPort_getTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);

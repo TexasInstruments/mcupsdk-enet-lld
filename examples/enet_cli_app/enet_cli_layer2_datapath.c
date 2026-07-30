@@ -129,6 +129,11 @@ BaseType_t EnetCLI_openTxChn(char *writeBuffer, size_t writeBufferLen,
     BaseType_t paramLen;
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
+    if (parameter == NULL)
+    {
+        snprintf(writeBuffer, writeBufferLen, "Invalid channel number\r\n");
+        return pdFALSE;
+    }
     chNum = atoi(parameter);
 
     if(chNum >= ENET_SYSCFG_TX_CHANNELS_NUM)
@@ -165,6 +170,11 @@ BaseType_t EnetCLI_openRxChn(char *writeBuffer, size_t writeBufferLen,
     BaseType_t paramLen;
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
+    if (parameter == NULL)
+    {
+        snprintf(writeBuffer, writeBufferLen, "Invalid channel number\r\n");
+        return pdFALSE;
+    }
     chNum = atoi(parameter);
 
     if(chNum >= ENET_SYSCFG_RX_FLOWS_NUM)
@@ -240,6 +250,12 @@ BaseType_t EnetCLI_transmitPkt(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Invalid dest MAC address\r\n");
+                return pdFALSE;
+            }
             status = EnetAppUtils_macAddrAtoI(parameter, destAddr);
             if (status)
             {
@@ -253,6 +269,12 @@ BaseType_t EnetCLI_transmitPkt(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen,
+                        "Invalid source MAC address\r\n");
+                return pdFALSE;
+            }
             status = EnetAppUtils_macAddrAtoI(parameter, srcAddr);
             if (status)
             {
@@ -266,6 +288,11 @@ BaseType_t EnetCLI_transmitPkt(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
             vlanId = atoi(parameter);
             paramCnt += 2;
         }
@@ -273,6 +300,11 @@ BaseType_t EnetCLI_transmitPkt(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
             priority = atoi(parameter);
             paramCnt += 2;
         }
@@ -280,7 +312,13 @@ BaseType_t EnetCLI_transmitPkt(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
-            strcpy(payloadMsg, parameter);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
+            strncpy(payloadMsg, parameter, sizeof(payloadMsg) - 1U);
+            payloadMsg[sizeof(payloadMsg) - 1U] = '\0';
             break;
         }
         parameter = (char*) FreeRTOS_CLIGetParameter(commandString, paramCnt,
@@ -318,6 +356,11 @@ BaseType_t EnetCLI_capturePkt(char *writeBuffer, size_t writeBufferLen,
     bool isStart;
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
+    if (parameter == NULL)
+    {
+        snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+        return pdFALSE;
+    }
     if (strncmp(parameter, "start", paramLen) == 0)
         isStart = true;
     else if (strncmp(parameter, "stop", paramLen) == 0)
@@ -328,6 +371,11 @@ BaseType_t EnetCLI_capturePkt(char *writeBuffer, size_t writeBufferLen,
         return pdFALSE;
     }
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 2, &paramLen);
+    if (parameter == NULL)
+    {
+        snprintf(writeBuffer, writeBufferLen, "Invalid channel number\r\n");
+        return pdFALSE;
+    }
     dmaChNum = atoi(parameter);
 
     if (dmaChNum < 0 || dmaChNum >= ENET_SYSCFG_TX_CHANNELS_NUM)

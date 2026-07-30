@@ -852,7 +852,12 @@ int* mbedtls_test_cmac()
     int total_errors = 0, total_tests = 0, total_skipped = 0;
     while ( i < sizeof(data_cmac)/sizeof(data_cmac[0]) )
     {
-        buffer = malloc(sizeof(char)*strlen(data_cmac[i]));
+        buffer = malloc(sizeof(char)*strlen(data_cmac[i]) + 1);
+        if ( (uint8_t *)buffer == NULL )
+        {
+            ++i;
+            continue;
+        }
         strcpy(buffer, data_cmac[i]);
         total_tests++;
 
@@ -860,8 +865,6 @@ int* mbedtls_test_cmac()
         char *unmet_dependencies[20];
         ret = 0;
         test_info.failed = 0;
-        if ( (uint8_t *)buffer == NULL )
-            continue;
 
         cnt = parse_arguments( buffer, strlen( buffer ), params,
                                     sizeof( params ) / sizeof( params[0] ) );

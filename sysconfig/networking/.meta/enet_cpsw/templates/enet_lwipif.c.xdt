@@ -283,15 +283,15 @@ LwipifEnetApp_Handle LwipifEnetApp_getHandle()
 struct netif* LwipifEnetApp_netifOpen(LwipifEnetApp_Handle handle, uint32_t netifIdx, const ip4_addr_t *ipaddr, const ip4_addr_t *netmask, const ip4_addr_t *gw)
 {
     const uint32_t lwipIdx2Enet[ENET_SYSCFG_NETIF_COUNT][2] = `netifScript.getNetifIdx2EnetMap()`;
-        /* Peripheral type */
-    Enet_Type enetType = lwipIdx2Enet[netifIdx][0];
-
-    /* Peripheral instance */
-    uint32_t instId = lwipIdx2Enet[netifIdx][1];
-
     LwipifEnetApp_Object* pObj = (LwipifEnetApp_Object*) handle;
     if (netifIdx < ENET_SYSCFG_NETIF_COUNT)
     {
+        /* Peripheral type */
+        Enet_Type enetType = lwipIdx2Enet[netifIdx][0];
+
+        /* Peripheral instance */
+        uint32_t instId = lwipIdx2Enet[netifIdx][1];
+
 #if ENET_CFG_IS_ON(CPSW_CSUM_OFFLOAD_SUPPORT)
 
         /* Enable all Flags except below checksumflags. */

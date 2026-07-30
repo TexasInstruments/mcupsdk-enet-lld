@@ -665,6 +665,10 @@ test_init(void * arg)
   sys_sem_t *init_sem;
   LWIP_ASSERT("arg != NULL", arg != NULL);
   init_sem = (sys_sem_t*)arg;
+  if (init_sem == NULL)
+  {
+    return;
+  }
 #endif /* NO_SYS */
 
   /* init randomizer again (seed per thread) */

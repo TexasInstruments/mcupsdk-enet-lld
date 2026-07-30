@@ -176,7 +176,11 @@ void mqtt_example_init(void)
 {
 #if LWIP_TCP
     mqtt_client = mqtt_client_new();
-
+    if (mqtt_client == NULL)
+    {
+        DebugP_log("Failed to create MQTT client\r\n");
+        return;
+    }
 
 #if MQTT_HAVE_TLS
     struct altcp_tls_config *tls_config_mqtt;

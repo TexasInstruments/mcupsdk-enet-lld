@@ -284,6 +284,11 @@ BaseType_t EnetCLI_ptpService(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
             priority1 = atoi(parameter);
             paramCnt += 2;
         }
@@ -291,6 +296,11 @@ BaseType_t EnetCLI_ptpService(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
             priority2 = atoi(parameter);
             paramCnt += 2;
         }
@@ -298,6 +308,11 @@ BaseType_t EnetCLI_ptpService(char *writeBuffer, size_t writeBufferLen,
         {
             parameter = (char*) FreeRTOS_CLIGetParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return pdFALSE;
+            }
             sync_interval = atoi(parameter);
             paramCnt += 2;
         }

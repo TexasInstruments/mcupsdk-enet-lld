@@ -515,7 +515,7 @@ static int32_t backgroundTraffic_addVlanEntries(Enet_Handle hEnet, uint32_t core
 static int32_t EnetApp_configMcastAddr(Enet_Handle hEnet, uint32_t coreId, uint8_t *mcast, uint32_t vlanID, uint8_t portmask)
 {
     /* Adding multicast entry for traffic generation */
-    int32_t status = ENET_SOK;
+    int32_t status = ENET_EFAIL;
     Enet_IoctlPrms prms;
     uint32_t setMcastoutArgs;
 
@@ -532,14 +532,18 @@ static int32_t EnetApp_configMcastAddr(Enet_Handle hEnet, uint32_t coreId, uint8
                 .numIgnBits =0U,
             },
     };
-    memcpy(&setMcastInArgs.addr.addr, mcast, sizeof(setMcastInArgs.addr.addr));
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &setMcastInArgs, &setMcastoutArgs);
-    ENET_IOCTL(hEnet,
-               coreId,
-               CPSW_ALE_IOCTL_ADD_MCAST,
-               &prms,
-               status);
-    EnetAppUtils_assert(status == ENET_SOK);
+    if (mcast != NULL)
+    {
+        status = ENET_SOK;
+        memcpy(&setMcastInArgs.addr.addr, mcast, sizeof(setMcastInArgs.addr.addr));
+        ENET_IOCTL_SET_INOUT_ARGS(&prms, &setMcastInArgs, &setMcastoutArgs);
+        ENET_IOCTL(hEnet,
+                   coreId,
+                   CPSW_ALE_IOCTL_ADD_MCAST,
+                   &prms,
+                   status);
+        EnetAppUtils_assert(status == ENET_SOK);
+    }
 
     return status;
 }

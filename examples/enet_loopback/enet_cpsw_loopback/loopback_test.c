@@ -488,13 +488,13 @@ static bool EnetLpbk_verifyRxFrame(EnetDma_Pkt *pktInfo, uint8_t rxCnt)
         for (i = 0; i < pktInfo->sgList.numScatterSegments; i++)
         {
             segmentLen = pktInfo->sgList.list[i].segmentFilledLen;
-            if(i == 0)
+            if(i > 0)
             {
-                segmentLen -= headerLen;
+                rxPayload = pktInfo->sgList.list[i].bufPtr;
             }
             else
             {
-                rxPayload = pktInfo->sgList.list[i].bufPtr;
+                segmentLen -= headerLen;
             }
             for (j = 0; j < segmentLen; j++)
             {

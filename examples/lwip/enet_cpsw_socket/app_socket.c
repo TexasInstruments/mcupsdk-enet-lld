@@ -188,7 +188,7 @@ static void AppSocket_simpleClient(void* pArg)
 
         if (FD_ISSET(sock, &readset))
         {
-            ret = lwip_read(sock, gRxDataBuff, APP_SOCKET_MAX_RX_DATA_LEN);
+            ret = lwip_read(sock, gRxDataBuff, APP_SOCKET_MAX_RX_DATA_LEN - 1U);
             if (ret <= 0)
             {
                  ret = lwip_close(sock);

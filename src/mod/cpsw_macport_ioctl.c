@@ -1093,7 +1093,10 @@ int32_t CpswMacPort_ioctl_handler_ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING(Cp
 
     status = (inArgs->cbsCfg.queueNum < ENET_PRI_NUM) ? ENET_SOK : ENET_EINVALIDPARAMS;
     cppiClkFreqHz = EnetSoc_getClkFreq(hPort->enetType, hPort->instId, CPSW_CPPI_CLK);
-    status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    if (status == ENET_SOK)
+    {
+        status = (cppiClkFreqHz != 0) ? ENET_SOK : ENET_EINVALIDPARAMS;
+    }
     if (status == ENET_SOK)
     {
         status = CpswMacPort_setPriorityTrafficShaping(regs, macPort, inArgs->cbsCfg.queueNum, inArgs->cbsCfg.idleSlope, cppiClkFreqHz);

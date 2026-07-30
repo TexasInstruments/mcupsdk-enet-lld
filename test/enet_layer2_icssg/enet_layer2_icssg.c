@@ -1040,6 +1040,7 @@ static void EnetMp_showMacAddrs(EnetMp_PerCtxt *perCtxts,
 static bool EnetMp_isRgmiiEnabled (Enet_Type enetType, uint32_t instId)
 {
     uint32_t i;
+    bool rgmiiEn = false;
     for (i = 0; i < ENET_SYSCFG_MAX_ENET_INSTANCES; i++)
     {
         if ((enetType == gInstInfo[i].enetType) && (instId == gInstInfo[i].instId))
@@ -1047,7 +1048,11 @@ static bool EnetMp_isRgmiiEnabled (Enet_Type enetType, uint32_t instId)
             break;
         }
     }
-    return gInstInfo[i].rgmiiEn;
+    if (i < ENET_SYSCFG_MAX_ENET_INSTANCES)
+    {
+        rgmiiEn = gInstInfo[i].rgmiiEn;
+    }
+    return rgmiiEn;
 }
 
 static int32_t EnetMp_waitForLinkUp(EnetMp_PerCtxt *perCtxt)
