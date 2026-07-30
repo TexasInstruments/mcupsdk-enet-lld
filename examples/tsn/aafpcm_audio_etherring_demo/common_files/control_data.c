@@ -657,7 +657,10 @@ static int32_t EnetApp_configMcastAddr(Enet_Handle hEnet, uint32_t coreId, uint8
                 .numIgnBits =0U,
             },
     };
-    memcpy(&setMcastInArgs.addr.addr, mcast, sizeof(setMcastInArgs.addr.addr));
+    if (mcast != NULL)
+    {
+        memcpy(&setMcastInArgs.addr.addr, mcast, sizeof(setMcastInArgs.addr.addr));
+    }
     ENET_IOCTL_SET_INOUT_ARGS(&prms, &setMcastInArgs, &setMcastoutArgs);
     ENET_IOCTL(hEnet,
                coreId,

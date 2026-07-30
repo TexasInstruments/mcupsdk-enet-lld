@@ -48,6 +48,7 @@
 #include <kernel/dpl/QueueP.h>
 #include <math.h>
 #include "crf_hw_config.h"
+#include <enet_apputils.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -196,7 +197,9 @@ void crfApp_startCrfTask(bool isListener)
     if (status == SystemP_SUCCESS)
     {
         crfData.CRF_freeHandle  = QueueP_create(&crfData.CRF_freeQueue);
+        EnetAppUtils_assert(crfData.CRF_freeHandle != NULL);
         crfData.CRF_readyHandle = QueueP_create(&crfData.CRF_readyQueue);
+        EnetAppUtils_assert(crfData.CRF_readyHandle != NULL);
 
         for (int i = 0; i < NUM_CRF_EDGE; i++)
         {
@@ -215,6 +218,10 @@ void crfApp_startCrfTask(bool isListener)
     }
 
     crfData.hMCC = MCC_init(crfData.mediaClockFrequency,crfData.timestampingFrequency);
+    if (crfData.hMCC == NULL)
+    {
+        status = SystemP_FAILURE;
+    }
 
     CB_SLEEP(5);
 
@@ -236,23 +243,26 @@ void crfApp_startCrfTask(bool isListener)
         status = crfHwConfig_routeTsSignalToPhy();
     }
 
-    MCC_enableEventCapture(crfData.hMCC, 0x01);
-
     if (status == SystemP_SUCCESS)
     {
-        CB_SEM_INIT(&gCRF_Tick, 0, 0);
-
-        /* Start the Timer. */
-        TimerP_start(gTimerBaseAddr[CRFTICK_TIMER]);
-
-
-        if (crfcfg.listener)
+        if (crfData.hMCC != NULL)
         {
-            crfApp_runCrfListener(&crfData);
-        }
-        else
-        {
-            crfApp_runCrfTalker(&crfData);
+            MCC_enableEventCapture(crfData.hMCC, 0x01);
+
+            CB_SEM_INIT(&gCRF_Tick, 0, 0);
+
+            /* Start the Timer. */
+            TimerP_start(gTimerBaseAddr[CRFTICK_TIMER]);
+
+
+            if (crfcfg.listener)
+            {
+                crfApp_runCrfListener(&crfData);
+            }
+            else
+            {
+                crfApp_runCrfTalker(&crfData);
+            }
         }
     }
     return;

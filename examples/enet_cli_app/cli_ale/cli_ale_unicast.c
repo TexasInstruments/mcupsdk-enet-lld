@@ -243,6 +243,11 @@ BaseType_t EnetCLI_removeUcast(char *writeBuffer, size_t writeBufferLen,
     BaseType_t paramLen;
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
+    if (parameter == NULL)
+    {
+        snprintf(writeBuffer, writeBufferLen, "Invalid Parameter\r\n");
+        return pdFALSE;
+    }
     status = EnetAppUtils_macAddrAtoI(parameter, inArgs.addr);
     if (status)
     {

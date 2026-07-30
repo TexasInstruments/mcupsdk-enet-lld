@@ -258,6 +258,7 @@ void EnetPhy_setExtendedCfg(EnetPhy_Cfg *phyCfg,
                    "Extended config size is too large: %u\r\n", extendedCfgSize);
 
     if ((extendedCfgSize > 0U) &&
+        (extendedCfgSize <= ENETPHY_EXTENDED_CFG_SIZE_MAX) &&
         (extendedCfg != NULL))
     {
         memcpy(phyCfg->extendedCfg, extendedCfg, extendedCfgSize);

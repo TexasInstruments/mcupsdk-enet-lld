@@ -81,7 +81,7 @@ BaseType_t EnetCLI_addVlan(char *writeBuffer, size_t writeBufferLen,
     memset(&inArgs, 0, sizeof(inArgs));
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
-    if (atoi(parameter) > 0 && atoi(parameter) < 4096)
+    if ((parameter != NULL) && (atoi(parameter) > 0) && (atoi(parameter) < 4096))
     {
         inArgs.vlanIdInfo.tagType = ENET_VLAN_TAG_TYPE_INNER;
         inArgs.vlanIdInfo.vlanId = atoi(parameter);
@@ -135,7 +135,7 @@ BaseType_t EnetCLI_removeVlan(char *writeBuffer, size_t writeBufferLen,
     memset(&inArgs, 0, sizeof(inArgs));
 
     parameter = (char*) FreeRTOS_CLIGetParameter(commandString, 1, &paramLen);
-    if (atoi(parameter) > 0 && atoi(parameter) < 4096)
+    if ((parameter != NULL) && (atoi(parameter) > 0) && (atoi(parameter) < 4096))
     {
         inArgs.tagType = ENET_VLAN_TAG_TYPE_INNER;
         inArgs.vlanId = atoi(parameter);

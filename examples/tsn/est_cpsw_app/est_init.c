@@ -616,7 +616,7 @@ static void EnetEstApp_rxPacketHandler(void *arg,
             }
         }
     }
-    if (!goodPktFlag)
+    if ((!goodPktFlag) && (priority < QOSAPP_PRIORITY_MAX))
     {
         estAppCtx->estStatsInfo[priority].nBadPkt++;
     }

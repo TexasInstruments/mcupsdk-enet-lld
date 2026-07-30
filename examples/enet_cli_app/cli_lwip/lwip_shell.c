@@ -1101,6 +1101,9 @@ parse_command(struct command *com, u32_t len)
   for(; bufp < len && buffer[bufp] != ' '; bufp++);
   for(i = 0; i < 10; i++) {
     for(; bufp < len && buffer[bufp] == ' '; bufp++);
+    if (bufp >= len) {
+      return ETOOFEW;
+    }
     if (buffer[bufp] == '\r' ||
        buffer[bufp] == '\n') {
       buffer[bufp] = 0;

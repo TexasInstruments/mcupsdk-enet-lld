@@ -452,6 +452,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_ETHERTYPE;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             args.etherType = (uint16_t) strtol(parameter, NULL, 16);
         }
         /* Classifier based on source OUI address */
@@ -460,6 +465,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_OUI;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_ouiAddrAtoI(parameter,
                     args.ouiInfo.ouiAddr);
             if (status)
@@ -475,6 +485,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_MACSRC;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_macAddrAtoI(parameter,
                     args.srcMacAddrInfo.addr.addr);
             if (status)
@@ -490,6 +505,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_MACDST;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_macAddrAtoI(parameter,
                     args.dstMacAddrInfo.addr.addr);
             if (status)
@@ -512,6 +532,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.srcIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV4;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_ipAddrAtoI(parameter,
                     args.srcIpInfo.ipv4Info.ipv4Addr);
             if (status)
@@ -534,6 +559,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.srcIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV6;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_ipv6AddrAtoI(parameter,
                     args.srcIpInfo.ipv6Info.ipv6Addr, paramLen);
             if (status)
@@ -556,6 +586,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.dstIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV4;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_ipAddrAtoI(parameter,
                     args.dstIpInfo.ipv4Info.ipv4Addr);
             if (status)
@@ -578,6 +613,11 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.dstIpInfo.ipAddrType = CPSW_ALE_IPADDR_CLASSIFIER_IPV6;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
+            if (parameter == NULL)
+            {
+                snprintf(writeBuffer, writeBufferLen, "Invalid Args\r\n");
+                return false;
+            }
             status = EnetAppUtils_ipv6AddrAtoI(parameter,
                     args.dstIpInfo.ipv6Info.ipv6Addr, paramLen);
             if (status)
@@ -593,7 +633,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_IVLAN;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
-            if (atoi(parameter) > 4096 || atoi(parameter) < 0)
+            if (parameter == NULL || atoi(parameter) > 4096 || atoi(parameter) < 0)
             {
                 snprintf(writeBuffer, writeBufferLen, "Invalid VLAN ID\r\n");
                 return false;
@@ -606,7 +646,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_OVLAN;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
-            if (atoi(parameter) > 4096 || atoi(parameter) < 0)
+            if (parameter == NULL || atoi(parameter) > 4096 || atoi(parameter) < 0)
             {
                 snprintf(writeBuffer, writeBufferLen, "Invalid VLAN ID\r\n");
                 return false;
@@ -619,7 +659,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_PRIORITY;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
-            if (atoi(parameter) > 7 || atoi(parameter) < 0)
+            if (parameter == NULL || atoi(parameter) > 7 || atoi(parameter) < 0)
             {
                 snprintf(writeBuffer, writeBufferLen,
                         "Invalid priority value\r\n");
@@ -633,7 +673,7 @@ static bool EnetCli_classifier(char *writeBuffer, size_t writeBufferLen,
             args.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_PORT;
             parameter = (char*) EnetCli_getParameter(commandString,
                     paramCnt + 1, &paramLen);
-            if (atoi(parameter) >= EnetCli_inst.numMacPorts
+            if (parameter == NULL || atoi(parameter) >= EnetCli_inst.numMacPorts
                     || atoi(parameter) < 0)
             {
                 snprintf(writeBuffer, writeBufferLen, "Invalid MAC port\r\n");

@@ -1615,7 +1615,12 @@ int* mbedtls_test_ccm()
     int total_errors = 0, total_tests = 0, total_skipped = 0;
     while ( i < sizeof(data_ccm)/sizeof(data_ccm[0]) )
     {
-        char* buffer = malloc(sizeof(char)*strlen(data_ccm[i]));
+        char* buffer = malloc(sizeof(char)*strlen(data_ccm[i]) + 1);
+        if ( (uint8_t *)buffer == NULL )
+        {
+            ++i;
+            continue;
+        }
         strcpy(buffer, data_ccm[i]);
         total_tests++;
 
@@ -1623,8 +1628,6 @@ int* mbedtls_test_ccm()
         char *unmet_dependencies[20];
         ret = 0;
         test_info.failed = 0;
-        if ( (uint8_t *)buffer == NULL )
-            continue;
 
         cnt = parse_arguments( buffer, strlen( buffer ), params,
                                     sizeof( params ) / sizeof( params[0] ) );

@@ -339,6 +339,9 @@ static int start_crf(crfdata_t *crfdata)
     crfdata->sts = ub_mt_gettime64();
 
     MCC_handle hMCC = MCC_init(freq, crfts_period);
+    if (!hMCC) {
+        goto end;
+    }
     uint8_t streamID[8];
     ub_str2bytearray(streamID, crfcfg.stream_id, 16);
     #if AVTP_CRF_TALKER_ENABLED
@@ -398,9 +401,9 @@ static int start_crf(crfdata_t *crfdata)
             CB_SLEEP(1);
         }
     }
+    end:
 #if (AUTOAMP_APP_ENABLED && AVTP_CRF_LISTENER_ENABLED)
 #else
-    end:
     avtpc_crf_close(crfdata->avtpc_crf);
 #endif
     return 0;

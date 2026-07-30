@@ -1517,10 +1517,20 @@ static void EnetApp_cptsSetAddVal(const char *commandString)
     if(add_val == -1)
     {
         Cpsw_Cfg *pCfg = EnetApp_getCpswCfg(EnetApp_inst.enetType, EnetApp_inst.instId);
+        if (pCfg == NULL)
+        {
+            EnetAppUtils_print("Failed to get Cpsw config\r\n");
+            return;
+        }
         add_val = pCfg->cptsCfg.cptsRftClkFreq;
     }
 
     Enet_Handle hEnet = EnetSoc_getEnetHandle(EnetApp_inst.enetType, EnetApp_inst.instId);
+    if (hEnet == NULL)
+    {
+        EnetAppUtils_print("Failed to get Enet handle\r\n");
+        return;
+    }
     Cpsw_Handle hCpsw = (Cpsw_Handle)hEnet->enetPer;
     CpswCpts_Handle hCpts = &hCpsw->cptsObj;
     CSL_cptsRegs *regs = (CSL_cptsRegs *)hCpts->virtAddr;
