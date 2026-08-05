@@ -208,6 +208,28 @@ extern "C" {
 /*! \brief PRU FW TX checksum offload - IP header flag bit mask. */
 #define ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_MASK     (((uint32_t)0x1U) << ENETDMA_TXCSUMINFO_PRU_IP_CSUM_OFFLOAD_SHIFT)
 
+/* PRU FW RX checksum flag carried in dmaPkt->chkSumInfo bits [7:0] for ICSSG
+ * (Enet_isIcssFamily). Populated by PRU FW in word_3.b0 of the STATUS chunk --
+ * see RX_CHECKSUM_STATUS_TO_PSI.md. Distinct from the CPSW FHOST bit layout above:
+ * a tri-state flag, not a raw checksum-add value, so it must be decoded via its
+ * own macro rather than the ENETDMA_RXCSUMINFO_GET_IPV4/IPV6/CHKSUM_ERR_FLAG ones. */
+
+/*! \brief PRU FW RX checksum flag mask (low byte of chkSumInfo). */
+#define ENETDMA_RXCSUMINFO_PRU_CSUM_FLAG_MASK           (0xFFU)
+
+/*! \brief PRU FW RX checksum flag - checksum failed. */
+#define ENETDMA_RXCSUMINFO_PRU_CSUM_FAIL_FLAG           (0x00U)
+
+/*! \brief PRU FW RX checksum flag - checksum passed. */
+#define ENETDMA_RXCSUMINFO_PRU_CSUM_PASS_FLAG           (0x01U)
+
+/*! \brief PRU FW RX checksum flag - not applicable (non-TCP/UDP, or offload not compiled in). */
+#define ENETDMA_RXCSUMINFO_PRU_CSUM_NA_FLAG             (0xFFU)
+
+/*! \brief Get PRU FW RX checksum flag from dmaPkt->chkSumInfo. */
+#define ENETDMA_RXCSUMINFO_GET_PRU_CSUM_FLAG(chkSumInfo) \
+                ((chkSumInfo) & ENETDMA_RXCSUMINFO_PRU_CSUM_FLAG_MASK)
+
 /*!
  * \brief Enet DMA statistics configuration.
  *

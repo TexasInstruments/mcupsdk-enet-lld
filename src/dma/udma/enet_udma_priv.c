@@ -198,7 +198,11 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
 #endif
                 cppiTxStatus           = (EnetUdma_CppiTxStatus *)pHpdDesc->psInfo;
 
-                dmaPkt->chkSumInfo     = Enet_isIcssFamily(hPer->enetType) ? 0U : cppiTxStatus->chkSumInfo;
+                /* For ICSSG, word_3 now carries the PRU FW checksum flag (word_3.b0,
+                 * see RX_CHECKSUM_STATUS_TO_PSI.md) instead of being stale/unused --
+                 * decoded via ENETDMA_RXCSUMINFO_GET_PRU_CSUM_FLAG, distinct from CPSW's
+                 * FHOST bit layout decoded via ENETDMA_RXCSUMINFO_GET_IPV4/IPV6/CHKSUM_ERR_FLAG. */
+                dmaPkt->chkSumInfo     = cppiTxStatus->chkSumInfo;
                 dmaPkt->tsInfo.rxPktTs = ((((uint64_t)cppiTxStatus->tsHigh) << 32U) |
                                                 ((uint64_t)cppiTxStatus->tsLow));
 

@@ -246,6 +246,11 @@ typedef struct Lwip2Enet_RxObj_s
     /*! Whether RX event should be disabled or not. When disabled, it relies on pacing timer
      *  to retrieve packets from RX channel/flow */
     bool disableEvent;
+
+    /*! Peripheral type this RX flow belongs to. Set in Lwip2Enet_initRxObj().
+     *  Used to select the RX checksum flag decode (CPSW FHOST bits vs ICSSG PRU FW
+     *  tri-state checksum flag) in Lwip2Enet_prepRxPktQ(). */
+    Enet_Type enetType;
 } Lwip2Enet_RxObj, *Lwip2Enet_RxHandle;
 
 /*!

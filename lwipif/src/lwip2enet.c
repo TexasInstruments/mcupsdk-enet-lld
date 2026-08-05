@@ -600,6 +600,7 @@ static void Lwip2Enet_initRxObj(Enet_Type enetType, uint32_t instId, uint32_t ch
 
         hRx->refCount = 1U;
         hRx->chEntryIdx = chEntryIdx;
+        hRx->enetType = enetType;
         for (uint32_t portIdx = 0; portIdx < CPSW_STATS_MACPORT_MAX; portIdx++)
         {
             hRx->mapPortToNetif[portIdx] = NULL;
@@ -1290,7 +1291,16 @@ static uint32_t Lwip2Enet_prepRxPktQ(Lwip2Enet_RxObj *rx,
                      * as default value of this field when offload not enabled is false */
                     const uint32_t csumInfo =  pCurrDmaPacket->chkSumInfo;
 
-                    if (ENETDMA_RXCSUMINFO_GET_IPV4_FLAG(csumInfo) ||
+                    if (Enet_isIcssFamily(rx->enetType))
+                    {
+                        /* ICSSG carries a tri-state PRU FW checksum flag in the low byte, not
+                         * CPSW's FHOST bit layout -- FAIL is 0x00, which would otherwise
+                         * be silently swallowed by the IPV4/IPV6_FLAG check below (both
+                         * read as unset), so this must be its own branch, not a fallthrough. */
+                        uint32_t csumFlag = ENETDMA_RXCSUMINFO_GET_PRU_CSUM_FLAG(csumInfo);
+                        isChksumError = (csumFlag == ENETDMA_RXCSUMINFO_PRU_CSUM_FAIL_FLAG);
+                    }
+                    else if (ENETDMA_RXCSUMINFO_GET_IPV4_FLAG(csumInfo) ||
                         ENETDMA_RXCSUMINFO_GET_IPV6_FLAG(csumInfo))
                     {
                         isChksumError = ENETDMA_RXCSUMINFO_GET_CHKSUM_ERR_FLAG(csumInfo);
