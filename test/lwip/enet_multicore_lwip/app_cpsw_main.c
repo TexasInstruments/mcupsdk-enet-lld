@@ -133,11 +133,9 @@ int appMain(void *args)
     int32_t status = ENET_SOK;
     uint32_t ipAddr = 0U;
     uint16_t sizeIPAddr = 4U;
-    ip4_addr_t *ipAddr_s;
 
     ipc_rpmsg_echo_main(NULL);
     ipc_recvIPAddr (&ipAddr, &sizeIPAddr);
-    ipAddr_s = ((ip4_addr_t *)(&ipAddr));
 
     DebugP_log("[IPC txn]Remote Server interface IP:%s\r\n",
                 ip4addr_ntoa((ip4_addr_t *)(&ipAddr)));
