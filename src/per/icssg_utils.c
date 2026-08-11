@@ -778,12 +778,15 @@ int32_t IcssgUtils_sendFdbCmd(Icssg_Handle hIcssg,
     {
         case ICSSG_IOCTL_SUBCMD_FDB_ENTRY_ADD:
         case ICSSG_IOCTL_SUBCMD_FDB_ENTRY_REMOVE:
-        case ICSSG_IOCTL_SUBCMD_FDB_ENTRY_READ_SLOT:
             memcpy((void *)(&cmd->spare[0]), (void *)(&entry->macAddr[0]), 4);
             memcpy((void *)(&cmd->spare[1]), (void *)(&entry->macAddr[4]), 2);
             cmd->spare[2] = broadSideSlot;
             cmd->spare[1] = cmd->spare[1] | (fid << 16);
             cmd->spare[1] = cmd->spare[1] | (entry->fdbEntry[slice] << 24);
+            break;
+
+        case ICSSG_IOCTL_SUBCMD_FDB_ENTRY_READ_SLOT:
+            cmd->spare[2] = broadSideSlot;
             break;
 
         case ICSSG_IOCTL_SUBCMD_FDB_ENTRY_REMOVE_ALL:
