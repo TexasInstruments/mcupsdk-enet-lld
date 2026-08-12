@@ -2,7 +2,6 @@
 
 let common = system.getScript("/common");
 let pinmux = system.getScript("/drivers/pinmux/pinmux");
-
 let soc = system.getScript(`/networking/soc/networking_${common.getSocName()}`);
 let device = common.getDeviceName();
 //Get packet pool configuration script
@@ -177,48 +176,49 @@ function getPeripheralPinNames(inst)
     return pinMuxScript.getPeripheralPinNames(inst);
 }
 
-function getEnetClockConfig(device_name)
+function getEnetClockConfig(device)
 {
-  var enet_clock_config;
+    var enet_clock_config;
 
-    if (device_name === "am261x-lp")
+    if((device == "AM261x_ZFG") || (device == "AM261x_ZCZ") ||
+       (device == "AM261x_ZNC") || (device == "AM261x_ZEJ"))
     {
 enet_clock_config =
     {
 
-	clockIds        : [ "SOC_RcmPeripheralId_CPTS", "SOC_RcmPeripheralId_CPSW_5_50_250"],
-	clockFrequencies: [
-	    {
-	        moduleId: "SOC_RcmPeripheralId_CPTS",
-	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
-	        clkRate : 250000000,
-	    },
+    clockIds        : [ "SOC_RcmPeripheralId_CPTS", "SOC_RcmPeripheralId_CPSW_5_50_250"],
+    clockFrequencies: [
         {
-	        moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
-	        clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
-	        clkRate : 500000000,
-	    },
-	],
+            moduleId: "SOC_RcmPeripheralId_CPTS",
+            clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
+            clkRate : 250000000,
+        },
+        {
+            moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
+            clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
+            clkRate : 500000000,
+        },
+    ],
     }
     }
-    else if (device_name === "am261x-som")
+    else
     {
 enet_clock_config =
     {
 
-	clockIds        : [ "SOC_RcmPeripheralId_CPTS", , "SOC_RcmPeripheralId_CPSW_5_50_250"],
-	clockFrequencies: [
-	    {
-	        moduleId: "SOC_RcmPeripheralId_CPTS",
-	        clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
-	        clkRate : 200000000,
-	    },
+    clockIds        : [ "SOC_RcmPeripheralId_CPTS", , "SOC_RcmPeripheralId_CPSW_5_50_250"],
+    clockFrequencies: [
         {
-	        moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
-	        clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
-	        clkRate : 500000000,
-	    },
-	],
+            moduleId: "SOC_RcmPeripheralId_CPTS",
+            clkId   : "SOC_RcmPeripheralClockSource_SYS_CLK",
+            clkRate : 200000000,
+        },
+        {
+            moduleId: "SOC_RcmPeripheralId_CPSW_5_50_250",
+            clkId   : "SOC_RcmPeripheralClockSource_DPLL_CORE_HSDIV0_CLKOUT1",
+            clkRate : 500000000,
+        },
+    ],
     }
     }
 
@@ -226,11 +226,13 @@ enet_clock_config =
 }
 
 function getClockEnableIds(instance) {
+    let device = system.deviceData.device;
     let instConfig = getEnetClockConfig(device);
     return instConfig.clockIds;
 }
 
 function getClockFrequencies(inst) {
+    let device = system.deviceData.device;
     let instConfig = getEnetClockConfig(device);
     return instConfig.clockFrequencies;
 }
