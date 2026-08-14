@@ -485,10 +485,12 @@ typedef void (*CpswCpts_EventNotifyCb)(void *eventNotifyCbArg,
  *
  * \param hwPushNotifyCbArg      Callback argument
  * \param hwPushNum              CPTS hardware push instance number
+ * \param tsVal                  CPTS Timestamp of Event
  *
  */
 typedef void (*CpswCpts_HwPushNotifyCb)(void *hwPushNotifyCbArg,
-                                        CpswCpts_HwPush hwPushNum);
+                                        CpswCpts_HwPush hwPushNum,
+                                        uint64_t tsVal);
 
 /*!
  * \brief Input args for #CPSW_CPTS_IOCTL_REGISTER_STACK command.

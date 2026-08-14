@@ -1247,7 +1247,7 @@ static int32_t CpswCpts_handleEvents(CpswCpts_Handle hCpts,
                         (hCpts->hwPushNotifyCb[hwPushIdx] != NULL))
                     {
                         hCpts->hwPushNotifyCb[hwPushIdx](hCpts->hwPushNotifyCbArg[hwPushIdx],
-                                                         evt->hwPushNum);
+                                                         evt->hwPushNum, tsVal);
                     }
 #if ENET_CFG_IS_ON(ENET_CFG_CPSW_CPTS_STATS)
                     stats->hwTsPushEventCnt++;
