@@ -284,59 +284,62 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
             }
 
             adjVal = (uint64_t)tsAdj->intervalInNsecs / adjOffset;
-            if (adjVal <= (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
+            if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
             {
-                ENETTRACE_WARN("Setting PPM to %u, as %llu is less than minimum value (%u)\n",
-                               CPSW_CPTS_PPM_MIN_VAL, adjVal, CPSW_CPTS_PPM_MIN_VAL);
-                adjVal = CPSW_CPTS_PPM_MIN_VAL;
+                ENETTRACE_ERR("PPM correction exceeds hardware limit: adjVal %llu < min %u\n",
+                              adjVal, CPSW_CPTS_PPM_MIN_VAL);
+                status = ENET_EINVALIDPARAMS;
             }
 
-            tsPpmValHi = (uint32_t)(adjVal >> 32U);
-            tsPpmValLo = (uint32_t)(adjVal & 0xFFFFFFFFU);
+            if (status == ENET_SOK)
+            {
+                tsPpmValHi = (uint32_t)(adjVal >> 32U);
+                tsPpmValLo = (uint32_t)(adjVal & 0xFFFFFFFFU);
 
-            if(estfIdxMask != 0U)
-            {
-                /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
-                 * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
-                 * need to be corrected.
-                 */
-                estfAdjVal = adjVal * (hCpts->tsAddVal + 1U);
-                estfPpmValHi = (uint32_t)(estfAdjVal >> 32U);
-                estfPpmValLo = (uint32_t)(estfAdjVal & 0xFFFFFFFFU);
-            }
-            
-            if(genfIdxMask != 0U)
-            {
-                /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
-                 * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
-                 * need to be corrected.
-                 */
-                genfAdjVal = adjVal * (hCpts->tsAddVal + 1);
-                genfPpmValHi = (uint32_t)(genfAdjVal >> 32U);
-                genfPpmValLo = (uint32_t)(genfAdjVal & 0xFFFFFFFFU);
-            }
-            
-            CSL_CPTS_setTSPpm(regs, tsPpmValLo, tsPpmValHi, ppmDir);
-            if (estfIdxMask != 0U)
-            {
-               for(idx = 0U; idx < ENET_CFG_CPSW_ESTF_NUM; idx++)
-               {
-                   if ((estfIdxMask & ENET_BIT(idx)) != 0U)
+                if(estfIdxMask != 0U)
+                {
+                    /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
+                     * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
+                     * need to be corrected.
+                     */
+                    estfAdjVal = adjVal * (hCpts->tsAddVal + 1U);
+                    estfPpmValHi = (uint32_t)(estfAdjVal >> 32U);
+                    estfPpmValLo = (uint32_t)(estfAdjVal & 0xFFFFFFFFU);
+                }
+
+                if(genfIdxMask != 0U)
+                {
+                    /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
+                     * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
+                     * need to be corrected.
+                     */
+                    genfAdjVal = adjVal * (hCpts->tsAddVal + 1);
+                    genfPpmValHi = (uint32_t)(genfAdjVal >> 32U);
+                    genfPpmValLo = (uint32_t)(genfAdjVal & 0xFFFFFFFFU);
+                }
+
+                CSL_CPTS_setTSPpm(regs, tsPpmValLo, tsPpmValHi, ppmDir);
+                if (estfIdxMask != 0U)
+                {
+                   for(idx = 0U; idx < ENET_CFG_CPSW_ESTF_NUM; idx++)
                    {
-                       CSL_CPTS_setESTFnPpm(regs, idx, estfPpmValLo, estfPpmValHi, estfPpmDir);
+                       if ((estfIdxMask & ENET_BIT(idx)) != 0U)
+                       {
+                           CSL_CPTS_setESTFnPpm(regs, idx, estfPpmValLo, estfPpmValHi, estfPpmDir);
+                       }
                    }
-               }
-            }
-            
-            if (genfIdxMask != 0U)
-            {
-               for(idx = 0U; idx < ENET_CFG_CPSW_GENF_NUM; idx++)
-               {
-                   if ((genfIdxMask & ENET_BIT(idx)) != 0U)
+                }
+
+                if (genfIdxMask != 0U)
+                {
+                   for(idx = 0U; idx < ENET_CFG_CPSW_GENF_NUM; idx++)
                    {
-                       CSL_CPTS_setGENFnPpm(regs, idx, genfPpmValLo, genfPpmValHi, genfPpmDir);
+                       if ((genfIdxMask & ENET_BIT(idx)) != 0U)
+                       {
+                           CSL_CPTS_setGENFnPpm(regs, idx, genfPpmValLo, genfPpmValHi, genfPpmDir);
+                       }
                    }
-               }
+                }
             }
         }
     }
@@ -617,7 +620,22 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_GENF(CpswCpts_Handle hCpts, C
     {
         if (inArgs->ppmMode != ENET_TIMESYNC_ADJMODE_DISABLE)
         {
-            adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+            if (inArgs->ppmVal == 0U)
+            {
+                ENETTRACE_ERR("PPM value cannot be zero when PPM mode is not DISABLE\n");
+                status = ENET_EINVALIDPARAMS;
+            }
+            else
+            {
+                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+                if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
+                {
+                    ENETTRACE_ERR("GENFn PPM adjVal %llu is below hardware minimum %u\n",
+                                  adjVal, CPSW_CPTS_PPM_MIN_VAL);
+                    status = ENET_EINVALIDPARAMS;
+                }
+            }
+
             if (inArgs->length < CPSW_CPTS_GENFN_LENGTH_MIN_VAL)
             {
                 ENETTRACE_ERR_IF(status != ENET_SOK,
@@ -691,7 +709,21 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_ESTF(CpswCpts_Handle hCpts, C
     {
         if (inArgs->ppmMode != ENET_TIMESYNC_ADJMODE_DISABLE)
         {
-            adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+            if (inArgs->ppmVal == 0U)
+            {
+                ENETTRACE_ERR("PPM value cannot be zero when PPM mode is not DISABLE\n");
+                status = ENET_EINVALIDPARAMS;
+            }
+            else
+            {
+                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+                if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
+                {
+                    ENETTRACE_ERR("ESTFn PPM adjVal %llu is below hardware minimum %u\n",
+                                  adjVal, CPSW_CPTS_PPM_MIN_VAL);
+                    status = ENET_EINVALIDPARAMS;
+                }
+            }
         }
         else
         {
@@ -1084,13 +1116,6 @@ static uint64_t CpswCpts_calcPpmVal(uint64_t tsPpmVal,
     if (adjMode == ENET_TIMESYNC_ADJMODE_PPH)
     {
         adjVal = (CPSW_CPTS_PPM_GIGAHERTZ_VAL / tsPpmVal) * CPSW_CPTS_SECONDS_PER_HOUR;
-    }
-
-    if (adjVal <= CPSW_CPTS_PPM_MIN_VAL)
-    {
-        ENETTRACE_WARN("Setting PPM to %u, as %u is less than minimum value (%u)\n",
-                       CPSW_CPTS_PPM_MIN_VAL, adjVal, CPSW_CPTS_PPM_MIN_VAL);
-        adjVal = CPSW_CPTS_PPM_MIN_VAL;
     }
 
     return adjVal;

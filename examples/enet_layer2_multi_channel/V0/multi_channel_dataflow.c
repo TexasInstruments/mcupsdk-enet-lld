@@ -1053,7 +1053,10 @@ int32_t EnetApp_adjTimeSlowComp(EnetApp_PerCtxt* enet_perctxt,
 
         ENET_IOCTL_SET_IN_ARGS(&prms, &adjTsInArgs);
         ENET_IOCTL(enet_perctxt->hEnet, gEnetApp.coreId, ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP, &prms, status);
-        EnetAppUtils_assert(status == TIMESYNC_OK);
+        if (status != ENET_SOK)
+        {
+            EnetAppUtils_print("Failed to adjust timestamp: %d\n", status);
+        }
     }
     else
     {
