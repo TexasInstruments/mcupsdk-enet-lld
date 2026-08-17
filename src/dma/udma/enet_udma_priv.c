@@ -156,7 +156,7 @@ static int32_t EnetUdma_processRetrievedDesc(EnetPer_Handle hPer,
                 totalPacketFilledLen = CSL_udmapCppi5GetPktLen(&pHpdDesc->hostDesc);
                 lastFilledSegmentIndex = 0;
 
-                while (scatterSegmentIndex < dmaPkt->sgList.numScatterSegments)
+                while ((scatterSegmentIndex < dmaPkt->sgList.numScatterSegments) && (scatterSegmentIndex < ENET_UDMA_CPSW_MAX_SG_LIST))
                 {
                     if (scatterSegmentIndex == ENET_UDMA_CPSW_HOSTPKTDESC_INDEX)
                     {
@@ -441,6 +441,10 @@ int32_t EnetUdma_submitPkts(EnetPer_Handle hPer,
             CSL_UdmapCppi5HMPD *pHDescPrev = NULL;
             for (i = 0; i < dmaPkt->sgList.numScatterSegments; i++)
             {
+                if (i >= ENET_UDMA_CPSW_MAX_SG_LIST)
+                {
+                    break;
+                }
                 if (ENET_UDMA_CPSW_IS_HBD_IDX(i))
                 {
                     pHDesc = &pDmaDesc->hostBufDesc[i - ENET_UDMA_CPSW_HOSTBUFDESC_INDEX].desc;
@@ -1734,7 +1738,7 @@ EnetDma_RxChHandle EnetUdma_openRxRsvdFlow(EnetDma_Handle hDma,
         }
 #if defined(SOC_AM62LX)
         flowAllocMappedPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
-        flowPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj; 
+        flowPrms.ChHandle = &hDma->rxChObj[pRxFlowPrms->chIdx].udmaChObj;
 #endif
         /* Attach and configure the flows */
         retVal = Udma_flowAttachMapped(pRxFlow->hUdmaDrv,
@@ -2375,7 +2379,7 @@ int32_t EnetUdma_registerEvent(EnetUdma_udmaInfo *pUdmaInfo,
         evtPrms.masterEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL ;
 #else
         evtPrms.controllerEventHandle = (pUdmaInfo->useGlobalEvt) ? Udma_eventGetGlobalHandle(pUdmaInfo->hUdmaDrv) : NULL;
-#endif  
+#endif
 #endif
 
     evtPrms.eventCb           = eventCb;
