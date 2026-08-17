@@ -2,6 +2,7 @@
 
 let common = system.getScript("/common");
 let pinmux = system.getScript("/drivers/pinmux/pinmux");
+
 let soc = system.getScript(`/networking/soc/networking_${common.getSocName()}`);
 let device = common.getDeviceName();
 //Get packet pool configuration script
@@ -22,7 +23,7 @@ const pinMuxScript = system.getScript("./enet_cpsw_am261x_pinmux");
 const enet_cpsw_pinmux_config = {
     name: "pinmuxConfig",
     displayName: "Pinmux config",
-	longDescription: "Configuration of pinmux for CPSW",
+    longDescription: "Configuration of pinmux for CPSW",
     collapsed:true,
     config: [
 
@@ -32,7 +33,7 @@ const enet_cpsw_pinmux_config = {
 const enet_cpsw_cpdma_channel_config = {
     name: "cpdmaChConfig",
     displayName: "DMA channel config",
-	longDescription: "Configuration of Tx/Rx DMA channels",
+    longDescription: "Configuration of Tx/Rx DMA channels",
     collapsed:true,
     config: [
         {
@@ -47,7 +48,7 @@ const enet_cpsw_cpdma_channel_config = {
 const enet_cpsw_lwipIf_config = {
     name: "lwipIfConfig",
     displayName: "LWIP Interface config",
-	longDescription: "Configuration of LWIP Interface",
+    longDescription: "Configuration of LWIP Interface",
     collapsed:true,
     config: [
 
@@ -176,12 +177,11 @@ function getPeripheralPinNames(inst)
     return pinMuxScript.getPeripheralPinNames(inst);
 }
 
-function getEnetClockConfig(device)
+function getEnetClockConfig(device_name)
 {
-    var enet_clock_config;
+  var enet_clock_config;
 
-    if((device == "AM261x_ZFG") || (device == "AM261x_ZCZ") ||
-       (device == "AM261x_ZNC") || (device == "AM261x_ZEJ"))
+    if (device_name === "am261x-lp")
     {
 enet_clock_config =
     {
@@ -201,7 +201,7 @@ enet_clock_config =
     ],
     }
     }
-    else
+    else if (device_name === "am261x-som")
     {
 enet_clock_config =
     {
@@ -226,13 +226,11 @@ enet_clock_config =
 }
 
 function getClockEnableIds(instance) {
-    let device = system.deviceData.device;
     let instConfig = getEnetClockConfig(device);
     return instConfig.clockIds;
 }
 
 function getClockFrequencies(inst) {
-    let device = system.deviceData.device;
     let instConfig = getEnetClockConfig(device);
     return instConfig.clockFrequencies;
 }
@@ -632,7 +630,7 @@ function addSharedModuleInstances(inst) {
     return modInstances;
 }
 function getCpuInfo() {
-	const cpuInfo = new Map(
+    const cpuInfo = new Map(
                                [
                                  ['CSL_CORE_ID_R5FSS0_0',{subsystem: "R5FSS",
                                   clusternum: "0", core: "0"}],
@@ -640,7 +638,7 @@ function getCpuInfo() {
                                   clusternum: "0", core: "1"}],
                                ],
                              );
-	return cpuInfo.get(getCpuID());
+    return cpuInfo.get(getCpuID());
 }
 
 function getEnetResPartInfoNumCores() {
