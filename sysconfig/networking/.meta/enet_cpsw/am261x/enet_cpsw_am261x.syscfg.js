@@ -4,7 +4,6 @@ let common = system.getScript("/common");
 let pinmux = system.getScript("/drivers/pinmux/pinmux");
 
 let soc = system.getScript(`/networking/soc/networking_${common.getSocName()}`);
-let device = common.getDeviceName();
 //Get packet pool configuration script
 const pktPoolScript = system.getScript("./enet_pkt_pool_config");
 //Get ALE configuration script
@@ -180,9 +179,10 @@ function getPeripheralPinNames(inst)
 
 function getEnetClockConfig(device_name)
 {
-  var enet_clock_config;
+    var enet_clock_config;
 
-    if (device_name === "am261x-lp")
+    if((device_name == "AM261x_ZFG") || (device_name == "AM261x_ZCZ") ||
+       (device_name == "AM261x_ZNC") || (device_name == "AM261x_ZEJ"))
     {
 enet_clock_config =
     {
@@ -202,12 +202,12 @@ enet_clock_config =
     ],
     }
     }
-    else if (device_name === "am261x-som")
+    else
     {
 enet_clock_config =
     {
 
-    clockIds        : [ "SOC_RcmPeripheralId_CPTS", , "SOC_RcmPeripheralId_CPSW_5_50_250"],
+    clockIds        : [ "SOC_RcmPeripheralId_CPTS", "SOC_RcmPeripheralId_CPSW_5_50_250"],
     clockFrequencies: [
         {
             moduleId: "SOC_RcmPeripheralId_CPTS",
@@ -227,12 +227,12 @@ enet_clock_config =
 }
 
 function getClockEnableIds(instance) {
-    let instConfig = getEnetClockConfig(device);
+    let instConfig = getEnetClockConfig(system.deviceData.device);
     return instConfig.clockIds;
 }
 
 function getClockFrequencies(inst) {
-    let instConfig = getEnetClockConfig(device);
+    let instConfig = getEnetClockConfig(system.deviceData.device);
     return instConfig.clockFrequencies;
 }
 
