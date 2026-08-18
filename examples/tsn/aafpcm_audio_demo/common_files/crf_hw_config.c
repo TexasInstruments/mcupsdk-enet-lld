@@ -256,7 +256,7 @@ static uint64_t crfHwConfig_getCptsHwPushEventTs(uint32_t CptsHwPushNum)
     return timestamp;
 }
 
-static void crfHwConfig_CptspushNotifyCb(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum)
+static void crfHwConfig_CptspushNotifyCb(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum, uint64_t tsVal)
 {
     tsAcquireStateVar* sm = (tsAcquireStateVar*)&gAcquireSm;
     switch (sm->state)
@@ -363,7 +363,7 @@ static int32_t crfHwConfig_AtlMuxConfig(uint32_t mediaClkSignal, uint32_t tsClkS
 }
 
 static void CrfHwConfig_pushCb(void *hwPushNotifyCbArg,
-                                        CpswCpts_HwPush hwPushNum)
+                                        CpswCpts_HwPush hwPushNum, uint64_t tsVal)
 {
     void (*tssCb)(void*) = hwPushNotifyCbArg;
     tssCb(NULL);

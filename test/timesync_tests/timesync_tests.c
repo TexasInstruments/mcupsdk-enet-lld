@@ -71,7 +71,7 @@ int32_t stopGenf(int inst);
 extern SemaphoreP_Object NotifyPushCallback;
 extern volatile void* argsInCallback;
 extern volatile CpswCpts_HwPush cptsHwPushNumberInCallback;
-extern void cpts_hwpush_callback(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum);
+extern void cpts_hwpush_callback(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum, uint64_t tsVal);
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -605,7 +605,7 @@ volatile void* argsInCallback = NULL;
 volatile CpswCpts_HwPush cptsHwPushNumberInCallback = CPSW_CPTS_HWPUSH_INVALID;
 SemaphoreP_Object NotifyPushCallback;
 
-void cpts_hwpush_callback(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum)
+void cpts_hwpush_callback(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum, uint64_t tsVal)
 {
     argsInCallback             = hwPushNotifyCbArg;
     cptsHwPushNumberInCallback = hwPushNum;

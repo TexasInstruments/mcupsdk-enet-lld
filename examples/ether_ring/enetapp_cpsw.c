@@ -454,7 +454,7 @@ static void EnetApp_initEnetLinkCbPrms(Cpsw_Cfg *cpswCfg)
     cpswCfg->portLinkStatusChangeCbArg = NULL;
 }
 
-static void EnetApp_cptsHwPushCb(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum)
+static void EnetApp_cptsHwPushCb(void *hwPushNotifyCbArg, CpswCpts_HwPush hwPushNum, uint64_t tsVal)
 {
     (void)hwPushNum;
     if (isTimerInitDone == false)
