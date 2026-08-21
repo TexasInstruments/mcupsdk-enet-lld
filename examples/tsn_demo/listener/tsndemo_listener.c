@@ -179,7 +179,10 @@ static void TsnDemoListener_printMenu(void)
     EnetAppUtils_print(" 'u'  -  Toggle cut-through\r\n");
 #endif
     EnetAppUtils_print(" 'g'  -  Show EST schedule\r\n");
-    EnetAppUtils_print(" 'd'  -  Status                's'  -  CPSW statistics\r\n");
+    EnetAppUtils_print(" 'd'  -  Status\r\n");
+#if defined(TSNDEMO_ENABLE_DEBUG_MENU)
+    EnetAppUtils_print(" 's'  -  CPSW statistics\r\n");
+#endif
     EnetAppUtils_print(" 'v'  -  Trace next %u probes  'r'  -  Reset counters\r\n",
                        TSNDEMO_TRACE_MAX);
     EnetAppUtils_print(" 'L'  -  Toggle bulk reflector (last node in chain only)\r\n");
@@ -329,9 +332,11 @@ void TsnDemoListener_mainTask(void *args)
                 gTsnDemo.rxDemoFrameCount = 0U;
                 EnetAppUtils_print("Counters reset\r\n");
                 break;
+#if defined(TSNDEMO_ENABLE_DEBUG_MENU)
             case 's':
                 TsnDemoEnet_printStats();
                 break;
+#endif
             case 'L':
                 if (gTsnDemoCfg.downstreamPort != ENET_MAC_PORT_INV)
                 {

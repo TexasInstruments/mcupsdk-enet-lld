@@ -164,6 +164,11 @@ extern "C" {
  */
 //#define TSNDEMO_SKIP_SYNC_WAIT
 
+/*
+ * Debug Macro to toggle Probe and Bulk traffic
+ */
+//#define TSNDEMO_ENABLE_DEBUG_MENU
+
 /*! Feature bits, used both in TsnDemo_FeatureSet and on the wire */
 #define TSNDEMO_FEATBIT_EST             (1U << 0U)
 #define TSNDEMO_FEATBIT_IET             (1U << 1U)

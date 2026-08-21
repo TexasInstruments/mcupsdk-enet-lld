@@ -875,12 +875,15 @@ static void TsnDemoTalker_printMenu(void)
 #endif
     EnetAppUtils_print(" 'g'  -  Show EST schedule\r\n");
     EnetAppUtils_print(" 'p'  -  Print last report     'c'  -  Print A/B comparison\r\n");
-    EnetAppUtils_print(" 's'  -  CPSW statistics       'd'  -  Status\r\n");
+    EnetAppUtils_print(" 'd'  -  Status\r\n");
+#if defined(TSNDEMO_ENABLE_DEBUG_MENU)
     EnetAppUtils_print(" --- bring-up / capture (no measurement) ---\r\n");
+    EnetAppUtils_print(" 's'  -  CPSW statistics\r\n");
     EnetAppUtils_print(" 'T'  -  Toggle free-run EXPRESS transmit\r\n");
     EnetAppUtils_print(" 'B'  -  Toggle free-run BULK transmit\r\n");
     EnetAppUtils_print(" 'v'  -  Verify EST is actually gating (needs EST on)\r\n");
     EnetAppUtils_print(" 'y'  -  Measure pacing tick periodicity (temp diag)\r\n");
+#endif
     EnetAppUtils_print(" 'x'  -  Stop\r\n");
 }
 
@@ -1562,11 +1565,12 @@ void TsnDemoTalker_mainTask(void *args)
                                                  &gTalker.lastTsnOn[nodeIdx]);
                 }
                 break;
-            case 's':
-                TsnDemoEnet_printStats();
-                break;
             case 'd':
                 TsnDemoTalker_printStatus();
+                break;
+#if defined(TSNDEMO_ENABLE_DEBUG_MENU)
+            case 's':
+                TsnDemoEnet_printStats();
                 break;
             case 'T':
                 TsnDemoTalker_toggleFreeRun(true);
@@ -1580,6 +1584,7 @@ void TsnDemoTalker_mainTask(void *args)
             case 'y':
                 TsnDemoTalker_pacingPeriodicity();
                 break;
+#endif
             case 'x':
                 done = true;
                 break;

@@ -247,7 +247,7 @@ section9.output_section[0].alignment = 128;
  *  unchanged. */
 enet_cpsw1.$name                        = "CONFIG_ENET_CPSW0";
 enet_cpsw1.BoardType                    = "am263px-lp";
-enet_cpsw1.cptsHostRxTsEn               = false;
+enet_cpsw1.cptsHostRxTsEn               = true;
 enet_cpsw1.macAddrList                  = "70:ff:76:1d:ec:f0,70:ff:76:1d:ec:e3";
 enet_cpsw1.enChOverrideFlag             = true;
 enet_cpsw1.LargePoolPktCount            = 88;
