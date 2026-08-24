@@ -111,7 +111,8 @@ static int32_t CpswCpts_checkGenfEstfErrata(CpswCpts_Handle hCpts,
                                             uint32_t index,
                                             bool isGenf);
 static uint64_t CpswCpts_calcPpmVal(uint64_t tsPpmVal,
-                                    EnetTimeSync_AdjMode adjMode);
+                                    EnetTimeSync_AdjMode adjMode,
+                                    uint32_t tsAddVal);
 
 static int32_t CpswCpts_lookUpEstEvent(CpswCpts_Handle hCpts,
                                        Enet_MacPort macPort,
@@ -627,7 +628,7 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_GENF(CpswCpts_Handle hCpts, C
             }
             else
             {
-                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode, hCpts->tsAddVal);
                 if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
                 {
                     ENETTRACE_ERR("GENFn PPM adjVal %llu is below hardware minimum %u\n",
@@ -716,7 +717,7 @@ int32_t CpswCpts_ioctl_handler_CPSW_CPTS_IOCTL_SET_ESTF(CpswCpts_Handle hCpts, C
             }
             else
             {
-                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode);
+                adjVal = CpswCpts_calcPpmVal(inArgs->ppmVal, inArgs->ppmMode, hCpts->tsAddVal);
                 if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
                 {
                     ENETTRACE_ERR("ESTFn PPM adjVal %llu is below hardware minimum %u\n",
@@ -1104,7 +1105,8 @@ static int32_t CpswCpts_checkGenfEstfErrata(CpswCpts_Handle hCpts,
 }
 
 static uint64_t CpswCpts_calcPpmVal(uint64_t tsPpmVal,
-                                    EnetTimeSync_AdjMode adjMode)
+                                    EnetTimeSync_AdjMode adjMode,
+                                    uint32_t tsAddVal)
 {
     uint64_t adjVal = 0U;
 
@@ -1117,6 +1119,9 @@ static uint64_t CpswCpts_calcPpmVal(uint64_t tsPpmVal,
     {
         adjVal = (CPSW_CPTS_PPM_GIGAHERTZ_VAL / tsPpmVal) * CPSW_CPTS_SECONDS_PER_HOUR;
     }
+
+    /* GENF/ESTF PPM correction uses CPTS refclk tick (tsAddVal + 1) ns, so scale accordingly */
+    adjVal = adjVal * (tsAddVal + 1U);
 
     return adjVal;
 }
