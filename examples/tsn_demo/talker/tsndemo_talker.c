@@ -53,7 +53,6 @@
 #include <kernel/dpl/HwiP.h>
 #include <kernel/dpl/AddrTranslateP.h>
 #include <drivers/uart/v0/hw_uart.h>
-#include <drivers/hw_include/am261x/cslr_soc_baseaddress.h>
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
