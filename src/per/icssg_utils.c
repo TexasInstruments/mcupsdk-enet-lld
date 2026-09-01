@@ -169,22 +169,22 @@ static IcssgUtils_R30Cmd IcssgUtils_R30Bitmask[ICSSG_UTILS_MAX_COMMANDS] =
     */
     [ICSSG_UTILS_R30_CMD_DISABLE] =
     {
-        { 0xffff0004, 0xffff0100, 0xffff0104, ICSSG_UTILS_CMD_NONE }
+        { 0xffbf0004, 0xfdff0100, 0xfff70004, 0xfdff0100 }
     },
 
     [ICSSG_UTILS_R30_CMD_BLOCK] =
     {
-        { 0xfffb0040, 0xfeff0200, 0xfffb0008, 0xffff0200 }
+        { 0xfffb0040, 0xfeff0200, 0xfffb0008, 0xfeff0200 }
     },
 
     [ICSSG_UTILS_R30_CMD_FORWARD] =
     {
-        { 0xffbb0000, 0xfcff0000, 0xdcf30000, ICSSG_UTILS_CMD_NONE }
+        { 0xffbb0000, 0xfcff0000, 0xdff30000, 0xfcff0000 }
     },
 
     [ICSSG_UTILS_R30_CMD_FORWARD_WO_LEARNING] =
     {
-        { 0xffbb0000, 0xfcff0000, 0xfcf32000, ICSSG_UTILS_CMD_NONE }
+        { 0xffbb0000, 0xfcff0000, 0xfff32000, 0xfcff0000 }
     },
 
     [ICSSG_UTILS_R30_CMD_ACCEPT_ALL] =
