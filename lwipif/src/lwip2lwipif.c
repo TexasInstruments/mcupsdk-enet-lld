@@ -231,6 +231,11 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p, uint32_t csumOffloadTarget)
     const uint32_t ipPktHdrLen     = (IPH_HL(pIpPkt) << 2)  /* multiply by 4 */;
     const uint32_t ipPktPayloadLen = lwip_ntohs(IPH_LEN(pIpPkt)) - ipPktHdrLen;
     const uint32_t protocolType    = IPH_PROTO(pIpPkt);
+
+    uint8_t csumCoverageStartByte = 0;
+    uint8_t csumResultByte = 0;
+    uint16_t pseudoIpHdrChkSum = 0;
+
     ip_addr_t srcIp = {0};
     ip_addr_t dstIp = {0};
 
@@ -272,9 +277,9 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p, uint32_t csumOffloadTarget)
                     }
                     else
                     {
-                        uint8_t csumCoverageStartByte = (uint8_t*)pUdpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
-                        uint8_t csumResultByte        = (uint8_t*)(&(pUdpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
-                        uint16_t pseudoIpHdrChkSum    = ~(ip_chksum_pseudo(NULL, IP_PROTO_UDP, ipPktPayloadLen, &srcIp, &dstIp));
+                        csumCoverageStartByte = (uint8_t*)pUdpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
+                        csumResultByte        = (uint8_t*)(&(pUdpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
+                        pseudoIpHdrChkSum    = ~(ip_chksum_pseudo(NULL, IP_PROTO_UDP, ipPktPayloadLen, &srcIp, &dstIp));
                         pUdpHdr->chksum = pseudoIpHdrChkSum;
                         ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, ipPktPayloadLen);
                         ENETDMA_TXCSUMINFO_SET_CHKSUM_STARTBYTE(chkSumInfo, csumCoverageStartByte);
@@ -296,9 +301,9 @@ uint32_t LWIPIF_LWIP_getChkSumInfo(struct pbuf *p, uint32_t csumOffloadTarget)
                     }
                     else
                     {
-                        uint8_t csumCoverageStartByte = (uint8_t*)pTcpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
-                        uint8_t csumResultByte        = (uint8_t*)(&(pTcpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
-                        uint16_t pseudoIpHdrChkSum    = ~(ip_chksum_pseudo(NULL, IP_PROTO_TCP, ipPktPayloadLen, &srcIp, &dstIp));
+                        csumCoverageStartByte = (uint8_t*)pTcpHdr - (uint8_t*)pEthPkt + 1; /* CPSW cksum info indexing starts from 1 */
+                        csumResultByte        = (uint8_t*)(&(pTcpHdr->chksum)) - (uint8_t*)pEthPkt + 1;
+                        pseudoIpHdrChkSum    = ~(ip_chksum_pseudo(NULL, IP_PROTO_TCP, ipPktPayloadLen, &srcIp, &dstIp));
                         pTcpHdr->chksum = pseudoIpHdrChkSum;
                         ENETDMA_TXCSUMINFO_SET_CHKSUM_BYTECNT(chkSumInfo, ipPktPayloadLen);
                         ENETDMA_TXCSUMINFO_SET_CHKSUM_STARTBYTE(chkSumInfo, csumCoverageStartByte);

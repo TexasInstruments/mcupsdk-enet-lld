@@ -1,6 +1,21 @@
 %%{
     let module = system.modules["/networking/enet_icss/enet_icss"];
     const netifScript = system.getScript("../enet_icssg_lwipif_netif");
+
+    function getIcssgLwipChecksumDisableFlags(instance)
+    {
+        let disableFlag = '0U';
+        if (instance.icssgCsumOffloadEn == true)
+        {
+            /* PRU FW performs checksum generation and validation for IP,
+             * TCP, and UDP; disable the equivalent software checksum flags
+             * in lwIP. */
+            disableFlag = disableFlag + ' | NETIF_CHECKSUM_GEN_IP | NETIF_CHECKSUM_CHECK_IP' +
+                                         ' | NETIF_CHECKSUM_GEN_TCP | NETIF_CHECKSUM_GEN_UDP' +
+                                         ' | NETIF_CHECKSUM_CHECK_TCP | NETIF_CHECKSUM_CHECK_UDP';
+        }
+        return disableFlag;
+    }
 %%}
 % let instances = module.$instances;
 % let instance = module.$instances[0];
@@ -213,8 +228,10 @@ struct netif* LwipifEnetApp_netifOpen(LwipifEnetApp_Handle handle, uint32_t neti
         /* Peripheral instance */
         uint32_t instId = lwipIdx2Enet[netifIdx][1];
 
-        /* Enable all Flags. */
-        const uint32_t lwIPChcksumSetFlags = (NETIF_CHECKSUM_ENABLE_ALL);
+
+        /* Enable all Flags except below checksumflags. */
+        const uint32_t lwIPChcksumDisableFlags = `getIcssgLwipChecksumDisableFlags(instance)`;
+        const uint32_t lwIPChcksumSetFlags = (NETIF_CHECKSUM_ENABLE_ALL & ~lwIPChcksumDisableFlags);
         netif_add(&pObj->gNetif[netifIdx],
                     ipaddr, 
                     netmask,
@@ -229,6 +246,18 @@ struct netif* LwipifEnetApp_netifOpen(LwipifEnetApp_Handle handle, uint32_t neti
                  );
         LWIPIF_LWIP_start(enetType, instId, &pObj->gNetif[netifIdx], netifIdx);
 
+%if (instance.icssgCsumOffloadEn) {
+        /* Enable PRU FW TX checksum offload for all TX channels of this netif */
+        {
+            Lwip2Enet_netif_t *pInterface = (Lwip2Enet_netif_t*) pObj->gNetif[netifIdx].state;
+            uint32_t txIdx;
+
+            for (txIdx = 0U; txIdx < pInterface->count_hTx; txIdx++)
+            {
+                Lwip2Enet_setTxCsumOffloadTarget(pInterface->hTx[txIdx], ENET_CSUM_OFFLOAD_TARGET_PRU_FW);
+            }
+        }
+%}
         if(netifIdx == ENET_SYSCFG_DEFAULT_NETIF_IDX)
         {
             netif_set_default(&pObj->gNetif[netifIdx]);

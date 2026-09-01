@@ -81,6 +81,12 @@
 #define ICSSG_CFG_TX_IPG_960_NS             (0x17U)
 #define ICSSG_CFG_TX_IPG_104_NS             (0x0BU)
 
+/* Checksum-offload PRU firmware reads its TCP/UDP/IPv4 filter result
+ * from FT3 slots 10-12. */
+#define ICSSG_FT3_CSUM_IPV4_IDX             (10U)
+#define ICSSG_FT3_CSUM_TCP_IDX              (11U)
+#define ICSSG_FT3_CSUM_UDP_IDX              (12U)
+
 /* Implement promiscuous mode using ucast/mcast flooding as filter-based approach
  * is not fully functional for both Switch and Dual-MAC */
 #define ICSSG_PROMISC_MODE_WORKAROUND
@@ -685,6 +691,7 @@ void Icssg_initCfg(EnetPer_Handle hPer,
     icssgInitCfg->disablePhyDriver = false;
     icssgInitCfg->isPremQueEnable  = true;
     icssgInitCfg->qosLevels = ICSSG_QOS_MAX;
+    icssgInitCfg->rxCsumOffloadEn = false;
 }
 
 void IcssgMacPort_initCfg(IcssgMacPort_Cfg *macPortCfg)
@@ -1014,6 +1021,80 @@ static void Icssg_configFt3PriorityTag(Icssg_Handle hIcssg)
     }
 }
 
+/*!
+ * \brief Arms the FT3 classifier filters PRU/RTU checksum-offload firmware
+ *        uses to detect IPv4/TCP/UDP frames, so it computes and reports a
+ *        checksum verdict for matching RX packets.
+ *
+ *        Placed at slots 10-12 (see ICSSG_FT3_CSUM_*_IDX) rather than 0-2 to
+ *        avoid colliding with existing PCP/priority-tag filter usage.
+ *        Requires PRU/RTU firmware built to read the checksum classifier
+ *        result from these same slots.
+ */
+static void Icssg_configFt3TcpUdpChecksum(Icssg_Handle hIcssg)
+{
+    EnetPer_Handle hPer = (EnetPer_Handle)hIcssg;
+
+    /* Detect IPv4 EtherType (0x0800) */
+    Icssg_Filter3Cfg ft3CfgIpv4 = {
+        .ft3Start           = 0xCU,
+        .ft3StartAuto       = 0x0U,
+        .ft3StartOffset     = 0x0U,
+        .ft3JmpOffset       = 0x0U,
+        .ft3Len             = 0x0U,
+        .ft3Config          = 0x1U,
+        .ft3Type            = 0x00000008U,
+        .ft3TypeMask        = 0xFFFF0000U,
+        .ft3PatternLow      = 0x0U,
+        .ft3PatternHigh     = 0x0U,
+        .ft3PatternMaskLow  = 0xFFFFFFFFU,
+        .ft3PatternMaskHigh = 0xFFFFFFFFU,
+    };
+
+    /* Detect IP Protocol field == 0x06 (TCP) */
+    Icssg_Filter3Cfg ft3CfgTcp = {
+        .ft3Start           = 0x14U,
+        .ft3StartAuto       = 0x0U,
+        .ft3StartOffset     = 0x0U,
+        .ft3JmpOffset       = 0x0U,
+        .ft3Len             = 0x0U,
+        .ft3Config          = 0x1U,
+        .ft3Type            = 0x06000000U,
+        .ft3TypeMask        = 0x00FFFFFFU,
+        .ft3PatternLow      = 0x0U,
+        .ft3PatternHigh     = 0x0U,
+        .ft3PatternMaskLow  = 0xFFFFFFFFU,
+        .ft3PatternMaskHigh = 0xFFFFFFFFU,
+    };
+
+    /* Detect IP Protocol field == 0x11 (UDP) */
+    Icssg_Filter3Cfg ft3CfgUdp = {
+        .ft3Start           = 0x14U,
+        .ft3StartAuto       = 0x0U,
+        .ft3StartOffset     = 0x0U,
+        .ft3JmpOffset       = 0x0U,
+        .ft3Len             = 0x0U,
+        .ft3Config          = 0x1U,
+        .ft3Type            = 0x11000000U,
+        .ft3TypeMask        = 0x00FFFFFFU,
+        .ft3PatternLow      = 0x0U,
+        .ft3PatternHigh     = 0x0U,
+        .ft3PatternMaskLow  = 0xFFFFFFFFU,
+        .ft3PatternMaskHigh = 0xFFFFFFFFU,
+    };
+
+    IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_1, ICSSG_FT3_CSUM_IPV4_IDX, &ft3CfgIpv4);
+    IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_1, ICSSG_FT3_CSUM_TCP_IDX,  &ft3CfgTcp);
+    IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_1, ICSSG_FT3_CSUM_UDP_IDX,  &ft3CfgUdp);
+
+    if (hPer->enetType == ENET_ICSSG_SWITCH)
+    {
+        IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_2, ICSSG_FT3_CSUM_IPV4_IDX, &ft3CfgIpv4);
+        IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_2, ICSSG_FT3_CSUM_TCP_IDX,  &ft3CfgTcp);
+        IcssgUtils_configFilter3(hIcssg, ENET_MAC_PORT_2, ICSSG_FT3_CSUM_UDP_IDX,  &ft3CfgUdp);
+    }
+}
+
 int32_t Icssg_open(EnetPer_Handle hPer,
                    Enet_Type enetType,
                    uint32_t instId,
@@ -1081,6 +1162,11 @@ int32_t Icssg_open(EnetPer_Handle hPer,
         Icssg_disableClassifiers(hIcssg);
         Icssg_initR30Cmd(hIcssg);
         Icssg_configFt3PriorityTag(hIcssg);
+
+        if (icssgCfg->rxCsumOffloadEn)
+        {
+            Icssg_configFt3TcpUdpChecksum(hIcssg);
+        }
     }
 
     /* Open Resource Manager if Rx Channel open succeeded */

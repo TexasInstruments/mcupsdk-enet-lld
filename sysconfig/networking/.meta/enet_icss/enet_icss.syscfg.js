@@ -1224,6 +1224,16 @@ let enet_icss_module = {
             default: true,
         },
         {
+            name: "icssgCsumOffloadEn",
+            longDescription: "Enable checksum offload feature which enables both " +
+                "TCP/UDP checksum computation (transmit side) and validation " +
+                "(receive side) to be offloaded to PRU firmware. Requires a PRU " +
+                "firmware image built with checksum offload support.",
+            displayName: "Enable Checksum Offload",
+            default: false,
+            hidden: true, 
+        },
+        {
             name: "phyToMacInterfaceMode",
             displayName: "MII/RGMII",
             default: "MII",

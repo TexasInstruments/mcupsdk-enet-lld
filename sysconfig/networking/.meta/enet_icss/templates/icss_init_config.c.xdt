@@ -137,6 +137,7 @@ Icssg_Cfg gEnetIcssgCfg =
 %}
     .qosLevels = `Number(instance.QoS)`U,
     .isPremQueEnable = `instance.PremptionEnable`,
+    .rxCsumOffloadEn = `instance.icssgCsumOffloadEn`,
     .clockTypeFw = ICSSG_TIMESYNC_CLKTYPE_WORKING_CLOCK,
 };
 

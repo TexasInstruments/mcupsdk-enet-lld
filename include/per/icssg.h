@@ -1214,6 +1214,10 @@ typedef struct Icssg_Cfg_s
     /*! Clock type in firmware */
     IcssgTimeSync_ClkType clockTypeFw;
 
+    /*! Enable RX checksum offload: Configures the FT3 TCP/UDP/IPv4 filters
+     *  which are used by firmware to detect the IP frames and trigger checksum logic */
+    bool rxCsumOffloadEn;
+
     /*! ICSSG custom firmware configuration: image addresses and sizes.
      *  - Switch peripheral (#ENET_ICSSG_SWITCH), application must populate all
      *    firmwares entries of this array.
