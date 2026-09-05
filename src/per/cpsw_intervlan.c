@@ -547,9 +547,20 @@ static int32_t Cpsw_setInterVlanRouteMultiEgress(const Cpsw_Handle hCpsw,
     Enet_IoctlPrms prms;
     uint32_t portNum;
     uint32_t i;
-    int32_t status;
+    int32_t status = ENET_SOK;
 
-    status = Cpsw_validateInterVlanMultiEgressConfig(hCpsw, inArgs->numEgressPorts, inArgs->egressCfg);
+    if (inArgs->numEgressPorts > CPSW_ALE_NUM_MAC_PORTS)
+    {
+        ENETTRACE_ERR("Invalid number of egress ports %u (max %u)\n",
+                      inArgs->numEgressPorts, CPSW_ALE_NUM_MAC_PORTS);
+        status = ENET_EINVALIDPARAMS;
+    }
+
+    if (ENET_SOK == status)
+    {
+        status = Cpsw_validateInterVlanMultiEgressConfig(hCpsw, inArgs->numEgressPorts, inArgs->egressCfg);
+    }
+
     if (ENET_SOK == status)
     {
         status = Cpsw_findCommonFreeSlot(hCpsw,
@@ -647,37 +658,47 @@ static int32_t Cpsw_validateClearInterVlanRouteMultiEgress(const Cpsw_Handle hCp
     bool validateFailed = false;
     uint32_t portNum;
     uint32_t i;
-    int32_t status;
+    int32_t status = ENET_SOK;
 
-    for (i = 0U; ((i < inArgs->numEgressPorts) && (validateFailed == false)); i++)
+    if (inArgs->numEgressPorts > CPSW_ALE_NUM_MAC_PORTS)
     {
-        portNum = ENET_MACPORT_NORM(inArgs->egressCfg[i].egressPort);
-        Enet_assert(portNum < hCpsw->macPortNum);
+        ENETTRACE_ERR("Invalid number of egress ports %u (max %u)\n",
+                      inArgs->numEgressPorts, CPSW_ALE_NUM_MAC_PORTS);
+        status = ENET_EINVALIDPARAMS;
+    }
 
-        ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg[i].outPktModCfg, &routeId);
-        CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_FIND_INTERVLAN_ROUTE, &prms, status);
-        if (ENET_SOK == status)
+    if (ENET_SOK == status)
+    {
+        for (i = 0U; ((i < inArgs->numEgressPorts) && (validateFailed == false)); i++)
         {
-            if (0U == i)
+            portNum = ENET_MACPORT_NORM(inArgs->egressCfg[i].egressPort);
+            Enet_assert(portNum < hCpsw->macPortNum);
+
+            ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs->egressCfg[i].outPktModCfg, &routeId);
+            CPSW_MACPORT_PRIV_IOCTL(&hCpsw->macPortObj[portNum], CPSW_MACPORT_IOCTL_FIND_INTERVLAN_ROUTE, &prms, status);
+            if (ENET_SOK == status)
             {
-                commonRouteId = routeId;
+                if (0U == i)
+                {
+                    commonRouteId = routeId;
+                }
+                else
+                {
+                    if (routeId != commonRouteId)
+                    {
+                        validateFailed = true;
+                    }
+                }
             }
             else
             {
-                if (routeId != commonRouteId)
-                {
-                    validateFailed = true;
-                }
+                ENETTRACE_ERR("Failed to find interVLAN route: %d\n", status);
+                validateFailed = true;
             }
         }
-        else
-        {
-            ENETTRACE_ERR("Failed to find interVLAN route: %d\n", status);
-            validateFailed = true;
-        }
-    }
 
-    status = (validateFailed == true) ? ENET_EFAIL : ENET_SOK;
+        status = (validateFailed == true) ? ENET_EFAIL : ENET_SOK;
+    }
 
     return status;
 }
