@@ -299,11 +299,10 @@ int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_ALLOC_HW_PUSH_INST(EnetRm_Handle hRm,
 
 int32_t EnetRm_ioctl_handler_ENET_RM_IOCTL_FREE_HW_PUSH_INST(EnetRm_Handle hRm, Enet_IoctlPrms *prms)
 {
-    uint32_t coreKey = *((uint32_t *)prms->inArgs);
     EnetRm_FreeHwPushInArgs *inArgs = (EnetRm_FreeHwPushInArgs *)prms->inArgs;
     int32_t status = ENET_SOK;
 
-    status = EnetRm_freeHwPushInst(hRm, coreKey, inArgs->hwPushNum);
+    status = EnetRm_freeHwPushInst(hRm, inArgs->coreKey, inArgs->hwPushNum);
 
     return status;
 }
@@ -488,8 +487,11 @@ static int32_t EnetRm_allocHwPushInst(EnetRm_Handle hRm,
         {
             Enet_assert(hwPushRes->ownerCoreId == coreId);
             Enet_assert(hwPushRes->id < hRm->hwPushObj.resCnt);
-
-            *hwPushNum = (hwPushRes->id);
+            /**
+             * HW Push event are 1 indexed
+             * CPSW_CPTS_HWPUSH_FIRST = 1
+             */
+            *hwPushNum = hwPushRes->id + 1;
             status = ENET_SOK;
         }
         else
@@ -506,7 +508,11 @@ static int32_t EnetRm_freeHwPushInst(EnetRm_Handle hRm,
                                     uint32_t hwPushInst)
 {
     int32_t status = ENET_SOK;
-
+    /**
+     * HW Push event are 1 indexed
+     * CPSW_CPTS_HWPUSH_FIRST = 1
+     */
+    uint32_t hwPushInstNorm  = hwPushInst - 1;
     status = EnetRm_validateCoreKey(hRm, coreKey);
     if (status == ENET_SOK)
     {
@@ -518,7 +524,7 @@ static int32_t EnetRm_freeHwPushInst(EnetRm_Handle hRm,
                                      hRm->hwPushObj.hwPushRes,
                                      hRm->hwPushObj.resCnt,
                                      coreId,
-                                     hwPushInst);
+                                     hwPushInstNorm);
     }
 
     return status;

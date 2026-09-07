@@ -93,7 +93,7 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     /* Note- Though CPSW supports 64 distinct flow Ids, there are only
      * 8 policer/classifier so can effectively assign only 8 flow ids in CPSW3G */
     .rxFlowCount     = 8U,
-    .hwPushCnt       = 0U,
+    .hwPushCnt       = 8U,
 };
 
 /* CPSW_3G MAC port template */

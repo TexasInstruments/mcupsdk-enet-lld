@@ -91,7 +91,7 @@ const CpswSoc_Cfg gEnetSoc_cpsw3gSocCfg =
     .txChCount        = CSL_PSILCFG_DMSS_CPSW2_PSILD_THREAD_CNT,
 
     .rxFlowCount     = 16U,
-    .hwPushCnt       = 0U,
+    .hwPushCnt       = 8U,
 };
 
 /* CPSW_3G MAC port template */

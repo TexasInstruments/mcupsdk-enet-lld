@@ -767,10 +767,10 @@ function getEnetResPartInfo(instance) {
     let socName = common.getSocName();
     const ResPartInfoMap = new Map(
                                [
-                                 ['am62x', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62dx',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62ax',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
-                                 ['am62px',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0}], isStaticTxChanAllocated: false}],
+                                 ['am62x', {numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 8}], isStaticTxChanAllocated: false}],
+                                 ['am62dx',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 8}], isStaticTxChanAllocated: false}],
+                                 ['am62ax',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 1, numMacAddress: 4, numHwPush: 8}], isStaticTxChanAllocated: false}],
+                                 ['am62px',{numCores: 1, coreResInfo: [{txCh: {}, numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 8}], isStaticTxChanAllocated: false}],
                                ],
                             );
     const EthfwResPartInfoMap = new Map(
@@ -779,9 +779,9 @@ function getEnetResPartInfo(instance) {
                                         numCores: 3,
                                         coreResInfo:
                                         [
-                                            {coreId: 'CSL_CORE_ID_R5FSS0_0',txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 5, numMacAddress: 4, numHwPush: 0},
+                                            {coreId: 'CSL_CORE_ID_R5FSS0_0',txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 5, numMacAddress: 4, numHwPush: 4},
                                             {coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numTxCh: 0, numRxCh: 0, numRxFlows: 0, numMacAddress: 0, numHwPush: 0},
-                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numTxCh: 1, numRxCh: 1, numRxFlows: 3, numMacAddress: 2, numHwPush: 0}
+                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numTxCh: 1, numRxCh: 1, numRxFlows: 3, numMacAddress: 2, numHwPush: 4}
                                         ],
                                         isStaticTxChanAllocated: false
                                     }
@@ -791,9 +791,9 @@ function getEnetResPartInfo(instance) {
                                         numCores: 3,
                                         coreResInfo:
                                         [
-                                            {coreId: 'CSL_CORE_ID_WKUP_R5FSS0_0', txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},
+                                            {coreId: 'CSL_CORE_ID_WKUP_R5FSS0_0', txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 4},
                                             {coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numTxCh: 1, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},
-                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numTxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 0}
+                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numTxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 4}
                                         ],
                                         isStaticTxChanAllocated: false
                                     }
@@ -803,9 +803,9 @@ function getEnetResPartInfo(instance) {
                                         numCores: 3,
                                         coreResInfo:
                                         [
-                                            {coreId: 'CSL_CORE_ID_R5FSS0_0', txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 0},
+                                            {coreId: 'CSL_CORE_ID_R5FSS0_0', txCh: {}, numTxCh: 'ENET_SYSCFG_TX_CHANNELS_NUM', numRxCh: 1, numRxFlows: 4, numMacAddress: 4, numHwPush: 4},
                                             {coreId: 'CSL_CORE_ID_A53SS0_0', txCh: {}, numTxCh: 1, numRxCh: 1, numRxFlows: 1, numMacAddress: 1, numHwPush: 0},
-                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numTxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 0}
+                                            {coreId: 'CSL_CORE_ID_MCU_R5FSS0_0', txCh: {}, numRxCh: 1, numTxCh: 1, numRxFlows: 3, numMacAddress: 1, numHwPush: 4}
                                         ],
                                         isStaticTxChanAllocated: false
                                     }
