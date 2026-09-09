@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM275x" --part "AM2754" --package "ANJ" --context "c75ss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2754" --package "FCCSP (ANJ)" --context "c75ss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.24.2+4234"}
+ * @versions {"tool":"1.26.2+4477"}
  */
 
 /**
@@ -18,6 +18,7 @@ const gpio5       = gpio.addInstance();
 const ipc         = scripting.addModule("/drivers/ipc/ipc");
 const mcasp       = scripting.addModule("/drivers/mcasp/mcasp");
 const mcasp1      = mcasp.addInstance();
+const mcasp2      = mcasp.addInstance();
 const debug_log   = scripting.addModule("/kernel/dpl/debug_log");
 const mmu_armv8   = scripting.addModule("/kernel/dpl/mmu_armv8", {}, false);
 const mmu_armv81  = mmu_armv8.addInstance();
@@ -71,10 +72,9 @@ mcasp1.rxDataMask                              = 0xFFFFFFFF;
 mcasp1.enableLoopback                          = false;
 mcasp1.skipDriverOpen                          = true;
 mcasp1.clkSyncMode                             = "ASYNC";
-mcasp1.txCallbackFxn                           = "mcasp_txcb";
-mcasp1.rxCallbackFxn                           = "mcasp_rxcb";
+mcasp1.txCallbackFxn                           = "Mcasp_txCb";
+mcasp1.rxCallbackFxn                           = "Mcasp_rxCb";
 mcasp1.TxMode                                  = "TDM";
-mcasp1.NumTxSlots                              = 8;
 mcasp1.txFsPolarity                            = 0;
 mcasp1.RxMode                                  = "TDM";
 mcasp1.NumRxSlots                              = 8;
@@ -88,20 +88,23 @@ mcasp1.rxHclkSourceMux                         = 4;
 mcasp1.rxFsPolarity                            = 0;
 mcasp1.rxBitClkPolarity                        = 0;
 mcasp1.txLoopjobBufExtern                      = "uint8_t gMcaspAudioBufferTx[][]";
-mcasp1.txLoopjobBufLength                      = 512;
-mcasp1.rxLoopjobBufLength                      = 512;
 mcasp1.txHclkDiv                               = 1;
 mcasp1.txBclkCalculated                        = 12288000;
 mcasp1.rxHclkDiv                               = 1;
 mcasp1.rxBclkCalculated                        = 12288000;
 mcasp1.mcasp_auxclk_gf_sel                     = "1";
 mcasp1.aux_clk_sel                             = "5";
-mcasp1.txClkDiv                                = 2;
-mcasp1.txHclkExpected                          = 24576000;
-mcasp1.txClkApplyAlert                         = false;
 mcasp1.rxClkDiv                                = 2;
 mcasp1.rxHclkExpected                          = 24576000;
 mcasp1.rxClkApplyAlert                         = false;
+mcasp1.txAfifoEnable                           = false;
+mcasp1.rxAfifoEnable                           = false;
+mcasp1.NumTxSlots                              = 8;
+mcasp1.txClkDiv                                = 2;
+mcasp1.txHclkExpected                          = 24576000;
+mcasp1.txClkApplyAlert                         = false;
+mcasp1.txLoopjobBufLength                      = 192;
+mcasp1.rxLoopjobBufLength                      = 192;
 mcasp1.MCASP.$assignAllowConflicts             = "MCASP1";
 mcasp1.mcaspSer.create(2);
 mcasp1.mcaspSer[0].$name                       = "CONFIG_MCASP_SER1";
@@ -110,15 +113,48 @@ mcasp1.mcaspSer[0].MCASP.$assignAllowConflicts = "MCASP1";
 mcasp1.mcaspSer[1].$name                       = "CONFIG_MCASP_SER0";
 mcasp1.mcaspSer[1].serNum                      = 1;
 mcasp1.mcaspSer[1].MCASP.$assignAllowConflicts = "MCASP1";
-mcasp1.CLOCKING.$assign                        = "CLOCKING";
+mcasp1.CLOCKING.$assignAllowConflicts          = "CLOCKING";
 scripting.suppress("Resource conflict,MCASP1 is also in use by @@@.+?@@@, @@@.+?@@@", mcasp1.MCASP, "$assign");
 scripting.suppress("Resource conflict,MCASP1 is also in use by @@@.+?@@@, @@@.+?@@@", mcasp1.mcaspSer[0].MCASP, "$assign");
 scripting.suppress("Resource conflict,MCASP1 is also in use by @@@.+?@@@, @@@.+?@@@", mcasp1.mcaspSer[1].MCASP, "$assign");
+scripting.suppress("Resource conflict,CLOCKING is also in use by @@@.+?@@@", mcasp1.CLOCKING, "$assign");
+
+mcasp2.enableLoopback                 = false;
+mcasp2.skipDriverOpen                 = true;
+mcasp2.clkSyncMode                    = "ASYNC";
+mcasp2.mcasp_auxclk_gf_sel            = "1";
+mcasp2.aux_clk_sel                    = "5";
+mcasp2.enableMcaspRx                  = false;
+mcasp2.txCallbackFxn                  = "EnetApp_TxMcaspTxCb";
+mcasp2.rxClkDiv                       = 4;
+mcasp2.rxHclkCalculated               = 12288000;
+mcasp2.rxClkApplyAlert                = false;
+mcasp2.$name                          = "CONFIG_TS_MCASP";
+mcasp2.txLoopjobBuf                   = "gTxLoopjobBuf1";
+mcasp2.TxMode                         = "TDM";
+mcasp2.txFsPolarity                   = 0;
+mcasp2.NumTxSlots                     = 8;
+mcasp2.txAfifoEnable                  = false;
+mcasp2.txDataMask                     = 0xFFFFFFFF;
+mcasp2.txActiveSlotMask               = 0xFF;
+mcasp2.afsx                           = 0;
+mcasp2.fsx                            = 0.3;
+mcasp2.txBclkCalculated               = 76800;
+mcasp2.txFsyncCalculated              = 300;
+mcasp2.txClkDiv                       = 32;
+mcasp2.txHclkDiv                      = 10;
+mcasp2.txHclkCalculated               = 2457600;
+mcasp2.txClkApplyAlert                = false;
+mcasp2.CLOCKING.$assignAllowConflicts = "CLOCKING";
+mcasp2.MCASP.$assign                  = "MCASP4";
+mcasp2.MCASP.ACLKX.$used              = false;
+scripting.suppress("Resource conflict,CLOCKING is also in use by @@@.+?@@@", mcasp2.CLOCKING, "$assign");
 
 const udma         = scripting.addModule("/drivers/udma/udma", {}, false);
 const udma1        = udma.addInstance({}, false);
 udma1.$name        = "CONFIG_UDMA0";
 mcasp1.bcDmaDriver = udma1;
+mcasp2.bcDmaDriver = udma1;
 
 debug_log.enableCssLog = false;
 
@@ -198,3 +234,4 @@ mcasp1.MCASP.ACLKR.$suggestSolution                = "MCASP0_AXR14";
 mcasp1.mcaspSer[0].MCASP.AXR0.$suggestSolution     = "MCASP1_AXR0";
 mcasp1.mcaspSer[1].MCASP.AXR1.$suggestSolution     = "MCASP1_AXR1";
 mcasp1.CLOCKING.AUDIO_EXT_REFCLK2.$suggestSolution = "GPIO1_72";
+mcasp2.MCASP.AFSX.$suggestSolution                 = "MCASP4_AFSX";

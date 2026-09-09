@@ -48,6 +48,7 @@
 #include "debug_log.h"
 #include "tsninit.h"
 #include "common.h"
+#include "ti_enet_config.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -56,6 +57,10 @@
 #define GPTP_TASK_NAME          "gptp2d_task"
 extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
 #define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
+#ifndef ENET_ENABLE_PER_ICSSG
+#define CPSW_CPTS_PPM_COUNTER_MIN_VAL    (0x400)
+#define CPSW_CPTS_MAX_PPM_CORRECTION     (1000000000/CPSW_CPTS_PPM_COUNTER_MIN_VAL)/(ENET_SYSCFG_CPTS_TS_ADD_VAL)
+#endif
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -63,31 +68,31 @@ typedef struct
 {
     char *devlist;
     const char **confFiles;
-    int domainNum;
-    int domains[GPTP_MAX_DOMAINS];
-    int instNum;
-    int numConf;
-} EnetApp_GptpOpt_t;
+    int32_t domainNum;
+    int32_t domains[GPTP_MAX_DOMAINS];
+    int32_t instNum;
+    int32_t numConf;
+} EnetApp_GptpOpt;
 
 /* ========================================================================== */
 /*                          Function Declarations                             */
 /* ========================================================================== */
 
-static void EnetApp_cfgGptpPortDs(int instance, int domain,
-        int port_index, bool dbInitFlag);
-static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag);
-static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCtx);
-static int EnetApp_gptpNonYangConfig(uint8_t instance);
+static void EnetApp_configGptpPortDs(int32_t instance, int32_t domain,
+        int32_t port_index, bool dbInitFlag);
+static void EnetApp_configGptpDefaultDs(int32_t instance, int32_t domain, bool dbInitFlag);
+static int32_t EnetApp_configGptpYang(int32_t instance, int32_t domain, EnetApp_Ctx_t *appCtx);
+static int32_t EnetApp_configGptpNonYang(uint8_t instance);
 
 static void *EnetApp_gptpTask(void *arg);
-static int EnetApp_gptpDbInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs);
+static int32_t EnetApp_initGptpDb(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs);
 
 /* ========================================================================== */
 /*                            Local Variables                                */
 /* ========================================================================== */
 
 /* gptp can support more than 2 domains but in this example we supports only 2 */
-static EnetApp_GptpOpt_t gGptpOpt =
+static EnetApp_GptpOpt gGptpOpt =
 {
     .confFiles = NULL,
     .domainNum = GPTP_MAX_DOMAINS,
@@ -132,9 +137,9 @@ typedef struct EnetApp_DbKeyVal_IntItem
     uint32_t val;
     uint8_t sz;   // value size 1 (bool) or 4 (uint32_t)
     bool rw; // true: rw, false: ro
-} EnetApp_DbKeyVal_IntItem_t;
+} EnetApp_DbKeyVal_IntItem;
 
-static EnetApp_DbKeyVal_IntItem_t gGptpPortDsInt[] =
+static EnetApp_DbKeyVal_IntItem gGptpPortDsInt[] =
 {
     // rw
     {IEEE1588_PTP_TT_LOG_ANNOUNCE_INTERVAL, 0, sizeof(uint32_t),true},
@@ -165,7 +170,7 @@ static EnetApp_DbKeyVal_IntItem_t gGptpPortDsInt[] =
 
 };
 
-static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsInt[] =
+static EnetApp_DbKeyVal_IntItem gGptpDefaultDsInt[] =
 {
     // rw
     #if GPTP_MASTER
@@ -181,14 +186,14 @@ static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsInt[] =
     {IEEE1588_PTP_TT_PTP_TIMESCALE, true, 1, false}, // "internal-oscillator"
 };
 
-static EnetApp_DbKeyVal_IntItem_t gGptpDefaultDsClkQuality[] =
+static EnetApp_DbKeyVal_IntItem gGptpDefaultDsClkQuality[] =
 {
     {IEEE1588_PTP_TT_CLOCK_CLASS, 248, sizeof(uint32_t), true}, // "cc-default"
     {IEEE1588_PTP_TT_CLOCK_ACCURACY, 0x22, sizeof(uint32_t), true}, //"ca-time-accurate-to-250-ns"
     {IEEE1588_PTP_TT_OFFSET_SCALED_LOG_VARIANCE, 0x436a, sizeof(uint32_t), true},
 };
 
-static EnetApp_DbKeyVal_IntItem_t gGptpTsCorrectionPortDs[] =
+static EnetApp_DbKeyVal_IntItem gGptpTsCorrectionPortDs[] =
 {
     {IEEE1588_PTP_TT_INGRESS_LATENCY, 0x00, sizeof(uint32_t), true},
     {IEEE1588_PTP_TT_EGRESS_LATENCY, 0x00, sizeof(uint32_t), true},
@@ -233,6 +238,9 @@ static EnetApp_DbIntVal_t gGptpNonYangDs[] =
     {"PHASE_OFFSET_IIR_ALPHA_START_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_START_VALUE, 1},
     {"PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE, 4},
     {"MAX_DOMAIN_NUMBER", XL4_EXTMOD_XL4GPTP_MAX_DOMAIN_NUMBER, GPTP_MAX_DOMAINS},
+#ifndef ENET_ENABLE_PER_ICSSG
+    {"MAX_ADJUST_RATE_ON_CLOCK", XL4_EXTMOD_XL4GPTP_MAX_ADJUST_RATE_ON_CLOCK, CPSW_CPTS_MAX_PPM_CORRECTION},
+#endif
     {"QUICK_SYNC_ALGO", XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO, 1},
 #ifdef GPTP_QUICKSYNC
     {"SKIP_FREQADJ_COUNT_MAX", XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX, 2},
@@ -258,7 +266,6 @@ static EnetApp_DbIntVal_t gGptpNonYangDs[] =
     #else
     {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 100000}, // in ns
     #endif
-
 #endif
 
 #if GPTP_MAX_DOMAINS == 2
@@ -289,7 +296,7 @@ int EnetApp_addGptpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
         .taskName = GPTP_TASK_NAME,
         .stackBuffer = gGptpStackBuf,
         .stackSize = sizeof(gGptpStackBuf),
-        .onModuleDBInit = EnetApp_gptpDbInit,
+        .onModuleDBInit = EnetApp_initGptpDb,
         .onModuleRunner = EnetApp_gptpTask,
         .appCtx = &gAppCtx
     };
@@ -298,12 +305,12 @@ int EnetApp_addGptpModCtx(EnetApp_ModuleCtx_t *modCtxTbl)
     return 0;
 }
 
-static void EnetApp_cfgGptpPortDs(int instance, int domain,
-                                  int port_index, bool dbInitFlag)
+static void EnetApp_configGptpPortDs(int32_t instance, int32_t domain,
+                                  int32_t port_index, bool dbInitFlag)
 {
-    int i;
+    int32_t i;
 
-    for (i = 0; i < sizeof(gGptpPortDsInt)/sizeof(gGptpPortDsInt[0]); i++)
+    for (i = 0; i < sizeof(gGptpPortDsInt) / sizeof(gGptpPortDsInt[0]); i++)
     {
         if (gGptpPortDsInt[i].rw)
         {
@@ -326,7 +333,7 @@ static void EnetApp_cfgGptpPortDs(int instance, int domain,
         }
     }
 
-    for (i = 0; i < sizeof(gGptpTsCorrectionPortDs)/sizeof(gGptpTsCorrectionPortDs[0]); i++)
+    for (i = 0; i < sizeof(gGptpTsCorrectionPortDs) / sizeof(gGptpTsCorrectionPortDs[0]); i++)
     {
         gptpgcfg_set_yang_port_item(instance, IEEE1588_PTP_TT_TIMESTAMP_CORRECTION_PORT_DS,
                             gGptpTsCorrectionPortDs[i].key, port_index,
@@ -336,10 +343,10 @@ static void EnetApp_cfgGptpPortDs(int instance, int domain,
     }
 }
 
-static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag)
+static void EnetApp_configGptpDefaultDs(int32_t instance, int32_t domain, bool dbInitFlag)
 {
-    int i;
-    for (i = 0; i < sizeof(gGptpDefaultDsInt)/sizeof(gGptpDefaultDsInt[0]); i++)
+    int32_t i;
+    for (i = 0; i < sizeof(gGptpDefaultDsInt) / sizeof(gGptpDefaultDsInt[0]); i++)
     {
         if (gGptpDefaultDsInt[i].rw)
         {
@@ -362,7 +369,7 @@ static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag)
 
     if (!dbInitFlag)
     {
-        for (i = 0; i < sizeof(gGptpDefaultDsClkQuality)/sizeof(gGptpDefaultDsClkQuality[0]); i++)
+        for (i = 0; i < sizeof(gGptpDefaultDsClkQuality) / sizeof(gGptpDefaultDsClkQuality[0]); i++)
         {
             gptpgcfg_set_yang_defaultds_item(instance, IEEE1588_PTP_TT_CLOCK_QUALITY,
                         gGptpDefaultDsClkQuality[i].key, domain, YDBI_CONFIG,
@@ -373,33 +380,34 @@ static void EnetApp_cfgGptpDefaultDs(int instance, int domain, bool dbInitFlag)
 
 }
 
-static void EnetApp_gptpUpdateDomainMap(int instance, int domain, EnetApp_Ctx_t *appCtx)
+static void EnetApp_updateGptpDomainMap(int32_t instance, int32_t domain, EnetApp_Ctx_t *appCtx)
 {
     if (!appCtx->dbInitFlag)
     {
-        yang_db_item_access_t *ydbia=ydbi_access_handle();
+        yang_db_item_access_t *ydbia = ydbi_access_handle();
         uint16_t dmap;
-        uint8_t aps[]={IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP,
+        uint8_t aps[] = {IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP,
         IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP, 255};
-        yang_db_access_para_t dbpara={((instance | domain) != 0) ? YANG_DB_ACTION_APPEND:YANG_DB_ACTION_CREATE,
+        yang_db_access_para_t dbpara = {((instance | domain) != 0) ? YANG_DB_ACTION_APPEND : YANG_DB_ACTION_CREATE,
                                         YANG_DB_ONHW_NOACTION,
                                         NULL, aps, NULL, NULL, &dmap, sizeof(uint16_t)};
-        dmap=instance<<8|domain;
-        if(yang_db_action(ydbia->dbald, NULL, &dbpara)!=0){
+        dmap = instance << 8 | domain;
+        if (yang_db_action(ydbia->dbald, NULL, &dbpara) != 0)
+        {
             DPRINT("%s:Can't create instance|domainmap=0x%04x", __func__, dmap);
         }
     }
 }
 
-static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCtx)
+static int32_t EnetApp_configGptpYang(int32_t instance, int32_t domain, EnetApp_Ctx_t *appCtx)
 {
-    int i, res = 0;
+    int32_t i, res = 0;
 
     // DPRINT("%s:domain=%d", __func__, domain);
 
     do {
         /* set for default-ds */
-        EnetApp_cfgGptpDefaultDs(instance, domain, appCtx->dbInitFlag);
+        EnetApp_configGptpDefaultDs(instance, domain, appCtx->dbInitFlag);
 
         // portindex starts from 1
         for (i = 0; i < appCtx->netdevSize; i++)
@@ -415,7 +423,7 @@ static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCt
             }
 
             /* set for port-ds */
-            EnetApp_cfgGptpPortDs(instance, domain, i+1, appCtx->dbInitFlag);
+            EnetApp_configGptpPortDs(instance, domain, i+1, appCtx->dbInitFlag);
         }
 
         /* skip setting of 'rw' yang configs when db is already initialized */
@@ -435,12 +443,12 @@ static int EnetApp_gptpYangConfig(int instance, int domain, EnetApp_Ctx_t *appCt
     return res;
 }
 
-static int EnetApp_gptpNonYangConfig(uint8_t instance)
+static int32_t EnetApp_configGptpNonYang(uint8_t instance)
 {
-    int i;
-    int res = 0;
+    int32_t i;
+    int32_t res = 0;
 
-    for (i = 0; i < sizeof(gGptpNonYangDs)/sizeof(gGptpNonYangDs[0]); i++)
+    for (i = 0; i < sizeof(gGptpNonYangDs) / sizeof(gGptpNonYangDs[0]); i++)
     {
         res = gptpgcfg_set_item(instance, gGptpNonYangDs[i].item,  YDBI_CONFIG,
                     &gGptpNonYangDs[i].val, sizeof(gGptpNonYangDs[i].val));
@@ -463,8 +471,8 @@ static int EnetApp_gptpNonYangConfig(uint8_t instance)
 
 static void *EnetApp_gptpTask(void *arg)
 {
-    int i;
-    int res = 0;
+    int32_t i;
+    int32_t res = 0;
     EnetApp_ModuleCtx_t *modCtx = (EnetApp_ModuleCtx_t *)arg;
     EnetApp_Ctx_t *appCtx = modCtx->appCtx;
     const char *netdevs[CB_MAX_NETDEVNAME];
@@ -487,26 +495,26 @@ static void *EnetApp_gptpTask(void *arg)
     return NULL;
 }
 
-static int EnetApp_gptpDbInit(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs)
+static int32_t EnetApp_initGptpDb(EnetApp_ModuleCtx_t* modCtx, EnetApp_dbArgs *dbargs)
 {
     EnetApp_Ctx_t *appCtx = modCtx->appCtx;
-    int res = 0;
-    int i;
+    int32_t res = 0;
+    int32_t i;
 
     for (i = 0; i < gGptpOpt.domainNum; i++)
     {
-        EnetApp_gptpUpdateDomainMap(gGptpOpt.instNum, gGptpOpt.domains[i], appCtx);
+        EnetApp_updateGptpDomainMap(gGptpOpt.instNum, gGptpOpt.domains[i], appCtx);
     }
 
     res = gptpgcfg_init(appCtx->dbName, gGptpOpt.confFiles,
-                        gGptpOpt.instNum, true, EnetApp_gptpNonYangConfig);
+                        gGptpOpt.instNum, true, EnetApp_configGptpNonYang);
 
     if (gGptpOpt.numConf == 0)
     {
         /* There is no config file is specified, set config file for gptp*/
         for (i = 0; i < gGptpOpt.domainNum; i++)
         {
-            res = EnetApp_gptpYangConfig(gGptpOpt.instNum,
+            res = EnetApp_configGptpYang(gGptpOpt.instNum,
                         gGptpOpt.domains[i], appCtx);
             if (res)
             {
@@ -532,25 +540,28 @@ bool EnetApp_isGptpSyncStable(void)
 
 #ifdef GPTP_QUICKSYNC
 #ifdef GPTP_SLAVE
-int EnetApp_adjustTimeInterval()
+int32_t EnetApp_adjustTimeInterval(void)
 {
-    int di;
-    int res= -1;
+    int32_t di;
+    int32_t res = -1;
     for (di = 0; di < gGptpOpt.domainNum; di++)
     {
         gmsync_status_t gmsts = gptpclock_get_gmsync(gGptpOpt.instNum,
                     gGptpOpt.domains[di]);
-        if (GMSYNC_SYNC_STABLE != gmsts) {continue;}
+        if (GMSYNC_SYNC_STABLE != gmsts)
+        {
+            continue;
+        }
         if (GMSYNC_SYNC_STABLE == gmsts)
         {
             UB_LOG(UBL_INFO, "di=%d, GM is stable. Adjust messages interval now\n", di);
 
-            int8_t logSync=-3; // default: 125ms
-            int8_t logAnnounce=-128; // do not change Announce
-            int8_t logPdelayReq=0; // default: 1s
+            int8_t logSync = -3; // default: 125ms
+            int8_t logAnnounce = -128; // do not change Announce
+            int8_t logPdelayReq = 0; // default: 1s
 
             gptpgcfg_trigger_msg_interval_request(gGptpOpt.instNum, logSync, logAnnounce, logPdelayReq);
-            res=0;
+            res = 0;
             break;
         }
     }

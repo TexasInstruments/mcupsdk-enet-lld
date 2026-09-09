@@ -14,13 +14,9 @@ const files = {
         "default_flow_cpsw.c",
         "main.c",
         "board.c",
-        "crf_hw_config.c",
-        "crf_app.c",
-        "shm_cirbuf.c",
-        "autoamp_avb.c",
         "demo_task.c",
         "autoamp_mcasp_audio.c",
-        "gpio_sm.c",
+        "clocksync.c",
     ],
 };
 
@@ -28,15 +24,12 @@ const files = {
 const incfiles = {
     common: [
         "common.h",
-        "crf_app.h",
-        "crf_hw_config.h",
         "dataflow.h",
         "debug_log.h",
         "enetapp_cpsw.h",
-        "gpio_sm.h",
-        "shm_cirbuf.h",
         "tsnapp_porting.h",
         "tsninit.h",
+        "clocksync.h",
     ],
 };
 
@@ -51,6 +44,7 @@ const filedirs = {
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync", /* Example base */
     ],
 };
 
@@ -69,7 +63,9 @@ const libdirs_freertos = {
 
 const includes_freertos_r5f = {
     common: [
+        "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync", /* Example base */
         "$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files", /* Example base */
+        "$(MCU_PLUS_SDK_PATH)/source/networking/tsn/tsn-stack/tsn_avb/avb_if", /* avb_if.h */
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include",
         "${MCU_PLUS_SDK_PATH}/source/board/ethphy/port",
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include",
@@ -77,6 +73,8 @@ const includes_freertos_r5f = {
         "${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/r5f",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/utils",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/clock_recovery/",
+        "${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf/",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3",
         "${MCU_PLUS_SDK_PATH}/source/networking/enet/core",
@@ -113,7 +111,8 @@ const libs_freertos_r5f = {
         "tsn_gptp-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib",
         "tsn_l2-freertos.am275x.r5f.ti-arm-clang.lib",
-        "yangemb-freertos.am275x.r5f.ti-arm-clang.lib"
+        "yangemb-freertos.am275x.r5f.ti-arm-clang.lib",
+        "tsn_avb-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib"
     ],
 };
 
@@ -132,7 +131,7 @@ const defines_r5f_cdce_mcr = {
         'SITARA',
         'NO_GETOPT_LONG=1',
         'UB_LOGCAT=5',
-        'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\\\"',
+        'TSNAPP_LOGLEVEL=\\\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:55,nconf:45\\\"',
         'AVTP_ENABLED=1',
         'AVB_AUDIO_PLAYBACK_DEMO',
         'AVTP_HAVE_NO_SIGNAL=1',

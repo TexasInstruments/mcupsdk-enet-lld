@@ -37,33 +37,21 @@
 #include <string.h>
 #include <kernel/dpl/DebugP.h>
 #include <drivers/mcasp.h>
+#include <drivers/hw_include/cslr_soc.h>
 #include "ti_drivers_config.h"
 #include "ti_drivers_open_close.h"
-#include "shm_cirbuf.h"
-#include "gpio_sm.h"
+#include "shm_idxbuf.h"
+#include "mcasp_audio_cfg.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
 /* ========================================================================== */
 
-/* Audio buffer settings */
-#define APP_MCASP_AUDIO_BUFF_COUNT   (2U)
-#define APP_MCASP_AUDIO_BUFF_SIZE    (512U)
-
-/* This is shared Memory Block size,
-   should be an LCM Of McASP buffer size and AVTPDU Size. */
-#define APP_MCASP_SHM_BLOCK_SIZE     (1536U)
-#define APP_MCASP_SHM_NUM_BLOCKS     (1U)
-
-/* ========================================================================== */
-/*                          Function Declarations                             */
-/* ========================================================================== */
-
-static shm_handle AutoAmp_createSharedMemory(void* const address, const int blockSize, const int totalSize);
-
-static bool AutoAmp_startTx(void);
-
-void AutoAmp_SyncTimer(void);
+/* APP_MCASP_* audio-path sizing macros come from mcasp_audio_cfg.h.
+   AutoAmp_playbackMcaspRxCb indexes the AutoAmp_c7xToR5fShmBuffer buffer in
+   units of APP_MCASP_SAMPLE_FRAME_SIZE, so the ShmIdxBuf index doubles as
+   the media-clock edge count used for presentation-time derivation on the
+   AVB Tx task side (aaf_avb_task.c). */
 
 /* ========================================================================== */
 /*                           Global Variables                                 */
@@ -71,38 +59,48 @@ void AutoAmp_SyncTimer(void);
 
 extern MCASP_Config gMcaspConfig[];
 
-uint32_t notifyCounter = 0;
+uint32_t AutoAmp_notifyCounter = 0;
 
-/* Create buffers for transmit and Receive */
-uint8_t gMcaspAudioBufferTx[APP_MCASP_AUDIO_BUFF_COUNT][APP_MCASP_AUDIO_BUFF_SIZE] __attribute__((aligned(256)));
-uint8_t gMcaspAudioBufferRx[APP_MCASP_AUDIO_BUFF_COUNT][APP_MCASP_AUDIO_BUFF_SIZE] __attribute__((aligned(256)));
+/* Ping-pong DMA buffers, one pair per direction. Count/size come from
+   mcasp_audio_cfg.h, 256 alignment keeps them cache-line safe. */
+uint8_t AutoAmp_mcaspAudioBufferTx[APP_MCASP_AUDIO_BUFF_COUNT][APP_MCASP_AUDIO_BUFF_SIZE] __attribute__((aligned(256)));
+uint8_t AutoAmp_mcaspAudioBufferRx[APP_MCASP_AUDIO_BUFF_COUNT][APP_MCASP_AUDIO_BUFF_SIZE] __attribute__((aligned(256)));
 
 /* Create transaction objects for transmit and Receive */
-MCASP_Transaction gMcaspAudioTxnTx[APP_MCASP_AUDIO_BUFF_COUNT] = {0};
-MCASP_Transaction gMcaspAudioTxnRx[APP_MCASP_AUDIO_BUFF_COUNT] = {0};
+MCASP_Transaction AutoAmp_mcaspAudioTxnTx[APP_MCASP_AUDIO_BUFF_COUNT] = {0};
+MCASP_Transaction AutoAmp_mcaspAudioTxnRx[APP_MCASP_AUDIO_BUFF_COUNT] = {0};
 
-/* Allocate Local Buffer to send/receive from AVB Tasks */
-uint8_t C7X_TO_R5F_SHM_CIRC_BUFFER[APP_MCASP_SHM_BLOCK_SIZE*APP_MCASP_AUDIO_BUFF_COUNT*2]; __attribute__((aligned(1024)));
-uint8_t R5F_TO_C7X_SHM_CIRC_BUFFER[APP_MCASP_SHM_BLOCK_SIZE*APP_MCASP_AUDIO_BUFF_COUNT*2]; __attribute__((aligned(1024)));
+/* Backing store for the two ShmIdxBuf rings between McASP and the AVB tasks.
+   Sized for the max presentation-time offset, see APP_MCASP_SHM_BLOCK_SIZE. */
+uint8_t AutoAmp_c7xToR5fShmBuffer[APP_MCASP_SHM_BLOCK_SIZE*APP_MCASP_AUDIO_BUFF_COUNT*2] __attribute__((aligned(1024)));
+uint8_t AutoAmp_r5fToC7xShmBuffer[APP_MCASP_SHM_BLOCK_SIZE*APP_MCASP_AUDIO_BUFF_COUNT*2] __attribute__((aligned(1024)));
 
-shm_handle gShmTxHandle;
-shm_handle gShmRxHandle;
+ShmIdxBuf_Handle AutoAmp_shmTxHandle;
+ShmIdxBuf_Handle AutoAmp_shmRxHandle;
 
-gpioStateMachine gMcaspRxSm = {
-    .isEnabled = true,
-    .isRxMode = true,
-    .Periodicity = 3000,
-    .pulseWidth = 30,
-    .counter    = 0,
-};
+/* Media-clock edge count of the next sample-frame AutoAmp_playbackMcaspRxCb
+   will write. Advances by APP_MCASP_RXCB_SAMPLE_COUNT every write; passed as
+   the ShmIdxBuf_put() index so aaf_avb_task.c can recover it from
+   ShmIdxBuf_getFifo() for presentation-time computation. */
+static uint64_t gAutoAmpRxEdgeCount = 0U;
 
-gpioStateMachine gMcaspTxSm = {
-    .isEnabled = true,
-    .isRxMode = false,
-    .Periodicity = 3000,
-    .pulseWidth = 30,
-    .counter    = 0,
-};
+/* Media-clock edge count of the next sample-frame AutoAmp_playbackMcaspTxCb
+   will fetch from the AutoAmp_r5fToC7xShmBuffer - drives ShmIdxBuf_get() so
+   playback pulls each PDU at the index its AVTP presentation time landed on
+   (see aaf_avb_task.c). Advances by APP_MCASP_TXCB_SAMPLE_COUNT every
+   callback regardless of hit/miss, since the McASP frame clock free-runs. */
+static uint64_t gAutoAmpTxEdgeCount = 0U;
+
+/* ========================================================================== */
+/*                          Function Declarations                             */
+/* ========================================================================== */
+
+static ShmIdxBuf_Handle AutoAmp_createSharedMemory(uint32_t address, uint32_t lockNumber,
+                                                    uint32_t frameSize, uint32_t capacityFrames);
+
+static bool AutoAmp_startTx(void);
+
+void AutoAmp_syncTimer(void);
 
 /* ========================================================================== */
 /*                          Function Definitions                              */
@@ -114,21 +112,17 @@ int32_t AutoAmp_playbackMcaspConfig(void)
     uint32_t i;
     MCASP_Handle mcaspHandle;
 
-    /* Initialize Audio RX Gpio for Latency Measurement, Uses same pin. Hence enable one at a time. */
-    gpio_sm_init(&gMcaspRxSm, CONFIG_GPIO_RX_MCASP_BASE_ADDR, CONFIG_GPIO_RX_MCASP_PIN, CONFIG_GPIO_RX_MCASP_DIR);
-
-    /* Initialize Audio TX Gpio for Latency Measurement, Uses same pin. Hence enable one at a time. */
-    gpio_sm_init(&gMcaspTxSm, CONFIG_GPIO_TX_MCASP_BASE_ADDR, CONFIG_GPIO_TX_MCASP_PIN, CONFIG_GPIO_TX_MCASP_DIR);
-
     /* Playback Instance Index in Driver. */
-    int instIdx = CONFIG_MCASP0;
+    int32_t instIdx = CONFIG_MCASP0;
 
-    /* Create Tx Shared Memory. */
-    gShmTxHandle = AutoAmp_createSharedMemory((void*)C7X_TO_R5F_SHM_CIRC_BUFFER, APP_MCASP_SHM_BLOCK_SIZE, \
-                             APP_MCASP_SHM_BLOCK_SIZE*(APP_MCASP_SHM_NUM_BLOCKS+1));
-    /* Create Rx Shared Memory. */
-    gShmRxHandle = AutoAmp_createSharedMemory((void*)R5F_TO_C7X_SHM_CIRC_BUFFER, APP_MCASP_SHM_BLOCK_SIZE, \
-                             APP_MCASP_SHM_BLOCK_SIZE*(APP_MCASP_SHM_NUM_BLOCKS+1));
+    /* Create Tx Shared Memory. Frame-sized to one PCM sample-frame so its
+       index doubles as a media-clock edge count (see AutoAmp_playbackMcaspRxCb). */
+    AutoAmp_shmTxHandle = AutoAmp_createSharedMemory((uint32_t)AutoAmp_c7xToR5fShmBuffer, 1U,
+                                                      APP_MCASP_SAMPLE_FRAME_SIZE, APP_MCASP_SHM_SAMPLE_FRAMES);
+    /* Create Rx Shared Memory. Frame-sized to one PCM sample-frame so its
+       index doubles as a media-clock edge count (see AutoAmp_playbackMcaspTxCb). */
+    AutoAmp_shmRxHandle = AutoAmp_createSharedMemory((uint32_t)AutoAmp_r5fToC7xShmBuffer, 0U,
+                                                      APP_MCASP_SAMPLE_FRAME_SIZE, APP_MCASP_SHM_SAMPLE_FRAMES);
 
     /* Open MCASP driver after enabling the HCLK */
     gMcaspHandle[instIdx] = MCASP_open(instIdx, &gMcaspOpenParams[instIdx]);
@@ -143,86 +137,99 @@ int32_t AutoAmp_playbackMcaspConfig(void)
     /* Prepare and submit audio transaction transmit objects */
     for (i = 0U; i < APP_MCASP_AUDIO_BUFF_COUNT; i++)
     {
-        gMcaspAudioTxnTx[i].buf     = (void*)&gMcaspAudioBufferTx[i][0];
-        gMcaspAudioTxnTx[i].count   = APP_MCASP_AUDIO_BUFF_SIZE/4;
-        gMcaspAudioTxnTx[i].timeout = 0xFFFFFF;
-        gMcaspAudioTxnTx[i].args    = (void*)gShmRxHandle;
-        MCASP_submitTx(mcaspHandle, &gMcaspAudioTxnTx[i]);
+        AutoAmp_mcaspAudioTxnTx[i].buf     = (void *)&AutoAmp_mcaspAudioBufferTx[i][0];
+        AutoAmp_mcaspAudioTxnTx[i].count   = APP_MCASP_AUDIO_BUFF_SIZE/4;
+        AutoAmp_mcaspAudioTxnTx[i].timeout = 0xFFFFFF;
+        /* Tx callback reads from the ring the AVB Rx task fills */
+        AutoAmp_mcaspAudioTxnTx[i].args    = (void *)AutoAmp_shmRxHandle;
+        MCASP_submitTx(mcaspHandle, &AutoAmp_mcaspAudioTxnTx[i]);
+        /* Pre-queued buffers will play before the first callback, count them */
+        gAutoAmpTxEdgeCount += APP_MCASP_TXCB_SAMPLE_COUNT;
     }
 
     /* Prepare and submit audio transaction receive objects */
     for (i = 0U; i < APP_MCASP_AUDIO_BUFF_COUNT; i++)
     {
-        gMcaspAudioTxnRx[i].buf     = (void*)&gMcaspAudioBufferRx[i][0];
-        gMcaspAudioTxnRx[i].count   = APP_MCASP_AUDIO_BUFF_SIZE/4;
-        gMcaspAudioTxnRx[i].timeout = 0xFFFFFF;
-        gMcaspAudioTxnRx[i].args    = (void*)gShmTxHandle;
-        MCASP_submitRx(mcaspHandle, &gMcaspAudioTxnRx[i]);
+        AutoAmp_mcaspAudioTxnRx[i].buf     = (void *)&AutoAmp_mcaspAudioBufferRx[i][0];
+        AutoAmp_mcaspAudioTxnRx[i].count   = APP_MCASP_AUDIO_BUFF_SIZE/4;
+        AutoAmp_mcaspAudioTxnRx[i].timeout = 0xFFFFFF;
+        /* Rx callback writes into the ring the AVB Tx task drains */
+        AutoAmp_mcaspAudioTxnRx[i].args    = (void *)AutoAmp_shmTxHandle;
+        MCASP_submitRx(mcaspHandle, &AutoAmp_mcaspAudioTxnRx[i]);
     }
-
-    /* Trigger McASP receive operation */
-    status = MCASP_startTransferRx(mcaspHandle);
-    DebugP_assert(status == SystemP_SUCCESS);
-
-    /* Trigger McASP transmit operation */
-    status = MCASP_startTransferTx(mcaspHandle);
-    DebugP_assert(status == SystemP_SUCCESS);
 
     return status;
 }
 
-static shm_handle AutoAmp_createSharedMemory(void* const address, const int blockSize, const int totalSize)
+static ShmIdxBuf_Handle AutoAmp_createSharedMemory(uint32_t address, uint32_t lockNumber,
+                                                    uint32_t frameSize, uint32_t capacityFrames)
 {
-    shm_handle handle;
-    const uint32_t shmOvrHd = shm_metadata_overhead();
-    /* floor the totalSize to be a multiple of blocksize, exclude the overhead size. */
-    const uint32_t rxShmBufSize = ((totalSize-shmOvrHd)/blockSize)*blockSize + shmOvrHd;
-    memset(address, 0, rxShmBufSize);
-    handle = shm_create(shm_core_r5f, (uint32_t)address, rxShmBufSize);
-    return handle;
+    ShmIdxBuf_Config cfg;
+
+    /* The hardware spinlock guards the ring when both cores/tasks touch it */
+    cfg.startAddr             = address;
+    cfg.regionSize            = ShmIdxBuf_getRequiredSize(capacityFrames, frameSize);
+    cfg.frameSize             = frameSize;
+    cfg.capacityFrames        = capacityFrames;
+    cfg.spinlockBaseAddr      = CSL_SPINLOCK0_BASE;
+    cfg.lockNumber            = lockNumber;
+    cfg.lockTimeoutIterations = 0U;
+    cfg.maxForwardJumpFrames  = 0U;
+    cfg.forceInit             = false;
+    cfg.clearStatsOnRead      = false;
+
+    return ShmIdxBuf_create(&cfg);
 }
 
 void AutoAmp_playbackMcaspTxCb(MCASP_Handle handle, MCASP_Transaction *transaction)
 {
-    shm_handle hShm = (shm_handle)transaction->args;
+    ShmIdxBuf_Handle hShm = (ShmIdxBuf_Handle)transaction->args;
+    uint64_t outBaseIndex;
+    ShmIdxBuf_Status status;
     DebugP_assert(hShm != NULL);
 
-    uint16_t reqSize = APP_MCASP_AUDIO_BUFF_SIZE;
-    shm_read(shm_core_r5f, hShm, transaction->buf, &reqSize);
+    /* Fetch the sample-frames due to play out at the current media-clock
+       edge count. The McASP frame clock is real-time and free-running, so
+       every callback must submit a buffer - on a miss, play silence for
+       this slot instead of blocking/retrying. */
+    status = ShmIdxBuf_get(hShm, gAutoAmpTxEdgeCount, APP_MCASP_TXCB_SAMPLE_COUNT, transaction->buf, &outBaseIndex);
+    if (status != SHMIDXBUF_OK)
+    {
+        /* SHMIDXBUF_ERR_NOT_READY: producer hasn't caught up to this index yet.
+           SHMIDXBUF_ERR_TOO_OLD: this window was already evicted or delivered -
+           resync to the buffer's current oldest-resident index. */
+        memset(transaction->buf, 0, APP_MCASP_AUDIO_BUFF_SIZE);
+    }
+    gAutoAmpTxEdgeCount += APP_MCASP_TXCB_SAMPLE_COUNT;
+
+    /* Flush so the DMA sees the data we just wrote, not stale cache lines */
     CacheP_wb(transaction->buf, APP_MCASP_AUDIO_BUFF_SIZE, CacheP_TYPE_ALL);
-    gpio_sm_spin(&gMcaspTxSm, transaction->buf, 16);
     MCASP_submitTx(handle, transaction);
 }
 
 void AutoAmp_playbackMcaspRxCb(MCASP_Handle handle, MCASP_Transaction *transaction)
 {
-    shm_handle hShm = (shm_handle)transaction->args;
+    ShmIdxBuf_Handle hShm = (ShmIdxBuf_Handle)transaction->args;
     DebugP_assert(hShm != NULL);
 
     /* Write to Shm only if Start is indicated. */
     if (AutoAmp_startTx() == true)
     {
         CacheP_inv(transaction->buf, APP_MCASP_AUDIO_BUFF_SIZE, CacheP_TYPE_ALL);
-        gpio_sm_spin(&gMcaspRxSm, transaction->buf, 16);
-        shm_write(shm_core_r5f, hShm, transaction->buf, APP_MCASP_AUDIO_BUFF_SIZE);
+        /* Indexed by media-clock edge count so the AVB Tx task can derive a
+           presentation timestamp from it. */
+        (void)ShmIdxBuf_put(hShm, gAutoAmpRxEdgeCount, transaction->buf, APP_MCASP_RXCB_SAMPLE_COUNT);
+        gAutoAmpRxEdgeCount += APP_MCASP_RXCB_SAMPLE_COUNT;
     }
     MCASP_submitRx(handle, transaction);
 
-    if (notifyCounter == 0)
-    {
-        notifyCounter = 2;
-        /* Notify R5 Core. to start timer. */
-        AutoAmp_SyncTimer();
-    }
-    else
-    {
-        notifyCounter -= 1;
-    }
+    /* Rx completion is the talker tick source, so AVB Tx stays locked to the audio clock */
+    AutoAmp_syncTimer();
 
 }
 
 static bool AutoAmp_startTx(void)
 {
-    extern bool gAutoAmp_audioTxStarted;
-    return gAutoAmp_audioTxStarted;
+    extern bool AutoAmp_audioTxStarted;
+    return AutoAmp_audioTxStarted;
 }

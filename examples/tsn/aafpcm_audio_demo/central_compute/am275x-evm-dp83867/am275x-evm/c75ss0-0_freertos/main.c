@@ -47,7 +47,7 @@ StackType_t gMainTaskStack[MAIN_TASK_SIZE] __attribute__((aligned(16*1024)));
 StaticTask_t gMainTaskObj;
 TaskHandle_t gMainTask;
 
-void mcasp_playback_main(void *args);
+void Mcasp_playbackMain(void *args);
 
 void freertos_main(void *args)
 {
@@ -59,7 +59,7 @@ void freertos_main(void *args)
     status = Board_driversOpen();
     DebugP_assert(status==SystemP_SUCCESS);
 
-    mcasp_playback_main(NULL);
+    Mcasp_playbackMain(NULL);
 
     /* Close board and flash drivers */
     Board_driversClose();

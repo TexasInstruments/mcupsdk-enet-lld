@@ -3,7 +3,7 @@
  * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
  * @cliArgs --device "AM275x" --part "AM2754" --package "ANJ" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
  * @v2CliArgs --device "AM2754" --package "FCCSP (ANJ)" --context "r5fss0-0" --product "MCU_PLUS_SDK@07.03.01"
- * @versions {"tool":"1.24.2+4234"}
+ * @versions {"tool":"1.26.2+4477"}
  */
 
 /**
@@ -98,8 +98,6 @@ mcasp1.rxHclkSource                            = 0;
 mcasp1.rxHclkSourceMux                         = 4;
 mcasp1.txHclkSourceMux                         = 4;
 mcasp1.clkSyncMode                             = "ASYNC";
-mcasp1.txLoopjobBufLength                      = 512;
-mcasp1.rxLoopjobBufLength                      = 512;
 mcasp1.txCallbackFxn                           = "AutoAmp_playbackMcaspTxCb";
 mcasp1.rxCallbackFxn                           = "AutoAmp_playbackMcaspRxCb";
 mcasp1.txHclkDiv                               = 1;
@@ -114,6 +112,11 @@ mcasp1.txClkApplyAlert                         = false;
 mcasp1.rxClkDiv                                = 2;
 mcasp1.rxHclkExpected                          = 24576000;
 mcasp1.rxClkApplyAlert                         = false;
+mcasp1.txLoopjobBufExtern                      = "gTxLoopjobBuf0";
+mcasp1.txLoopjobBufLength                      = 192;
+mcasp1.rxLoopjobBufLength                      = 192;
+mcasp1.txAfifoEnable                           = false;
+mcasp1.rxAfifoEnable                           = false;
 mcasp1.MCASP.$assignAllowConflicts             = "MCASP1";
 mcasp1.MCASP.ACLKX.pu_pd                       = "pu";
 mcasp1.mcaspSer.create(2);
@@ -132,15 +135,12 @@ scripting.suppress("Resource conflict,CLOCKING is also in use by @@@.+?@@@", mca
 mcasp2.enableLoopback                          = false;
 mcasp2.skipDriverOpen                          = true;
 mcasp2.enableMcaspRx                           = false;
-mcasp2.txActiveSlotMask                        = 0x3;
 mcasp2.txDataMask                              = 0xFFFFFFFF;
 mcasp2.afsx                                    = 0;
 mcasp2.txLoopjobBuf                            = "gTxLoopjobBuf1";
 mcasp2.masterClkx                              = 1024;
 mcasp2.fsx                                     = 0.3;
 mcasp2.txClkDiv                                = 32;
-mcasp2.txHclkCalculated                        = 614400;
-mcasp2.txBclkCalculated                        = 19200;
 mcasp2.txFsyncCalculated                       = 300;
 mcasp2.rxClkDiv                                = 32;
 mcasp2.rxHclkCalculated                        = 614400;
@@ -148,12 +148,20 @@ mcasp2.rxBclkCalculated                        = 19200;
 mcasp2.rxFsyncCalculated                       = 300;
 mcasp2.mcasp_auxclk_gf_sel                     = "1";
 mcasp2.aux_clk_sel                             = "5";
-mcasp2.txHclkDiv                               = 40;
 mcasp2.rxHclkDiv                               = 40;
 mcasp2.txCallbackFxn                           = "EnetApp_TxMcaspTxCb";
 mcasp2.$name                                   = "CONFIG_TS_MCASP";
-mcasp2.txClkApplyAlert                         = false;
 mcasp2.rxClkApplyAlert                         = false;
+mcasp2.TxMode                                  = "TDM";
+mcasp2.NumTxSlots                              = 8;
+mcasp2.txFsPolarity                            = 0;
+mcasp2.txAfifoEnable                           = false;
+mcasp2.txActiveSlotMask                        = 0xFF;
+mcasp2.clkSyncMode                             = "ASYNC";
+mcasp2.txHclkDiv                               = 10;
+mcasp2.txHclkCalculated                        = 2457600;
+mcasp2.txBclkCalculated                        = 76800;
+mcasp2.txClkApplyAlert                         = false;
 mcasp2.CLOCKING.$assignAllowConflicts          = "CLOCKING";
 mcasp2.mcaspSer.create(1);
 mcasp2.mcaspSer[0].$name                       = "CONFIG_MCASP_SER2";

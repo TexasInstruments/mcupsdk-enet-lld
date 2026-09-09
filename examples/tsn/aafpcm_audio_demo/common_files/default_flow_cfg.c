@@ -37,7 +37,9 @@
 #include <nrt_flow/dataflow.h>
 
 
-int EnetApp_lldCfgUpdateCb(cb_socket_lldcfg_update_t *update_cfg)
+/* Picks the DMA channels/packet counts per ethertype: gPTP gets its own, and all AVTP
+ * sockets (audio and CRF) go through the AVTP channels with a shared TX channel. */
+int32_t EnetApp_lldCfgUpdateCb(cb_socket_lldcfg_update_t *update_cfg)
 {
     if (update_cfg->proto == ETH_P_1588)
     {

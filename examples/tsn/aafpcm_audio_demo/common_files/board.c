@@ -42,16 +42,24 @@
 
 #define CDCE6214_I2C_ADDR    (0x68)
 
+/* TAD5212 DAC I2C addresses. */
+#define BOARD_DAC0_I2C_ADDR  (0x50)
+#define BOARD_DAC1_I2C_ADDR  (0x51)
+#define BOARD_DAC2_I2C_ADDR  (0x52)
+#define BOARD_DAC3_I2C_ADDR  (0x53)
+
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
 
-typedef struct {
+typedef struct
+{
     uint8_t reg;
     uint8_t val;
 } Adc_RegCfg;
 
-typedef struct {
+typedef struct
+{
     uint8_t reg;
     uint8_t val;
 } Dac_RegCfg;
@@ -60,9 +68,11 @@ typedef struct {
 /*                            Global Variables                                */
 /* ========================================================================== */
 
-CDCE6214_Handle gHCdce;
+CDCE6214_Handle Board_hCdce;
 
-Adc_RegCfg gPcm6240RegInst0[] =
+/* Two PCM6240 ADCs, 4 channels each, share the 8 TDM slots (inst0: 0,4,1,5; inst1: 2,6,3,7).
+ * Registers are written in order, so the page select and reset entries up front matter. */
+Adc_RegCfg Board_pcm6240RegInst0[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -94,13 +104,15 @@ Adc_RegCfg gPcm6240RegInst0[] =
     {0x46, 0x10},
     /* CH4 Microphone input */
     {0x4b, 0x10},
+    /* Ultra-Low Latency Decimation filter */
+    {0x6b, 0x21},
     /* Input channel enable */
     {0x74, 0xF0},
     /* Power up micbias and power up all ADC channels */
     {0x75, 0xE0},
 };
 
-Adc_RegCfg gPcm6240RegInst1[] =
+Adc_RegCfg Board_pcm6240RegInst1[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -132,13 +144,17 @@ Adc_RegCfg gPcm6240RegInst1[] =
     {0x46, 0x10},
     /* CH4 Microphone input */
     {0x4b, 0x10},
+    /* Ultra-Low Latency Decimation filter */
+    {0x6b, 0x21},
     /* Input channel enable */
     {0x74, 0xF0},
     /* Power up micbias and power up all ADC channels */
     {0x75, 0xE0},
 };
 
-Dac_RegCfg gTad5212RegInst0[] =
+/* Four TAD5212 DACs, 2 channels each, cover the 8 TDM slots. Regs 0x28/0x29 pick the slot
+ * for CH1/CH2, which is the only real difference between the four tables. */
+Dac_RegCfg Board_tad5212RegInst0[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -164,6 +180,9 @@ Dac_RegCfg gTad5212RegInst0[] =
     {0x6C, 0x60},
     /* CH2 - 0dB gain */
     {0x6E, 0xC9},
+    /* Ultra-low Latency Ouptut */
+    {0x72, 0x98},
+    {0x73, 0x98},
     /* Enable output CH1 CH2 */
     {0x76, 0x0C},
     /* Page Select 0 */
@@ -172,7 +191,7 @@ Dac_RegCfg gTad5212RegInst0[] =
 
 };
 
-Dac_RegCfg gTad5212RegInst1[] =
+Dac_RegCfg Board_tad5212RegInst1[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -198,6 +217,9 @@ Dac_RegCfg gTad5212RegInst1[] =
     {0x6C, 0x60},
     /* CH2 - 0dB gain */
     {0x6E, 0xC9},
+    /* Ultra-low Latency Ouptut */
+    {0x72, 0x98},
+    {0x73, 0x98},
     /* Enable output CH1 CH2 */
     {0x76, 0x0C},
     /* Page Select 0 */
@@ -206,7 +228,7 @@ Dac_RegCfg gTad5212RegInst1[] =
 
 };
 
-Dac_RegCfg gTad5212RegInst2[] =
+Dac_RegCfg Board_tad5212RegInst2[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -232,6 +254,9 @@ Dac_RegCfg gTad5212RegInst2[] =
     {0x6C, 0x60},
     /* CH2 - 0dB gain */
     {0x6E, 0xC9},
+    /* Ultra-low Latency Ouptut */
+    {0x72, 0x98},
+    {0x73, 0x98},
     /* Enable output CH1 CH2 */
     {0x76, 0x0C},
     /* Page Select 0 */
@@ -240,7 +265,7 @@ Dac_RegCfg gTad5212RegInst2[] =
 
 };
 
-Dac_RegCfg gTad5212RegInst3[] =
+Dac_RegCfg Board_tad5212RegInst3[] =
 {
     /* Page select 0 */
     {0x00, 0x00},
@@ -266,6 +291,9 @@ Dac_RegCfg gTad5212RegInst3[] =
     {0x6C, 0x60},
     /* CH2 - 0dB gain */
     {0x6E, 0xC9},
+    /* Ultra-low Latency Ouptut */
+    {0x72, 0x98},
+    {0x73, 0x98},
     /* Enable output CH1 CH2 */
     {0x76, 0x0C},
     /* Page Select 0 */
@@ -284,7 +312,7 @@ Dac_RegCfg gTad5212RegInst3[] =
   6. Select the Clock Divider to enable 24.576MHZ on OUT1.
   7. Disable OUT2, OUT3, OUT4.
 */
-static const CDCE6214_RegCfg gCdceBaseConfig[CDCE6214_NUM_REGISTER] = {
+static const CDCE6214_RegCfg Board_cdceBaseConfig[CDCE6214_NUM_REGISTER] = {
     {85,  0x0000},
     {84,  0x0000},
     {83,  0x0000},
@@ -375,7 +403,7 @@ static const CDCE6214_RegCfg gCdceBaseConfig[CDCE6214_NUM_REGISTER] = {
 
 
 /* ========================================================================== */
-/*                          Function Declerations                             */
+/*                          Function Declarations                             */
 /* ========================================================================== */
 
 /* Configure PCM6240 */
@@ -437,21 +465,21 @@ int32_t Board_dacConfig(I2C_Handle handle, uint8_t devAddr)
 
     ClockP_usleep(100);
 
-    if(devAddr == 0x50)
+    if(devAddr == BOARD_DAC0_I2C_ADDR)
     {
-        count = sizeof(gTad5212RegInst0)/sizeof(Dac_RegCfg);
+        count = sizeof(Board_tad5212RegInst0) / sizeof(Dac_RegCfg);
     }
-    if(devAddr == 0x51)
+    if(devAddr == BOARD_DAC1_I2C_ADDR)
     {
-        count = sizeof(gTad5212RegInst1)/sizeof(Dac_RegCfg);
+        count = sizeof(Board_tad5212RegInst1) / sizeof(Dac_RegCfg);
     }
-    if(devAddr == 0x52)
+    if(devAddr == BOARD_DAC2_I2C_ADDR)
     {
-        count = sizeof(gTad5212RegInst2)/sizeof(Dac_RegCfg);
+        count = sizeof(Board_tad5212RegInst2) / sizeof(Dac_RegCfg);
     }
-    if(devAddr == 0x53)
+    if(devAddr == BOARD_DAC3_I2C_ADDR)
     {
-        count = sizeof(gTad5212RegInst3)/sizeof(Dac_RegCfg);
+        count = sizeof(Board_tad5212RegInst3) / sizeof(Dac_RegCfg);
     }
 
     for(i = 0; i < count; i++)
@@ -460,25 +488,25 @@ int32_t Board_dacConfig(I2C_Handle handle, uint8_t devAddr)
         i2cTransaction.writeBuf   = txBuffer;
         i2cTransaction.writeCount = 2;
         i2cTransaction.targetAddress = devAddr;
-        if(devAddr == 0x50)
+        if(devAddr == BOARD_DAC0_I2C_ADDR)
         {
-            txBuffer[0] = gTad5212RegInst0[i].reg;
-            txBuffer[1] = gTad5212RegInst0[i].val;
+            txBuffer[0] = Board_tad5212RegInst0[i].reg;
+            txBuffer[1] = Board_tad5212RegInst0[i].val;
         }
-        if(devAddr == 0x51)
+        if(devAddr == BOARD_DAC1_I2C_ADDR)
         {
-            txBuffer[0] = gTad5212RegInst1[i].reg;
-            txBuffer[1] = gTad5212RegInst1[i].val;
+            txBuffer[0] = Board_tad5212RegInst1[i].reg;
+            txBuffer[1] = Board_tad5212RegInst1[i].val;
         }
-        if(devAddr == 0x52)
+        if(devAddr == BOARD_DAC2_I2C_ADDR)
         {
-            txBuffer[0] = gTad5212RegInst2[i].reg;
-            txBuffer[1] = gTad5212RegInst2[i].val;
+            txBuffer[0] = Board_tad5212RegInst2[i].reg;
+            txBuffer[1] = Board_tad5212RegInst2[i].val;
         }
-        if(devAddr == 0x53)
+        if(devAddr == BOARD_DAC3_I2C_ADDR)
         {
-            txBuffer[0] = gTad5212RegInst3[i].reg;
-            txBuffer[1] = gTad5212RegInst3[i].val;
+            txBuffer[0] = Board_tad5212RegInst3[i].reg;
+            txBuffer[1] = Board_tad5212RegInst3[i].val;
         }
 
         status = I2C_transfer(handle, &i2cTransaction);
@@ -509,11 +537,11 @@ int32_t Board_adcConfig(I2C_Handle handle, uint8_t devAddr, uint32_t inst)
 
     if(inst == 0)
     {
-        count = sizeof(gPcm6240RegInst0)/sizeof(gPcm6240RegInst0[0]);
+        count = sizeof(Board_pcm6240RegInst0) / sizeof(Board_pcm6240RegInst0[0]);
     }
     else if(inst == 1)
     {
-        count = sizeof(gPcm6240RegInst1)/sizeof(gPcm6240RegInst1[0]);
+        count = sizeof(Board_pcm6240RegInst1) / sizeof(Board_pcm6240RegInst1[0]);
     }
 
     for(i = 0; i < count; i++)
@@ -524,13 +552,13 @@ int32_t Board_adcConfig(I2C_Handle handle, uint8_t devAddr, uint32_t inst)
         i2cTransaction.targetAddress = devAddr;
         if(inst == 0)
         {
-            txBuffer[0] = gPcm6240RegInst0[i].reg;
-            txBuffer[1] = gPcm6240RegInst0[i].val;
+            txBuffer[0] = Board_pcm6240RegInst0[i].reg;
+            txBuffer[1] = Board_pcm6240RegInst0[i].val;
         }
         else if(inst == 1)
         {
-            txBuffer[0] = gPcm6240RegInst1[i].reg;
-            txBuffer[1] = gPcm6240RegInst1[i].val;
+            txBuffer[0] = Board_pcm6240RegInst1[i].reg;
+            txBuffer[1] = Board_pcm6240RegInst1[i].val;
         }
 
         status = I2C_transfer(handle, &i2cTransaction);
@@ -550,11 +578,11 @@ int32_t Board_CdceConfig(void)
 {
     int32_t retval = SystemP_SUCCESS;
     I2C_Handle i2cHandle = gI2cHandle[CONFIG_I2C0];
-    gHCdce = CDCE6214_open(i2cHandle, CDCE6214_I2C_ADDR, \
-                    CDCE6214_REF_FREQ_24_576MHZ, gCdceBaseConfig);
-    if (gHCdce != NULL)
+    Board_hCdce = CDCE6214_open(i2cHandle, CDCE6214_I2C_ADDR, \
+                    CDCE6214_REF_FREQ_24_576MHZ, Board_cdceBaseConfig);
+    if (Board_hCdce != NULL)
     {
-        retval = CDCE6214_commitWsrToCdce(gHCdce);
+        retval = CDCE6214_commitWsrToCdce(Board_hCdce);
     }
     else
     {
@@ -564,9 +592,10 @@ int32_t Board_CdceConfig(void)
     return retval;
 }
 
+/* Called from clock_hw.c to trim the 24.576 MHz audio clock; relPPM is relative to nominal. */
 int32_t Board_CdceFineTuneFreq(double relPPM)
 {
-    return CDCE6214_fineTuneFrequency(gHCdce, relPPM);
+    return CDCE6214_fineTuneFrequency(Board_hCdce, relPPM);
 }
 
 int32_t Board_MuxSelMcASP4(void)
@@ -574,27 +603,26 @@ int32_t Board_MuxSelMcASP4(void)
     int status;
     uint32_t pinNum = 3;
 
-    TCA6416_Config  TCA6416_Config;
+    TCA6416_Config  tca6416Config;
     TCA6416_Params  tca6416Params;
     TCA6416_Params_init(&tca6416Params);
     tca6416Params.i2cInstance = CONFIG_I2C0;
     tca6416Params.i2cAddress = 0x20;
-    TCA6416_open(&TCA6416_Config, &tca6416Params);
-
+    TCA6416_open(&tca6416Config, &tca6416Params);
 
     status = TCA6416_setOutput(
-                    &TCA6416_Config,
+                    &tca6416Config,
                     pinNum,
                     TCA6416_OUT_STATE_LOW);
 
     /* Configure as output  */
-    status += TCA6416_config(
-                    &TCA6416_Config,
+    status |= TCA6416_config(
+                    &tca6416Config,
                     pinNum,
                     TCA6416_MODE_OUTPUT);
 
-    status = TCA6416_setOutput(
-                    &TCA6416_Config,
+    status |= TCA6416_setOutput(
+                    &tca6416Config,
                     pinNum,
                     TCA6416_OUT_STATE_HIGH);
 
@@ -613,9 +641,9 @@ int32_t Board_MuxSelPhyRefClk(void)
         AUDIO_EXT_REFCLK2_SO -> P24 -> 0(LOW)
         AUDIO_EXT_REFCLK2_S1 -> P25 -> 1(HIGH)
     */
-   const uint32_t I2C_ADDRESS = 0x22;
-   const uint32_t REFCLK2_S0  = (8 * 2) + 4; // P24
-   const uint32_t REFCLK2_S1  = (8 * 2) + 5; // P25
+    const uint32_t i2cAddress = 0x22;
+    const uint32_t refclk2S0  = (8 * 2) + 4; // P24
+    const uint32_t refclk2S1  = (8 * 2) + 5; // P25
 
     int32_t status;
     /* IO Expander Config Object */
@@ -623,7 +651,7 @@ int32_t Board_MuxSelPhyRefClk(void)
 
     TCA6424_Params  IOExp_Params = {
         .i2cInstance = CONFIG_I2C0,
-        .i2cAddress  = I2C_ADDRESS,
+        .i2cAddress  = i2cAddress,
     };
     /* open the IO Expander object */
     status = TCA6424_open(&IOExp_Config, &IOExp_Params);
@@ -631,22 +659,20 @@ int32_t Board_MuxSelPhyRefClk(void)
     if (status == SystemP_SUCCESS)
     {
         status = TCA6424_config(&IOExp_Config,
-            REFCLK2_S0, TCA6424_MODE_OUTPUT);
-        status += TCA6424_config(&IOExp_Config,
-            REFCLK2_S1, TCA6424_MODE_OUTPUT);
+            refclk2S0, TCA6424_MODE_OUTPUT);
+        status |= TCA6424_config(&IOExp_Config,
+            refclk2S1, TCA6424_MODE_OUTPUT);
     }
 
     if (status == SystemP_SUCCESS)
     {
         status = TCA6424_setOutput(&IOExp_Config,
-            REFCLK2_S0, TCA6424_OUT_STATE_LOW);
-        status += TCA6424_setOutput(&IOExp_Config,
-            REFCLK2_S1, TCA6424_OUT_STATE_HIGH);
+            refclk2S0, TCA6424_OUT_STATE_LOW);
+        status |= TCA6424_setOutput(&IOExp_Config,
+            refclk2S1, TCA6424_OUT_STATE_HIGH);
     }
 
     TCA6424_close(&IOExp_Config);
 
     return status;
 }
-
-
