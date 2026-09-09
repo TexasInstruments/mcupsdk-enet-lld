@@ -46,11 +46,7 @@ FILES_common := \
 	main.c \
 	board.c \
 	demo_task.c \
-	crf_hw_config.c \
-	crf_app.c \
-	central_aaf_app.c \
-	shm_cirbuf.c \
-	gpio_sm.c \
+	clocksync.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -72,12 +68,17 @@ FILES_PATH_common = \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync \
 	generated \
 
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include/c \
 	-I${MCU_PLUS_SDK_PATH}/source \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf \
+	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync \
 	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
+	-I$(MCU_PLUS_SDK_PATH)/source/networking/tsn/tsn-stack/tsn_avb/avb_if \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
@@ -87,6 +88,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3 \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/clock_recovery/ \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf/ \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/include/phy \
@@ -189,6 +192,7 @@ LIBS_common = \
 	-ltsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
 	-lyangemb-freertos.am275x.r5f.ti-arm-clang.lib \
+	-ltsn_avb-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -222,6 +226,7 @@ LIBS_NAME = \
 	tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
 	yangemb-freertos.am275x.r5f.ti-arm-clang.lib \
+	tsn_avb-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 

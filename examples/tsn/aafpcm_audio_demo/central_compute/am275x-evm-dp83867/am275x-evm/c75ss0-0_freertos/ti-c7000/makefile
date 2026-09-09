@@ -37,8 +37,7 @@ endif
 FILES_common := \
 	main.c \
 	remote_mcasp_playback.c \
-	shm_cirbuf.c \
-	gpio_sm.c \
+	shm_idxbuf.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -49,15 +48,17 @@ FILES_common := \
 
 FILES_PATH_common = \
 	.. \
-	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/central_compute/remote_core \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/central_compute \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo \
+	$(MCU_PLUS_SDK_PATH)/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf \
 	generated \
 
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include \
 	-I${MCU_PLUS_SDK_PATH}/source \
 	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf/ \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_CGT/DSP_C75X \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/c75x \

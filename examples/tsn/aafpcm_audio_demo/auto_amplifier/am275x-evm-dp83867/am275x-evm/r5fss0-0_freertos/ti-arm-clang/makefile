@@ -45,13 +45,9 @@ FILES_common := \
 	default_flow_cpsw.c \
 	main.c \
 	board.c \
-	crf_hw_config.c \
-	crf_app.c \
-	shm_cirbuf.c \
-	autoamp_avb.c \
 	demo_task.c \
 	autoamp_mcasp_audio.c \
-	gpio_sm.c \
+	clocksync.c \
 	ti_drivers_config.c \
 	ti_drivers_open_close.c \
 	ti_board_config.c \
@@ -73,12 +69,15 @@ FILES_PATH_common = \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn \
 	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/nrt_flow \
+	$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync \
 	generated \
 
 INCLUDES_common := \
 	-I${CG_TOOL_ROOT}/include/c \
 	-I${MCU_PLUS_SDK_PATH}/source \
+	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/clock_sync \
 	-I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files \
+	-I$(MCU_PLUS_SDK_PATH)/source/networking/tsn/tsn-stack/tsn_avb/avb_if \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/enet/rtos_drivers/include \
 	-I${MCU_PLUS_SDK_PATH}/source/board/ethphy/port \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include \
@@ -86,6 +85,8 @@ INCLUDES_common := \
 	-I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/r5f \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/utils \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/clock_recovery/ \
+	-I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf/ \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/include \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core/utils/V3 \
 	-I${MCU_PLUS_SDK_PATH}/source/networking/enet/core \
@@ -116,7 +117,7 @@ DEFINES_common := \
 	-DSITARA \
 	-DNO_GETOPT_LONG=1 \
 	-DUB_LOGCAT=5 \
-	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:45,nconf:45\" \
+	-DTSNAPP_LOGLEVEL=\"4,ubase:45,cbase:45,uconf:45,gptp:33,lldp:45,avtp:55,nconf:45\" \
 	-DAVTP_ENABLED=1 \
 	-DAVB_AUDIO_PLAYBACK_DEMO \
 	-DAVTP_HAVE_NO_SIGNAL=1 \
@@ -187,6 +188,7 @@ LIBS_common = \
 	-ltsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-ltsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
 	-lyangemb-freertos.am275x.r5f.ti-arm-clang.lib \
+	-ltsn_avb-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	-llibc.a \
 	-llibsysbm.a \
 
@@ -220,6 +222,7 @@ LIBS_NAME = \
 	tsn_uniconf-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	tsn_l2-freertos.am275x.r5f.ti-arm-clang.lib \
 	yangemb-freertos.am275x.r5f.ti-arm-clang.lib \
+	tsn_avb-freertos.am275x.r5f.ti-arm-clang.${ConfigName}.lib \
 	libc.a \
 	libsysbm.a \
 

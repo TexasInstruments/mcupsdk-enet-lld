@@ -32,6 +32,7 @@
             -I${CG_TOOL_ROOT}/include
             -I${MCU_PLUS_SDK_PATH}/source
             -I$(MCU_PLUS_SDK_PATH)/source/networking/enet/core/examples/tsn/aafpcm_audio_demo/common_files
+            -I${MCU_PLUS_SDK_PATH}/source/networking/tsn/tsn-stack/tsn_avb/shm_cirbuf/
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/FreeRTOS-Kernel/include
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/portable/TI_CGT/DSP_C75X
             -I${MCU_PLUS_SDK_PATH}/source/kernel/freertos/config/am275x/c75x
@@ -113,15 +114,11 @@
         <pathVariable name="MCU_PLUS_SDK_PATH" path="${COM_TI_MCU_PLUS_SDK_AMXXX_INSTALL_DIR}" scope="project" />
         <file path="../main.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../remote_core/remote_mcasp_playback.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../remote_mcasp_playback.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../../common_files/shm_cirbuf.c" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../../../../../../tsn/tsn-stack/tsn_avb/shm_cirbuf/shm_idxbuf.c" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
-        <file path="../../../../../common_files/gpio_sm.c" openOnCreation="false" excludeFromBuild="false" action="copy">
-        </file>
-        <file path="../../../../../common_files/gpio_sm.h" openOnCreation="false" excludeFromBuild="false" action="copy">
-        </file>
-        <file path="../../../../../common_files/shm_cirbuf.h" openOnCreation="false" excludeFromBuild="false" action="copy">
+        <file path="../../../../../../../../../../tsn/tsn-stack/tsn_avb/shm_cirbuf/shm_idxbuf.h" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
         <file path="linker.cmd" openOnCreation="false" excludeFromBuild="false" action="copy">
         </file>
