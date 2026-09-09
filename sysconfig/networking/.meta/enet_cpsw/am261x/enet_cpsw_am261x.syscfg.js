@@ -202,7 +202,8 @@ enet_clock_config =
     ],
     }
     }
-    else
+    else if((device_name == "AM261x_ZFG_400") || (device_name == "AM261x_ZCZ_400") ||
+            (device_name == "AM261x_ZNC_400") || (device_name == "AM261x_ZEJ_400"))
     {
 enet_clock_config =
     {
@@ -221,6 +222,11 @@ enet_clock_config =
         },
     ],
     }
+    }
+    else
+    {
+        throw new Error(`enet_cpsw_am261x: unrecognized device "${device_name}" - ` +
+                        `expected AM261x_ZFG/ZCZ/ZNC/ZEJ with or without _400 suffix`);
     }
 
     return enet_clock_config;
