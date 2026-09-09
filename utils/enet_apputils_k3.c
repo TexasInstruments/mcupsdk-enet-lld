@@ -632,13 +632,79 @@ void EnetAppUtils_disableClocks(Enet_Type enetType, uint32_t instId)
 
 int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint32_t input, uint32_t output)
 {
-    int32_t  status = ENET_SOK;
+    /* These required for Jacinto boards with multiple instances of CPSW*/
+    (void)enetType;
+    (void)instId;
+    int32_t                             retVal;
+    struct tisci_msg_rm_irq_set_req     rmIrqReq;
+    struct tisci_msg_rm_irq_set_resp    rmIrqResp;
+    #if defined(SOC_AM62DX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+    uint32_t tsrDevId = TISCI_DEV_TIMESYNC_EVENT_ROUTER0;
+    #else
+    uint32_t tsrDevId = TISCI_DEV_TIMESYNC_EVENT_INTROUTER0;
+    #endif
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM62AX) || defined(SOC_AM62PX) || defined(SOC_AM62DX) || defined(SOC_AM62X) || defined(SOC_AM275X) || defined(SOC_AM283X) || defined (SOC_J722S)
-    EnetAppUtils_assert(enetType == ENET_CPSW_3G);
-#endif
+    rmIrqReq.valid_params           = 0U;
+    rmIrqReq.valid_params          |= TISCI_MSG_VALUE_RM_DST_ID_VALID;
+    rmIrqReq.valid_params          |= TISCI_MSG_VALUE_RM_DST_HOST_IRQ_VALID;
+    rmIrqReq.global_event           = 0U;
 
-    return status;
+    rmIrqReq.src_id                 = tsrDevId;
+    rmIrqReq.src_index              = input;
+
+    rmIrqReq.dst_id                 = tsrDevId;
+    rmIrqReq.dst_host_irq           = output;
+
+    rmIrqReq.ia_id                  = 0U;
+    rmIrqReq.vint                   = 0U;
+    rmIrqReq.vint_status_bit_index  = 0U;
+    rmIrqReq.secondary_host         = TISCI_MSG_VALUE_RM_UNUSED_SECONDARY_HOST;
+
+    retVal = Sciclient_rmIrqSetRaw(&rmIrqReq, &rmIrqResp, SystemP_WAIT_FOREVER);
+    if(0 != retVal)
+    {
+        DebugP_log("Timesync router : Sciclient event config failed!!!\r\n");
+    }
+
+    return retVal;
+}
+
+int32_t EnetAppUtils_releaseTimeSyncRouter(Enet_Type enetType, uint32_t instId, uint32_t input, uint32_t output)
+{
+    /* These required for Jacinto boards with multiple instances of CPSW*/
+    (void)enetType;
+    (void)instId;
+    int32_t                                 retVal;
+    struct tisci_msg_rm_irq_release_req     rmIrqRelReq;
+    #if defined(SOC_AM62DX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+    uint32_t tsrDevId = TISCI_DEV_TIMESYNC_EVENT_ROUTER0;
+    #else
+    uint32_t tsrDevId = TISCI_DEV_TIMESYNC_EVENT_INTROUTER0;
+    #endif
+
+    rmIrqRelReq.valid_params        = 0U;
+    rmIrqRelReq.valid_params       |= TISCI_MSG_VALUE_RM_DST_ID_VALID;
+    rmIrqRelReq.valid_params       |= TISCI_MSG_VALUE_RM_DST_HOST_IRQ_VALID;
+    rmIrqRelReq.global_event        = 0U;
+
+    rmIrqRelReq.src_id              = tsrDevId;
+    rmIrqRelReq.src_index           = input;
+
+    rmIrqRelReq.dst_id              = tsrDevId;
+    rmIrqRelReq.dst_host_irq        = output;
+
+    rmIrqRelReq.ia_id               = 0U;
+    rmIrqRelReq.vint                = 0U;
+    rmIrqRelReq.vint_status_bit_index = 0U;
+    rmIrqRelReq.secondary_host      = TISCI_MSG_VALUE_RM_UNUSED_SECONDARY_HOST;
+
+    retVal = Sciclient_rmIrqReleaseRaw(&rmIrqRelReq, SystemP_WAIT_FOREVER);
+    if(0 != retVal)
+    {
+        DebugP_log("Timesync router release : Sciclient event config failed!!!\r\n");
+    }
+
+    return retVal;
 }
 
 void EnetAppUtils_setupSciServer(void)

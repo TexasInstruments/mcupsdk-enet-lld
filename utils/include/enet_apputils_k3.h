@@ -117,10 +117,40 @@ void EnetAppUtils_clkRateSet(uint32_t moduleId,
 void EnetAppUtils_enableClkOut(Enet_Type enetType,
                                EnetAppUtils_ClkOutFreqType clkOut);
 
+/**
+ * \brief Configure interrupt router for time synchronization
+ *
+ * Sets up the time sync router by routing events from the input port to the output port.
+ *
+ * \param enetType Ethernet type (e.g., ENET_CPSW_3G)
+ * \param instId Instance ID
+ * \param input Input event index from the time sync router
+ * \param output Output event index for the time sync router
+ *
+ * \return 0 on success, error code on failure
+ */
 int32_t EnetAppUtils_setTimeSyncRouter(Enet_Type enetType,
                                        uint32_t instId,
                                        uint32_t input,
                                        uint32_t output);
+
+/**
+ * \brief Release interrupt router configuration for time synchronization
+ *
+ * Releases/unconfigures the time sync router event routing.
+ *
+ * \param enetType Ethernet type (e.g., ENET_CPSW_3G)
+ * \param instId Instance ID
+ * \param input Input event index from the time sync router
+ * \param output Output event index for the time sync router
+ *
+ * \return 0 on success, error code on failure
+ */
+int32_t EnetAppUtils_releaseTimeSyncRouter(Enet_Type enetType,
+                                           uint32_t instId,
+                                           uint32_t input,
+                                           uint32_t output);
+
 /*!
  * \brief Sets up and readies SCI client RM/PM server.
  */
