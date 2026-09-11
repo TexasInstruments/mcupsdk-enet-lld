@@ -333,9 +333,9 @@ int32_t CpswHostPort_ioctl_handler_ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING(
     if (status == ENET_SOK)
     {
         trafficShapingCfg.rates[inArgs->queueNum].committedRateBitsPerSec = inArgs->idleSlope;
+        status = CpswHostPort_setTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
+        ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
     }
-    status = CpswHostPort_setTrafficShaping(regs, &trafficShapingCfg, cppiClkFreqHz);
-    ENETTRACE_ERR_IF(status != ENET_SOK, "Failed to set Credit based shaping: %d\n", status);
 
 #else
      status = ENET_ENOTSUPPORTED;
