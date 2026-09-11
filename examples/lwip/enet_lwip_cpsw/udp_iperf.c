@@ -81,7 +81,7 @@ static void print_udp_conn_stats(struct sockaddr_in from)
 	DebugP_log("    Lost/Total Datagrams\r\n");
 }
 
-static void stats_buffer(char* outString,
+__attribute__((optnone)) static void stats_buffer(char* outString,
 		u32_t outStringLen,
 		double data, enum measure_t type)
 {
