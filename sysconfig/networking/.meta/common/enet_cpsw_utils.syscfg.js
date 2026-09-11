@@ -109,7 +109,7 @@ function getArraytoBitMask(configObj) {
 
     for (var elem in configObj)
     {
-        bitmask = (bitmask | (1 << parseInt(elem)));
+        bitmask = (bitmask | (1 << parseInt(configObj[elem])));
     }
     return bitmask.toString();
 }
