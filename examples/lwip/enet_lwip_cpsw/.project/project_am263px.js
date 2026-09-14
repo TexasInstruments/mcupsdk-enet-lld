@@ -105,6 +105,7 @@ const linker_includePath_freertos = {
 
 const defines_r5f = {
     common: [
+        "OPTNONE_ATTR=",
     ],
 };
 

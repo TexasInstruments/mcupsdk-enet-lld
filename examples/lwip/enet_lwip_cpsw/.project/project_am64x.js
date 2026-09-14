@@ -130,11 +130,13 @@ const linker_includePath_freertos = {
 const defines_r5f = {
     common: [
         "ENET_ENABLE_PER_CPSW=1",
+        "OPTNONE_ATTR=",
     ],
 };
 
 const defines_a53 = {
     common: [
+        "OPTNONE_ATTR=",
     ],
 };
 

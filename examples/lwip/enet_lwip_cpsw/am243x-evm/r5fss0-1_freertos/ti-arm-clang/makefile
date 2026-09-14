@@ -97,6 +97,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM243X \
+	-DOPTNONE_ATTR= \
 	-DENET_ENABLE_PER_CPSW=1 \
 	-DOS_FREERTOS \
 

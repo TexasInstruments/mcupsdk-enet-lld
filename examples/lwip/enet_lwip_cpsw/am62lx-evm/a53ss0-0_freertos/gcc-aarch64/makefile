@@ -102,6 +102,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM62LX \
+	-DOPTNONE_ATTR= \
 
 CFLAGS_common := \
 	-mcpu=cortex-a53+fp+simd \

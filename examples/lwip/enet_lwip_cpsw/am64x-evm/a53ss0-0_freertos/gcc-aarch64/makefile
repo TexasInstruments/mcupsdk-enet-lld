@@ -87,6 +87,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM64X \
+	-DOPTNONE_ATTR= \
 	-DOS_FREERTOS \
 
 CFLAGS_common := \

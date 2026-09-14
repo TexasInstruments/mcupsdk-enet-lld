@@ -69,6 +69,7 @@
             -Wno-unused-function
             -Wno-format
             -DSOC_AM62X
+            -DOPTNONE_ATTR=
         "
         linkerBuildOptions="
             -L${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib

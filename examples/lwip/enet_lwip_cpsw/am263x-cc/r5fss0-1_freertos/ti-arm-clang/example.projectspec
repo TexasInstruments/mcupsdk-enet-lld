@@ -63,6 +63,7 @@
             -Wno-gnu-variable-sized-type-not-at-end
             -Wno-unused-function
             -DSOC_AM263X
+            -DOPTNONE_ATTR=
             -DOS_FREERTOS
         "
         linkerBuildOptions="

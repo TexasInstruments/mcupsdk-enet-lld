@@ -90,6 +90,7 @@ INCLUDES_common := \
 	-Igenerated \
 
 DEFINES_common := \
+	-DOPTNONE_ATTR= \
 	-DSOC_AM62DX \
 
 CFLAGS_common := \

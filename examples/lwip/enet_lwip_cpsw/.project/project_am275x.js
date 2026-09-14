@@ -91,11 +91,13 @@ const linker_includePath_freertos = {
 const defines_r5f = {
     common: [
         "SOC_AM275X",
+        "OPTNONE_ATTR=",
     ],
 };
 
 const defines_a53 = {
     common: [
+        "OPTNONE_ATTR=",
     ],
 };
 

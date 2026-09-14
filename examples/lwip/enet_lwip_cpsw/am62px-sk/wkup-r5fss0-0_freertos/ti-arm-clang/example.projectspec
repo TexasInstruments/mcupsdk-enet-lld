@@ -66,6 +66,7 @@
             -Wno-unused-variable
             -DSOC_AM62PX
             -DENABLE_SCICLIENT_DIRECT
+            -DOPTNONE_ATTR=
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib

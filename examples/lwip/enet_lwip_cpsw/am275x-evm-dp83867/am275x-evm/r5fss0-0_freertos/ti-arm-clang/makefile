@@ -89,6 +89,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM275X \
 	-DSOC_AM275X \
+	-DOPTNONE_ATTR= \
 
 CFLAGS_common := \
 	-mcpu=cortex-r5 \

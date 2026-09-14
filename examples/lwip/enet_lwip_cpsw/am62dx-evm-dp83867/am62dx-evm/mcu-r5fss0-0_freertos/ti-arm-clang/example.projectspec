@@ -62,6 +62,7 @@
             -g
             -Wno-gnu-variable-sized-type-not-at-end
             -Wno-unused-function
+            -DOPTNONE_ATTR=
             -DSOC_AM62DX
         "
         linkerBuildOptions="

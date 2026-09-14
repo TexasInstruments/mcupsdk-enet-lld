@@ -69,6 +69,7 @@
             -Wno-unused-function
             -Wno-format
             -DSOC_AM64X
+            -DOPTNONE_ATTR=
             -DOS_FREERTOS
         "
         linkerBuildOptions="

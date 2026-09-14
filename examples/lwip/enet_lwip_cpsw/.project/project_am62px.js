@@ -161,17 +161,20 @@ const linker_includePath_freertos = {
 
 const defines_r5f = {
     common: [
+        "OPTNONE_ATTR=",
     ],
 };
 
 const defines_wkup_r5f = {
     common: [
         "ENABLE_SCICLIENT_DIRECT",
+        "OPTNONE_ATTR=",
     ],
 };
 
 const defines_a53 = {
     common: [
+        "OPTNONE_ATTR=",
     ],
 };
 

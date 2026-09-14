@@ -36,6 +36,7 @@
 #include <kernel/dpl/CacheP.h>
 #include <include/core/enet_dma.h>
 
+
 static void udp_send_perf_traffic(int sock, u64_t test_duration_ms, char *snd_buf, u32_t snd_size, const struct sockaddr_in *from);
 
 extern struct netif server_netif;
@@ -81,7 +82,7 @@ static void print_udp_conn_stats(struct sockaddr_in from)
 	DebugP_log("    Lost/Total Datagrams\r\n");
 }
 
-__attribute__((optnone)) static void stats_buffer(char* outString,
+OPTNONE_ATTR static void stats_buffer(char* outString,
 		u32_t outStringLen,
 		double data, enum measure_t type)
 {

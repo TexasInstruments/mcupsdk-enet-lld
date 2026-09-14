@@ -95,6 +95,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM261X \
+	-DOPTNONE_ATTR='__attribute__((optnone))' \
 	-DOS_FREERTOS \
 
 CFLAGS_common := \

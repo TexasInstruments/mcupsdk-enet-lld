@@ -64,6 +64,7 @@
             -Wno-unused-function
             -DSOC_AM275X
             -DSOC_AM275X
+            -DOPTNONE_ATTR=
         "
         linkerBuildOptions="
             -i${MCU_PLUS_SDK_PATH}/source/kernel/freertos/lib

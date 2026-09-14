@@ -95,6 +95,7 @@ INCLUDES_common := \
 
 DEFINES_common := \
 	-DSOC_AM263PX \
+	-DOPTNONE_ATTR= \
 	-DOS_FREERTOS \
 
 CFLAGS_common := \

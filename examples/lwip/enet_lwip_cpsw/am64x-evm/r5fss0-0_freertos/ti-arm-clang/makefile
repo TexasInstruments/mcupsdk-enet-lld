@@ -92,6 +92,7 @@ INCLUDES_common := \
 DEFINES_common := \
 	-DSOC_AM64X \
 	-DENET_ENABLE_PER_CPSW=1 \
+	-DOPTNONE_ATTR= \
 	-DOS_FREERTOS \
 
 CFLAGS_common := \
