@@ -4,6 +4,7 @@ let common = system.getScript("/common");
 let pinmux = system.getScript("/drivers/pinmux/pinmux");
 
 let soc = system.getScript(`/networking/soc/networking_${common.getSocName()}`);
+let device = common.getDeviceName();
 //Get packet pool configuration script
 const pktPoolScript = system.getScript("./enet_pkt_pool_config");
 //Get ALE configuration script
@@ -181,8 +182,7 @@ function getEnetClockConfig(device_name)
 {
     var enet_clock_config;
 
-    if((device_name == "AM261x_ZFG") || (device_name == "AM261x_ZCZ") ||
-       (device_name == "AM261x_ZNC") || (device_name == "AM261x_ZEJ"))
+    if(device_name === "am261x-lp")
     {
 enet_clock_config =
     {
@@ -202,8 +202,7 @@ enet_clock_config =
     ],
     }
     }
-    else if((device_name == "AM261x_ZFG_400") || (device_name == "AM261x_ZCZ_400") ||
-            (device_name == "AM261x_ZNC_400") || (device_name == "AM261x_ZEJ_400"))
+    else if(device_name === "am261x-som")
     {
 enet_clock_config =
     {
@@ -225,20 +224,19 @@ enet_clock_config =
     }
     else
     {
-        throw new Error(`enet_cpsw_am261x: unrecognized device "${device_name}" - ` +
-                        `expected AM261x_ZFG/ZCZ/ZNC/ZEJ with or without _400 suffix`);
+        throw new Error(`enet_cpsw_am261x: unrecognized device "${device_name}"`);
     }
 
     return enet_clock_config;
 }
 
 function getClockEnableIds(instance) {
-    let instConfig = getEnetClockConfig(system.deviceData.device);
+    let instConfig = getEnetClockConfig(device);
     return instConfig.clockIds;
 }
 
 function getClockFrequencies(inst) {
-    let instConfig = getEnetClockConfig(system.deviceData.device);
+    let instConfig = getEnetClockConfig(device);
     return instConfig.clockFrequencies;
 }
 
