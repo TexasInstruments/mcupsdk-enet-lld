@@ -281,7 +281,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
                 ppmDir = CSL_CPTS_TS_PPM_DIR_DECREASE;
                 estfPpmDir = CSL_CPTS_ESTF_PPM_DIR_DECREASE;
                 genfPpmDir = CSL_CPTS_GENF_PPM_DIR_DECREASE;
-                adjOffset = (uint64_t)(-1 * tsAdj->adjValInNsecs);
+                adjOffset = (uint32_t)(-1 * (int64_t)tsAdj->adjValInNsecs);
             }
 
             adjVal = (uint64_t)tsAdj->intervalInNsecs / adjOffset;
