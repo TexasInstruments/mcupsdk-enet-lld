@@ -225,6 +225,7 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
     CSL_CPTS_GENF_PPM_DIR genfPpmDir = CSL_CPTS_GENF_PPM_DIR_DECREASE;
     uint32_t adjOffset;
     uint64_t adjVal;
+    uint64_t tsPpmVal;
     uint32_t tsPpmValHi;
     uint32_t tsPpmValLo;
     int32_t status = ENET_SOK;
@@ -285,25 +286,32 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
             }
 
             adjVal = (uint64_t)tsAdj->intervalInNsecs / adjOffset;
-            if (adjVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
+
+            /* TS_PPM counts CPTS refclk ticks and corrects the timestamp by 1 ns
+             * per count expiry, while a refclk tick is (ts_add_val + 1) ns.
+             * adjVal is a period in ns, so convert it to refclk ticks to get the
+             * requested correction.
+             */
+            tsPpmVal = adjVal / (hCpts->tsAddVal + 1U);
+            if (tsPpmVal < (uint64_t)CPSW_CPTS_PPM_MIN_VAL)
             {
-                ENETTRACE_ERR("PPM correction exceeds hardware limit: adjVal %llu < min %u\n",
-                              adjVal, CPSW_CPTS_PPM_MIN_VAL);
+                ENETTRACE_ERR("PPM correction exceeds hardware limit: tsPpmVal %llu < min %u\n",
+                              tsPpmVal, CPSW_CPTS_PPM_MIN_VAL);
                 status = ENET_EINVALIDPARAMS;
             }
 
             if (status == ENET_SOK)
             {
-                tsPpmValHi = (uint32_t)(adjVal >> 32U);
-                tsPpmValLo = (uint32_t)(adjVal & 0xFFFFFFFFU);
+                tsPpmValHi = (uint32_t)(tsPpmVal >> 32U);
+                tsPpmValLo = (uint32_t)(tsPpmVal & 0xFFFFFFFFU);
 
                 if(estfIdxMask != 0U)
                 {
                     /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
-                     * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
-                     * need to be corrected.
+                     * (cpts->ts_add_val + 1) ns, so one clock is adjusted per adjVal clocks
+                     * that means multiplying by (cpts->ts_add_val + 1) ns is not required.
                      */
-                    estfAdjVal = adjVal * (hCpts->tsAddVal + 1U);
+                    estfAdjVal = tsPpmVal * (hCpts->tsAddVal + 1U);
                     estfPpmValHi = (uint32_t)(estfAdjVal >> 32U);
                     estfPpmValLo = (uint32_t)(estfAdjVal & 0xFFFFFFFFU);
                 }
@@ -311,10 +319,10 @@ int32_t CpswCpts_ioctl_handler_ENET_TIMESYNC_IOCTL_ADJUST_TIMESTAMP(CpswCpts_Han
                 if(genfIdxMask != 0U)
                 {
                     /* GenF/ESTFn PPM will do correction using cpts refclk tick which is
-                     * (cpts->ts_add_val + 1) ns, so GenF/ESTFn length PPM adj period
-                     * need to be corrected.
+                     * (cpts->ts_add_val + 1) ns, so one clock is adjusted per adjVal clocks
+                     * that means multiplying by (cpts->ts_add_val + 1) ns is not required.
                      */
-                    genfAdjVal = adjVal * (hCpts->tsAddVal + 1);
+                    genfAdjVal = tsPpmVal * (hCpts->tsAddVal + 1U);
                     genfPpmValHi = (uint32_t)(genfAdjVal >> 32U);
                     genfPpmValLo = (uint32_t)(genfAdjVal & 0xFFFFFFFFU);
                 }
@@ -1119,9 +1127,6 @@ static uint64_t CpswCpts_calcPpmVal(uint64_t tsPpmVal,
     {
         adjVal = (CPSW_CPTS_PPM_GIGAHERTZ_VAL / tsPpmVal) * CPSW_CPTS_SECONDS_PER_HOUR;
     }
-
-    /* GENF/ESTF PPM correction uses CPTS refclk tick (tsAddVal + 1) ns, so scale accordingly */
-    adjVal = adjVal * (tsAddVal + 1U);
 
     return adjVal;
 }

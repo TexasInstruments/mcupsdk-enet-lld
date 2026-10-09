@@ -47,6 +47,7 @@
 #include "debug_log.h"
 #include "tsninit.h"
 #include "common.h"
+#include "ti_enet_config.h"
 
 /* ========================================================================== */
 /*                           Macros & Typedefs                                */
@@ -55,6 +56,10 @@
 #define GPTP_TASK_NAME          "gptp2d_task"
 extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
 #define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
+#ifndef ENET_ENABLE_PER_ICSSG
+#define CPSW_CPTS_PPM_COUNTER_MIN_VAL    (0x400)
+#define CPSW_CPTS_MAX_PPM_CORRECTION     (1000000000/CPSW_CPTS_PPM_COUNTER_MIN_VAL)/(ENET_SYSCFG_CPTS_TS_ADD_VAL)
+#endif
 /* ========================================================================== */
 /*                         Structure Declarations                             */
 /* ========================================================================== */
@@ -232,6 +237,9 @@ static EnetApp_DbIntVal_t gGptpNonYangDs[] =
     {"PHASE_OFFSET_IIR_ALPHA_START_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_START_VALUE, 1},
     {"PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE, 4},
     {"MAX_DOMAIN_NUMBER", XL4_EXTMOD_XL4GPTP_MAX_DOMAIN_NUMBER, GPTP_MAX_DOMAINS},
+    #ifndef ENET_ENABLE_PER_ICSSG
+    {"MAX_ADJUST_RATE_ON_CLOCK", XL4_EXTMOD_XL4GPTP_MAX_ADJUST_RATE_ON_CLOCK, CPSW_CPTS_MAX_PPM_CORRECTION},
+    #endif
 #ifdef GPTP_QUICKSYNC
     {"QUICK_SYNC_ALGO", XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO, 1},
     {"SKIP_FREQADJ_COUNT_MAX", XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX, 2},
@@ -257,7 +265,6 @@ static EnetApp_DbIntVal_t gGptpNonYangDs[] =
     #else
     {"PHASE_OFFSET_ADJUST_BY_FREQ", XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, 100000}, // in ns
     #endif
-
 #endif
 
 #if GPTP_MAX_DOMAINS == 2

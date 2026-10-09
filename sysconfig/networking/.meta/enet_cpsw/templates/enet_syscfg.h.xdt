@@ -29,6 +29,7 @@
 #define ENET_SYSCFG_RX_FLOWS_NUM          (`Number(module.getRxChannelCount(instance))`U)
 #define ENET_SYSCFG_TX_CHANNELS_NUM       (`Number(module.getTxChannelCount(instance))`U)
 #define ENET_SYSCFG_RING_MON_NUM          (3U) /*Not appicable for LCDMA devices*/
+#define ENET_SYSCFG_CPTS_TS_ADD_VAL       (`instance.cptsRftClkFreq`)
 /* Time stamp source config */
 %if (common.getSocName() === "am62dx" || common.getSocName() === "am275x" || common.getSocName() === "am283x")
 %{
