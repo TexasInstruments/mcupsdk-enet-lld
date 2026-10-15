@@ -141,9 +141,9 @@ debug_log.enableLogZoneInfo        = true;
 debug_log.enableCssLog             = false;
 debug_log.enableUartLog            = true;
 debug_log.uartLog.$name            = "CONFIG_UART0";
-debug_log.uartLog.UART.$assign     = "UART2";
-debug_log.uartLog.UART.RXD.$assign = "MCASP0_AXR6";
-debug_log.uartLog.UART.TXD.$assign = "SPI1_CS1";
+debug_log.uartLog.UART.$assign     = "UART0";
+debug_log.uartLog.UART.RXD.$assign = "UART0_RXD";
+debug_log.uartLog.UART.TXD.$assign = "UART0_TXD";
 
 mpu_armv71.size              = 31;
 mpu_armv71.attributes        = "Device";
