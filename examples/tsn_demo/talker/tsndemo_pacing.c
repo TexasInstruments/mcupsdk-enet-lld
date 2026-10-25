@@ -304,10 +304,12 @@ static void TsnDemoPacing_timerReconfig(uint32_t inputClkHz, uint32_t muxVal)
  *  re-syncing (acting on every edge, not just the first) was tried and
  *  measurably made the RTT average worse on hardware, reverted. */
 static void TsnDemoPacing_hwPushCb(void *hwPushNotifyCbArg,
-                                   CpswCpts_HwPush hwPushNum)
+                                   CpswCpts_HwPush hwPushNum,
+                                   uint64_t tsVal)
 {
     (void)hwPushNotifyCbArg;
     (void)hwPushNum;
+    (void)tsVal;
     if (!gPacing.timerStarted)
     {
         gPacing.timerStarted = true;
