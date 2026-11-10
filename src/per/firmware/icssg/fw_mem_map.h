@@ -173,6 +173,20 @@
 /* Max Packet Size */
 #define FW_MAX_PKT                                 (0x800)
 
+/* Flag to denote that the Tx L0 FIFO and Inter-Packet Gap (IPG) countdown is active */
+#define TX_L0_FIFO_AND_IPG_WAIT_IN_PROGRESS_VAL    (1U)
+/* Time in nanoseconds for transmitting the 7B of data from TX L0 FIFO at 1 Gbps line speed */
+#define TX_L0_FIFO_WAIT_VAL_1G                     (56U)
+/* Time in nanoseconds for transmitting the 7B of data from TX L0 FIFO at 100 Mbps line speed */
+#define TX_L0_FIFO_WAIT_VAL_100M                   (560U)
+/* Time in nanoseconds for transmitting the 7B of data from TX L0 FIFO at 10 Mbps line speed */
+#define TX_L0_FIFO_WAIT_VAL_10M                    (5600U)
+/* Rx checksum verdict written to RX_CHECKSUM_STATUS_STASHED and reloaded
+ * into the STATUS chunk's word_3.b0 within packet metadata before PSI push to signal checksum status.  */
+#define RX_CHECKSUM_STATUS_FAIL                 0x00
+#define RX_CHECKSUM_STATUS_PASS                 0x01
+#define RX_CHECKSUM_STATUS_NA                   0xFF
+
 /*********************** Ethernet Switch Constants End *********************/
 
 /* Memory Usage of
@@ -522,6 +536,22 @@
 #define NRT_CUT_THR_PKT_SLICE0_PASTATID                    0x01B0
 /*Cut-through packet Counter*/
 #define NRT_CUT_THR_PKT_SLICE1_PASTATID                    0x01B4
+/*PRU0 RX TCP/UDP checksum fail count*/
+#define RX_CHECKSUM_ERROR_PKT_COUNT_SLICE0_PASTATID        0x01C0
+/*PRU1 RX TCP/UDP checksum fail count*/
+#define RX_CHECKSUM_ERROR_PKT_COUNT_SLICE1_PASTATID        0x01C4
+/*PRU0 RX TCP/UDP checksum pass count*/
+#define RX_CHECKSUM_SUCCESS_COUNT_SLICE0_PASTATID          0x01C8
+/*PRU1 RX TCP/UDP checksum pass count*/
+#define RX_CHECKSUM_SUCCESS_COUNT_SLICE1_PASTATID          0x01CC
+/*PRU0 RX IP header checksum fail count*/
+#define RX_IP_CHECKSUM_ERROR_COUNT_SLICE0_PASTATID         0x01D0
+/*PRU1 RX IP header checksum fail count*/
+#define RX_IP_CHECKSUM_ERROR_COUNT_SLICE1_PASTATID         0x01D4
+/*PRU0 RX IP header checksum pass count*/
+#define RX_IP_CHECKSUM_SUCCESS_COUNT_SLICE0_PASTATID       0x01D8
+/*PRU1 RX IP header checksum pass count*/
+#define RX_IP_CHECKSUM_SUCCESS_COUNT_SLICE1_PASTATID       0x01DC
 /*Number of valid packets sent by Rx PRU to Host on PSI*/
 #define NRT_HOST_RX_PKT_COUNT_MAC_SLICE0_PASTATID          0x0248
 /*Number of valid packets sent by Rx PRU to Host on PSI*/

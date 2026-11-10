@@ -1,8 +1,10 @@
-Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.15.10 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.16.00
+Changes from REL.PRU-ICSS-ETHERNET-SWITCH_02.02.16.01 to REL.PRU-ICSS-ETHERNET-SWITCH_02.02.16.02 
 
-- At 1Gbps link speed in cut-through mode, the pushing of packets from TX PRU is done from Background task instead of foreground task.
-  This fixes the low drops (<0.5% drops) seen even at lower offered loads (such as 1%).
+- [PINDSW-11637] Recycle the packet's descriptor(PD)/buffer back to its pool before zeroing TX_CONTEX to prevent leaking one buffer+PD per link-down-while-transmitting event. 
 
-- Fix link monitor handling for 10M RGMII mode. This resolves issue where the TX PRU gets stuck during repeated link-up down in this mode.
+- [PINDSW-11637] TX PRU lock-up in 1G cut-through underflow is fixed: the background wait loop on tx_active now calls m_nrt_handle_tx_underflow when tx_underflow latches, instead of spinning with the task manager disabled.
 
-- Added a timeout handling for loops in firmware which waits for TXPRU's L2 FIFO to drain the packets.
+- [PINDSW-11729] Multicast with the FDB BLOCK bit set now follows the classifier: RTU_SOF_CHECK_BLOCKED_PKT checks RX_FILTER.rx_q_classifiers before applying the special-packet default since previously BLOCK bit in FDB entry overrides FT3-based multiqueue classification for multicast traffic.
+
+- [PINDSW-11610] RTU TX counters/frames incorrectly counted on down port where RTU pushes the host-TX descriptor and bumps NRT_HOST_TX_PKT_COUNT_PASTATID/NRT_HOST_TX_BYTE_COUNT_PASTATID before TX-PRU's later port_disabled check drops the frame. Fixed to correctly increment NRT_RTU0_PACKET_DROPPED_SLICE0/1_PASTATID instead on port down/disable. Dual-MAC local injection honors disabled and blocked ports: RTU0_MAC_LI_NO_BLOCK checks port_blocked in RTU0_CONFIG.persistent_flags before injecting packets.
+
