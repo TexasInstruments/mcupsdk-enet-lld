@@ -82,7 +82,7 @@ extern uint8_t AutoAmp_r5fToC7xShmBuffer[];
 #define PRESENTATION_TIME_OFFSET_NS  (0.8*UB_MSEC_NS)
 
 /* Wait for Link to be stable (wait time in seconds)*10 */
-#define LINK_STABILITY_WAIT_TIME (3 * 10)
+#define LINK_STABILITY_WAIT_TIME (2 * 10)
 
 /* Timer7's PWM output is routed to CPTS HW push 4 (see clocksync.c). */
 #define CLOCKSYNC_APP_TIMER_INSTANCE   (7)
@@ -140,7 +140,7 @@ CrfTask_Params EnetApp_crfTaskParams = {
 #else
     .role                   = CLOCK_REC_ROLE_LISTENER,
 #endif
-    .clkSrc                 = CLOCK_REC_SOURCE_CDCE,
+    .clkSrc                 = CLOCK_REC_SOURCE_PHY,
     .correctionFlags        = CLOCK_REC_CORRECT_FREQUENCY | CLOCK_REC_CORRECT_PHASE,
     .parentClockFrequency   = 48000,
     .nominalFrequency       = 48000,

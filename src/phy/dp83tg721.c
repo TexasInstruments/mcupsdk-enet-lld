@@ -1169,36 +1169,6 @@ static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
         /* Step 2: Enable PTP by set PTP_ENABLE */
         Dp83tg721_setBitsExtReg(hPhy, PTP_CTL, PTP_ENABLE);
 
-        /* Step 3: After reset, default PTP_CLKSRC is set to 250 MHz PLL,
-        * and PTP Clock Source Period is set to 4.
-        * We don't have to configure this register */
-
-        /* Step 4: After reset, default PTP_RATEH_ACC_ONLY of all bits are set to 0:
-        * Disable Accumulator Mode
-        * We don't have to configure this register */
-
-        /* Step 5: (Optional) Required when Clock Output synchronized to
-        * wall clock is needed on a pin */
-        if (priv->ptp_clock_source == PTP_CLOCK_SOURCE_PTP_PLL)
-        {
-            Dp83tg721_configPTP_PLLClock(hPhy);
-        }
-        else /* PTP_CLOCK_SOURCE_250MHZ_PLL */
-        {
-            Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, MR_PTP_PLL_PTP_PLL_EN);
-        }
-
-        if (priv->enableMediaClock == 1)
-        {
-            /* Configure the media clock */
-            Dp83tg721_enableMediaClock(hPhy, priv->mediaClkDiv);
-        }
-        else if (priv->enableCodecClock == 1)
-        {
-            Dp83tg721_configCodecClock(hPhy, priv->codecClkDiv);
-        }
-        else {}
-
         Dp83tg721_enableStatusFrames(hPhy, true, srcMacStatusFrameType);
 
         txcfg0 = ENCODE_BIGFIELD(TX_PTP_VER, PTP_VERSION) | TX_L2_EN | TX_TS_EN;
@@ -1213,6 +1183,36 @@ static int32_t Dp83tg721_enablePtp(EthPhyDrv_Handle hPhy, bool on,
         Dp83tg721_writeExtReg(hPhy, PTP_RXCFG1, 0x0800);
         #endif
     }
+
+    /* Step 3: After reset, default PTP_CLKSRC is set to 250 MHz PLL,
+    * and PTP Clock Source Period is set to 4.
+    * We don't have to configure this register */
+
+    /* Step 4: After reset, default PTP_RATEH_ACC_ONLY of all bits are set to 0:
+    * Disable Accumulator Mode
+    * We don't have to configure this register */
+
+    /* Step 5: (Optional) Required when Clock Output synchronized to
+    * wall clock is needed on a pin */
+    if (priv->ptp_clock_source == PTP_CLOCK_SOURCE_PTP_PLL)
+    {
+        Dp83tg721_configPTP_PLLClock(hPhy);
+    }
+    else /* PTP_CLOCK_SOURCE_250MHZ_PLL */
+    {
+        Dp83tg721_setBitsExtReg(hPhy, PTP_PLL_EN_CTL, MR_PTP_PLL_PTP_PLL_EN);
+    }
+
+    if (priv->enableMediaClock == 1)
+    {
+        /* Configure the media clock */
+        Dp83tg721_enableMediaClock(hPhy, priv->mediaClkDiv);
+    }
+    else if (priv->enableCodecClock == 1)
+    {
+        Dp83tg721_configCodecClock(hPhy, priv->codecClkDiv);
+    }
+    else {}
 
     return ENETPHY_SOK;
 }
@@ -2037,7 +2037,7 @@ int32_t Dp83tg721_getSpeedDuplex(EthPhyDrv_Handle hPhy, Phy_Link_SpeedDuplex *pC
         {
             speed = 1000;
             *pConfig = PHY_LINK_FD1000;
-            EnetUtils_printf("PHY %u: selected speed is %d Mbps with full-duplex\n",
+            EnetUtils_printf("PHY %u: selected speed is %d Mbps with full-duplex\r\n",
                              PhyPriv_getPhyAddr(hPhy), speed);
         } else
         {
