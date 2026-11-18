@@ -86,13 +86,16 @@ typedef struct EnetAppSysCfg_Obj_s
     volatile bool timerTaskShutDownFlag;
 
 % if((instance.McmEnable == false) && (instance.ExternalPhyMgmtEnable == false)){
-    TaskP_Object task_phyStateHandlerObj;
 
     SemaphoreP_Object timerSemObj;
 
+% if(instance.RtosVariant == "FreeRTOS"){
     volatile bool timerTaskShutDownDoneFlag;
 
+    TaskP_Object task_phyStateHandlerObj;
+    
     uint8_t appPhyStateHandlerTaskStack[ENETAPP_PHY_STATEHANDLER_TASK_STACK] __attribute__ ((aligned(32)));
+%}
 %}
 }EnetAppSysCfg_Obj;
 
@@ -868,13 +871,14 @@ static void EnetApp_deleteClock(EnetAppSysCfg_Obj *hEnetAppObj)
 
     ClockP_stop(&hEnetAppObj->timerObj);
 
+%if(instance.RtosVariant == "FreeRTOS"){
     /* Post Timer Sem once to get the Periodic Tick task terminated */
     SemaphoreP_post(&hEnetAppObj->timerSemObj);
-
     do
     {
         ClockP_usleep(ClockP_ticksToUsec(1));
     } while (hEnetAppObj->timerTaskShutDownDoneFlag != true);
+%}
 
     ClockP_destruct(&hEnetAppObj->timerObj);
     SemaphoreP_destruct(&hEnetAppObj->timerSemObj);
